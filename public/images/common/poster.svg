@@ -1,0 +1,10 @@
+<svg width="800" height="500" viewBox="0 0 800 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="500" rx="40" fill="#0A1830"/>
+  <circle cx="138" cy="126" r="118" fill="#0B6BCB" fill-opacity="0.22"/>
+  <circle cx="654" cy="366" r="150" fill="#FF6B35" fill-opacity="0.22"/>
+  <path d="M168 332C168 237.007 245.007 160 340 160H470C564.993 160 642 237.007 642 332V332H168V332Z" fill="white" fill-opacity="0.08"/>
+  <path d="M290 190H410C474.065 190 526 241.935 526 306V306H174V306C174 241.935 225.935 190 290 190Z" stroke="white" stroke-opacity="0.26" stroke-width="20"/>
+  <path d="M304 106C304 63.0264 338.922 28 382 28C425.078 28 460 63.0264 460 106C460 148.974 425.078 184 382 184C338.922 184 304 148.974 304 106Z" stroke="white" stroke-opacity="0.28" stroke-width="20"/>
+  <text x="74" y="430" fill="white" font-family="Arial, sans-serif" font-size="38" font-weight="700">Shared Asset Poster</text>
+</svg>
+

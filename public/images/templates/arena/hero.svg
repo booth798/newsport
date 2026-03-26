@@ -1,0 +1,16 @@
+<svg width="960" height="640" viewBox="0 0 960 640" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="960" height="640" rx="56" fill="url(#paint0_linear)"/>
+  <circle cx="176" cy="176" r="132" fill="white" fill-opacity="0.08"/>
+  <circle cx="774" cy="490" r="144" fill="white" fill-opacity="0.1"/>
+  <path d="M108 428C204 356 314.667 320 440 320C565.333 320 682.667 356 792 428" stroke="#FFF8F2" stroke-width="30" stroke-linecap="round"/>
+  <path d="M320 236C320 194.026 354.026 160 396 160H564C605.974 160 640 194.026 640 236V236H320V236Z" fill="#FFF8F2" fill-opacity="0.18"/>
+  <path d="M340 246H620V418C620 440.091 602.091 458 580 458H380C357.909 458 340 440.091 340 418V246Z" stroke="#FFF8F2" stroke-width="20"/>
+  <text x="96" y="124" fill="#FFF8F2" font-family="Arial, sans-serif" font-size="34" font-weight="700">Arena Template Hero</text>
+  <text x="96" y="172" fill="#FFF8F2" fill-opacity="0.82" font-family="Arial, sans-serif" font-size="20">Alternative station branding for future site rollout</text>
+  <defs>
+    <linearGradient id="paint0_linear" x1="86" y1="48" x2="832" y2="594" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF6B35"/>
+      <stop offset="1" stop-color="#7A1E13"/>
+    </linearGradient>
+  </defs>
+</svg>

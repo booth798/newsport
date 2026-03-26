@@ -1,93 +1,195 @@
-# mySport-web
+# MySport Web
 
+基于最新 `Vue 3 + Vite + JavaScript` 的多站点生产基础模板，已集成：
 
+- `vue-router`
+- `pinia`
+- `vue-i18n` 中英文切换
+- `SCSS`
+- `normalize.css + reset`
+- `postcss-pxtorem + autoprefixer + lib-flexible`
+- `@ -> src` alias
+- 多站点站点名 / API / 模板图片 / 公共图片配置
+- 运行时换肤能力，支持主题色和 CSS 变量联动切换
+- 获取公共图片或模板图片的 `useAsset` hook
 
-## Getting started
+## 版本基线
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+当前初始化时确认的 npm 最新版本：
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+- `vue`: `3.5.30`
+- `vite`: `8.0.1`
+- `vue-router`: `5.0.4`
+- `pinia`: `3.0.4`
+- `vue-i18n`: `11.3.0`
 
-## Add your files
+## 启动
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
-
+```bash
+npm install
+npm run dev
 ```
-cd existing_repo
-git remote add origin http://95.40.82.61/root/mysport-web.git
-git branch -M main
-git push -uf origin main
+
+构建生产包：
+
+```bash
+npm run build
+npm run preview
 ```
 
-## Integrate with your tools
+## 目录结构
 
-- [ ] [Set up project integrations](http://95.40.82.61/root/mysport-web/-/settings/integrations)
+```text
+.
+├── public
+│   └── images
+│       ├── common
+│       └── templates
+├── src
+│   ├── config
+│   │   ├── app.js
+│   │   ├── skin.js
+│   │   └── site.js
+│   ├── components
+│   ├── hooks
+│   ├── i18n
+│   ├── router
+│   ├── store
+│   ├── styles
+│   ├── utils
+│   ├── views
+│   ├── App.vue
+│   └── main.js
+├── jsconfig.json
+├── postcss.config.cjs
+└── vite.config.js
+```
 
-## Collaborate with your team
+## 多站点说明
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+项目不再依赖 `.env`。默认站点、默认皮肤、默认语言、请求超时、站点预览开关统一写在 `src/config/app.js`，站点配置写在 `src/config/site.js`，全局共享皮肤库写在 `src/config/skin.js`。
 
-## Test and Deploy
+当前内置了两个示例站点：
 
-Use the built-in continuous integration in GitLab.
+- `default`
+- `arena`
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+每个站点可独立配置：
 
-***
+- 站点编码
+- 模板编码
+- 站点名称
+- API 地址
+- 站点品牌色
+- 模板图片映射
 
-# Editing this README
+每套皮肤在 `src/config/skin.js` 中统一配置，可独立定义：
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+- 颜色方案，例如 `light / dark`
+- 主题 token，例如主色、文字色、背景色、阴影
 
-## Suggestions for a good README
+如果后续增加新模板，直接在 `src/config/site.js` 里继续追加站点对象即可，例如：
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+```js
+export const SITE_PRESETS = {
+  default: {
+    key: 'default',
+    templateKey: 'default',
+    siteName: 'MySport Base',
+    apiBaseUrl: 'https://api.example.com',
+    brandColor: '#0b6bcb',
+    templateImages: {
+      hero: 'hero.svg',
+    },
+  },
+};
+```
 
-## Name
-Choose a self-explaining name for your project.
+## 图片资源管理
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+公共图片目录：
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+```text
+public/images/common
+```
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+模板图片目录：
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+```text
+public/images/templates/<templateKey>
+```
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+在组件中使用：
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+```js
+import { useAsset } from '@/hooks/useAsset';
+import { useTheme } from '@/hooks/useTheme';
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+const { getCommonImage, getTemplateImage, getImage } = useAsset();
+const { currentSkin } = useTheme();
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+const logo = getCommonImage('logo');
+const hero = getTemplateImage('hero');
+const poster = getImage('poster', { scope: 'common' });
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+console.log(currentSkin.value.tokens);
+```
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+资源解析顺序：
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+- 当前站点模板图
+- 公共图
+- `public` 目录兜底资源
 
-## License
-For open source projects, say how it is licensed.
+## 移动端适配方案
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+当前采用：
+
+- `lib-flexible`
+- `postcss-pxtorem`
+- `autoprefixer`
+
+说明：
+
+- 设计稿可按 `375` 宽基准处理
+- `px` 会自动转换为 `rem`
+- 断点布局仍然保留，兼容 PC 与移动端场景
+
+## 国际化
+
+语言包位置：
+
+- `src/i18n/locales/zh-CN.js`
+- `src/i18n/locales/en-US.js`
+
+默认语言读取：
+
+- `localStorage`
+- `src/config/app.js`
+
+## 换肤流程
+
+关键文件：
+
+- `src/config/site.js`：站点配置和站点图片
+- `src/config/skin.js`：全局共享皮肤库
+- `src/store/modules/app.js`：当前站点、当前皮肤状态
+- `src/hooks/useTheme.js`：把皮肤 token 注入到 CSS 变量
+- `src/hooks/useAsset.js`：按站点优先级解析图片资源
+
+切换流程：
+
+1. 切换站点或皮肤后，Pinia 中的 `siteKey / skinKey` 更新
+2. `useTheme` 监听状态变化并把 token 写到 `document.documentElement`
+3. 页面样式通过 `var(--theme-*)` 自动响应
+4. `useAsset` 按当前站点读取模板图，再回退到公共图
+
+## 请求封装
+
+基础请求工具位于：
+
+```text
+src/utils/request.js
+```
+
+会根据当前站点自动拼接 `src/config/site.js` 中对应的 API Base URL，便于后续继续扩展鉴权、拦截器、错误处理和 token 管理。
