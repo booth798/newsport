@@ -15,10 +15,12 @@ const { locale, siteKey } = storeToRefs(appStore);
 
 useTheme();
 
+// 统一记录窗口宽度，方便页面按需判断当前是否处于移动端布局。
 const syncViewport = () => {
   appStore.setViewportWidth(window.innerWidth);
 };
 
+// 页面标题始终跟随当前路由和当前站点名称变化。
 const syncDocumentTitle = () => {
   const currentSite = getSiteConfig(siteKey.value);
   const pageTitle = i18n.global.t(route.meta?.titleKey || 'page.home', {

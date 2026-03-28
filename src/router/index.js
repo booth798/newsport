@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 
 import HomeView from '@/views/HomeView.vue';
-import SiteWorkbenchView from '@/views/SiteWorkbenchView.vue';
 
 const routes = [
   {
@@ -10,14 +9,6 @@ const routes = [
     component: HomeView,
     meta: {
       titleKey: 'page.home',
-    },
-  },
-  {
-    path: '/site-workbench',
-    name: 'site-workbench',
-    component: SiteWorkbenchView,
-    meta: {
-      titleKey: 'page.siteWorkbench',
     },
   },
 ];
@@ -31,4 +22,3 @@ const router = createRouter({
 });
 
 export default router;
-

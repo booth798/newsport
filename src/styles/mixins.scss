@@ -1,5 +1,7 @@
 @use '@/styles/variables.scss' as *;
 
+// `respond-up` 表示“从某个断点开始生效”。
+// 例如 `@include respond-up(md)` 就是屏幕宽度 >= 768px 时应用里面的样式。
 @mixin respond-up($breakpoint) {
   @if $breakpoint == sm {
     @media (min-width: $breakpoint-sm) {
@@ -20,6 +22,7 @@
   }
 }
 
+// `container` 用来统一页面内容区宽度和左右留白。
 @mixin container {
   width: min(100%, 1200px);
   margin: 0 auto;
@@ -30,6 +33,7 @@
   }
 }
 
+// `surface-card` 是项目里卡片容器的基础皮肤，统一边框、阴影和毛玻璃效果。
 @mixin surface-card {
   background: var(--theme-surface);
   border: 1px solid var(--theme-border);

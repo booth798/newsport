@@ -1,6 +1,5 @@
 <script setup>
 import { computed } from 'vue';
-import { RouterLink } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 
@@ -8,8 +7,7 @@ import { useAsset } from '@/hooks/useAsset';
 import { useAppStore } from '@/store/modules/app';
 
 const { t } = useI18n();
-const appStore = useAppStore();
-const { currentSite, currentSkin, isMobile, siteOptions, siteKey } = storeToRefs(appStore);
+const { currentSite, isMobile, skinKey } = storeToRefs(useAppStore());
 const { getCommonImage, getTemplateImage } = useAsset();
 
 const heroImage = computed(() => getTemplateImage('hero'));
@@ -66,15 +64,6 @@ const architectureItems = [
           {{ t('home.description') }}
         </p>
 
-        <div class="hero__actions">
-          <RouterLink class="btn btn--primary" to="/site-workbench">
-            {{ t('home.primaryAction') }}
-          </RouterLink>
-          <a class="btn btn--ghost" :href="currentSite.apiBaseUrl" target="_blank" rel="noreferrer">
-            {{ t('home.secondaryAction') }}
-          </a>
-        </div>
-
         <ul class="hero__meta">
           <li>
             <span>{{ t('home.metaTemplate') }}</span>
@@ -82,7 +71,7 @@ const architectureItems = [
           </li>
           <li>
             <span>{{ t('home.metaSkin') }}</span>
-            <strong>{{ currentSkin.label }}</strong>
+            <strong>{{ skinKey }}</strong>
           </li>
           <li>
             <span>{{ t('home.metaApi') }}</span>
@@ -112,36 +101,6 @@ const architectureItems = [
         >
           <h3 class="feature-card__title">{{ item.title }}</h3>
           <p class="feature-card__desc">{{ item.description }}</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="home__section">
-      <div class="home__section-heading">
-        <h2 class="section-title">{{ t('home.sitesTitle') }}</h2>
-        <p class="section-desc">{{ currentSite.siteName }}</p>
-      </div>
-      <div class="site-grid">
-        <article
-          v-for="site in siteOptions"
-          :key="site.key"
-          class="site-card section-card"
-          :style="{ '--site-accent': site.brandColor }"
-        >
-          <div class="site-card__header">
-            <span class="site-card__chip">{{ t('common.template') }}</span>
-            <span v-if="site.key === siteKey" class="site-card__current">
-              {{ t('common.current') }}
-            </span>
-          </div>
-          <h3 class="site-card__title">{{ site.label }}</h3>
-          <p class="site-card__desc">{{ site.apiBaseUrl }}</p>
-          <div class="site-card__footer">
-            <span>{{ site.templateKey }}</span>
-            <button type="button" class="btn btn--ghost" @click="appStore.setSiteKey(site.key)">
-              {{ t('common.switchTo') }}
-            </button>
-          </div>
         </article>
       </div>
     </section>
@@ -218,12 +177,6 @@ const architectureItems = [
   }
 }
 
-.hero__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: rem(12);
-}
-
 .hero__meta {
   display: grid;
   gap: rem(12);
@@ -286,71 +239,26 @@ const architectureItems = [
   gap: rem(8);
 }
 
-.feature-grid,
-.site-grid {
+.feature-grid {
   display: grid;
   gap: rem(16);
 }
 
 @media (min-width: 768px) {
-  .feature-grid,
-  .site-grid {
+  .feature-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-.feature-card__title,
-.site-card__title {
+.feature-card__title {
   font-size: rem(18);
   font-weight: 800;
 }
 
-.feature-card__desc,
-.site-card__desc {
+.feature-card__desc {
   margin-top: rem(10);
   font-size: rem(14);
   line-height: 1.7;
-  color: var(--theme-text-secondary);
-}
-
-.site-card {
-  border-top: 4px solid var(--site-accent, #0b6bcb);
-}
-
-.site-card__header,
-.site-card__footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: rem(12);
-}
-
-.site-card__chip,
-.site-card__current {
-  display: inline-flex;
-  align-items: center;
-  min-height: rem(28);
-  padding: 0 rem(12);
-  border-radius: 999px;
-  font-size: rem(12);
-  font-weight: 700;
-}
-
-.site-card__chip {
-  color: #fff;
-  background: var(--site-accent, #0b6bcb);
-}
-
-.site-card__current {
-  color: var(--theme-primary-dark);
-  background: var(--theme-primary-soft);
-}
-
-.site-card__footer {
-  margin-top: rem(18);
-}
-
-.site-card__footer span {
   color: var(--theme-text-secondary);
 }
 
@@ -374,3 +282,4 @@ const architectureItems = [
   border: 1px solid var(--theme-border);
 }
 </style>
+

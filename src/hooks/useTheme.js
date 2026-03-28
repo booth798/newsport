@@ -1,47 +1,37 @@
 import { computed, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 
-import { getSkinConfig } from '@/config/skin';
+import { APP_SETTINGS, THEME_CLASSNAMES } from '@/config/app';
 import { useAppStore } from '@/store/modules/app';
 
-const applyThemeTokens = (tokens = {}) => {
-  if (typeof document === 'undefined') {
-    return;
-  }
-
-  const root = document.documentElement;
-
-  Object.entries(tokens).forEach(([token, value]) => {
-    root.style.setProperty(`--${token}`, value);
-  });
-};
+const resolveThemeClass = (skinKey) =>
+  THEME_CLASSNAMES.includes(skinKey) ? skinKey : APP_SETTINGS.defaultSkinKey;
 
 export function useTheme() {
   const appStore = useAppStore();
-  const { siteKey, skinKey } = storeToRefs(appStore);
+  const { skinKey } = storeToRefs(appStore);
 
-  const currentSkin = computed(() => getSkinConfig(skinKey.value));
+  const currentThemeClass = computed(() => resolveThemeClass(skinKey.value));
 
-  // 皮肤切换的核心流程：
-  // 先根据当前皮肤拿到 token，再一次性写入 CSS 变量，
-  // 页面中的颜色、阴影和背景就会同步更新。
-  const applyTheme = () => {
+  // 主题切换改成了“给 html 添加 class”。
+  // SCSS 里会根据 `.classic`、`.midnight` 这些类名自动覆盖 CSS 变量。
+  const applyThemeClass = () => {
     if (typeof document === 'undefined') {
       return;
     }
 
     const root = document.documentElement;
 
-    applyThemeTokens(currentSkin.value.tokens);
-    root.dataset.site = siteKey.value;
-    root.dataset.skin = currentSkin.value.key;
-    root.style.colorScheme = currentSkin.value.colorScheme || 'light';
+    root.classList.remove(...THEME_CLASSNAMES);
+    root.classList.add(currentThemeClass.value);
+    root.dataset.skin = currentThemeClass.value;
   };
 
-  watch([siteKey, currentSkin], applyTheme, { immediate: true });
+  watch(currentThemeClass, applyThemeClass, { immediate: true });
 
   return {
-    currentSkin,
-    applyTheme,
+    currentThemeClass,
+    applyThemeClass,
   };
 }
+

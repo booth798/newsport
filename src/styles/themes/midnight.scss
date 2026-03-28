@@ -1,0 +1,32 @@
+// 深色主题。
+// 通过给 html 添加 `.midnight` 类名即可启用这一套变量。
+html.midnight {
+  color-scheme: dark;
+  --theme-primary: #2b8cff;
+  --theme-primary-dark: #0c4db3;
+  --theme-accent: #59c8ff;
+  --theme-text: #eaf4ff;
+  --theme-text-secondary: #8fb3d9;
+  --theme-border: rgba(115, 164, 219, 0.16);
+  --theme-surface: rgba(7, 21, 38, 0.82);
+  --theme-surface-strong: rgba(10, 26, 46, 0.9);
+  --theme-page-base: #061321;
+  --theme-bg-start: #07192d;
+  --theme-bg-mid: #091e36;
+  --theme-bg-end: #05111f;
+  --theme-glow-primary: rgba(43, 140, 255, 0.24);
+  --theme-glow-accent: rgba(89, 200, 255, 0.18);
+  --theme-grid-line: rgba(124, 180, 255, 0.08);
+  --theme-selection: rgba(43, 140, 255, 0.78);
+  --theme-tag-text: #b7e6ff;
+  --theme-tag-bg: rgba(89, 200, 255, 0.12);
+  --theme-primary-soft: rgba(43, 140, 255, 0.14);
+  --theme-accent-soft: rgba(89, 200, 255, 0.14);
+  --theme-hero-panel: rgba(8, 24, 42, 0.9);
+  --theme-primary-shadow: 0 14px 30px rgba(43, 140, 255, 0.26);
+  --theme-header-shadow: 0 16px 40px rgba(0, 0, 0, 0.32);
+  --theme-card-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+  --theme-code-bg: #04101d;
+  --theme-code-text: #bfe9ff;
+}
+

@@ -3,6 +3,7 @@ import { APP_SETTINGS } from '@/config/app';
 const DEFAULT_SITE_KEY = APP_SETTINGS.defaultSiteKey;
 const withLeadingSlash = (value) => `/${String(value).replace(/^\/+/, '')}`;
 
+// 把 public 目录下的相对路径转成可直接在页面里使用的资源地址。
 export const resolvePublicAsset = (value = '') => {
   const base = import.meta.env.BASE_URL || '/';
   const normalizedBase = base.endsWith('/') ? base : `${base}/`;
@@ -39,6 +40,7 @@ export const SITE_PRESETS = {
   },
 };
 
+// 把站点配置里的模板图片文件名，统一补成完整 public 路径。
 const buildTemplateImages = (templateKey, templateImages = {}) =>
   Object.fromEntries(
     Object.entries(templateImages).map(([name, fileName]) => [
@@ -60,15 +62,6 @@ export const getSiteConfig = (siteKey = DEFAULT_SITE_KEY) => {
   };
 };
 
-export const getSiteOptions = () =>
-  Object.values(SITE_PRESETS).map((item) => ({
-    key: item.key,
-    label: item.siteName,
-    templateKey: item.templateKey,
-    apiBaseUrl: item.apiBaseUrl,
-    brandColor: item.brandColor,
-  }));
-
+// 当配置里没有显式声明某张图时，按约定目录拼出一个兜底地址。
 export const getFallbackAsset = (segment, fileName) =>
   resolvePublicAsset(withLeadingSlash(`${segment}/${fileName}`));
-
