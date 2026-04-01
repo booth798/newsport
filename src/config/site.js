@@ -1,20 +1,28 @@
 import { APP_SETTINGS } from '@/config/app';
 
 const DEFAULT_SITE_KEY = APP_SETTINGS.defaultSiteKey;
-const withLeadingSlash = (value) => `/${String(value).replace(/^\/+/, '')}`;
+const assetModules = import.meta.glob('/src/assets/images/**/*.{svg,png,jpg,jpeg,webp,avif,gif}', {
+  eager: true,
+  import: 'default',
+});
 
-// 把 public 目录下的相对路径转成可直接在页面里使用的资源地址。
-export const resolvePublicAsset = (value = '') => {
-  const base = import.meta.env.BASE_URL || '/';
-  const normalizedBase = base.endsWith('/') ? base : `${base}/`;
-  const normalizedValue = String(value).replace(/^\/+/, '');
+// Vite 会把 src/assets 中的图片编译成最终可访问地址，这里提前整理成“相对路径 -> 图片地址”映射，
+// 后面站点配置只需要写目录约定，不用手动 import 每一张图。
+const ASSET_URL_MAP = Object.fromEntries(
+  Object.entries(assetModules).map(([filePath, assetUrl]) => [
+    filePath.replace('/src/assets/images/', ''),
+    assetUrl,
+  ]),
+);
 
-  return `${normalizedBase}${normalizedValue}`.replace(/\/{2,}/g, '/');
-};
+// 根据 src/assets/images 下的相对路径取图片地址。
+// 如果配置写错或文件不存在，这里会返回空字符串，方便上层继续决定是否兜底。
+export const resolveAssetUrl = (relativePath = '') =>
+  ASSET_URL_MAP[String(relativePath).replace(/^\/+/, '')] || '';
 
 const COMMON_IMAGE_MAP = {
-  logo: resolvePublicAsset('images/common/logo.svg'),
-  poster: resolvePublicAsset('images/common/poster.svg'),
+  logo: resolveAssetUrl('common/logo.svg'),
+  poster: resolveAssetUrl('common/poster.svg'),
 };
 
 export const SITE_PRESETS = {
@@ -40,16 +48,17 @@ export const SITE_PRESETS = {
   },
 };
 
-// 把站点配置里的模板图片文件名，统一补成完整 public 路径。
+// 把站点配置里声明的模板图片文件名，统一转成 src/assets 对应的构建地址。
 const buildTemplateImages = (templateKey, templateImages = {}) =>
   Object.fromEntries(
     Object.entries(templateImages).map(([name, fileName]) => [
       name,
-      resolvePublicAsset(`images/templates/${templateKey}/${fileName}`),
+      resolveAssetUrl(`templates/${templateKey}/${fileName}`),
     ]),
   );
 
 // 站点层只负责站点信息和站点图片，不再承载皮肤配置。
+// 这样后续新增站点时，只需要补充站点信息和当前站点自己的模板图即可。
 export const getSiteConfig = (siteKey = DEFAULT_SITE_KEY) => {
   const preset = SITE_PRESETS[siteKey] || SITE_PRESETS.default;
 
@@ -61,7 +70,3 @@ export const getSiteConfig = (siteKey = DEFAULT_SITE_KEY) => {
     },
   };
 };
-
-// 当配置里没有显式声明某张图时，按约定目录拼出一个兜底地址。
-export const getFallbackAsset = (segment, fileName) =>
-  resolvePublicAsset(withLeadingSlash(`${segment}/${fileName}`));

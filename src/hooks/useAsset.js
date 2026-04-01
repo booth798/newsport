@@ -1,11 +1,7 @@
 import { computed } from 'vue';
 import { storeToRefs } from 'pinia';
 
-import {
-  getFallbackAsset,
-  getSiteConfig,
-  resolvePublicAsset,
-} from '@/config/site';
+import { getSiteConfig } from '@/config/site';
 import { useAppStore } from '@/store/modules/app';
 
 export function useAsset() {
@@ -32,33 +28,29 @@ export function useAsset() {
     };
   };
 
-  // 公共图片固定优先从 common 目录取，找不到再去 public 兜底。
+  // 只读取 common 公共图。
+  // 适合 logo、默认海报这类所有站点共用的资源。
   const getCommonImage = (name, options = {}) => {
-    const { targetSite } = resolveAssetContext(options);
+    const { normalizedOptions, targetSite } = resolveAssetContext(options);
 
-    return targetSite.images.common[name] || getFallbackAsset('images/common', name);
+    return targetSite.images.common[name] || normalizedOptions.fallback || '';
   };
 
-  // 模板图片固定优先从当前站点模板目录取，找不到再走兜底路径。
+  // 只读取当前站点自己的模板图。
+  // 适合首页主视觉、频道头图这类会跟着站点切换的资源。
   const getTemplateImage = (name, options = {}) => {
-    const { targetSite } = resolveAssetContext(options);
+    const { normalizedOptions, targetSite } = resolveAssetContext(options);
 
-    return (
-      targetSite.images.template[name] ||
-      getFallbackAsset(`images/templates/${targetSite.templateKey}`, name)
-    );
+    return targetSite.images.template[name] || normalizedOptions.fallback || '';
   };
 
   // getImage 是“自动判断”的统一入口：
   // 1. 如果显式指定 scope=common，就只拿公共图
   // 2. 如果显式指定 scope=template，就只拿模板图
   // 3. 默认 auto 模式时，先尝试公共图，再尝试模板图
-  // 4. 两者都没有时，最后拼接模板目录兜底地址
+  // 4. 两者都没有时，返回外部传入的 fallback，没传就返回空字符串
   const getImage = (name, options = {}) => {
-    const {
-      scope = 'auto',
-      fallbackToTemplate = true,
-    } = normalizeOptions(options);
+    const { scope = 'auto', fallback = '' } = normalizeOptions(options);
 
     if (scope === 'common') {
       return getCommonImage(name, options);
@@ -70,11 +62,7 @@ export function useAsset() {
 
     const { targetSite } = resolveAssetContext(options);
 
-    return (
-      targetSite.images.common[name] ||
-      (fallbackToTemplate ? targetSite.images.template[name] : '') ||
-      resolvePublicAsset(`images/templates/${targetSite.templateKey}/${name}`)
-    );
+    return targetSite.images.common[name] || targetSite.images.template[name] || fallback;
   };
 
   return {
@@ -82,6 +70,5 @@ export function useAsset() {
     getImage,
     getCommonImage,
     getTemplateImage,
-    resolvePublicAsset,
   };
 }

@@ -19,6 +19,13 @@ npm install
 npm run dev
 ```
 
+按模板启动：
+
+```bash
+npm run dev:default
+npm run dev:arena
+```
+
 构建：
 
 ```bash
@@ -26,15 +33,29 @@ npm run build
 npm run preview
 ```
 
+按模板打包：
+
+```bash
+npm run build:default
+npm run build:arena
+```
+
+说明：
+
+- `dev:xxx` 和 `build:xxx` 只是把当前模板的站点 key 传给项目
+- 站点名称、API、图片等业务配置仍然统一写在 `src/config/site.js`
+- `build:default` 会输出到 `dist/default`
+- `build:arena` 会输出到 `dist/arena`
+
 ## 目录结构
 
 ```text
 .
-├── public
-│   └── images
-│       ├── common
-│       └── templates
 ├── src
+│   ├── assets
+│   │   └── images
+│   │       ├── common
+│   │       └── templates
 │   ├── components
 │   ├── config
 │   │   ├── app.js
@@ -77,13 +98,13 @@ npm run preview
 公共图片目录：
 
 ```text
-public/images/common
+src/assets/images/common
 ```
 
 模板图片目录：
 
 ```text
-public/images/templates/<templateKey>
+src/assets/images/templates/<templateKey>
 ```
 
 在组件里使用：
@@ -102,7 +123,21 @@ const poster = getImage('poster');
 
 1. 公共图片
 2. 当前站点模板图片
-3. 模板目录兜底路径
+3. 调用时传入的 `fallback`
+
+## 为什么改到 src/assets
+
+当前这类图片更推荐放在 `src/assets`，原因是：
+
+- 图片会参与 Vite 构建，产物会自动带 hash，缓存控制更友好
+- 图片路径由代码直接引用，构建阶段就能尽早发现路径写错的问题
+- 组件、hooks、站点配置都能统一通过模块方式管理，不用再手动拼接 public URL
+
+只有下面这类资源更适合继续放 `public`：
+
+- 必须保留固定访问路径的文件
+- 不经过业务代码 import 的静态文件
+- 像 `favicon.ico`、`robots.txt`、第三方校验文件这类资源
 
 ## 换肤方式
 
@@ -121,7 +156,7 @@ const poster = getImage('poster');
 ## 关键文件
 
 - `src/config/app.js`：全局默认配置
-- `src/config/site.js`：站点配置和图片路径
+- `src/config/site.js`：站点配置和图片资源映射
 - `src/store/modules/app.js`：当前站点、当前主题、当前语言状态
 - `src/hooks/useTheme.js`：把主题类名挂到 `html`
 - `src/hooks/useAsset.js`：统一读取公共图和模板图
