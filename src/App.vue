@@ -3,7 +3,6 @@ import { onBeforeUnmount, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
-import AppShell from '@/components/AppShell.vue';
 import { getSiteConfig } from '@/config/site';
 import { useTheme } from '@/hooks/useTheme';
 import i18n from '@/i18n';
@@ -23,7 +22,8 @@ const syncViewport = () => {
 // 页面标题始终跟随当前路由和当前站点名称变化。
 const syncDocumentTitle = () => {
   const currentSite = getSiteConfig(siteKey.value);
-  const pageTitle = i18n.global.t(route.meta?.titleKey || 'page.home', {
+  
+  const pageTitle = i18n.global.t(route.meta?.titleKey || '首页', {
     siteName: currentSite.siteName,
   });
 
@@ -54,5 +54,5 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <AppShell />
+  <RouterView />
 </template>

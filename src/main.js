@@ -1,4 +1,3 @@
-import 'lib-flexible/flexible';
 import 'normalize.css';
 
 import { createApp } from 'vue';
@@ -16,4 +15,3 @@ app.use(i18n);
 app.use(router);
 
 app.mount('#app');
-

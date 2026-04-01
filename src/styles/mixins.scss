@@ -1,43 +1,30 @@
 @use '@/styles/variables.scss' as *;
 
-// `respond-up` 表示“从某个断点开始生效”。
-// 例如 `@include respond-up(md)` 就是屏幕宽度 >= 768px 时应用里面的样式。
-@mixin respond-up($breakpoint) {
-  @if $breakpoint == sm {
-    @media (min-width: $breakpoint-sm) {
-      @content;
-    }
-  } @else if $breakpoint == md {
-    @media (min-width: $breakpoint-md) {
-      @content;
-    }
-  } @else if $breakpoint == lg {
-    @media (min-width: $breakpoint-lg) {
-      @content;
-    }
-  } @else if $breakpoint == xl {
-    @media (min-width: $breakpoint-xl) {
-      @content;
-    }
+// `mobile-only` 表示“只在移动端样式里生效”。
+// 当前项目约定：屏幕宽度 <= 750px 归为移动端。
+@mixin mobile-only {
+  @media (max-width: $screen-mobile-max) {
+    @content;
+  }
+}
+
+// `web-only` 表示“只在 Web 样式里生效”。
+// 当前项目约定：屏幕宽度 > 750px 归为 Web 端。
+@mixin web-only {
+  @media (min-width: $screen-web-min) {
+    @content;
   }
 }
 
 // `container` 用来统一页面内容区宽度和左右留白。
+// 样式里直接写设计稿 px 即可，构建时会由 postcss-pxtorem 自动转换。
 @mixin container {
-  width: min(100%, 1200px);
   margin: 0 auto;
-  padding-inline: rem(16);
 
-  @include respond-up(md) {
-    padding-inline: 24px;
+  @include web-only {
+    padding-inline: 30px;
   }
-}
-
-// `surface-card` 是项目里卡片容器的基础皮肤，统一边框、阴影和毛玻璃效果。
-@mixin surface-card {
-  background: var(--theme-surface);
-  border: 1px solid var(--theme-border);
-  border-radius: rem(20);
-  box-shadow: var(--theme-card-shadow);
-  backdrop-filter: blur(18px);
+  @include mobile-only {
+    padding-inline: 8px;
+  }
 }

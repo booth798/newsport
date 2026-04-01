@@ -32,7 +32,10 @@ export const useAppStore = defineStore('app', {
     viewportWidth: typeof window === 'undefined' ? 1440 : window.innerWidth,
   }),
   getters: {
-    isMobile: (state) => state.viewportWidth < 768,
+    // 项目只区分两套端：
+    // 1. <= 750 视为移动端
+    // 2. > 750 视为 Web 端
+    isMobile: (state) => state.viewportWidth <= 750,
     currentSite: (state) => getSiteConfig(state.siteKey),
   },
   actions: {

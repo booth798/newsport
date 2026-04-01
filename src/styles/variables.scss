@@ -1,13 +1,9 @@
-@use 'sass:math';
-
 $font-family-base: 'Avenir Next', 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 $font-family-heading: 'DIN Alternate', 'Avenir Next Condensed', 'PingFang SC', sans-serif;
 
-$breakpoint-sm: 576px;
-$breakpoint-md: 768px;
-$breakpoint-lg: 1024px;
-$breakpoint-xl: 1280px;
-
-@function rem($px) {
-  @return math.div($px, 37.5) * 1rem;
-}
+// 设计稿基准：
+// 1. 移动端以 375 稿为准
+// 2. Web 端以 1440 稿为准
+// 项目只保留一条分界线：<= 750 视为移动端，> 750 视为 Web 端。
+$screen-mobile-max: 750px;
+$screen-web-min: 751px;

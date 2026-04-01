@@ -7,7 +7,7 @@
 - `vue-i18n`
 - `SCSS`
 - `normalize.css + reset`
-- `postcss-pxtorem + autoprefixer + lib-flexible`
+- `postcss-pxtorem + autoprefixer`
 - `@ -> src` alias
 - 多站点站点名 / API / 模板图片 / 公共图片配置
 - 基于 SCSS 主题类名的换肤能力
@@ -92,6 +92,30 @@ npm run build:arena
 - API 地址
 - 站点品牌色
 - 模板图片映射
+
+## 响应式规则
+
+项目现在只保留两套端：
+
+- `<= 750px`：移动端
+- `> 750px`：Web 端
+
+实现方式：
+
+- 开发时样式直接写设计稿 `px`
+- 构建时通过 `postcss-pxtorem` 自动转换成 `rem`
+- 小屏设备会在 `375` 以下按屏宽缩小，避免内容过挤
+- Web 端不做整站同比放大，而是固定根字号，通过断点切换布局、间距和栅格
+
+样式里优先使用这两个 mixin：
+
+- `@include mobile-only`
+- `@include web-only`
+
+对应文件：
+
+- `src/styles/variables.scss`：响应式阈值和设计稿基准
+- `src/styles/mixins.scss`：移动端 / Web 端样式 mixin
 
 ## 图片资源
 
