@@ -15,11 +15,11 @@ html.classic {
   // 主卡片背景颜色
   .card-primary {
     background: #EAF1F9;
-    border: 0.8px solid #FFFFFF
+    border: 0.8px solid var(--auxiliary-1);
   }
   // 次卡片背景颜色
   .card-default {
-    background: #FFFFFF;
+    background: var(--auxiliary-1);
     box-shadow: 0px 3px 8px 0px #153A771A;
   }
   .btn {
@@ -30,28 +30,48 @@ html.classic {
     align-items: center;
     justify-content: center;
 
+    // 重要按钮1
     &--primary {
       background: var(--theme-primary);
-      color: #FFFFFF;
+      color: var(--auxiliary-1);
       border: 0.8px solid;
       border-image-source: linear-gradient(101.26deg, #FFFFFF 0%, rgba(255, 255, 255, 0.6) 16.38%, rgba(255, 255, 255, 0.02) 79.58%);
       box-shadow: 0px 2px 6px 0px #1C7BFF4D;
+      position: relative;
     }
-  
-    // &--default {
-    //   background: map-get($btn-colors, secondary);
-    //   color: #333;
-    // }
-  
-    // &--light {
-    //   background: map-get($btn-colors, light);
-    //   color: #2f80ed;
-    // }
-  
-    // &--danger {
-    //   background: map-get($btn-colors, danger);
-    //   color: #fff;
-    // }
+
+    // 重要按钮2
+    &--default-1 {
+      background: var(--auxiliary-1);
+      color: var(--theme-primary);
+    }
+
+    // 次要按钮
+    &--default-2 {
+      background: var(--auxiliary-1);
+      color: var(--theme-text);
+    }
+
+    // 提示按钮
+    &--prompt {
+      background: var(--auxiliary-2);
+      color: var(--auxiliary-1);
+      border: 0.8px solid;
+      border-image-source: linear-gradient(101.26deg, var(--auxiliary-1) 0%, rgba(255, 255, 255, 0.6) 16.38%, rgba(255, 255, 255, 0.02) 79.58%);
+      position: relative;
+    }
+
+    &--primary, &--prompt {
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        height: 1px;
+        left: 0;
+        right: 0;
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.25) 35%, #FFFFFF 50%, rgba(255, 255, 255, 0.25) 65%, rgba(255, 255, 255, 0) 100%);
+      }
+    }
   }
 }
 

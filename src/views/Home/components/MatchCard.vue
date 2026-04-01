@@ -7,6 +7,9 @@
     <div class="btn btn--primary">
       {{ $t('进入市场') }}
     </div>
+    <div class="btn btn--prompt">
+      {{ $t('进入市场') }}
+    </div>
   </div>
 </template>
 
@@ -16,13 +19,13 @@
     border-radius: 32px;
     @include web-only {
         height: 460px;
-        .btn--primary {
+        .btn--primary, .btn--prompt {
             height: 48px;
         }
     }
     @include mobile-only {
         height: 263px;
-        .btn--primary {
+        .btn--primary, .btn--prompt {
             height: 36px;
         }
     }
