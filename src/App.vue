@@ -1,4 +1,6 @@
 <script setup>
+import Header from '@/components/Header.vue';
+
 import { onBeforeUnmount, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { storeToRefs } from 'pinia';
@@ -54,5 +56,6 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
+  <Header />
   <RouterView />
 </template>

@@ -7,3 +7,6 @@ $font-family-heading: 'DIN Alternate', 'Avenir Next Condensed', 'PingFang SC', s
 // 项目只保留一条分界线：<= 750 视为移动端，> 750 视为 Web 端。
 $screen-mobile-max: 750px;
 $screen-web-min: 751px;
+
+$web-header-height: 120px;
+$mobile-header-height: 64px;
