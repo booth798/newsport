@@ -37,7 +37,9 @@ export function useAsset() {
   };
 
   // 只读取当前站点自己的模板图。
-  // 适合首页主视觉、频道头图这类会跟着站点切换的资源。
+  // 默认会先根据模板目录自动按文件名建索引，
+  // 所以目录里存在 `logo.png` 时，可以直接用 `getTemplateImage('logo')` 获取。
+  // 只有图片名字和业务想用的 key 不一致时，才需要回到 site.js 里补别名配置。
   const getTemplateImage = (name, options = {}) => {
     const { normalizedOptions, targetSite } = resolveAssetContext(options);
 

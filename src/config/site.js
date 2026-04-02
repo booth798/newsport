@@ -20,10 +20,60 @@ const ASSET_URL_MAP = Object.fromEntries(
 export const resolveAssetUrl = (relativePath = '') =>
   ASSET_URL_MAP[String(relativePath).replace(/^\/+/, '')] || '';
 
-const COMMON_IMAGE_MAP = {
-  logo: resolveAssetUrl('common/logo.svg'),
-  poster: resolveAssetUrl('common/poster.svg'),
+// 把文件路径统一提取成“文件名”和“不带扩展名的名字”。
+// 这样目录里放了 `logo.png` 之后，既可以用 `logo` 获取，也可以用 `logo.png` 获取。
+const getAssetNamePair = (relativePath = '') => {
+  const fileName = String(relativePath).split('/').pop() || '';
+  const baseName = fileName.replace(/\.[^.]+$/, '');
+
+  return {
+    fileName,
+    baseName,
+  };
 };
+
+// 按目录把图片整理成一份可直接读取的映射表。
+// 例如 `templates/default/logo.png` 会生成：
+// 1. `logo` -> 实际图片地址
+// 2. `logo.png` -> 实际图片地址
+// 这样调用方不需要再提前去 site.js 里为每张图单独声明一遍。
+const buildDirectoryImageMap = (directory = '') => {
+  const normalizedDirectory = String(directory).replace(/^\/+|\/+$/g, '');
+  const directoryPrefix = `${normalizedDirectory}/`;
+
+  return Object.entries(ASSET_URL_MAP).reduce((result, [relativePath, assetUrl]) => {
+    if (!relativePath.startsWith(directoryPrefix)) {
+      return result;
+    }
+
+    const { fileName, baseName } = getAssetNamePair(relativePath);
+
+    if (baseName && !result[baseName]) {
+      result[baseName] = assetUrl;
+    }
+
+    if (fileName && !result[fileName]) {
+      result[fileName] = assetUrl;
+    }
+
+    return result;
+  }, {});
+};
+
+// 只有当业务想用“别名”访问图片时，才需要在 site.js 里补充映射。
+// 例如真实文件名是 `logo-main.png`，但希望通过 `getTemplateImage('logo')` 来拿时，
+// 才需要在模板配置里显式写一条 `logo: 'logo-main.png'`。
+const buildAliasImageMap = (directory = '', images = {}) => {
+  const normalizedDirectory = String(directory).replace(/^\/+|\/+$/g, '');
+
+  return Object.fromEntries(
+    Object.entries(images)
+      .map(([name, fileName]) => [name, resolveAssetUrl(`${normalizedDirectory}/${fileName}`)])
+      .filter(([, assetUrl]) => assetUrl),
+  );
+};
+
+const COMMON_IMAGE_MAP = buildDirectoryImageMap('common');
 
 export const SITE_PRESETS = {
   default: {
@@ -32,9 +82,6 @@ export const SITE_PRESETS = {
     siteName: 'MySport Base',
     apiBaseUrl: 'https://api.example.com',
     brandColor: '#0b6bcb',
-    templateImages: {
-      hero: 'hero.svg',
-    },
   },
   arena: {
     key: 'arena',
@@ -42,20 +89,17 @@ export const SITE_PRESETS = {
     siteName: 'MySport Arena',
     apiBaseUrl: 'https://arena-api.example.com',
     brandColor: '#ff6b35',
-    templateImages: {
-      hero: 'hero.svg',
-    },
   },
 };
 
-// 把站点配置里声明的模板图片文件名，统一转成 src/assets 对应的构建地址。
+// 模板图片默认直接读取 `src/assets/images/templates/<templateKey>` 目录。
+// 也就是说，只要目录里放了 `logo.png`，就能直接用 `getTemplateImage('logo')` 获取。
+// 如果业务确实需要“自定义别名 -> 真实文件名”的映射，再通过 `templateImages` 补充即可。
 const buildTemplateImages = (templateKey, templateImages = {}) =>
-  Object.fromEntries(
-    Object.entries(templateImages).map(([name, fileName]) => [
-      name,
-      resolveAssetUrl(`templates/${templateKey}/${fileName}`),
-    ]),
-  );
+  ({
+    ...buildDirectoryImageMap(`templates/${templateKey}`),
+    ...buildAliasImageMap(`templates/${templateKey}`, templateImages),
+  });
 
 // 站点层只负责站点信息和站点图片，不再承载皮肤配置。
 // 这样后续新增站点时，只需要补充站点信息和当前站点自己的模板图即可。

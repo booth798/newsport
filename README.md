@@ -131,6 +131,13 @@ src/assets/images/common
 src/assets/images/templates/<templateKey>
 ```
 
+默认约定：
+
+- 公共图和模板图会自动按目录扫描
+- 只要文件真实存在，就可以直接按“文件名”或“不带扩展名的名字”获取
+- 例如 `src/assets/images/templates/default/logo.png` 可以直接通过 `getTemplateImage('logo')` 或 `getTemplateImage('logo.png')` 获取
+- 只有当你想用自定义别名时，才需要在 `src/config/site.js` 里额外声明映射
+
 在组件里使用：
 
 ```js
@@ -140,6 +147,7 @@ const { getCommonImage, getTemplateImage, getImage } = useAsset();
 
 const logo = getCommonImage('logo');
 const hero = getTemplateImage('hero');
+const templateLogo = getTemplateImage('logo');
 const poster = getImage('poster');
 ```
 
