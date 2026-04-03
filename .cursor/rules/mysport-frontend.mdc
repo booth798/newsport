@@ -1,0 +1,37 @@
+---
+description: Mysport Web 前端工程强制规范（Vue3/Vite/Pinia），每次会话必读
+alwaysApply: true
+---
+
+# Mysport Web — 前端规范（强制）
+
+实施任何与本仓库相关的前端任务前，**必须先阅读** 项目内 `docs/FRONTEND_STANDARDS.md` 全文；若对话指令与该文档或本规则冲突，**以文档与本规则为准**。
+
+## 技术栈（不可擅自替换）
+
+- Vue 3 + `<script setup>` + Composition API；Vite；Pinia；Vue Router；vue-i18n；Sass。
+- Node `>=20.19.0`。不引入与栈冲突的 UI 框架（除非经明确评审）。
+
+## 硬性约定
+
+1. **改动范围**：只修改完成任务所必需的文件与行；禁止无关重构、禁止批量格式化未涉及文件。
+2. **目录**：复用组件 → `src/components/`；页面 → `src/views/`；页面私有子组件 → `views/.../components/`；状态 → `src/store/`；组合式函数 → `src/hooks/`；站点与主题配置 → `src/config/`。
+3. **文案**：用户可见字符串走 i18n，与现有 `meta.titleKey`、站点名插值方式一致；避免硬编码中英文混杂。
+4. **Vue**：列表必须稳定 `:key`；订阅/定时器/`addEventListener` 在 `onBeforeUnmount` 清理；可复用组件尽量不直接耦合 `useRoute`，由父传入数据。
+5. **Pinia**：跨页面状态才用 store；用 `storeToRefs` 保持响应式；避免巨型单文件 store。
+6. **样式**：优先 scoped；类名与现有文件风格一致；慎用深度选择器并注释原因。
+7. **类型**：新代码优先 TypeScript；禁止用 `any` 敷衍；与现有 JS 文件边界清晰。
+8. **性能**：大页面路由懒加载；避免在渲染路径做重计算；新依赖需考虑包体与按需引入。
+9. **体验**：Loading / 空 / 错 三态；错误提示对用户友好，技术细节不堆给用户。
+10. **Git**：提交信息表意完整；单提交单主题。
+
+## 语言
+
+- 与用户相关的**自然语言**（最终回复、说明、解释、PR 描述等）一律使用**简体中文**。
+- **思考过程**（内部推理、步骤拆解、自检清单等）也一律使用**简体中文**，与用户语言一致。
+
+## 对 Agent 的指令
+
+- 交付前对照 `docs/FRONTEND_STANDARDS.md` 自检。
+- 说明 PR 时写清：做了什么、如何自测、有无风险。
+- 不删除「与本次任务无关」的注释或代码。
