@@ -95,12 +95,12 @@ const toggleMode = () => {
 
 .login-modal {
   position: relative;
-  background: #fff;
+  background: var(--auxiliary-1);
   border-radius: $radius-lg;
   width: 440px;
   max-width: 90vw;
   padding: 48px 40px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 
   @include mobile-only {
     padding: 32px 20px;
@@ -114,19 +114,19 @@ const toggleMode = () => {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: #f5f5f5;
+    background: var(--surface-tint);
     border: none;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 14px;
-    color: #999;
+    color: var(--theme-text-1);
     transition: all 0.2s;
 
     &:hover {
-      background: #eee;
-      color: #333;
+      background: var(--theme-divider);
+      color: var(--theme-text);
     }
   }
 
@@ -187,13 +187,13 @@ const toggleMode = () => {
     padding: 0 $spacing-lg;
     font-size: $font-size-base;
     color: var(--theme-text);
-    background: #FAFBFD;
+    background: var(--surface-tint);
     outline: none;
     transition: border-color 0.2s;
 
     &:focus {
       border-color: var(--theme-primary);
-      background: #fff;
+      background: var(--auxiliary-1);
     }
 
     &::placeholder {

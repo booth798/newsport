@@ -272,8 +272,8 @@ const closeBuyPanel = () => {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: #F0F7FF;
-  border: 1px solid #E4F0FE;
+  background: var(--surface-tint);
+  border: 1px solid var(--theme-divider);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -411,14 +411,14 @@ const closeBuyPanel = () => {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: #f5f5f5;
+    background: var(--surface-tint);
     border: none;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 14px;
-    color: #999;
+    color: var(--theme-text-1);
   }
 
   &__type {

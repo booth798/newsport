@@ -347,7 +347,7 @@ defineProps({
     }
 
     &--away {
-      background: #E1E9F3;
+      background: var(--theme-divider);
       color: var(--theme-text);
     }
   }

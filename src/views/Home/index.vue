@@ -307,7 +307,7 @@ const prevBanner = () => {
 
     &.active {
       width: 28px;
-      background: #fff;
+      background: var(--auxiliary-1);
     }
   }
 }
