@@ -1,12 +1,42 @@
-$font-family-base: 'Avenir Next', 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
-$font-family-heading: 'DIN Alternate', 'Avenir Next Condensed', 'PingFang SC', sans-serif;
+// Figma 设计规范指定字体：思源黑体（Source Han Sans SC）+ DIN Pro
+$font-family-base: 'Source Han Sans SC', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+$font-family-num: 'DIN Pro', 'DIN Alternate', 'Helvetica Neue', Arial, sans-serif;
 
 // 设计稿基准：
 // 1. 移动端以 375 稿为准
-// 2. Web 端以 1440 稿为准
+// 2. Web 端以 1440 稿为准，最大 1920
 // 项目只保留一条分界线：<= 750 视为移动端，> 750 视为 Web 端。
 $screen-mobile-max: 750px;
 $screen-web-min: 751px;
 
+// PC 端内容区约束
+$web-content-max: 1200px;
+$web-page-max: 1920px;
+
 $web-header-height: 120px;
 $mobile-header-height: 64px;
+
+// 间距系统（8px 基础网格）
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 12px;
+$spacing-lg: 16px;
+$spacing-xl: 20px;
+$spacing-2xl: 24px;
+$spacing-3xl: 32px;
+$spacing-4xl: 40px;
+
+// 字号层级
+$font-size-xs: 10px;
+$font-size-sm: 12px;
+$font-size-md: 14px;
+$font-size-base: 16px;
+$font-size-lg: 18px;
+$font-size-xl: 20px;
+
+// 圆角
+$radius-sm: 6px;
+$radius-md: 12px;
+$radius-lg: 16px;
+$radius-xl: 32px;
+$radius-pill: 9999px;

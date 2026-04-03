@@ -1,5 +1,7 @@
 <script setup>
 import Header from '@/components/Header.vue';
+import Footer from '@/components/Footer.vue';
+import FloatingService from '@/components/FloatingService.vue';
 
 import { onBeforeUnmount, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
@@ -57,5 +59,15 @@ onBeforeUnmount(() => {
 
 <template>
   <Header />
-  <RouterView />
+  <main class="main-content">
+    <RouterView />
+  </main>
+  <Footer />
+  <FloatingService />
 </template>
+
+<style lang="scss" scoped>
+.main-content {
+  min-height: calc(100vh - 120px - 180px);
+}
+</style>

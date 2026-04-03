@@ -1,4 +1,99 @@
 export default {
+  // Navigation
   首页: 'Home',
+  市场: 'Market',
+  交易账务: 'Finance',
+  会员服务: 'Membership',
+  我的权益: 'My Benefits',
+
+  // Home
   进入市场: 'Enter Market',
+  热门赛事: 'Hot Events',
+  公告: 'Announcement',
+  查看更多: 'View More',
+  暂无数据: 'No Data',
+  加载中: 'Loading...',
+
+  // Banner
+  立即参与: 'Join Now',
+
+  // Login
+  登录: 'Login',
+  注册: 'Register',
+  请输入账号: 'Enter account',
+  请输入密码: 'Enter password',
+  忘记密码: 'Forgot password?',
+  还没有账号: "Don't have an account?",
+  立即注册: 'Register now',
+
+  // Market
+  全场赛果: 'Full-time Result',
+  半场赛果: 'Half-time Result',
+  一般买入: 'Standard Buy',
+  预约买入: 'Scheduled Buy',
+  交易成功: 'Trade Successful',
+  买入明细: 'Buy Details',
+  已下单: 'Ordered',
+  预约中: 'Scheduled',
+  主队: 'Home',
+  客队: 'Away',
+  赔率: 'Odds',
+  买入金额: 'Buy Amount',
+  确认买入: 'Confirm Buy',
+  取消: 'Cancel',
+  确认: 'Confirm',
+
+  // Finance
+  充值: 'Deposit',
+  提领: 'Withdraw',
+  交易记录: 'Records',
+  充值金额: 'Deposit Amount',
+  请输入充值金额: 'Enter deposit amount',
+  提领金额: 'Withdraw Amount',
+  请输入提领金额: 'Enter withdraw amount',
+  可用余额: 'Available Balance',
+  提交: 'Submit',
+  全部: 'All',
+
+  // Profile
+  我的: 'My',
+  个人资料: 'Profile',
+  消息中心: 'Messages',
+  实名认证: 'Verification',
+  安全设置: 'Security',
+  绑定信息: 'Linked Accounts',
+  退出登录: 'Logout',
+  头像: 'Avatar',
+  昵称: 'Nickname',
+  手机号: 'Phone',
+  修改登入密码: 'Change Login Password',
+  修改提现密码: 'Change Withdraw Password',
+  当前密码: 'Current Password',
+  新密码: 'New Password',
+  确认新密码: 'Confirm New Password',
+  银行卡: 'Bank Card',
+  区块链: 'Blockchain',
+  钱包类型: 'Wallet Type',
+  钱包地址: 'Wallet Address',
+  已通过: 'Verified',
+  未认证: 'Unverified',
+  审核中: 'Under Review',
+  真实姓名: 'Full Name',
+  身份证号: 'ID Number',
+  请输入真实姓名: 'Enter full name',
+  请输入身份证号: 'Enter ID number',
+  保存: 'Save',
+
+  // Footer
+  关于我们: 'About Us',
+  联系我们: 'Contact Us',
+  帮助中心: 'Help Center',
+  服务条款: 'Terms of Service',
+  隐私政策: 'Privacy Policy',
+  版权所有: 'All Rights Reserved',
+
+  // Common
+  返回: 'Back',
+  确定退出登录吗: 'Are you sure to logout?',
+  在线客服: 'Support',
 };

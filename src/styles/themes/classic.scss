@@ -8,19 +8,26 @@ html.classic {
   --theme-text: #0B3462; // 主文字
   --theme-text-1: #0B346280; // 次文字
   --theme-divider: #E4F0FE; // 分割线
-  --auxiliary-1: #FFFFFF; // 辅助色1
-  --auxiliary-2: #FF2D2D; // 辅助色2
-  --auxiliary-3: #FB5C0D; // 辅助色3
+  --auxiliary-1: #FFFFFF; // 辅助色1（白色/卡片表面）
+  --auxiliary-2: #FF2D2D; // 辅助色2（红色状态）
+  --auxiliary-3: #FB5C0D; // 辅助色3（橙色状态）
+
+  --surface-tint: #F0F7FF; // 浅色调背景（i18n选择器、标签等）
+  --surface-card: #EAF1F9; // 卡片主背景
+  --border-light: #D6E0EB; // 浅色边框
+  --text-nav: #171E24; // 导航文字色
+  --shadow-card: 0px 3px 8px 0px rgba(21, 58, 119, 0.1); // 卡片阴影
+  --shadow-primary-btn: 0px 2px 6px 0px rgba(28, 123, 255, 0.3); // 主按钮阴影
 
   // 主卡片背景颜色
   .card-primary {
-    background: #EAF1F9;
+    background: var(--surface-card);
     border: 0.8px solid var(--auxiliary-1);
   }
   // 次卡片背景颜色
   .card-default {
     background: var(--auxiliary-1);
-    box-shadow: 0px 3px 8px 0px #153A771A;
+    box-shadow: var(--shadow-card);
   }
   .btn {
     border-radius: 32px;
@@ -36,7 +43,7 @@ html.classic {
       color: var(--auxiliary-1);
       border: 0.8px solid;
       border-image-source: linear-gradient(101.26deg, #FFFFFF 0%, rgba(255, 255, 255, 0.6) 16.38%, rgba(255, 255, 255, 0.02) 79.58%);
-      box-shadow: 0px 2px 6px 0px #1C7BFF4D;
+      box-shadow: var(--shadow-primary-btn);
       position: relative;
     }
 
