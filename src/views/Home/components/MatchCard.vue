@@ -18,8 +18,8 @@ defineProps({
       <div class="match-card__league">
         <div class="match-card__league-icon">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <circle cx="9" cy="9" r="8" stroke="#E1E9F3" stroke-width="0.5" fill="#fff"/>
-            <circle cx="9" cy="9" r="5" fill="#006BFF" fill-opacity="0.15"/>
+            <circle cx="9" cy="9" r="8" stroke="#E1E9F3" stroke-width="0.5" fill="#fff" />
+            <circle cx="9" cy="9" r="5" fill="#006BFF" fill-opacity="0.15" />
           </svg>
         </div>
         <span class="match-card__league-name">{{ match.league }}</span>
@@ -48,8 +48,9 @@ defineProps({
         <div class="match-card__team">
           <div class="match-card__team-logo">
             <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
-              <circle cx="17" cy="17" r="15" fill="#F0F7FF" stroke="#E4F0FE" stroke-width="0.5"/>
-              <text x="17" y="21" text-anchor="middle" fill="#1C7BFF" font-size="12" font-weight="600">{{ match.homeTeam.charAt(0) }}</text>
+              <circle cx="17" cy="17" r="15" fill="#F0F7FF" stroke="#E4F0FE" stroke-width="0.5" />
+              <text x="17" y="21" text-anchor="middle" fill="#1C7BFF" font-size="12" font-weight="600">{{
+                match.homeTeam.charAt(0) }}</text>
             </svg>
           </div>
           <span class="match-card__team-name">{{ match.homeTeam }}</span>
@@ -64,8 +65,9 @@ defineProps({
         <div class="match-card__team">
           <div class="match-card__team-logo">
             <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
-              <circle cx="17" cy="17" r="15" fill="#F0F7FF" stroke="#E4F0FE" stroke-width="0.5"/>
-              <text x="17" y="21" text-anchor="middle" fill="#1C7BFF" font-size="12" font-weight="600">{{ match.awayTeam.charAt(0) }}</text>
+              <circle cx="17" cy="17" r="15" fill="#F0F7FF" stroke="#E4F0FE" stroke-width="0.5" />
+              <text x="17" y="21" text-anchor="middle" fill="#1C7BFF" font-size="12" font-weight="600">{{
+                match.awayTeam.charAt(0) }}</text>
             </svg>
           </div>
           <span class="match-card__team-name">{{ match.awayTeam }}</span>

@@ -82,32 +82,19 @@ const markets = ref([
       <div class="market-page__header">
         <h2 class="market-page__title">{{ t('市场') }}</h2>
         <div class="market-tabs">
-          <button
-            v-for="tab in tabs"
-            :key="tab.key"
-            class="market-tab"
-            :class="{ active: activeTab === tab.key }"
-            @click="activeTab = tab.key"
-          >
+          <button v-for="tab in tabs" :key="tab.key" class="market-tab" :class="{ active: activeTab === tab.key }"
+            @click="activeTab = tab.key">
             {{ tab.label }}
           </button>
         </div>
       </div>
 
       <div class="market-list">
-        <RouterLink
-          v-for="item in markets"
-          :key="item.id"
-          :to="`/market/${item.id}`"
-          class="market-item card-default"
-        >
+        <RouterLink v-for="item in markets" :key="item.id" :to="`/market/${item.id}`" class="market-item card-default">
           <div class="market-item__top">
             <span class="market-item__league">{{ item.league }}</span>
             <span class="market-item__date">{{ item.date }}</span>
-            <span
-              class="market-item__status"
-              :class="{ live: item.status === 'live' }"
-            >
+            <span class="market-item__status" :class="{ live: item.status === 'live' }">
               {{ item.status === 'live' ? 'LIVE' : '未开赛' }}
             </span>
           </div>
@@ -368,7 +355,14 @@ const markets = ref([
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
 }
 </style>

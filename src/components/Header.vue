@@ -98,6 +98,7 @@ const toggleLocale = () => {
   @include web-only {
     padding-top: 30px;
     height: $web-header-height;
+    margin-bottom: 10px;
 
     .card-primary {
       height: 80px;

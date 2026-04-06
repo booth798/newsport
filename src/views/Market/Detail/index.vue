@@ -81,37 +81,21 @@ const closeBuyPanel = () => {
 
       <!-- 赛果切换 -->
       <div class="result-tabs">
-        <button
-          class="result-tab"
-          :class="{ active: activeTab === 'fulltime' }"
-          @click="activeTab = 'fulltime'"
-        >
+        <button class="result-tab" :class="{ active: activeTab === 'fulltime' }" @click="activeTab = 'fulltime'">
           {{ t('全场赛果') }}
         </button>
-        <button
-          class="result-tab"
-          :class="{ active: activeTab === 'halftime' }"
-          @click="activeTab = 'halftime'"
-        >
+        <button class="result-tab" :class="{ active: activeTab === 'halftime' }" @click="activeTab = 'halftime'">
           {{ t('半场赛果') }}
         </button>
       </div>
 
       <!-- 赔率列表 -->
       <div class="odds-list">
-        <div
-          v-for="item in currentResults"
-          :key="item.label"
-          class="odds-card card-default"
-          :class="{ selected: selectedOdds === item }"
-          @click="selectOdds(item)"
-        >
+        <div v-for="item in currentResults" :key="item.label" class="odds-card card-default"
+          :class="{ selected: selectedOdds === item }" @click="selectOdds(item)">
           <span class="odds-card__label">{{ item.label }}</span>
           <span class="odds-card__value">{{ item.odds.toFixed(2) }}</span>
-          <span
-            class="odds-card__trend"
-            :class="item.trend"
-          >
+          <span class="odds-card__trend" :class="item.trend">
             {{ item.trend === 'up' ? '↑' : item.trend === 'down' ? '↓' : '→' }}
           </span>
         </div>
@@ -128,30 +112,17 @@ const closeBuyPanel = () => {
           </div>
 
           <div class="buy-panel__type">
-            <button
-              class="type-btn"
-              :class="{ active: buyType === 'standard' }"
-              @click="buyType = 'standard'"
-            >
+            <button class="type-btn" :class="{ active: buyType === 'standard' }" @click="buyType = 'standard'">
               {{ t('一般买入') }}
             </button>
-            <button
-              class="type-btn"
-              :class="{ active: buyType === 'scheduled' }"
-              @click="buyType = 'scheduled'"
-            >
+            <button class="type-btn" :class="{ active: buyType === 'scheduled' }" @click="buyType = 'scheduled'">
               {{ t('预约买入') }}
             </button>
           </div>
 
           <div class="buy-panel__amount">
             <label class="form-label">{{ t('买入金额') }}</label>
-            <input
-              v-model="buyAmount"
-              type="number"
-              class="form-input"
-              placeholder="0.00"
-            />
+            <input v-model="buyAmount" type="number" class="form-input" placeholder="0.00" />
           </div>
 
           <div class="buy-panel__actions">
@@ -378,9 +349,17 @@ const closeBuyPanel = () => {
   &__trend {
     font-size: $font-size-base;
 
-    &.up { color: var(--auxiliary-2); }
-    &.down { color: #16a34a; }
-    &.stable { color: var(--theme-text-1); }
+    &.up {
+      color: var(--auxiliary-2);
+    }
+
+    &.down {
+      color: #16a34a;
+    }
+
+    &.stable {
+      color: var(--theme-text-1);
+    }
   }
 }
 
