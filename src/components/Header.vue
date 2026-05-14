@@ -1,53 +1,89 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
-import arrowDownIcon from '@/assets/images/common/arrow_down.svg';
-import arrowDownPrimaryIcon from '@/assets/images/common/arrow_down_primary.svg';
+import iconAnnouncement from '@/assets/images/common/icon_announcement.svg';
+import navCollapsedIcon from '@/assets/images/common/icon_nav_collapsed.svg';
+import navExpandedIcon from '@/assets/images/common/icon_nav_expanded.svg';
 import i18nCnIcon from '@/assets/images/common/i18n_cn.svg';
 import i18nCnUnselected from '@/assets/images/common/i18n_cn_unselected.svg';
+import i18nCnHover from '@/assets/images/common/icon_cn_hover.svg';
 import i18nEnIcon from '@/assets/images/common/i18n_en.svg';
 import i18nEnUnselected from '@/assets/images/common/i18n_en_unselected.svg';
+import i18nEnHover from '@/assets/images/common/icon_en_hover.svg';
 import logoUrl from '@/assets/images/common/logo_nav.svg';
 import navbarHomeIcon from '@/assets/images/common/navbar_home.svg';
 import navbarHomeMutedIcon from '@/assets/images/common/navbar_home_muted.svg';
 import loginIconUrl from '@/assets/images/common/icon_login.svg?url';
 import moreIconUrl from '@/assets/images/common/icon_more.svg?url';
+import avatarDefaultUrl from '@/assets/images/common/avatar_default.png?url';
 import { useAppStore } from '@/store/modules/app';
+
+import iconAboutUnibet from '@/assets/images/menu/icon_about_unibet.svg';
+import iconLiveScores from '@/assets/images/menu/icon_live_scores.svg';
+import iconMarketList from '@/assets/images/menu/icon_market_list.svg';
+import iconMatchResults from '@/assets/images/menu/icon_match_results.svg';
+import iconMy from '@/assets/images/menu/icon_my.svg';
+import iconPersonalProfile from '@/assets/images/menu/icon_personal_profile.svg';
+import iconPurchaseDetails from '@/assets/images/menu/icon_purchase_details.svg';
+import iconRulesDescription from '@/assets/images/menu/icon_rules_description.svg';
+import iconSettings from '@/assets/images/menu/icon_settings.svg';
+import iconTransactionRecords from '@/assets/images/menu/icon_transaction_records.svg';
+import iconVipRules from '@/assets/images/menu/icon_vip_rules.svg';
 
 const { t } = useI18n();
 
 const appStore = useAppStore();
 const route = useRoute();
-const { isMobile, locale } = storeToRefs(appStore);
+const { isMobile, locale, isLoggedIn, loggedInUserId, loggedInAssetsFormatted } = storeToRefs(appStore);
 
-const cnIconSrc = computed(() =>
-  locale.value === 'zh-CN' ? i18nCnIcon : i18nCnUnselected,
-);
-const enIconSrc = computed(() =>
-  locale.value === 'en-US' ? i18nEnIcon : i18nEnUnselected,
-);
+const i18nCnBtnHover = ref(false);
+const i18nEnBtnHover = ref(false);
+const hoverOpenKey = ref(null);
+
+const cnIconSrc = computed(() => {
+  if (locale.value === 'zh-CN') return i18nCnIcon;
+  if (i18nCnBtnHover.value) return i18nCnHover;
+  return i18nCnUnselected;
+});
+const enIconSrc = computed(() => {
+  if (locale.value === 'en-US') return i18nEnIcon;
+  if (i18nEnBtnHover.value) return i18nEnHover;
+  return i18nEnUnselected;
+});
+
+const navMenus = {
+  market: [
+    { labelKey: '市场列表', to: '/market', icon: iconMarketList },
+    { labelKey: '赛事结果', to: '/market', icon: iconMatchResults },
+    { labelKey: '即时比分', to: '/market', icon: iconLiveScores },
+  ],
+  trade: [
+    { labelKey: '买入明细', to: '/finance/deposit', icon: iconPurchaseDetails },
+    { labelKey: '交易记录', to: '/finance/records', icon: iconTransactionRecords },
+  ],
+  member: [
+    { labelKey: '公告', to: { path: '/', hash: '#home-announcement' }, icon: iconAnnouncement },
+    { labelKey: 'VIP规则', to: '/', icon: iconVipRules },
+    { labelKey: '规则说明', to: '/', icon: iconRulesDescription },
+    { labelKey: '关于UNIBET', to: '/', icon: iconAboutUnibet },
+  ],
+  myBenefit: [
+    { labelKey: '我的', to: '/profile', icon: iconMy },
+    { labelKey: '个人资料', to: '/profile/info', icon: iconPersonalProfile },
+    { labelKey: '设置', to: '/profile/security', icon: iconSettings },
+  ],
+};
 
 const navbarList = [
-  { labelKey: '首页', key: 'home', width: 104 },
-  { labelKey: '市场', key: 'market', width: 104 },
-  { labelKey: '交易账务', key: 'trade', width: 124 },
-  { labelKey: '会员服务', key: 'member', width: 124 },
-  { labelKey: '我的权益', key: 'myBenefit', width: 124 },
+  { kind: 'plain', labelKey: '首页', key: 'home', width: 104, to: '/' },
+  { kind: 'dropdown', labelKey: '市场', key: 'market', width: 104, to: '/market', menuKey: 'market' },
+  { kind: 'dropdown', labelKey: '交易账务', key: 'trade', width: 124, to: '/finance/deposit', menuKey: 'trade' },
+  { kind: 'dropdown', labelKey: '会员服务', key: 'member', width: 124, to: '/', menuKey: 'member' },
+  { kind: 'dropdown', labelKey: '我的权益', key: 'myBenefit', width: 124, to: '/profile', menuKey: 'myBenefit' },
 ];
-
-const navTo = (item) => {
-  const paths = {
-    home: '/',
-    market: '/market',
-    trade: '/finance/deposit',
-    member: '/profile',
-    myBenefit: '/profile',
-  };
-  return paths[item.key] ?? '/';
-};
 
 const isNavActive = (item) => {
   if (item.key === 'home') return route.name === 'home';
@@ -55,8 +91,28 @@ const isNavActive = (item) => {
     return route.name === 'market' || route.name === 'market-detail';
   }
   if (item.key === 'trade') return route.path.startsWith('/finance');
-  if (item.key === 'member') return route.path.startsWith('/profile');
-  if (item.key === 'myBenefit') return false;
+  if (item.key === 'member') return false;
+  if (item.key === 'myBenefit') return route.path.startsWith('/profile');
+  return false;
+};
+
+const isNavEntryActive = (item) => hoverOpenKey.value === item.key || isNavActive(item);
+
+const navArrowSrc = (item) => (hoverOpenKey.value === item.key ? navExpandedIcon : navCollapsedIcon);
+
+const isSubmenuLinkActive = (sub) => {
+  const to = sub.to;
+  if (typeof to === 'object' && to != null && 'path' in to) {
+    const hash = to.hash ?? '';
+    return route.path === to.path && (route.hash || '') === hash;
+  }
+  if (to === '/market') return route.name === 'market' || route.name === 'market-detail';
+  if (to === '/finance/deposit') return route.name === 'finance-deposit';
+  if (to === '/finance/records') return route.name === 'finance-records';
+  if (to === '/profile') return route.name === 'profile-home';
+  if (to === '/profile/info') return route.name === 'profile-info';
+  if (to === '/profile/security') return route.name === 'profile-security';
+  if (to === '/') return false;
   return false;
 };
 </script>
@@ -66,50 +122,104 @@ const isNavActive = (item) => {
     <div class="card-primary norem">
       <img class="logo" :src="logoUrl" alt="logo" />
       <div class="navbar" v-if="!isMobile">
-        <RouterLink
-          v-for="item in navbarList"
-          :key="item.key"
-          :to="navTo(item)"
-          custom
-          v-slot="{ navigate, href }"
-        >
-          <a
-            :href="href"
-            class="navbar-item"
-            :class="{ active: isNavActive(item) }"
-            :style="{ width: `${item.width}px` }"
-            @click="navigate"
+        <template v-for="item in navbarList" :key="item.key">
+          <RouterLink
+            v-if="item.kind === 'plain'"
+            :to="item.to"
+            custom
+            v-slot="{ navigate, href }"
           >
-            <img
-              v-if="item.key === 'home'"
-              class="navbar-item-icon"
-              :src="isNavActive(item) ? navbarHomeIcon : navbarHomeMutedIcon"
-              alt=""
-            />
-            <span class="navbar-item__label">{{ t(item.labelKey) }}</span>
-            <img
-              v-if="item.key !== 'home'"
-              class="arrow-icon"
-              :src="isNavActive(item) ? arrowDownPrimaryIcon : arrowDownIcon"
-              alt=""
-            />
-          </a>
-        </RouterLink>
+            <a
+              :href="href"
+              class="navbar-item navbar-item--plain"
+              :class="{ active: isNavActive(item) }"
+              :style="{ width: `${item.width}px` }"
+              @click="navigate"
+            >
+              <img
+                class="navbar-item-icon"
+                :src="isNavActive(item) ? navbarHomeIcon : navbarHomeMutedIcon"
+                alt=""
+              />
+              <span class="navbar-item__label">{{ t(item.labelKey) }}</span>
+            </a>
+          </RouterLink>
+
+          <div
+            v-else
+            class="navbar-item-wrap"
+            :style="{ width: `${item.width}px` }"
+            @mouseenter="hoverOpenKey = item.key"
+            @mouseleave="hoverOpenKey = null"
+          >
+            <RouterLink :to="item.to" custom v-slot="{ navigate, href }">
+              <a
+                :href="href"
+                class="navbar-item"
+                :class="{ active: isNavEntryActive(item) }"
+                @click="navigate"
+              >
+                <span class="navbar-item__label">{{ t(item.labelKey) }}</span>
+                <img class="arrow-icon" :src="navArrowSrc(item)" alt="" />
+              </a>
+            </RouterLink>
+            <div v-show="hoverOpenKey === item.key" class="navbar-dropdown-shell">
+              <div class="navbar-dropdown" role="menu">
+                <RouterLink
+                  v-for="sub in navMenus[item.menuKey]"
+                  :key="sub.labelKey"
+                  :to="sub.to"
+                  custom
+                  v-slot="{ navigate, href }"
+                >
+                  <a
+                    :href="href"
+                    class="navbar-dropdown__row"
+                    :class="{ 'is-active': isSubmenuLinkActive(sub) }"
+                    role="menuitem"
+                    @click="navigate"
+                  >
+                    <img class="navbar-dropdown__icon" :src="sub.icon" alt="" />
+                    <span class="navbar-dropdown__label">{{ t(sub.labelKey) }}</span>
+                  </a>
+                </RouterLink>
+              </div>
+            </div>
+          </div>
+        </template>
       </div>
       <div v-if="isMobile" class="header-mobile-actions">
-        <button type="button" class="header-mobile-btn" :aria-label="t('登录')">
-          <img class="header-mobile-btn__img" :src="loginIconUrl" alt="" />
-        </button>
-        <button type="button" class="header-mobile-btn" :aria-label="t('菜单')">
-          <img class="header-mobile-btn__img" :src="moreIconUrl" alt="" />
-        </button>
+        <template v-if="isLoggedIn">
+          <RouterLink
+            to="/profile"
+            class="header-mobile-avatar"
+            :aria-label="loggedInUserId ? `${t('我的')} (${loggedInUserId})` : t('我的')"
+          >
+            <img class="header-mobile-avatar__img" :src="avatarDefaultUrl" alt="" />
+          </RouterLink>
+          <button type="button" class="header-mobile-btn" :aria-label="t('菜单')">
+            <img class="header-mobile-btn__img" :src="moreIconUrl" alt="" />
+          </button>
+        </template>
+        <template v-else>
+          <button type="button" class="header-mobile-btn" :aria-label="t('登录')" @click="appStore.openLoginModal">
+            <img class="header-mobile-btn__img" :src="loginIconUrl" alt="" />
+          </button>
+          <button type="button" class="header-mobile-btn" :aria-label="t('菜单')">
+            <img class="header-mobile-btn__img" :src="moreIconUrl" alt="" />
+          </button>
+        </template>
       </div>
-      <div v-else class="header-toolbar">
+      <div v-else class="header-toolbar" :class="{ 'header-toolbar--member': isLoggedIn }">
         <div class="i18n-select">
           <button
             type="button"
             class="i18n-select__btn"
             :aria-pressed="locale === 'zh-CN'"
+            @mouseenter="i18nCnBtnHover = true"
+            @mouseleave="i18nCnBtnHover = false"
+            @focus="i18nCnBtnHover = true"
+            @blur="i18nCnBtnHover = false"
             @click="appStore.setLocale('zh-CN')"
           >
             <img class="i18n-icon" :src="cnIconSrc" alt="中文" />
@@ -118,20 +228,47 @@ const isNavActive = (item) => {
             type="button"
             class="i18n-select__btn"
             :aria-pressed="locale === 'en-US'"
+            @mouseenter="i18nEnBtnHover = true"
+            @mouseleave="i18nEnBtnHover = false"
+            @focus="i18nEnBtnHover = true"
+            @blur="i18nEnBtnHover = false"
             @click="appStore.setLocale('en-US')"
           >
             <img class="i18n-icon" :src="enIconSrc" alt="English" />
           </button>
         </div>
-        <a href="#" class="header-forgot" @click.prevent>{{ t('忘记密码') }}</a>
-        <div class="header-round-group">
-          <button type="button" class="header-round-btn" :aria-label="t('登录')">
-            <img class="header-round-btn__img" :src="loginIconUrl" alt="" />
-          </button>
+
+        <template v-if="isLoggedIn">
+          <div class="header-user-strip" role="group" :aria-label="loggedInUserId">
+            <img
+              class="header-user-strip__avatar"
+              :src="avatarDefaultUrl"
+              width="40"
+              height="40"
+              alt=""
+            />
+            <span class="header-user-strip__id">{{ loggedInUserId }}</span>
+            <div class="header-user-strip__assets">
+              <span class="header-user-strip__assets-label">{{ t('总资产') }}</span>
+              <span class="header-user-strip__assets-value">{{ loggedInAssetsFormatted }}</span>
+            </div>
+          </div>
           <button type="button" class="header-round-btn" :aria-label="t('菜单')">
             <img class="header-round-btn__img" :src="moreIconUrl" alt="" />
           </button>
-        </div>
+        </template>
+
+        <template v-else>
+          <a href="#" class="header-forgot" @click.prevent>{{ t('忘记密码') }}</a>
+          <div class="header-round-group">
+            <button type="button" class="header-round-btn" :aria-label="t('登录')" @click="appStore.openLoginModal">
+              <img class="header-round-btn__img" :src="loginIconUrl" alt="" />
+            </button>
+            <button type="button" class="header-round-btn" :aria-label="t('菜单')">
+              <img class="header-round-btn__img" :src="moreIconUrl" alt="" />
+            </button>
+          </div>
+        </template>
       </div>
     </div>
   </div>
@@ -190,6 +327,36 @@ const isNavActive = (item) => {
       margin-left: auto;
     }
 
+    .header-mobile-avatar {
+      flex-shrink: 0;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      border-radius: 50%;
+      border: 1px solid var(--border-light);
+      background: var(--auxiliary-1);
+      text-decoration: none;
+      overflow: hidden;
+      cursor: pointer;
+
+      &:focus-visible {
+        outline: 2px solid var(--theme-primary);
+        outline-offset: 2px;
+      }
+
+      &__img {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: cover;
+        pointer-events: none;
+      }
+    }
+
     .header-mobile-btn {
       flex-shrink: 0;
       border: none;
@@ -202,13 +369,6 @@ const isNavActive = (item) => {
       height: 36px;
       background: transparent;
       border-radius: 50%;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-
-      &:hover,
-      &:focus-visible {
-        transform: translateY(-5px);
-        box-shadow: 0 4px 8px 0 rgba(21, 58, 119, 0.18);
-      }
 
       &:focus-visible {
         outline: 2px solid var(--theme-primary);
@@ -233,6 +393,7 @@ const isNavActive = (item) => {
       height: 80px;
       border-radius: 40px;
       padding: 0 44px;
+      overflow: visible;
 
       .logo {
         width: 100px;
@@ -246,14 +407,103 @@ const isNavActive = (item) => {
         display: flex;
         align-items: center;
         margin-left: 20px;
+        position: relative;
+        z-index: 2;
+        overflow: visible;
+
+        .navbar-item-wrap {
+          position: relative;
+          flex-shrink: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .navbar-dropdown-shell {
+          position: absolute;
+          top: 100%;
+          left: 50%;
+          transform: translateX(-50%);
+          /* 透明热区：衔接主按钮与面板，避免经过缝隙时触发 mouseleave 关掉菜单 */
+          padding-top: 10px;
+          z-index: 20;
+        }
+
+        .navbar-dropdown {
+          position: relative;
+          left: auto;
+          top: auto;
+          transform: none;
+          min-width: 220px;
+          padding: 6px;
+          box-sizing: border-box;
+          background: var(--auxiliary-1);
+          border-radius: 16px;
+          border: 0.8px solid var(--border-light);
+          box-shadow: var(--shadow-card);
+        }
+
+        .navbar-dropdown__row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          box-sizing: border-box;
+          min-height: 40px;
+          height: 40px;
+          padding: 0 12px;
+          border-radius: 12px;
+          text-decoration: none;
+          color: #171e24;
+          font-size: 15px;
+          font-weight: 400;
+          line-height: 1;
+          cursor: pointer;
+          transition:
+            background-color 0.15s ease,
+            color 0.15s ease;
+
+          &:hover {
+            background: var(--surface-tint);
+            color: var(--theme-primary);
+          }
+
+          &.is-active {
+            background: rgba(230, 240, 255, 0.85);
+            color: var(--theme-primary);
+            font-weight: 500;
+          }
+
+          &:focus-visible {
+            outline: 2px solid var(--theme-primary);
+            outline-offset: 0;
+            border-radius: 12px;
+          }
+        }
+
+        .navbar-dropdown__icon {
+          width: 20px;
+          height: 20px;
+          flex-shrink: 0;
+          display: block;
+          object-fit: contain;
+        }
+
+        .navbar-dropdown__label {
+          flex: 1;
+          min-width: 0;
+        }
 
         .navbar-item {
           display: inline-flex;
           align-items: center;
           justify-content: center;
           box-sizing: border-box;
-          padding: 0;
-          min-height: 24px;
+          width: 100%;
+          min-height: 48px;
+          height: 48px;
+          padding: 0 12px;
+          border: 1px solid transparent;
+          border-radius: 38px;
           font-size: 17px;
           font-weight: 400;
           line-height: 1;
@@ -263,6 +513,12 @@ const isNavActive = (item) => {
           cursor: pointer;
           white-space: nowrap;
           gap: 8px;
+          transition:
+            opacity 0.15s ease,
+            color 0.15s ease,
+            border-color 0.15s ease,
+            background-color 0.15s ease,
+            box-shadow 0.15s ease;
 
           &__label {
             display: inline-block;
@@ -278,18 +534,38 @@ const isNavActive = (item) => {
           }
 
           .arrow-icon {
-            width: 10px;
-            height: 6px;
+            width: 14px;
+            height: 14px;
             flex-shrink: 0;
             display: block;
             line-height: 0;
-            /* 与中文 17px 混排时，箭头视觉中心略偏上，略下移对齐 */
-            transform: translateY(2px);
+            transform: translateY(1px);
           }
 
           &.active {
             opacity: 1;
             font-weight: 500;
+            color: var(--theme-primary);
+            border-color: #1f7cff;
+            background: var(--surface-tint);
+            box-shadow: var(--shadow-card);
+          }
+
+          &:focus-visible {
+            outline: 2px solid var(--theme-primary);
+            outline-offset: 2px;
+          }
+        }
+
+        .navbar-item--plain {
+          border-color: transparent;
+          background: transparent;
+          box-shadow: none;
+
+          &.active {
+            border-color: transparent;
+            background: transparent;
+            box-shadow: none;
             color: var(--theme-primary);
           }
         }
@@ -301,6 +577,75 @@ const isNavActive = (item) => {
         align-items: center;
         flex-shrink: 0;
         gap: 0;
+
+        &--member {
+          gap: 16px;
+        }
+      }
+
+      .header-user-strip {
+        display: flex;
+        align-items: center;
+        flex: 1 1 auto;
+        min-width: 0;
+        max-width: min(440px, 46vw);
+        height: 48px;
+        box-sizing: border-box;
+        padding: 4px 8px 4px 4px;
+        gap: 10px;
+        background: #ffffff;
+        border: 1px solid var(--border-light);
+        border-radius: 38px;
+        box-shadow: 0 1px 10px rgba(13, 108, 251, 0.1);
+      }
+
+      .header-user-strip__avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        flex-shrink: 0;
+      }
+
+      .header-user-strip__id {
+        flex-shrink: 0;
+        font-size: 16px;
+        font-weight: 500;
+        color: rgba(11, 52, 98, 0.58);
+        line-height: 1.2;
+        max-width: 128px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .header-user-strip__assets {
+        margin-left: auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+        padding: 5px 14px 5px 12px;
+        border-radius: 28px;
+        background: rgba(228, 240, 254, 0.98);
+        border: 0.8px solid rgba(13, 108, 251, 0.14);
+        min-width: 0;
+      }
+
+      .header-user-strip__assets-label {
+        font-size: 13px;
+        font-weight: 500;
+        color: rgba(11, 52, 98, 0.48);
+        white-space: nowrap;
+      }
+
+      .header-user-strip__assets-value {
+        font-family: $font-family-num, $font-family-base;
+        font-size: 16px;
+        font-weight: 700;
+        color: #0d6cfb;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
       }
 
       .i18n-select {
@@ -315,6 +660,15 @@ const isNavActive = (item) => {
         background: var(--surface-tint);
         border: 1px solid var(--border-light);
         border-radius: 38px;
+        transition:
+          box-shadow 0.2s ease,
+          border-color 0.2s ease;
+
+        &:hover,
+        &:focus-within {
+          box-shadow: 0 2px 14px rgba(28, 123, 255, 0.14);
+          border-color: rgba(214, 224, 235, 0.9);
+        }
 
         &__btn {
           display: flex;
@@ -325,6 +679,22 @@ const isNavActive = (item) => {
           background: transparent;
           cursor: pointer;
           border-radius: 50%;
+          flex: 1;
+          min-width: 0;
+          transition: background-color 0.2s ease;
+
+          &[aria-pressed='false']:hover {
+            background: #e6f0ff;
+          }
+
+          &:focus-visible {
+            outline: 2px solid var(--theme-primary);
+            outline-offset: 2px;
+          }
+
+          &[aria-pressed='false']:focus-visible {
+            background: #e6f0ff;
+          }
         }
 
         .i18n-icon {
@@ -345,9 +715,17 @@ const isNavActive = (item) => {
         text-decoration: none;
         white-space: nowrap;
         cursor: pointer;
+        transition: color 0.2s ease;
 
-        &:hover {
+        &:hover,
+        &:focus-visible {
           color: var(--theme-primary);
+        }
+
+        &:focus-visible {
+          outline: 2px solid var(--theme-primary);
+          outline-offset: 2px;
+          border-radius: 2px;
         }
       }
 
@@ -368,7 +746,9 @@ const isNavActive = (item) => {
         cursor: pointer;
         flex-shrink: 0;
         border-radius: 50%;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        transition:
+          transform 0.2s ease,
+          box-shadow 0.2s ease;
 
         &:hover,
         &:focus-visible {

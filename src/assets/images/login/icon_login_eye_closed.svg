@@ -1,0 +1,15 @@
+<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <mask id="mask_login_eye_closed" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="28" height="28">
+    <rect width="28" height="28" fill="#D9D9D9" />
+  </mask>
+  <g mask="url(#mask_login_eye_closed)">
+    <path
+      d="M21.7261 11.2271C21.7261 11.2271 21.1041 12.5651 19.7497 13.8272M6.86139 11.2271C6.86139 11.2271 7.4834 12.5651 8.83782 13.8272M19.7497 13.8272C19.1545 14.3819 18.4178 14.9219 17.5302 15.3272C16.6152 15.7451 15.5398 16.0198 14.2938 16.0198M14.2938 16.0198C13.0478 16.0198 11.9724 15.7451 11.0573 15.3272M14.2938 16.0198V19.1044M17.5302 15.3272L19.0601 18.7085M19.7497 13.8272L22.2538 16.5969M8.83782 13.8272L6.33789 16.5969M8.83782 13.8272C9.43307 14.3819 10.1698 14.9219 11.0573 15.3272M11.0573 15.3272L9.61092 18.7085"
+      stroke="#0B3462"
+      stroke-opacity="0.5"
+      stroke-width="0.933333"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </g>
+</svg>

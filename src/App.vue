@@ -2,6 +2,7 @@
 import Header from '@/components/Header.vue';
 import Footer from '@/components/Footer.vue';
 import FloatingService from '@/components/FloatingService.vue';
+import LoginModal from '@/components/LoginModal.vue';
 import MobileTabBar from '@/components/MobileTabBar.vue';
 
 import { onBeforeUnmount, onMounted, watch } from 'vue';
@@ -60,6 +61,7 @@ onBeforeUnmount(() => {
   <Footer />
   <MobileTabBar v-if="isMobile" />
   <FloatingService />
+  <LoginModal :visible="appStore.loginModalOpen" @close="appStore.closeLoginModal" />
 </template>
 
 <style lang="scss" scoped>

@@ -11,7 +11,7 @@ defineProps({
 </script>
 
 <template>
-  <section class="announcement-section">
+  <section id="home-announcement" class="announcement-section">
     <div class="announcement">
       <div class="announcement__icon">
         <img class="announcement__icon-img" :src="noticeIconUrl" alt="" />

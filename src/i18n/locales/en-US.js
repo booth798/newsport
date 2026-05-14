@@ -8,6 +8,13 @@ export default {
   交易账务: 'Finance',
   会员服务: 'Membership',
   我的权益: 'My Benefits',
+  市场列表: 'Market List',
+  赛事结果: 'Match Results',
+  即时比分: 'Live Scores',
+  VIP规则: 'VIP Rules',
+  规则说明: 'Rules',
+  关于UNIBET: 'About UNIBET',
+  设置: 'Settings',
 
   // Home
   进入市场: 'Enter Market',
@@ -50,6 +57,12 @@ export default {
   还没有账号: "Don't have an account?",
   已有账号: 'Already have an account?',
   立即注册: 'Register now',
+  记住密码: 'Remember password',
+  总资产: 'Total assets',
+  向右滑动验证: 'Slide to verify',
+  验证成功: 'Verification successful',
+  显示密码: 'Show password',
+  隐藏密码: 'Hide password',
 
   // Market
   全场赛果: 'Full-time Result',

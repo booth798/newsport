@@ -1,29 +1,48 @@
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
+import bannerDefault from '@/assets/images/slide/banner.png';
 import slideLeftIcon from '@/assets/images/common/icon_slide-left.svg';
 import slideLeftHoverIcon from '@/assets/images/common/icon_slide-left_hover.svg';
 import slideRightIcon from '@/assets/images/common/icon_slide-right.svg';
 import slideRightHoverIcon from '@/assets/images/common/icon_slide-right_hover.svg';
 
+/** 轮播图列表：暂为同一张图占 3 屏，便于显示箭头与圆点；后续可替换为不同资源 */
+const bannerSlides = [bannerDefault, bannerDefault, bannerDefault];
+
 const bannerIndex = ref(0);
-const bannerCount = 3;
+const bannerCount = computed(() => bannerSlides.length);
+
+const trackStyle = computed(() => ({
+  transform: `translateX(-${bannerIndex.value * (100 / bannerSlides.length)}%)`,
+  width: `${bannerSlides.length * 100}%`,
+}));
 
 const nextBanner = () => {
-  bannerIndex.value = (bannerIndex.value + 1) % bannerCount;
+  const n = bannerCount.value;
+  if (n <= 1) return;
+  bannerIndex.value = (bannerIndex.value + 1) % n;
 };
 
 const prevBanner = () => {
-  bannerIndex.value = (bannerIndex.value + bannerCount - 1) % bannerCount;
+  const n = bannerCount.value;
+  if (n <= 1) return;
+  bannerIndex.value = (bannerIndex.value + n - 1) % n;
 };
 </script>
 
 <template>
   <section class="home-banner">
     <div class="banner">
-      <div class="banner__slide">
-        <div class="banner__placeholder">
-          UNIBET
+      <div class="banner__slide" :style="{ '--banner-count': bannerCount }">
+        <div class="banner__track" :style="trackStyle">
+          <div
+            v-for="(src, idx) in bannerSlides"
+            :key="idx"
+            class="banner__item"
+          >
+            <img class="banner__img" :src="src" alt="" />
+          </div>
         </div>
       </div>
 
@@ -89,25 +108,28 @@ const prevBanner = () => {
   &__slide {
     width: 100%;
     height: 100%;
+    overflow: hidden;
   }
 
-  &__placeholder {
+  &__track {
+    display: flex;
+    height: 100%;
+    transition: transform 0.35s ease;
+    will-change: transform;
+  }
+
+  &__item {
+    flex: 0 0 calc(100% / var(--banner-count, 1));
+    height: 100%;
+    min-width: 0;
+  }
+
+  &__img {
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, #1a5bc4, #3b8beb, #0b3e8a);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 64px;
-    font-weight: 800;
-    color: rgba(255, 255, 255, 0.15);
-    font-family: $font-family-num;
-    letter-spacing: 16px;
-
-    @include mobile-only {
-      font-size: 28px;
-      letter-spacing: 6px;
-    }
+    display: block;
+    object-fit: cover;
+    object-position: center;
   }
 
   &__arrow {

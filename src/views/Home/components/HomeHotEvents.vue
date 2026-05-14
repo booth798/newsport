@@ -316,10 +316,11 @@ const filteredMatches = computed(() => {
     height: auto;
 
     @include mobile-only {
-      width: 70px;
-      height: 26px;
+      /* 约 170:64，与稿图比例一致；较原 70×26 明显放大，便于点击 */
+      width: 108px;
+      height: auto;
       max-width: none;
-      object-fit: fill;
+      object-fit: contain;
     }
   }
 
