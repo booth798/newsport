@@ -19,6 +19,7 @@ import navbarHomeMutedIcon from '@/assets/images/common/navbar_home_muted.svg';
 import loginIconUrl from '@/assets/images/common/icon_login.svg?url';
 import moreIconUrl from '@/assets/images/common/icon_more.svg?url';
 import avatarDefaultUrl from '@/assets/images/common/avatar_default.png?url';
+import MobileNavDrawer from '@/components/MobileNavDrawer.vue';
 import { useAppStore } from '@/store/modules/app';
 
 import iconAboutUnibet from '@/assets/images/menu/icon_about_unibet.svg';
@@ -42,6 +43,7 @@ const { isMobile, locale, isLoggedIn, loggedInUserId, loggedInAssetsFormatted } 
 const i18nCnBtnHover = ref(false);
 const i18nEnBtnHover = ref(false);
 const hoverOpenKey = ref(null);
+const mobileDrawerOpen = ref(false);
 
 const cnIconSrc = computed(() => {
   if (locale.value === 'zh-CN') return i18nCnIcon;
@@ -197,7 +199,7 @@ const isSubmenuLinkActive = (sub) => {
           >
             <img class="header-mobile-avatar__img" :src="avatarDefaultUrl" alt="" />
           </RouterLink>
-          <button type="button" class="header-mobile-btn" :aria-label="t('菜单')">
+          <button type="button" class="header-mobile-btn" :aria-label="t('菜单')" @click="mobileDrawerOpen = true">
             <img class="header-mobile-btn__img" :src="moreIconUrl" alt="" />
           </button>
         </template>
@@ -205,7 +207,7 @@ const isSubmenuLinkActive = (sub) => {
           <button type="button" class="header-mobile-btn" :aria-label="t('登录')" @click="appStore.openLoginModal">
             <img class="header-mobile-btn__img" :src="loginIconUrl" alt="" />
           </button>
-          <button type="button" class="header-mobile-btn" :aria-label="t('菜单')">
+          <button type="button" class="header-mobile-btn" :aria-label="t('菜单')" @click="mobileDrawerOpen = true">
             <img class="header-mobile-btn__img" :src="moreIconUrl" alt="" />
           </button>
         </template>
@@ -271,6 +273,7 @@ const isSubmenuLinkActive = (sub) => {
         </template>
       </div>
     </div>
+    <MobileNavDrawer v-if="isMobile" v-model="mobileDrawerOpen" :menus="navMenus" />
   </div>
 </template>
 

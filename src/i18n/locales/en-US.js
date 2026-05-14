@@ -1,6 +1,10 @@
 export default {
   // Navigation
   菜单: 'Menu',
+  提额: 'Withdraw',
+  会员互转: 'Member transfer',
+  共赢伙伴: 'Partners',
+  联络客服: 'Contact support',
   首页: 'Home',
   市场: 'Market',
   客服: 'Support',
