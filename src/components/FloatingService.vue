@@ -2,16 +2,27 @@
 import { onBeforeUnmount, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import iconDownloadAppActive from '@/assets/images/float/icon-download-app-active.svg';
+import iconDownloadAppDefault from '@/assets/images/float/icon-download-app-default.svg';
+import iconDownloadAppHover from '@/assets/images/float/icon-download-app-hover.svg';
+import iconServiceActive from '@/assets/images/float/icon-service-active.svg';
+import iconServiceDefault from '@/assets/images/float/icon-service-default.svg';
+import iconServiceHover from '@/assets/images/float/icon-service-hover.svg';
+import toolbarBg from '@/assets/images/float/toolbar-bg.svg';
 import { registerCustomerServiceOpener } from '@/utils/customerService';
 
 const { t } = useI18n();
 
-function handleOpen() {
+function handleServiceOpen() {
   // TODO: 接入在线客服 SDK / 外链等
 }
 
+function handleDownloadApp() {
+  // TODO: 替换为实际 App 下载页或应用商店链接
+}
+
 onMounted(() => {
-  registerCustomerServiceOpener(handleOpen);
+  registerCustomerServiceOpener(handleServiceOpen);
 });
 
 onBeforeUnmount(() => {
@@ -20,24 +31,68 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div
-    class="floating-service"
-    role="button"
-    tabindex="0"
-    :title="t('在线客服')"
-    @click="handleOpen"
-    @keydown.enter.prevent="handleOpen"
-    @keydown.space.prevent="handleOpen"
-  >
-    <div class="floating-service__icon">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 2C6.48 2 2 6.48 2 12C2 13.85 2.5 15.55 3.35 17L2 22L7 20.65C8.45 21.5 10.15 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C10.36 20 8.82 19.53 7.5 18.74L4 20L5.26 16.5C4.47 15.18 4 13.64 4 12C4 7.58 7.58 4 12 4C16.42 4 20 7.58 20 12C20 16.42 16.42 20 12 20Z" fill="currentColor"/>
-        <circle cx="8" cy="12" r="1.5" fill="currentColor"/>
-        <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
-        <circle cx="16" cy="12" r="1.5" fill="currentColor"/>
-      </svg>
+  <div class="floating-service">
+    <div class="floating-service__panel">
+      <img class="floating-service__bg" :src="toolbarBg" alt="" draggable="false" />
+      <div class="floating-service__actions">
+        <button
+          type="button"
+          class="floating-service__btn"
+          :aria-label="t('悬浮服务下载APP')"
+          @click="handleDownloadApp"
+        >
+          <span class="floating-service__icon-stack" aria-hidden="true">
+            <img
+              class="floating-service__icon floating-service__icon--default"
+              :src="iconDownloadAppDefault"
+              alt=""
+              draggable="false"
+            />
+            <img
+              class="floating-service__icon floating-service__icon--hover"
+              :src="iconDownloadAppHover"
+              alt=""
+              draggable="false"
+            />
+            <img
+              class="floating-service__icon floating-service__icon--active"
+              :src="iconDownloadAppActive"
+              alt=""
+              draggable="false"
+            />
+          </span>
+        </button>
+        <div class="floating-service__divider" role="presentation" />
+        <button
+          type="button"
+          class="floating-service__btn"
+          :title="t('在线客服')"
+          :aria-label="t('在线客服')"
+          @click="handleServiceOpen"
+        >
+          <span class="floating-service__icon-stack" aria-hidden="true">
+            <img
+              class="floating-service__icon floating-service__icon--default"
+              :src="iconServiceDefault"
+              alt=""
+              draggable="false"
+            />
+            <img
+              class="floating-service__icon floating-service__icon--hover"
+              :src="iconServiceHover"
+              alt=""
+              draggable="false"
+            />
+            <img
+              class="floating-service__icon floating-service__icon--active"
+              :src="iconServiceActive"
+              alt=""
+              draggable="false"
+            />
+          </span>
+        </button>
+      </div>
     </div>
-    <span class="floating-service__text">{{ t('在线客服') }}</span>
   </div>
 </template>
 
@@ -45,54 +100,104 @@ onBeforeUnmount(() => {
 @use '@/styles/tools.scss' as *;
 
 .floating-service {
-  position: fixed;
-  z-index: 100;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  transition: transform 0.2s;
-
-  &:hover {
-    transform: scale(1.05);
-  }
+  display: none;
 
   @include web-only {
-    right: 24px;
+    position: fixed;
+    z-index: 100;
+    right: 14px;
     bottom: 120px;
-    background: linear-gradient(135deg, rgba(86, 150, 245, 1), rgba(15, 54, 117, 1));
-    border-radius: 12px 0 0 12px;
-    padding: 16px 12px;
-    color: #fff;
-    box-shadow: 8px 14px 40px 0 rgba(21, 102, 210, 0.32);
+    display: block;
+    filter: drop-shadow(8px 14px 24px rgba(21, 102, 210, 0.28));
   }
 
-  @include mobile-only {
-    right: 12px;
-    bottom: calc(12px + $mobile-tab-bar-offset + env(safe-area-inset-bottom, 0px));
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: var(--theme-primary);
-    color: #fff;
-    justify-content: center;
-    box-shadow: 0 4px 16px rgba(28, 123, 255, 0.4);
+  &__panel {
+    position: relative;
+    width: 58px;
+  }
 
-    .floating-service__text {
-      display: none;
+  &__bg {
+    display: block;
+    width: 100%;
+    height: auto;
+    vertical-align: top;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  &__actions {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 0 12px;
+    box-sizing: border-box;
+  }
+
+  &__btn {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: inherit;
+
+    &:focus-visible {
+      outline: 2px solid #fff;
+      outline-offset: 2px;
     }
   }
 
-  &__icon {
-    width: 24px;
-    height: 24px;
+  &__divider {
+    flex-shrink: 0;
+    width: 36px;
+    height: 1px;
+    margin: 2px 0;
+    background: rgba(255, 255, 255, 0.85);
   }
 
-  &__text {
-    font-size: $font-size-xs;
-    writing-mode: vertical-rl;
-    letter-spacing: 2px;
+  &__icon-stack {
+    position: relative;
+    width: 38px;
+    height: 68px;
+  }
+
+  &__icon {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+
+    &--hover,
+    &--active {
+      opacity: 0;
+    }
+  }
+
+  &__btn:hover &__icon--default {
+    opacity: 0;
+  }
+
+  &__btn:hover &__icon--hover {
+    opacity: 1;
+  }
+
+  &__btn:active &__icon--default,
+  &__btn:active &__icon--hover {
+    opacity: 0;
+  }
+
+  &__btn:active &__icon--active {
+    opacity: 1;
   }
 }
 </style>

@@ -39,11 +39,16 @@ export default {
 
   // Login
   登录: 'Login',
+  登入: 'Log in',
+  会员登入: 'Member login',
   注册: 'Register',
+  账号: 'Account',
+  密码: 'Password',
   请输入账号: 'Enter account',
   请输入密码: 'Enter password',
   忘记密码: 'Forgot password?',
   还没有账号: "Don't have an account?",
+  已有账号: 'Already have an account?',
   立即注册: 'Register now',
 
   // Market
@@ -116,4 +121,5 @@ export default {
   返回: 'Back',
   确定退出登录吗: 'Are you sure to logout?',
   在线客服: 'Support',
+  悬浮服务下载APP: 'Download app',
 };

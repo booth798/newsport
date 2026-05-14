@@ -10,6 +10,8 @@ export const useAppStore = defineStore('app', {
   state: () => ({
     locale: getCurrentLocale(),
     viewportWidth: typeof window === 'undefined' ? 1440 : window.innerWidth,
+    /** 导航「登录」等入口打开的登入/注册弹层 */
+    loginModalOpen: false,
   }),
   getters: {
     // 项目只区分两套端：
@@ -25,6 +27,12 @@ export const useAppStore = defineStore('app', {
     },
     setViewportWidth(width) {
       this.viewportWidth = width;
+    },
+    openLoginModal() {
+      this.loginModalOpen = true;
+    },
+    closeLoginModal() {
+      this.loginModalOpen = false;
     },
   },
 });
