@@ -1,9 +1,24 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
-import MatchCard from './MatchCard.vue';
+
+import { useAppStore } from '@/store/modules/app';
+import HomeMatchCard from './HomeMatchCard.vue';
+
+import iconEventsUrl from '@/assets/images/events/icon_events.svg?url';
+import iconHotUrl from '@/assets/images/events/icon_hot.svg?url';
+import iconChampionUrl from '@/assets/images/events/icon_champion.svg?url';
+import iconUkUrl from '@/assets/images/events/icon_uk.svg?url';
+import iconItalyUrl from '@/assets/images/events/icon_italy.svg?url';
+import iconSpainUrl from '@/assets/images/events/icon_spain.svg?url';
+import iconGermaryUrl from '@/assets/images/events/icon_germary.svg?url';
+import iconFranceUrl from '@/assets/images/events/icon_france.svg?url';
+import btnMoreUrl from '@/assets/images/events/btn_more.svg?url';
 
 const { t } = useI18n();
+const appStore = useAppStore();
+const { isMobile } = storeToRefs(appStore);
 
 const props = defineProps({
   matches: {
@@ -103,32 +118,71 @@ const defaultMatches = [
   },
 ];
 
+const leagueTabs = [
+  { key: 'hot', labelKey: '热门赛事', shortLabelKey: '热门', icon: iconHotUrl },
+  { key: '欧冠', labelKey: '欧冠赛事', shortLabelKey: '欧冠', icon: iconChampionUrl },
+  { key: '英超', labelKey: '英超赛事', shortLabelKey: '英超', icon: iconUkUrl },
+  { key: '意甲', labelKey: '意甲赛事', shortLabelKey: '意甲', icon: iconItalyUrl },
+  { key: '西甲', labelKey: '西甲赛事', shortLabelKey: '西甲', icon: iconSpainUrl },
+  { key: '德甲', labelKey: '德甲赛事', shortLabelKey: '德甲', icon: iconGermaryUrl },
+  { key: '法甲', labelKey: '法甲赛事', shortLabelKey: '法甲', icon: iconFranceUrl },
+];
+
+const tabLabel = (tab) => {
+  if (isMobile.value && tab.shortLabelKey) return t(tab.shortLabelKey);
+  return t(tab.labelKey);
+};
+
+const activeLeague = ref('hot');
+
 const displayMatches = computed(() =>
-  props.matches && props.matches.length ? props.matches : defaultMatches
+  props.matches && props.matches.length ? props.matches : defaultMatches,
 );
+
+const filteredMatches = computed(() => {
+  if (activeLeague.value === 'hot') return displayMatches.value;
+  return displayMatches.value.filter((m) => m.league === activeLeague.value);
+});
 </script>
 
 <template>
   <section class="hot-events">
-    <div class="hot-events__header">
+    <div class="hot-events__head">
       <div class="hot-events__title-wrap">
-        <svg class="hot-events__icon" width="48" height="48" viewBox="0 0 48 48" fill="none">
-          <circle cx="24" cy="24" r="24" fill="#1C7BFF" fill-opacity="0.1" />
-          <path d="M24 14L26.5 20H33L27.5 24L29.5 31L24 27L18.5 31L20.5 24L15 20H21.5L24 14Z" fill="#1C7BFF" />
-        </svg>
+        <img class="hot-events__title-icon" :src="iconEventsUrl" alt="" />
         <h2 class="hot-events__title">{{ t('热门赛事') }}</h2>
       </div>
-      <RouterLink to="/market" class="btn btn--primary hot-events__more-btn">
-        {{ t('进入市场') }}
+
+      <div class="hot-events__tabs" role="tablist" :aria-label="t('热门赛事')">
+        <button
+          v-for="tab in leagueTabs"
+          :key="tab.key"
+          type="button"
+          role="tab"
+          class="hot-events__tab"
+          :class="{ 'hot-events__tab--active': activeLeague === tab.key }"
+          :aria-selected="activeLeague === tab.key"
+          @click="activeLeague = tab.key"
+        >
+          <img class="hot-events__tab-icon" :src="tab.icon" alt="" />
+          <span class="hot-events__tab-label">{{ tabLabel(tab) }}</span>
+        </button>
+      </div>
+
+      <RouterLink
+        to="/market"
+        class="hot-events__more"
+        :aria-label="t('更多市场')"
+      >
+        <img class="hot-events__more-img" :src="btnMoreUrl" alt="" />
       </RouterLink>
     </div>
 
-    <div class="hot-events__grid">
-      <MatchCard
-        v-for="match in displayMatches"
-        :key="match.id"
-        :match="match"
-      />
+    <div v-if="!filteredMatches.length" class="hot-events__empty">
+      {{ t('暂无数据') }}
+    </div>
+    <div v-else class="hot-events__grid">
+      <HomeMatchCard v-for="match in filteredMatches" :key="match.id" :match="match" />
     </div>
   </section>
 </template>
@@ -136,7 +190,6 @@ const displayMatches = computed(() =>
 <style lang="scss" scoped>
 @use '@/styles/tools.scss' as *;
 
-// 热门赛事
 .hot-events {
   background: var(--surface-card);
   border: 1.5px solid var(--auxiliary-1);
@@ -145,62 +198,247 @@ const displayMatches = computed(() =>
   @include web-only {
     border-radius: 50px;
     padding: 40px 24px;
+    box-shadow: 0 4px 8px 0 rgba(21, 58, 119, 0.18);
   }
 
   @include mobile-only {
     border-radius: 20px;
-    padding: 16px 10px;
+    /* 稿：上 15px、左右 12px（与标题区标注一致） */
+    padding: 15px 12px 16px;
+    background: #fafaff;
+    box-shadow: 0 4px 8px 0 rgba(21, 58, 119, 0.18);
   }
 
-  &__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 30px;
+  &__head {
+    @include web-only {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      column-gap: 24px;
+      /* 标题栏与下方卡片区间距（稿约 32–40px） */
+      margin-bottom: 32px;
+    }
 
     @include mobile-only {
-      margin-bottom: 16px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      grid-template-rows: auto auto;
+      column-gap: 8px;
+      row-gap: 10px;
+      margin-bottom: 12px;
     }
   }
 
   &__title-wrap {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
+    min-width: 0;
+
+    @include mobile-only {
+      grid-column: 1;
+      grid-row: 1;
+      gap: 8px;
+      min-width: 0;
+    }
   }
 
-  &__icon {
+  &__title-icon {
+    flex-shrink: 0;
+    display: block;
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+
     @include mobile-only {
-      width: 32px;
-      height: 32px;
+      width: 28px;
+      height: 28px;
     }
   }
 
   &__title {
+    margin: 0;
+    font-family: $font-family-base;
     font-size: 34px;
     font-weight: 700;
-    background: radial-gradient(circle at 50% 100%, #68B3FD, #0D6CFB);
+    line-height: 1;
+    letter-spacing: 0;
+    background: radial-gradient(circle at 50% 100%, #68b3fd, #0d6cfb);
     -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
     background-clip: text;
-    margin: 0;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
 
     @include mobile-only {
-      font-size: 20px;
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: 0;
+      -webkit-text-fill-color: var(--theme-primary);
+      color: var(--theme-primary);
+      background: none;
     }
   }
 
-  &__more-btn {
-    height: 48px;
-    padding: 0 28px;
-    font-size: $font-size-lg;
-    font-weight: 500;
+  &__more {
+    flex-shrink: 0;
+    display: inline-block;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    line-height: 0;
+    text-decoration: none;
+    background: transparent;
+    box-shadow: none;
+
+    @include web-only {
+      grid-column: 3;
+      grid-row: 1;
+    }
 
     @include mobile-only {
-      height: 36px;
-      padding: 0 16px;
-      font-size: $font-size-md;
+      grid-column: 2;
+      grid-row: 1;
+      align-self: center;
     }
+  }
+
+  &__more-img {
+    display: block;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    width: 170px;
+    max-width: 100%;
+    height: auto;
+
+    @include mobile-only {
+      width: 70px;
+      height: 26px;
+      max-width: none;
+      object-fit: fill;
+    }
+  }
+
+  &__tabs {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    @include web-only {
+      gap: 6px;
+      min-width: 0;
+      grid-column: 2;
+      grid-row: 1;
+      padding-bottom: 0;
+    }
+
+    @include mobile-only {
+      gap: 10px;
+      grid-column: 1 / -1;
+      grid-row: 2;
+      width: 100%;
+      min-width: 0;
+      padding-bottom: 0;
+      margin: 0;
+    }
+  }
+
+  &__tab {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    cursor: pointer;
+    font-family: $font-family-base;
+    border: none;
+    transition:
+      background 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease,
+      box-shadow 0.2s ease;
+
+    @include web-only {
+      min-width: 120px;
+      min-height: 40px;
+      padding: 10px 14px;
+      gap: 10px;
+      border-radius: 48px;
+      border: 1px solid #d6e0eb;
+      background: #fafaff;
+      box-shadow: 0 2px 8px rgba(21, 58, 119, 0.1);
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 1;
+      letter-spacing: 0;
+      /* 默认：稿图主字色 #0B3462（勿用偏灰的 rgba） */
+      color: var(--theme-text);
+
+      &--active {
+        border-color: #1f7cff;
+        background: #f0f7ff;
+        /* 高亮字色与描边同色（Figma 热门赛事选中态） */
+        color: #1f7cff;
+        box-shadow: 0 3px 10px rgba(21, 58, 119, 0.14);
+      }
+    }
+
+    @include mobile-only {
+      height: 26px;
+      min-width: 70px;
+      padding: 0 10px;
+      gap: 4px;
+      border-radius: 48px;
+      border: 1px solid rgba(214, 224, 235, 0.55);
+      background: transparent;
+      box-shadow: none;
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 1;
+      color: var(--theme-text);
+
+      &--active {
+        border: 1px solid #1f7cff;
+        background: #fff;
+        color: #1f7cff;
+        box-shadow: 0 3px 8px 0 rgba(21, 58, 119, 0.1);
+      }
+    }
+  }
+
+  &__tab-icon {
+    flex-shrink: 0;
+    object-fit: contain;
+    display: block;
+
+    @include web-only {
+      width: 24px;
+      height: 24px;
+    }
+
+    @include mobile-only {
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  &__tab-label {
+    white-space: nowrap;
+  }
+
+  &__empty {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--theme-text-1);
+    font-size: $font-size-md;
   }
 
   &__grid {
@@ -212,10 +450,9 @@ const displayMatches = computed(() =>
     }
 
     @include mobile-only {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
+      grid-template-columns: 1fr;
+      gap: 8px;
     }
   }
 }
 </style>
-

@@ -2,7 +2,9 @@
 import { ref } from 'vue';
 
 import slideLeftIcon from '@/assets/images/common/icon_slide-left.svg';
+import slideLeftHoverIcon from '@/assets/images/common/icon_slide-left_hover.svg';
 import slideRightIcon from '@/assets/images/common/icon_slide-right.svg';
+import slideRightHoverIcon from '@/assets/images/common/icon_slide-right_hover.svg';
 
 const bannerIndex = ref(0);
 const bannerCount = 3;
@@ -26,10 +28,16 @@ const prevBanner = () => {
       </div>
 
       <button type="button" class="banner__arrow banner__arrow--left" @click="prevBanner">
-        <img class="banner__arrow-img" :src="slideLeftIcon" alt="" />
+        <span class="banner__arrow-stack">
+          <img class="banner__arrow-img" :src="slideLeftIcon" alt="" />
+          <img class="banner__arrow-img banner__arrow-img--hover" :src="slideLeftHoverIcon" alt="" />
+        </span>
       </button>
       <button type="button" class="banner__arrow banner__arrow--right" @click="nextBanner">
-        <img class="banner__arrow-img" :src="slideRightIcon" alt="" />
+        <span class="banner__arrow-stack">
+          <img class="banner__arrow-img" :src="slideRightIcon" alt="" />
+          <img class="banner__arrow-img banner__arrow-img--hover" :src="slideRightHoverIcon" alt="" />
+        </span>
       </button>
 
       <div class="banner__dots">
@@ -118,11 +126,9 @@ const prevBanner = () => {
     justify-content: center;
     z-index: 2;
 
-    &:hover .banner__arrow-img,
-    &:focus-visible .banner__arrow-img {
-      /* 稿里「更亮/更白」：单靠 brightness 在浅色矢量上几乎无感，叠加外发光 + 微放大 */
-      filter: brightness(1) contrast(1) drop-shadow(0 0 1px rgba(255, 255, 255, 0.25))
-        drop-shadow(0 0 1px rgba(255, 255, 255, 0.45));
+    &:hover .banner__arrow-img--hover,
+    &:focus-visible .banner__arrow-img--hover {
+      opacity: 1;
     }
 
     &:focus-visible {
@@ -130,13 +136,25 @@ const prevBanner = () => {
       outline-offset: 2px;
     }
 
+    &-stack {
+      position: relative;
+      display: block;
+      width: 86px;
+      height: 86px;
+    }
+
     &-img {
       width: 86px;
       height: 86px;
       display: block;
       pointer-events: none;
-      transform-origin: center;
-      transition: filter 0.2s ease, transform 0.2s ease;
+
+      &--hover {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        transition: opacity 0.15s ease;
+      }
     }
 
     &--left {

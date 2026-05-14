@@ -1,0 +1,46 @@
+<!-- viewBox 裁掉左右各 8px 透明边，作 CSS 背景时蓝底铺满按钮宽度 -->
+<svg width="170" height="64" viewBox="8 0 154 64" fill="none" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+<g filter="url(#filter0_d_176_38059)">
+<g clip-path="url(#clip0_176_38059)">
+<path d="M8 29C8 15.7452 18.7452 5 32 5H138C151.255 5 162 15.7452 162 29C162 42.2548 151.255 53 138 53H32C18.7452 53 8 42.2548 8 29Z" fill="#1C7BFF"/>
+<g filter="url(#filter1_f_176_38059)">
+<ellipse cx="85" cy="55" rx="48" ry="11" fill="#A6B5FE"/>
+</g>
+<rect x="8" y="51" width="154" height="1" fill="url(#paint0_linear_176_38059)"/>
+</g>
+<path d="M32 5.5H138C150.979 5.5 161.5 16.0213 161.5 29C161.5 41.9787 150.979 52.5 138 52.5H32C19.0213 52.5 8.5 41.9787 8.5 29C8.5 16.0213 19.0213 5.5 32 5.5Z" stroke="url(#paint1_linear_176_38059)"/>
+<path d="M32 5.5H138C150.979 5.5 161.5 16.0213 161.5 29C161.5 41.9787 150.979 52.5 138 52.5H32C19.0213 52.5 8.5 41.9787 8.5 29C8.5 16.0213 19.0213 5.5 32 5.5Z" stroke="white" stroke-opacity="0.2"/>
+</g>
+<defs>
+<filter id="filter0_d_176_38059" x="0" y="0" width="170" height="64" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset dy="3"/>
+<feGaussianBlur stdDeviation="4"/>
+<feComposite in2="hardAlpha" operator="out"/>
+<feColorMatrix type="matrix" values="0 0 0 0 0.0827668 0 0 0 0 0.228957 0 0 0 0 0.466515 0 0 0 0.1 0"/>
+<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_176_38059"/>
+<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_176_38059" result="shape"/>
+</filter>
+<filter id="filter1_f_176_38059" x="5" y="12" width="160" height="86" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feGaussianBlur stdDeviation="16" result="effect1_foregroundBlur_176_38059"/>
+</filter>
+<linearGradient id="paint0_linear_176_38059" x1="8" y1="51.5" x2="162" y2="51.5" gradientUnits="userSpaceOnUse">
+<stop stop-color="white" stop-opacity="0"/>
+<stop offset="0.35" stop-color="white" stop-opacity="0.25"/>
+<stop offset="0.5" stop-color="white"/>
+<stop offset="0.65" stop-color="white" stop-opacity="0.25"/>
+<stop offset="1" stop-color="white" stop-opacity="0"/>
+</linearGradient>
+<linearGradient id="paint1_linear_176_38059" x1="8" y1="5" x2="112.36" y2="71.6686" gradientUnits="userSpaceOnUse">
+<stop stop-color="white"/>
+<stop offset="0.205864" stop-color="white" stop-opacity="0.6"/>
+<stop offset="1" stop-color="white" stop-opacity="0.02"/>
+</linearGradient>
+<clipPath id="clip0_176_38059">
+<path d="M8 29C8 15.7452 18.7452 5 32 5H138C151.255 5 162 15.7452 162 29C162 42.2548 151.255 53 138 53H32C18.7452 53 8 42.2548 8 29Z" fill="white"/>
+</clipPath>
+</defs>
+</svg>
