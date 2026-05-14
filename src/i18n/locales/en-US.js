@@ -1,5 +1,6 @@
 export default {
   // Navigation
+  菜单: 'Menu',
   首页: 'Home',
   市场: 'Market',
   交易账务: 'Finance',

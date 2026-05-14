@@ -1,4 +1,6 @@
 <script setup>
+import noticeIconUrl from '@/assets/images/common/notice.svg?url';
+
 defineProps({
   text: {
     type: String,
@@ -12,10 +14,7 @@ defineProps({
   <section class="announcement-section">
     <div class="announcement">
       <div class="announcement__icon">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-          <circle cx="10" cy="10" r="9" stroke="#1C7BFF" stroke-width="1.5"/>
-          <path d="M10 6V11M10 13.5V14" stroke="#1C7BFF" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
+        <img class="announcement__icon-img" :src="noticeIconUrl" alt="" />
       </div>
       <p class="announcement__text">{{ text }}</p>
     </div>
@@ -43,14 +42,35 @@ defineProps({
   }
 
   @include mobile-only {
-    border-radius: 12px;
-    padding: 10px 12px;
+    border-radius: $radius-pill;
+    padding: 8px 12px;
+    min-height: 36px;
   }
 
   &__icon {
     flex-shrink: 0;
     width: 20px;
     height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    @include web-only {
+      width: 36px;
+      height: 36px;
+    }
+  }
+
+  &__icon-img {
+    width: 20px;
+    height: 20px;
+    display: block;
+    object-fit: contain;
+
+    @include web-only {
+      width: 36px;
+      height: 36px;
+    }
   }
 
   &__text {

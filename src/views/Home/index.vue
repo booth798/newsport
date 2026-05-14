@@ -35,7 +35,7 @@ import HomeHotEvents from './components/HomeHotEvents.vue';
     }
 
     @include mobile-only {
-      gap: 10px;
+      gap: 8px;
       padding-bottom: 30px;
     }
   }

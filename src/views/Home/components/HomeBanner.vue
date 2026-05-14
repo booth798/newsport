@@ -54,9 +54,11 @@ const prevBanner = () => {
 // 但不加 Home 页内容区的 max-width 限制。
 .home-banner {
   @include container;
+  margin-top: 8px;
+  margin-bottom: 8px;
 
   @include web-only {
-    padding-top: 0;
+    margin-top: 10px;
     margin-bottom: 20px;
   }
 }
