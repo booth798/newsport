@@ -1,10 +1,9 @@
-// 默认主题。
-// 通过给 html 添加 `.classic` 类名即可启用这一套变量。
-:root,
-html.classic {
+// 基础设计变量。
+:root {
   color-scheme: light;
   --theme-primary: #1C7BFF; // 主题色
   --theme-bg: #E3ECFB; // 背景色
+  --theme-page-base: #E3ECFB; // 页面底色
   --theme-text: #0B3462; // 主文字
   --theme-text-1: #0B346280; // 次文字
   --theme-divider: #E4F0FE; // 分割线
@@ -68,7 +67,8 @@ html.classic {
       position: relative;
     }
 
-    &--primary, &--prompt {
+    &--primary,
+    &--prompt {
       &::after {
         content: '';
         position: absolute;
@@ -81,4 +81,3 @@ html.classic {
     }
   }
 }
-

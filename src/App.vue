@@ -7,16 +7,13 @@ import { onBeforeUnmount, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
-import { getSiteConfig } from '@/config/site';
-import { useTheme } from '@/hooks/useTheme';
+import { SITE_CONFIG } from '@/config/site';
 import i18n from '@/i18n';
 import { useAppStore } from '@/store/modules/app';
 
 const appStore = useAppStore();
 const route = useRoute();
-const { locale, siteKey } = storeToRefs(appStore);
-
-useTheme();
+const { locale } = storeToRefs(appStore);
 
 // 统一记录窗口宽度，方便页面按需判断当前是否处于移动端布局。
 const syncViewport = () => {
@@ -25,13 +22,11 @@ const syncViewport = () => {
 
 // 页面标题始终跟随当前路由和当前站点名称变化。
 const syncDocumentTitle = () => {
-  const currentSite = getSiteConfig(siteKey.value);
-  
   const pageTitle = i18n.global.t(route.meta?.titleKey || '首页', {
-    siteName: currentSite.siteName,
+    siteName: SITE_CONFIG.siteName,
   });
 
-  document.title = `${pageTitle} | ${currentSite.siteName}`;
+  document.title = `${pageTitle} | ${SITE_CONFIG.siteName}`;
 };
 
 watch(
@@ -44,7 +39,6 @@ watch(
   { immediate: true },
 );
 
-watch(siteKey, syncDocumentTitle, { immediate: true });
 watch(() => route.fullPath, syncDocumentTitle);
 
 onMounted(() => {

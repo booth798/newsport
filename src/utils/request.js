@@ -1,5 +1,4 @@
-import { getSiteConfig } from '@/config/site';
-import { getCurrentSiteKey } from '@/store/modules/app';
+import { SITE_CONFIG } from '@/config/site';
 
 // 如果传入的是完整 URL，就不再拼接站点 API 前缀。
 const isAbsoluteUrl = (value) => /^https?:\/\//i.test(value);
@@ -16,17 +15,14 @@ const buildUrl = (baseUrl, path) => {
 export async function request(path, options = {}) {
   const {
     method = 'GET',
-    siteKey = getCurrentSiteKey(),
     headers = {},
     body,
     ...rest
   } = options;
 
-  // 请求地址始终跟随当前站点配置，这样后续扩展多模板时不用在业务里手动拼 API 前缀。
-  const { apiBaseUrl } = getSiteConfig(siteKey);
   const isFormData = body instanceof FormData;
 
-  const response = await fetch(buildUrl(apiBaseUrl, path), {
+  const response = await fetch(buildUrl(SITE_CONFIG.apiBaseUrl, path), {
     method,
     headers: {
       ...(isFormData ? {} : { 'Content-Type': 'application/json' }),

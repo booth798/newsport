@@ -1,9 +1,9 @@
 <script setup>
 import { useI18n } from 'vue-i18n';
-import { useAsset } from '@/hooks/useAsset';
+
+import logoUrl from '@/assets/images/common/logo.png';
 
 const { t } = useI18n();
-const { getTemplateImage } = useAsset();
 
 const footerLinks = [
   { label: '关于我们', key: 'about' },
@@ -18,7 +18,7 @@ const footerLinks = [
   <footer class="footer">
     <div class="footer__inner">
       <div class="footer__logo">
-        <img :src="getTemplateImage('logo')" alt="logo" class="footer__logo-img" />
+        <img :src="logoUrl" alt="logo" class="footer__logo-img" />
       </div>
       <div class="footer__links">
         <a

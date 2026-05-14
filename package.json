@@ -8,11 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "dev:default": "cross-env VITE_SITE_KEY=default vite",
-    "dev:arena": "cross-env VITE_SITE_KEY=arena vite",
     "build": "vite build",
-    "build:default": "cross-env VITE_SITE_KEY=default vite build --outDir dist/default",
-    "build:arena": "cross-env VITE_SITE_KEY=arena vite build --outDir dist/arena",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -25,7 +21,6 @@
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.5",
     "autoprefixer": "^10.4.27",
-    "cross-env": "^10.1.0",
     "postcss": "^8.5.8",
     "postcss-pxtorem": "^6.1.0",
     "sass": "^1.98.0",

@@ -15,7 +15,7 @@ alwaysApply: true
 ## 硬性约定
 
 1. **改动范围**：只修改完成任务所必需的文件与行；禁止无关重构、禁止批量格式化未涉及文件。
-2. **目录**：复用组件 → `src/components/`；页面 → `src/views/`；页面私有子组件 → `views/.../components/`；状态 → `src/store/`；组合式函数 → `src/hooks/`；站点与主题配置 → `src/config/`。
+2. **目录**：复用组件 → `src/components/`；页面 → `src/views/`；页面私有子组件 → `views/.../components/`；状态 → `src/store/`；组合式函数 → `src/hooks/`；站点基础配置 → `src/config/`。
 3. **文案**：用户可见字符串走 i18n，与现有 `meta.titleKey`、站点名插值方式一致；避免硬编码中英文混杂。
 4. **Vue**：列表必须稳定 `:key`；订阅/定时器/`addEventListener` 在 `onBeforeUnmount` 清理；可复用组件尽量不直接耦合 `useRoute`，由父传入数据。
 5. **Pinia**：跨页面状态才用 store；用 `storeToRefs` 保持响应式；避免巨型单文件 store。

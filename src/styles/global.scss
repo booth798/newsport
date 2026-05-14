@@ -1,6 +1,6 @@
 @use '@/styles/reset.scss';
 @use '@/styles/tools.scss' as *;
-@use '@/styles/themes/index.scss';
+@use '@/styles/tokens.scss';
 
 html {
   // 移动端以 375 稿为基准：

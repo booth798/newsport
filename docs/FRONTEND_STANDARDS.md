@@ -23,7 +23,7 @@
 | `src/store/` | Pinia 模块，按领域拆分；避免单文件巨型 store。 |
 | `src/router/` | 路由表、守卫、路由元信息（如 `meta.titleKey`）。 |
 | `src/i18n/` | 语言包、i18n 初始化；**用户可见文案默认走 i18n**，禁止长期硬编码中英文混用。 |
-| `src/config/` | 站点/环境相关配置（如 `siteKey`、主题来源）。 |
+| `src/config/` | 站点/环境相关配置（如站点名称、API 地址）。 |
 | `src/hooks/` | 可复用的组合式函数（`useXxx`）。 |
 | `src/api/` 或 `src/services/`（若存在） | 请求封装、与后端契约；错误与 loading 策略在此层或 store 层统一，避免组件内到处 `fetch`。 |
 
@@ -34,7 +34,7 @@
 ## 3. 命名与文件
 
 - **组件文件**：PascalCase，如 `MatchCard.vue`。
-- **组合式函数**：`use` 前缀 + camelCase，如 `useTheme.ts`。
+- **组合式函数**：`use` 前缀 + camelCase，如 `useViewport.ts`。
 - **Store**：`useXxxStore`，文件名与模块名一致、可检索。
 - **路由 name / path**：kebab-case 路径与语义化 name；`meta` 中用于标题的键与 i18n key 对齐。
 - **CSS 类名**：BEM 或与现有文件保持一致；避免全局污染，优先 scoped；深度选择器仅作最后手段并注释原因。
@@ -70,7 +70,7 @@
 
 ## 7. 样式与主题
 
-- 优先复用设计 token（变量、mixin），与 `useTheme` 等现有机制一致。
+- 优先复用设计 token（变量、mixin）和现有全局样式入口。
 - 颜色、间距、字号避免魔法数泛滥；若设计未给 token，在局部注释设计稿或约定来源。
 - 图片与图标：优先现有资源管线（Vite 静态资源、`?url` 等）；注意 `alt` 与性能（懒加载、合适格式）。
 
