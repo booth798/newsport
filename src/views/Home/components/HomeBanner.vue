@@ -1,6 +1,9 @@
 <script setup>
 import { ref } from 'vue';
 
+import slideLeftIcon from '@/assets/images/common/icon_slide-left.svg';
+import slideRightIcon from '@/assets/images/common/icon_slide-right.svg';
+
 const bannerIndex = ref(0);
 const bannerCount = 3;
 
@@ -22,15 +25,11 @@ const prevBanner = () => {
         </div>
       </div>
 
-      <button class="banner__arrow banner__arrow--left" @click="prevBanner">
-        <svg width="14" height="24" viewBox="0 0 14 24" fill="none">
-          <path d="M12 2L2 12L12 22" stroke="white" stroke-width="2" stroke-linecap="round"/>
-        </svg>
+      <button type="button" class="banner__arrow banner__arrow--left" @click="prevBanner">
+        <img class="banner__arrow-img" :src="slideLeftIcon" alt="" />
       </button>
-      <button class="banner__arrow banner__arrow--right" @click="nextBanner">
-        <svg width="14" height="24" viewBox="0 0 14 24" fill="none">
-          <path d="M2 2L12 12L2 22" stroke="white" stroke-width="2" stroke-linecap="round"/>
-        </svg>
+      <button type="button" class="banner__arrow banner__arrow--right" @click="nextBanner">
+        <img class="banner__arrow-img" :src="slideRightIcon" alt="" />
       </button>
 
       <div class="banner__dots">
@@ -77,7 +76,7 @@ const prevBanner = () => {
 
   @include mobile-only {
     border-radius: 16px;
-    height: 200px;
+    height: 136px;
   }
 
   &__slide {
@@ -110,19 +109,34 @@ const prevBanner = () => {
     transform: translateY(-50%);
     width: 86px;
     height: 86px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid;
-    border-image-source: linear-gradient(143deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.2) 21%, rgba(255, 255, 255, 0.02));
+    padding: 0;
+    border: none;
+    background: transparent;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.2s;
     z-index: 2;
 
-    &:hover {
-      background: rgba(255, 255, 255, 0.2);
+    &:hover .banner__arrow-img,
+    &:focus-visible .banner__arrow-img {
+      /* 稿里「更亮/更白」：单靠 brightness 在浅色矢量上几乎无感，叠加外发光 + 微放大 */
+      filter: brightness(1) contrast(1) drop-shadow(0 0 1px rgba(255, 255, 255, 0.25))
+        drop-shadow(0 0 1px rgba(255, 255, 255, 0.45));
+    }
+
+    &:focus-visible {
+      outline: 2px solid rgba(255, 255, 255, 0.65);
+      outline-offset: 2px;
+    }
+
+    &-img {
+      width: 86px;
+      height: 86px;
+      display: block;
+      pointer-events: none;
+      transform-origin: center;
+      transition: filter 0.2s ease, transform 0.2s ease;
     }
 
     &--left {
