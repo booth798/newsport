@@ -28,3 +28,10 @@
     padding-inline: 8px;
   }
 }
+
+// PC 端主内容列最大宽度（与 `container` 的左右 30px 内边距配套，border-box 下总宽约 $web-page-max）
+@mixin web-main-column-max {
+  @include web-only {
+    max-width: calc($web-content-max + 60px);
+  }
+}

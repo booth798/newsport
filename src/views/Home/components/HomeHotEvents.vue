@@ -30,91 +30,91 @@ const props = defineProps({
 const defaultMatches = [
   {
     id: 1,
+    league: '西甲',
+    date: '03-19 02:30',
+    countdown: '10:48:46',
+    homeTeam: '马德里竞技',
+    awayTeam: '赫塔菲',
+    homeScore: 1,
+    awayScore: 0,
+    volume: '10.00M',
+  },
+  {
+    id: 2,
     league: '欧冠',
     date: '03-19 02:30',
     countdown: '10:48:46',
     homeTeam: '亚特兰大',
     awayTeam: '拜仁慕尼黑',
-    homeScore: 6,
-    awayScore: 1,
+    homeScore: 1,
+    awayScore: 6,
     volume: '10.00M',
   },
   {
-    id: 2,
+    id: 3,
     league: '英超',
     date: '03-19 03:00',
     countdown: '12:18:46',
-    homeTeam: '利物浦',
-    awayTeam: '曼联',
-    homeScore: 3,
-    awayScore: 2,
+    homeTeam: '托特纳姆热刺',
+    awayTeam: '国际米兰',
+    homeScore: 2,
+    awayScore: 3,
     volume: '8.50M',
   },
   {
-    id: 3,
-    league: '西甲',
+    id: 4,
+    league: '意甲',
     date: '03-20 01:00',
     countdown: '24:48:46',
-    homeTeam: '巴塞罗那',
-    awayTeam: '皇家马德里',
+    homeTeam: '国际米兰',
+    awayTeam: '亚特兰大',
     homeScore: 2,
     awayScore: 2,
     volume: '15.00M',
   },
   {
-    id: 4,
+    id: 5,
     league: '德甲',
     date: '03-20 03:30',
     countdown: '27:18:46',
-    homeTeam: '多特蒙德',
-    awayTeam: '勒沃库森',
+    homeTeam: '拜仁慕尼黑',
+    awayTeam: '马德里竞技',
     homeScore: 4,
     awayScore: 0,
     volume: '6.20M',
   },
   {
-    id: 5,
-    league: '意甲',
+    id: 6,
+    league: '西甲',
     date: '03-21 01:00',
     countdown: '48:48:46',
-    homeTeam: 'AC米兰',
-    awayTeam: '国际米兰',
+    homeTeam: '赫塔菲',
+    awayTeam: '马德里竞技',
     homeScore: 1,
     awayScore: 3,
     volume: '12.80M',
   },
   {
-    id: 6,
-    league: '法甲',
+    id: 7,
+    league: '欧冠',
     date: '03-21 03:00',
     countdown: '50:48:46',
-    homeTeam: '巴黎圣日耳曼',
-    awayTeam: '马赛',
+    homeTeam: '拜仁慕尼黑',
+    awayTeam: '托特纳姆热刺',
     homeScore: 5,
     awayScore: 0,
     volume: '9.30M',
   },
   {
-    id: 7,
-    league: '欧联',
+    id: 8,
+    league: '英超',
     date: '03-22 02:00',
     countdown: '72:48:46',
-    homeTeam: '阿森纳',
-    awayTeam: '罗马',
+    homeTeam: '国际米兰',
+    awayTeam: '热刺',
     homeScore: 2,
     awayScore: 1,
     volume: '7.10M',
-  },
-  {
-    id: 8,
-    league: '欧冠',
-    date: '03-22 03:30',
-    countdown: '74:18:46',
-    homeTeam: '曼城',
-    awayTeam: '切尔西',
-    homeScore: 3,
-    awayScore: 3,
-    volume: '18.50M',
   },
 ];
 
@@ -213,7 +213,8 @@ const filteredMatches = computed(() => {
     @include web-only {
       display: grid;
       grid-template-columns: auto 1fr auto;
-      align-items: center;
+      /* 与 `__tabs` 仅 `padding-bottom` 留阴影位搭配：`center` 会把不对称的 tabs 整体上移，与左侧标题顶不齐 */
+      align-items: start;
       column-gap: 24px;
       /* 标题栏与下方卡片区间距（稿约 32–40px） */
       margin-bottom: 32px;
@@ -294,6 +295,8 @@ const filteredMatches = computed(() => {
     @include web-only {
       grid-column: 3;
       grid-row: 1;
+      /* 与标题区首行顶对齐；按钮图略矮时在行内垂直居中，避免贴顶悬空 */
+      align-self: center;
     }
 
     @include mobile-only {
@@ -337,7 +340,8 @@ const filteredMatches = computed(() => {
       min-width: 0;
       grid-column: 2;
       grid-row: 1;
-      padding-bottom: 0;
+      /* overflow-x: auto 会令 overflow-y 变为 auto，子元素 box-shadow 会被裁切；留出与阴影相当的底部内边距 */
+      padding-bottom: 14px;
     }
 
     @include mobile-only {
@@ -346,7 +350,7 @@ const filteredMatches = computed(() => {
       grid-row: 2;
       width: 100%;
       min-width: 0;
-      padding-bottom: 0;
+      padding-bottom: 12px;
       margin: 0;
     }
   }
@@ -451,7 +455,7 @@ const filteredMatches = computed(() => {
 
     @include mobile-only {
       grid-template-columns: 1fr;
-      gap: 8px;
+      gap: 10px;
     }
   }
 }

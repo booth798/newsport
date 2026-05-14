@@ -156,6 +156,7 @@ const isNavActive = (item) => {
   }
 
   @include container;
+  @include web-main-column-max;
 
   @include mobile-only {
     padding-top: 12px;

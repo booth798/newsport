@@ -2,6 +2,7 @@
 import Header from '@/components/Header.vue';
 import Footer from '@/components/Footer.vue';
 import FloatingService from '@/components/FloatingService.vue';
+import MobileTabBar from '@/components/MobileTabBar.vue';
 
 import { onBeforeUnmount, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
@@ -13,7 +14,7 @@ import { useAppStore } from '@/store/modules/app';
 
 const appStore = useAppStore();
 const route = useRoute();
-const { locale } = storeToRefs(appStore);
+const { locale, isMobile } = storeToRefs(appStore);
 
 // 统一记录窗口宽度，方便页面按需判断当前是否处于移动端布局。
 const syncViewport = () => {
@@ -57,11 +58,18 @@ onBeforeUnmount(() => {
     <RouterView />
   </main>
   <Footer />
+  <MobileTabBar v-if="isMobile" />
   <FloatingService />
 </template>
 
 <style lang="scss" scoped>
+@use '@/styles/tools.scss' as *;
+
 .main-content {
   min-height: calc(100vh - 120px - 180px);
+
+  @include mobile-only {
+    padding-bottom: calc($mobile-tab-bar-offset + env(safe-area-inset-bottom, 0px));
+  }
 }
 </style>

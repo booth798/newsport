@@ -56,11 +56,10 @@ const prevBanner = () => {
 <style lang="scss" scoped>
 @use '@/styles/tools.scss' as *;
 
-// 轮播在 PC 端按 Header 的导航容器宽度对齐：
-// Header 使用 @include container（web-only padding-inline: 30px），这里复用同一套规则，
-// 但不加 Home 页内容区的 max-width 限制。
+// 轮播与 Header、`.home__inner` 共用 `container` + `web-main-column-max`，大屏左右对齐。
 .home-banner {
   @include container;
+  @include web-main-column-max;
   margin-top: 0;
   margin-bottom: 8px;
 

@@ -3,6 +3,8 @@ export default {
   菜单: 'Menu',
   首页: 'Home',
   市场: 'Market',
+  客服: 'Support',
+  账务: 'Finance',
   交易账务: 'Finance',
   会员服务: 'Membership',
   我的权益: 'My Benefits',

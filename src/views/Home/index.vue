@@ -24,12 +24,11 @@ import HomeHotEvents from './components/HomeHotEvents.vue';
 .home {
   &__inner {
     @include container;
+    @include web-main-column-max;
     display: flex;
     flex-direction: column;
 
     @include web-only {
-      max-width: calc($web-content-max + 60px);
-      margin: 0 auto;
       gap: 20px;
       padding-bottom: 60px;
     }
