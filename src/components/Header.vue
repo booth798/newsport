@@ -159,7 +159,8 @@ const isNavActive = (item) => {
 
   @include mobile-only {
     padding-top: 12px;
-    padding-bottom: 0;
+    /* 与首屏轮播的 8px 间距放在导航区底部，避免内容滚动时与圆角导航条视觉脱节 */
+    padding-bottom: 8px;
 
     .card-primary.norem {
       height: 57px;
@@ -200,12 +201,25 @@ const isNavActive = (item) => {
       height: 36px;
       background: transparent;
       border-radius: 50%;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+      &:hover,
+      &:focus-visible {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px 0 rgba(21, 58, 119, 0.18);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--theme-primary);
+        outline-offset: 2px;
+      }
 
       &__img {
         width: 36px;
         height: 36px;
         display: block;
         pointer-events: none;
+        border-radius: 50%;
       }
     }
   }
@@ -352,12 +366,26 @@ const isNavActive = (item) => {
         background: transparent;
         cursor: pointer;
         flex-shrink: 0;
+        border-radius: 50%;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+        &:hover,
+        &:focus-visible {
+          transform: translateY(-5px);
+          box-shadow: 0 4px 8px 0 rgba(21, 58, 119, 0.18);
+        }
+
+        &:focus-visible {
+          outline: 2px solid var(--theme-primary);
+          outline-offset: 2px;
+        }
 
         &__img {
           width: 48px;
           height: 48px;
           display: block;
           pointer-events: none;
+          border-radius: 50%;
         }
       }
     }

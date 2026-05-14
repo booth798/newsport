@@ -17,6 +17,8 @@
   --text-nav: #171E24; // 导航文字色
   --shadow-card: 0px 3px 8px 0px rgba(21, 58, 119, 0.1); // 卡片阴影
   --shadow-primary-btn: 0px 2px 6px 0px rgba(28, 123, 255, 0.3); // 主按钮阴影
+  /* PC 首页通知条文案色（稿图 #0D6CFB），与全站主题主色区分 */
+  --announcement-text-pc: #0d6cfb;
 
   // 主卡片背景颜色
   .card-primary {
