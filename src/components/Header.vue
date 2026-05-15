@@ -169,8 +169,8 @@ onUnmounted(() => {
 
 <template>
   <div class="header" :class="{ 'header--market-detail': isMarketDetailPage }">
-    <div v-if="isMarketDetailPage" class="header-beijing-bar" aria-live="polite">
-      <span class="header-beijing-bar__text">{{ t('北京时间') }}: {{ beijingNowStr }}</span>
+    <div  class="header-beijing-bar" aria-live="polite">
+      <span class="header-beijing-bar__text" lang="en">Beijing Time: {{ beijingNowStr }}</span>
     </div>
     <div class="card-primary norem" :class="{ 'card-primary--market-detail': isMarketDetailPage }">
       <RouterLink
@@ -924,24 +924,22 @@ onUnmounted(() => {
     height: 48px;
     box-sizing: border-box;
     margin-right: 20px;
-    border-radius: 14px;
-    background: #fff;
-    border: 1px solid rgb(228, 240, 254);
-    box-shadow: 0 2px 10px rgba(21, 58, 118, 0.08);
+    border-radius: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
     text-decoration: none;
     cursor: pointer;
-    transition:
-      box-shadow 0.2s ease,
-      transform 0.2s ease;
+    transition: opacity 0.2s ease;
 
     &:hover {
-      box-shadow: 0 4px 16px rgba(28, 123, 255, 0.16);
-      transform: translateY(-1px);
+      opacity: 0.85;
     }
 
     &:focus-visible {
       outline: 2px solid rgba(28, 123, 255, 0.45);
       outline-offset: 2px;
+      border-radius: 8px;
     }
 
     &__img {
@@ -956,7 +954,6 @@ onUnmounted(() => {
       height: 40px;
       margin-right: auto;
       margin-left: 0;
-      border-radius: 12px;
 
       .header-market-back-btn__img {
         width: 40px;
@@ -972,7 +969,7 @@ onUnmounted(() => {
 
     &__text {
       font-family: $font-family-num, $font-family-base;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 500;
       line-height: 1.2;
       color: rgba(11, 52, 98, 0.48);
@@ -980,11 +977,28 @@ onUnmounted(() => {
     }
 
     @include web-only {
-      padding: 2px 0 10px;
+      /* 与胶囊同一顶栏视觉区：不占文档流高度，避免整体加高 */
+      position: fixed;
+      top: 0px;
+      right: 30px;
+      left: auto;
+      width: auto;
+      max-width: min(420px, 46vw);
+      padding: 0;
+      z-index: 2;
+      pointer-events: none;
     }
 
     @include mobile-only {
-      padding: 0 4px 6px;
+      position: absolute;
+      top: 4px;
+      right: 8px;
+      left: auto;
+      width: auto;
+      max-width: min(280px, 72vw);
+      padding: 0;
+      z-index: 2;
+      pointer-events: none;
 
       &__text {
         font-size: 12px;
@@ -1013,30 +1027,31 @@ onUnmounted(() => {
     @include web-only {
       height: auto;
       min-height: 0;
-      padding-top: 8px;
+      padding-top: 0;
       padding-bottom: 18px;
     }
 
     @include mobile-only {
       background: #e3ecfb;
-      padding-top: 6px;
+      padding-top: 0;
+      padding-bottom: 8px;
     }
   }
 
+  /* 与首页主导航条一致：沿用全局 .card-primary（surface-card + 白边），仅保留北京时间占位 */
   &.header--market-detail .card-primary--market-detail.norem {
     @include web-only {
+      position: relative;
+      margin-top: 22px;
       height: auto;
       min-height: 84px;
       padding-top: 10px;
       padding-bottom: 10px;
       align-items: center;
-      border-color: rgba(31, 124, 255, 0.18);
-      box-shadow: 0 6px 22px rgba(21, 58, 118, 0.12);
     }
 
     @include mobile-only {
-      border-color: rgba(31, 124, 255, 0.2);
-      background: #fff;
+      margin-top: 22px;
     }
   }
 }
