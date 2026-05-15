@@ -69,6 +69,10 @@ export default {
   隐藏密码: 'Hide password',
 
   // Market
+  比分市场: 'Score Market',
+  比分: 'Score',
+  概率: 'Probability',
+  成交量: 'Volume',
   全场赛果: 'Full-time Result',
   半场赛果: 'Half-time Result',
   一般买入: 'Standard Buy',

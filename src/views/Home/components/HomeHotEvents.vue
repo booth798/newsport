@@ -15,6 +15,7 @@ import iconSpainUrl from '@/assets/images/events/icon_spain.svg?url';
 import iconGermaryUrl from '@/assets/images/events/icon_germary.svg?url';
 import iconFranceUrl from '@/assets/images/events/icon_france.svg?url';
 import btnMoreUrl from '@/assets/images/events/btn_more.svg?url';
+import { DEFAULT_HOT_MATCHES } from '@/constants/hotMatchCatalog';
 
 const { t } = useI18n();
 const appStore = useAppStore();
@@ -26,97 +27,6 @@ const props = defineProps({
     default: () => [],
   },
 });
-
-const defaultMatches = [
-  {
-    id: 1,
-    league: '西甲',
-    date: '03-19 02:30',
-    countdown: '10:48:46',
-    homeTeam: '马德里竞技',
-    awayTeam: '赫塔菲',
-    homeScore: 1,
-    awayScore: 0,
-    volume: '10.00M',
-  },
-  {
-    id: 2,
-    league: '欧冠',
-    date: '03-19 02:30',
-    countdown: '10:48:46',
-    homeTeam: '亚特兰大',
-    awayTeam: '拜仁慕尼黑',
-    homeScore: 1,
-    awayScore: 6,
-    volume: '10.00M',
-  },
-  {
-    id: 3,
-    league: '英超',
-    date: '03-19 03:00',
-    countdown: '12:18:46',
-    homeTeam: '托特纳姆热刺',
-    awayTeam: '国际米兰',
-    homeScore: 2,
-    awayScore: 3,
-    volume: '8.50M',
-  },
-  {
-    id: 4,
-    league: '意甲',
-    date: '03-20 01:00',
-    countdown: '24:48:46',
-    homeTeam: '国际米兰',
-    awayTeam: '亚特兰大',
-    homeScore: 2,
-    awayScore: 2,
-    volume: '15.00M',
-  },
-  {
-    id: 5,
-    league: '德甲',
-    date: '03-20 03:30',
-    countdown: '27:18:46',
-    homeTeam: '拜仁慕尼黑',
-    awayTeam: '马德里竞技',
-    homeScore: 4,
-    awayScore: 0,
-    volume: '6.20M',
-  },
-  {
-    id: 6,
-    league: '西甲',
-    date: '03-21 01:00',
-    countdown: '48:48:46',
-    homeTeam: '赫塔菲',
-    awayTeam: '马德里竞技',
-    homeScore: 1,
-    awayScore: 3,
-    volume: '12.80M',
-  },
-  {
-    id: 7,
-    league: '欧冠',
-    date: '03-21 03:00',
-    countdown: '50:48:46',
-    homeTeam: '拜仁慕尼黑',
-    awayTeam: '托特纳姆热刺',
-    homeScore: 5,
-    awayScore: 0,
-    volume: '9.30M',
-  },
-  {
-    id: 8,
-    league: '英超',
-    date: '03-22 02:00',
-    countdown: '72:48:46',
-    homeTeam: '国际米兰',
-    awayTeam: '热刺',
-    homeScore: 2,
-    awayScore: 1,
-    volume: '7.10M',
-  },
-];
 
 const leagueTabs = [
   { key: 'hot', labelKey: '热门赛事', shortLabelKey: '热门', icon: iconHotUrl },
@@ -136,7 +46,7 @@ const tabLabel = (tab) => {
 const activeLeague = ref('hot');
 
 const displayMatches = computed(() =>
-  props.matches && props.matches.length ? props.matches : defaultMatches,
+  props.matches && props.matches.length ? props.matches : DEFAULT_HOT_MATCHES,
 );
 
 const filteredMatches = computed(() => {

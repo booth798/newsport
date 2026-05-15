@@ -19,7 +19,7 @@ const routes = [
     path: '/market/:id',
     name: 'market-detail',
     component: () => import('@/views/Market/Detail/index.vue'),
-    meta: { titleKey: '市场' },
+    meta: { titleKey: '比分市场' },
   },
   {
     path: '/finance',
