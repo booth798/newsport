@@ -41,7 +41,7 @@ const sections = [
 
 const quickLinks = [
   { labelKey: '充值', to: '/finance/deposit', icon: iconTradeSuccess },
-  { labelKey: '提额', to: '/finance/withdraw', icon: iconWithdraw },
+  { labelKey: '提领', to: '/finance/withdraw', icon: iconWithdraw },
   { labelKey: '会员互转', to: '/profile', icon: iconInvesting },
   { labelKey: '共赢伙伴', to: '/', icon: iconAbout },
 ];
@@ -112,13 +112,14 @@ const onContact = () => {
         @click.stop
       >
         <div class="mobile-nav-drawer__arena">
+          <img class="mobile-nav-drawer__arena-bg" :src="bgScoreUrl" alt="" aria-hidden="true" />
           <div class="mobile-nav-drawer__scroll">
-            <div class="mobile-nav-drawer__hero">
-              <img class="mobile-nav-drawer__hero-bg" :src="bgScoreUrl" alt="" aria-hidden="true" />
+            <header class="mobile-nav-drawer__header">
               <div class="mobile-nav-drawer__logo-wrap">
                 <img class="mobile-nav-drawer__logo" :src="logoUrl" alt="UNIBET" />
+               
               </div>
-            </div>
+            </header>
 
             <div class="mobile-nav-drawer__main">
             <div class="mobile-nav-drawer__quick">
@@ -191,10 +192,12 @@ const onContact = () => {
               </div>
             </div>
 
-            <button type="button" class="mobile-nav-drawer__contact" @click="onContact">
-              <img class="mobile-nav-drawer__contact-icon" :src="iconContact" alt="" />
-              <span>{{ t('联络客服') }}</span>
-            </button>
+            <div class="mobile-nav-drawer__footer">
+              <button type="button" class="mobile-nav-drawer__contact" @click="onContact">
+                <img class="mobile-nav-drawer__contact-icon" :src="iconContact" alt="" />
+                <span>{{ t('联络客服') }}</span>
+              </button>
+            </div>
             </div>
           </div>
         </div>
@@ -206,14 +209,34 @@ const onContact = () => {
 <style lang="scss" scoped>
 @use '@/styles/tools.scss' as *;
 
-/* 稿：白底 + 纵向渐变叠层 + 0.8px 白边 + 投影 */
-@mixin drawer-chip-surface {
+$drawer-w: 288px;
+$drawer-pad-x: 18px;
+$tile-w: 120px;
+$tile-h: 40px;
+$tile-gap-x: 12px;
+$tile-gap-y: 10px;
+$tile-radius: 8px;
+$divider-gap: 16px;
+
+@mixin drawer-tile-surface {
   box-sizing: border-box;
+  width: $tile-w;
+  height: $tile-h;
+  /* 设计稿：白底 + 自上而下淡蓝叠层（上层须叠在 #fff 之上才可见） */
   background:
-    linear-gradient(180deg, rgba(104, 136, 186, 0) 0%, rgba(104, 136, 186, 0.15) 100%),
-    #ffffff;
+    linear-gradient(360deg, rgba(104, 136, 186, 0) 0%, rgba(104, 136, 186, 0.15) 100%),
+    linear-gradient(0deg, #ffffff, #ffffff);
   border: 0.8px solid #ffffff;
-  box-shadow: 0 2px 6px 0 rgba(21, 58, 119, 0.1);
+  box-shadow: 0px 2px 6px 0px #153a771a;
+  border-radius: $tile-radius;
+}
+
+@mixin drawer-tile-grid {
+  display: grid;
+  grid-template-columns: $tile-w $tile-w;
+  column-gap: $tile-gap-x;
+  row-gap: $tile-gap-y;
+  justify-content: start;
 }
 
 .mobile-nav-drawer {
@@ -222,19 +245,24 @@ const onContact = () => {
   z-index: 200;
   display: flex;
   justify-content: flex-end;
+
   &__backdrop {
     position: absolute;
     inset: 0;
-    background: rgba(11, 52, 98, 0.38);
+    background: rgba(17, 24, 39, 0.45);
     animation: mobile-nav-drawer-backdrop-in 0.22s ease forwards;
   }
 
   &__panel {
     position: relative;
     height: 100%;
-    width: min(100vw, 400px);
+    width: min($drawer-w, 100%);
     max-width: 100%;
     box-sizing: border-box;
+    flex-shrink: 0;
+    border-radius: 16px 0 0 16px;
+    overflow: hidden;
+    background: #fff;
     box-shadow: -6px 0 24px rgba(21, 58, 119, 0.12);
     animation: mobile-nav-drawer-panel-in 0.28s ease forwards;
   }
@@ -243,27 +271,10 @@ const onContact = () => {
     position: relative;
     height: 100%;
     overflow: hidden;
-    background: linear-gradient(180deg, #f3f8ff 0%, #e8f2ff 100%);
+    background-color: #ffffff;
   }
 
-  &__scroll {
-    position: relative;
-    z-index: 1;
-    height: 100%;
-    overflow-y: auto;
-    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0));
-    box-sizing: border-box;
-  }
-
-  /* 顶区：与热门赛事卡赛场相同的格网底（仅头部一条，不铺满整抽屉） */
-  &__hero {
-    position: relative;
-    padding: 10px 12px 12px;
-    margin-bottom: 10px;
-    overflow: hidden;
-  }
-
-  &__hero-bg {
+  &__arena-bg {
     position: absolute;
     inset: 0;
     z-index: 0;
@@ -275,57 +286,87 @@ const onContact = () => {
     opacity: 0.88;
   }
 
-  &__logo-wrap {
+  &__scroll {
     position: relative;
     z-index: 1;
+    height: 100%;
+    overflow-y: auto;
+    box-sizing: border-box;
+    padding: 0 $drawer-pad-x;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0));
+  }
+
+  &__header {
+    padding: 16px 0 12px;
+    box-sizing: border-box;
+  }
+
+  &__logo-wrap {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
   }
 
   &__logo {
-    width: 92px;
-    height: 32px;
+    width: 100px;
+    height: auto;
+    max-height: 36px;
     object-fit: contain;
     display: block;
   }
 
+  &__logo-dots {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  &__logo-dots-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+
+  &__logo-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #22c55e;
+    flex-shrink: 0;
+  }
+
   &__main {
-    padding: 0 12px;
+    padding: 0;
     box-sizing: border-box;
   }
 
   &__quick {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-bottom: 12px;
-    justify-items: center;
+    @include drawer-tile-grid;
+    margin-bottom: 0;
   }
 
   &__quick-tile {
-    @include drawer-chip-surface;
+    @include drawer-tile-surface;
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: flex-start;
     gap: 6px;
-    box-sizing: border-box;
-    width: 100%;
-    max-width: 120px;
-    height: 40px;
     padding: 0 8px;
-    border-radius: 12px;
     text-decoration: none;
-    color: var(--theme-text);
-    font-size: 13px;
+    color: #1f2227;
+    font-size: 12px;
     font-weight: 500;
     line-height: 1.15;
     text-align: left;
   }
 
   &__quick-icon {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     object-fit: contain;
     flex-shrink: 0;
     display: block;
@@ -336,11 +377,16 @@ const onContact = () => {
     min-width: 0;
     display: block;
     line-height: 1.2;
-    overflow-wrap: break-word;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   &__section {
-    margin-bottom: 8px;
+    border-top: 1px solid #e8eaef;
+    margin-top: $divider-gap;
+    padding-top: $divider-gap;
+    box-sizing: border-box;
   }
 
   &__section-head {
@@ -348,16 +394,21 @@ const onContact = () => {
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    padding: 4px 2px 6px;
+    padding: 0 0 8px;
     margin: 0;
     border: none;
     background: transparent;
     cursor: pointer;
     text-align: left;
     font-family: $font-family-base;
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--theme-primary);
+  }
+
+  &__section-title {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 100%;
+    letter-spacing: 0;
+    color: #1c7bff;
   }
 
   &__section-chevron {
@@ -365,47 +416,43 @@ const onContact = () => {
     height: 20px;
     flex-shrink: 0;
     display: block;
+    object-fit: contain;
   }
 
   &__section-body {
-    padding-top: 0;
+    padding-bottom: 0;
   }
 
   &__link-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    justify-items: center;
+    @include drawer-tile-grid;
   }
 
   &__link-tile {
-    @include drawer-chip-surface;
+    @include drawer-tile-surface;
     display: flex;
     flex-direction: row;
     align-items: center;
     gap: 6px;
-    box-sizing: border-box;
-    width: 100%;
-    max-width: 120px;
-    height: 40px;
     padding: 0 8px;
-    border-radius: 12px;
     text-decoration: none;
-    color: var(--theme-text);
-    font-size: 13px;
-    font-weight: 400;
+    color: #1f2227;
+    font-size: 12px;
+    font-weight: 500;
     line-height: 1.15;
 
     &.is-active {
-      border-color: rgba(28, 123, 255, 0.55);
+      border: 1px solid rgba(28, 123, 255, 0.75);
       color: var(--theme-primary);
-      box-shadow: 0 2px 6px 0 rgba(21, 58, 119, 0.1);
+      background:
+        linear-gradient(360deg, rgba(104, 136, 186, 0) 0%, rgba(104, 136, 186, 0.15) 100%),
+        linear-gradient(0deg, #ffffff, #ffffff);
+      box-shadow: 0px 2px 6px 0px #153a771a;
     }
   }
 
   &__link-icon {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     object-fit: contain;
     flex-shrink: 0;
     display: block;
@@ -420,29 +467,33 @@ const onContact = () => {
     white-space: nowrap;
   }
 
+  &__footer {
+    border-top: 1px solid #e8eaef;
+    margin-top: $divider-gap;
+    padding-top: $divider-gap;
+    padding-bottom: 4px;
+    box-sizing: border-box;
+    @include drawer-tile-grid;
+  }
+
   &__contact {
-    @include drawer-chip-surface;
+    @include drawer-tile-surface;
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 8px;
-    box-sizing: border-box;
-    width: 100%;
-    max-width: 248px;
-    height: 40px;
-    margin: 6px auto 0;
-    padding: 0 12px;
-    border-radius: 12px;
+    justify-content: flex-start;
+    gap: 6px;
+    padding: 0 8px;
+    margin: 0;
     cursor: pointer;
     font-family: $font-family-base;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 500;
-    color: var(--theme-text);
+    color: #1f2227;
   }
 
   &__contact-icon {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     object-fit: contain;
     display: block;
     flex-shrink: 0;
