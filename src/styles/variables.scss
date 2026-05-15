@@ -15,6 +15,9 @@ $web-page-max: 1920px;
 
 $web-header-height: 120px;
 $mobile-header-height: 64px;
+// 比分市场详情：顶栏「北京时间条 + 胶囊导航」总占位，供侧栏 position:sticky 的 top（需与 Header 市场版式同步）
+$web-market-detail-sidebar-sticky-top: 156px;
+$mobile-market-detail-sidebar-sticky-top: 100px;
 // H5 底部 Tab 占位（图标 + 文案 + 上下内边距，不含安全区）
 $mobile-tab-bar-offset: 72px;
 

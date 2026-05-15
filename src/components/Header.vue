@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { storeToRefs } from 'pinia';
@@ -19,6 +19,7 @@ import navbarHomeMutedIcon from '@/assets/images/common/navbar_home_muted.svg';
 import loginIconUrl from '@/assets/images/common/icon_login.svg?url';
 import moreIconUrl from '@/assets/images/common/icon_more.svg?url';
 import avatarDefaultUrl from '@/assets/images/common/avatar_default.png?url';
+import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.svg?url';
 import MobileNavDrawer from '@/components/MobileNavDrawer.vue';
 import { useAppStore } from '@/store/modules/app';
 
@@ -117,13 +118,89 @@ const isSubmenuLinkActive = (sub) => {
   if (to === '/') return false;
   return false;
 };
+
+/** 比分市场详情：顶栏改为「返回 + 右侧账户区」，与首页主导航区分 */
+const isMarketDetailPage = computed(() => route.name === 'market-detail');
+
+const beijingNowStr = ref('');
+let beijingTimer = null;
+
+function updateBeijingClock() {
+  const parts = new Intl.DateTimeFormat('zh-CN', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).formatToParts(new Date());
+  const pick = (type) => parts.find((p) => p.type === type)?.value ?? '';
+  beijingNowStr.value = `${pick('year')}-${pick('month')}-${pick('day')} ${pick('hour')}:${pick('minute')}:${pick('second')}`;
+}
+
+function clearBeijingTimer() {
+  if (beijingTimer != null && typeof window !== 'undefined') {
+    window.clearInterval(beijingTimer);
+    beijingTimer = null;
+  }
+}
+
+function startBeijingTimerIfNeeded() {
+  clearBeijingTimer();
+  if (typeof window === 'undefined' || route.name !== 'market-detail') return;
+  updateBeijingClock();
+  beijingTimer = window.setInterval(updateBeijingClock, 1000);
+}
+
+watch(
+  () => route.name,
+  () => {
+    startBeijingTimerIfNeeded();
+  },
+  { immediate: true },
+);
+
+onUnmounted(() => {
+  clearBeijingTimer();
+});
 </script>
 
 <template>
-  <div class="header">
-    <div class="card-primary norem">
-      <img class="logo" :src="logoUrl" alt="logo" />
-      <div class="navbar" v-if="!isMobile">
+  <div class="header" :class="{ 'header--market-detail': isMarketDetailPage }">
+    <div v-if="isMarketDetailPage" class="header-beijing-bar" aria-live="polite">
+      <span class="header-beijing-bar__text">{{ t('北京时间') }}: {{ beijingNowStr }}</span>
+    </div>
+    <div class="card-primary norem" :class="{ 'card-primary--market-detail': isMarketDetailPage }">
+      <RouterLink
+        v-if="isMobile && isMarketDetailPage"
+        to="/"
+        class="header-market-back-btn header-market-back-btn--m"
+        :aria-label="t('返回')"
+      >
+        <img class="header-market-back-btn__img" :src="iconNavBackMarketUrl" width="40" height="40" alt="" />
+      </RouterLink>
+      <img v-else-if="isMobile" class="logo" :src="logoUrl" alt="logo" />
+
+      <RouterLink
+        v-if="!isMobile && isMarketDetailPage"
+        to="/"
+        custom
+        v-slot="{ navigate, href }"
+      >
+        <a
+          :href="href"
+          class="header-market-back-btn"
+          :aria-label="t('返回')"
+          @click="navigate"
+        >
+          <img class="header-market-back-btn__img" :src="iconNavBackMarketUrl" width="48" height="48" alt="" />
+        </a>
+      </RouterLink>
+      <img v-else-if="!isMobile" class="logo" :src="logoUrl" alt="logo" />
+
+      <div class="navbar" v-if="!isMobile && !isMarketDetailPage">
         <template v-for="item in navbarList" :key="item.key">
           <RouterLink
             v-if="item.kind === 'plain'"
@@ -212,8 +289,15 @@ const isSubmenuLinkActive = (sub) => {
           </button>
         </template>
       </div>
-      <div v-else class="header-toolbar" :class="{ 'header-toolbar--member': isLoggedIn }">
-        <div class="i18n-select">
+      <div
+        v-else
+        class="header-toolbar"
+        :class="{
+          'header-toolbar--member': isLoggedIn && !isMarketDetailPage,
+          'header-toolbar--market-detail': isMarketDetailPage,
+        }"
+      >
+        <div v-if="!isMarketDetailPage" class="i18n-select">
           <button
             type="button"
             class="i18n-select__btn"
@@ -240,7 +324,47 @@ const isSubmenuLinkActive = (sub) => {
           </button>
         </div>
 
-        <template v-if="isLoggedIn">
+        <template v-if="isMarketDetailPage && isLoggedIn">
+          <div class="header-market-detail-stack">
+            <div class="header-market-belt-row">
+              <div class="header-user-strip" role="group" :aria-label="loggedInUserId">
+                <img
+                  class="header-user-strip__avatar"
+                  :src="avatarDefaultUrl"
+                  width="40"
+                  height="40"
+                  alt=""
+                />
+                <span class="header-user-strip__id">{{ loggedInUserId }}</span>
+                <div class="header-user-strip__assets">
+                  <span class="header-user-strip__assets-label">{{ t('总资产') }}</span>
+                  <span class="header-user-strip__assets-value">{{ loggedInAssetsFormatted }}</span>
+                </div>
+              </div>
+              <button type="button" class="header-round-btn" :aria-label="t('菜单')">
+                <img class="header-round-btn__img" :src="moreIconUrl" alt="" />
+              </button>
+            </div>
+          </div>
+        </template>
+
+        <template v-else-if="isMarketDetailPage && !isLoggedIn">
+          <div class="header-market-detail-stack">
+            <div class="header-market-belt-row">
+              <a href="#" class="header-forgot" @click.prevent>{{ t('忘记密码') }}</a>
+              <div class="header-round-group">
+                <button type="button" class="header-round-btn" :aria-label="t('登录')" @click="appStore.openLoginModal">
+                  <img class="header-round-btn__img" :src="loginIconUrl" alt="" />
+                </button>
+                <button type="button" class="header-round-btn" :aria-label="t('菜单')">
+                  <img class="header-round-btn__img" :src="moreIconUrl" alt="" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <template v-else-if="isLoggedIn">
           <div class="header-user-strip" role="group" :aria-label="loggedInUserId">
             <img
               class="header-user-strip__avatar"
@@ -584,6 +708,22 @@ const isSubmenuLinkActive = (sub) => {
         &--member {
           gap: 16px;
         }
+
+        &--market-detail {
+          flex: 1 1 auto;
+          justify-content: flex-end;
+          align-items: center;
+          min-width: 0;
+
+          .header-user-strip {
+            max-width: min(360px, 38vw);
+          }
+
+          .header-forgot {
+            margin-left: 0;
+            margin-right: 0;
+          }
+        }
       }
 
       .header-user-strip {
@@ -772,6 +912,131 @@ const isSubmenuLinkActive = (sub) => {
           border-radius: 50%;
         }
       }
+    }
+  }
+
+  .header-market-back-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    box-sizing: border-box;
+    margin-right: 20px;
+    border-radius: 14px;
+    background: #fff;
+    border: 1px solid rgb(228, 240, 254);
+    box-shadow: 0 2px 10px rgba(21, 58, 118, 0.08);
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
+
+    &:hover {
+      box-shadow: 0 4px 16px rgba(28, 123, 255, 0.16);
+      transform: translateY(-1px);
+    }
+
+    &:focus-visible {
+      outline: 2px solid rgba(28, 123, 255, 0.45);
+      outline-offset: 2px;
+    }
+
+    &__img {
+      display: block;
+      width: 48px;
+      height: 48px;
+      pointer-events: none;
+    }
+
+    &--m {
+      width: 40px;
+      height: 40px;
+      margin-right: auto;
+      margin-left: 0;
+      border-radius: 12px;
+
+      .header-market-back-btn__img {
+        width: 40px;
+        height: 40px;
+      }
+    }
+  }
+
+  .header-beijing-bar {
+    width: 100%;
+    box-sizing: border-box;
+    text-align: right;
+
+    &__text {
+      font-family: $font-family-num, $font-family-base;
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 1.2;
+      color: rgba(11, 52, 98, 0.48);
+      white-space: nowrap;
+    }
+
+    @include web-only {
+      padding: 2px 0 10px;
+    }
+
+    @include mobile-only {
+      padding: 0 4px 6px;
+
+      &__text {
+        font-size: 12px;
+      }
+    }
+  }
+
+  .header-market-detail-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0;
+    margin-left: auto;
+    min-width: 0;
+  }
+
+  .header-market-belt-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  &.header--market-detail {
+    background: linear-gradient(180deg, #e3ecfb 0%, var(--theme-bg) 100%);
+
+    @include web-only {
+      height: auto;
+      min-height: 0;
+      padding-top: 8px;
+      padding-bottom: 18px;
+    }
+
+    @include mobile-only {
+      background: #e3ecfb;
+      padding-top: 6px;
+    }
+  }
+
+  &.header--market-detail .card-primary--market-detail.norem {
+    @include web-only {
+      height: auto;
+      min-height: 84px;
+      padding-top: 10px;
+      padding-bottom: 10px;
+      align-items: center;
+      border-color: rgba(31, 124, 255, 0.18);
+      box-shadow: 0 6px 22px rgba(21, 58, 118, 0.12);
+    }
+
+    @include mobile-only {
+      border-color: rgba(31, 124, 255, 0.2);
+      background: #fff;
     }
   }
 }

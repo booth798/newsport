@@ -19,6 +19,7 @@ export default {
   规则说明: 'Rules',
   关于UNIBET: 'About UNIBET',
   设置: 'Settings',
+  北京时间: 'Beijing Time',
 
   // Home
   进入市场: 'Enter Market',
@@ -75,6 +76,8 @@ export default {
   成交量: 'Volume',
   全场赛果: 'Full-time Result',
   半场赛果: 'Half-time Result',
+  倒计时: 'Countdown',
+  主: 'H',
   一般买入: 'Standard Buy',
   预约买入: 'Scheduled Buy',
   交易成功: 'Trade Successful',

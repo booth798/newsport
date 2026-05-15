@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue';
+import { RouterLink } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 
@@ -26,7 +27,17 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  /** 详情页嵌入：整卡不跳转，底部「进入市场」改为按钮并向外 emit */
+  detailMode: {
+    type: Boolean,
+    default: false,
+  },
 });
+
+defineEmits(['enter-market']);
+
+const rootComponent = computed(() => (props.detailMode ? 'div' : RouterLink));
+const rootBind = computed(() => (props.detailMode ? {} : { to: `/market/${props.match.id}` }));
 
 const homeScoreBg = computed(() =>
   props.match.homeScore > props.match.awayScore ? bgScoreHighUrl : bgScoreDefaultUrl,
@@ -59,7 +70,12 @@ const awayTeamLogoUrl = computed(() =>
 </script>
 
 <template>
-  <RouterLink :to="`/market/${match.id}`" class="match-card">
+  <component
+    :is="rootComponent"
+    v-bind="rootBind"
+    class="match-card"
+    :class="{ 'match-card--detail': props.detailMode }"
+  >
     <!-- H5：联赛+成交量同行 → 分割线 → 时间+开赛倒数 → 主体仅网格区（成交量不在此展示） -->
     <div v-if="isMobile" class="match-card__inner match-card__inner--m">
       <div class="match-card__m-top">
@@ -200,7 +216,15 @@ const awayTeamLogoUrl = computed(() =>
       </div>
 
       <div class="match-card__foot">
-        <span class="btn btn--primary match-card__btn">{{ t('进入市场') }}</span>
+        <button
+          v-if="detailMode"
+          type="button"
+          class="btn btn--primary match-card__btn"
+          @click="$emit('enter-market')"
+        >
+          {{ t('进入市场') }}
+        </button>
+        <span v-else class="btn btn--primary match-card__btn">{{ t('进入市场') }}</span>
       </div>
     </div>
 
@@ -344,10 +368,18 @@ const awayTeamLogoUrl = computed(() =>
       </div>
 
       <div class="match-card__foot">
-        <span class="btn btn--primary match-card__btn">{{ t('进入市场') }}</span>
+        <button
+          v-if="detailMode"
+          type="button"
+          class="btn btn--primary match-card__btn"
+          @click="$emit('enter-market')"
+        >
+          {{ t('进入市场') }}
+        </button>
+        <span v-else class="btn btn--primary match-card__btn">{{ t('进入市场') }}</span>
       </div>
     </div>
-  </RouterLink>
+  </component>
 </template>
 
 <style lang="scss" scoped>
@@ -385,6 +417,24 @@ const awayTeamLogoUrl = computed(() =>
 
     &:hover {
       transform: translateY(-4px);
+    }
+  }
+
+  &--detail {
+    cursor: default;
+
+    @include web-only {
+      &:hover {
+        transform: none;
+        box-shadow: 0 8px 20px 0 rgba(21, 58, 118, 0.18);
+      }
+    }
+
+    @include mobile-only {
+      &:hover {
+        transform: none;
+        box-shadow: 0 8px 20px 0 rgba(21, 58, 118, 0.18);
+      }
     }
   }
 
@@ -881,6 +931,9 @@ const awayTeamLogoUrl = computed(() =>
     justify-content: center;
     font-size: $font-size-md;
     font-weight: 500;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
 
     @include web-only {
       height: 48px;

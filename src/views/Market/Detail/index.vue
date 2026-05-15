@@ -1,22 +1,12 @@
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 
 import { getHotMatchById } from '@/constants/hotMatchCatalog';
-import { resolveTeamLogoUrl } from '@/constants/teamLogos';
+import HomeMatchCard from '@/views/Home/components/HomeMatchCard.vue';
 
-import logoNavUrl from '@/assets/images/common/logo_nav.svg?url';
-import bgScoreUrl from '@/assets/images/events/bg_score.svg?url';
-import bgScoreDefaultUrl from '@/assets/images/events/bg_score_default.svg?url';
-import bgScoreHighUrl from '@/assets/images/events/bg_score_high.svg?url';
-import iconChampionUrl from '@/assets/images/events/icon_champion.svg?url';
-import iconUkUrl from '@/assets/images/events/icon_uk.svg?url';
-import iconItalyUrl from '@/assets/images/events/icon_italy.svg?url';
-import iconSpainUrl from '@/assets/images/events/icon_spain.svg?url';
-import iconGermaryUrl from '@/assets/images/events/icon_germary.svg?url';
-import iconFranceUrl from '@/assets/images/events/icon_france.svg?url';
-import iconEventsUrl from '@/assets/images/events/icon_events.svg?url';
+import logoMarketUrl from '@/assets/images/common/logo-market.svg?url';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -28,36 +18,6 @@ const showBuyPanel = ref(false);
 const selectedRow = ref(null);
 
 const match = ref(getHotMatchById(route.params.id));
-
-const heroRef = ref(null);
-const dockCta = ref(false);
-let io = null;
-
-const LEAGUE_ICON_BY_NAME = {
-  欧冠: iconChampionUrl,
-  英超: iconUkUrl,
-  意甲: iconItalyUrl,
-  西甲: iconSpainUrl,
-  德甲: iconGermaryUrl,
-  法甲: iconFranceUrl,
-  欧联: iconEventsUrl,
-};
-
-const leagueIconUrl = computed(() => LEAGUE_ICON_BY_NAME[match.value.league] ?? iconEventsUrl);
-
-const homeTeamLogoUrl = computed(() =>
-  resolveTeamLogoUrl(match.value.homeTeam, match.value.homeTeamLogo),
-);
-const awayTeamLogoUrl = computed(() =>
-  resolveTeamLogoUrl(match.value.awayTeam, match.value.awayTeamLogo),
-);
-
-const homeScoreBg = computed(() =>
-  match.value.homeScore > match.value.awayScore ? bgScoreHighUrl : bgScoreDefaultUrl,
-);
-const awayScoreBg = computed(() =>
-  match.value.awayScore > match.value.homeScore ? bgScoreHighUrl : bgScoreDefaultUrl,
-);
 
 function formatVolumeMoney(n) {
   return `¥${n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -95,31 +55,6 @@ watch(
   },
 );
 
-function setupHeroObserver() {
-  io?.disconnect();
-  io = null;
-  if (!heroRef.value) return;
-  io = new IntersectionObserver(
-    ([entry]) => {
-      dockCta.value = !entry.isIntersecting;
-    },
-    { threshold: 0, rootMargin: '0px 0px -8px 0px' },
-  );
-  io.observe(heroRef.value);
-}
-
-onMounted(() => {
-  nextTick(() => setupHeroObserver());
-});
-
-watch(heroRef, () => {
-  nextTick(() => setupHeroObserver());
-});
-
-onBeforeUnmount(() => {
-  io?.disconnect();
-});
-
 function scrollToScoreMarket() {
   document.getElementById('score-market')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -138,18 +73,10 @@ function closeBuyPanel() {
 
 <template>
   <div class="market-detail">
-    <div v-if="dockCta" class="market-detail__cta-dock" aria-hidden="false">
-      <div class="market-detail__cta-dock-inner">
-        <button type="button" class="btn btn--primary market-detail__cta-dock-btn" @click="scrollToScoreMarket">
-          {{ t('进入市场') }}
-        </button>
-      </div>
-    </div>
-
     <div class="market-detail__layout">
       <aside class="market-detail__sidebar" aria-label="market-nav">
-        <RouterLink to="/" class="market-detail__brand">
-          <img :src="logoNavUrl" alt="" class="market-detail__brand-img" width="120" height="40" />
+        <RouterLink to="/" class="market-detail__brand market-detail__brand--flush">
+          <img :src="logoMarketUrl" alt="" class="market-detail__brand-img" width="180" height="96" />
         </RouterLink>
         <nav class="market-detail__side-nav">
           <button
@@ -160,6 +87,7 @@ function closeBuyPanel() {
           >
             {{ t('全场赛果') }}
           </button>
+          <div class="market-detail__side-divider" aria-hidden="true" />
           <button
             type="button"
             class="market-detail__side-tab"
@@ -172,79 +100,9 @@ function closeBuyPanel() {
       </aside>
 
       <div class="market-detail__main">
-        <div class="market-detail__toolbar">
-          <RouterLink to="/" class="market-detail__back">← {{ t('返回') }}</RouterLink>
+        <div class="market-detail__hero">
+          <HomeMatchCard :match="match" detail-mode @enter-market="scrollToScoreMarket" />
         </div>
-
-        <section ref="heroRef" class="market-hero card-default">
-          <div class="market-hero__top">
-            <div class="market-hero__league">
-              <img class="market-hero__league-icon" :src="leagueIconUrl" alt="" width="22" height="22" />
-              <span>{{ match.league }}</span>
-            </div>
-            <span class="market-hero__date">{{ match.date }}</span>
-          </div>
-
-          <div class="market-hero__arena">
-            <img class="market-hero__arena-bg" :src="bgScoreUrl" alt="" width="760" height="340" />
-            <div class="market-hero__arena-inner">
-              <div class="market-hero__grid">
-                <div class="market-hero__logo market-hero__logo--home">
-                  <div class="market-hero__badge">
-                    <img
-                      v-if="homeTeamLogoUrl"
-                      class="market-hero__badge-img"
-                      :src="homeTeamLogoUrl"
-                      :alt="match.homeTeam"
-                    />
-                    <span v-else class="market-hero__badge-txt">{{ match.homeTeam.charAt(0) }}</span>
-                  </div>
-                </div>
-                <div class="market-hero__logo market-hero__logo--away">
-                  <div class="market-hero__badge">
-                    <img
-                      v-if="awayTeamLogoUrl"
-                      class="market-hero__badge-img"
-                      :src="awayTeamLogoUrl"
-                      :alt="match.awayTeam"
-                    />
-                    <span v-else class="market-hero__badge-txt">{{ match.awayTeam.charAt(0) }}</span>
-                  </div>
-                </div>
-                <span class="market-hero__name market-hero__name--home">{{ match.homeTeam }}</span>
-                <span class="market-hero__vs">VS</span>
-                <span class="market-hero__name market-hero__name--away">{{ match.awayTeam }}</span>
-                <div class="market-hero__score-wrap market-hero__score-wrap--home">
-                  <span
-                    class="market-hero__score"
-                    :class="{ 'market-hero__score--lead': match.homeScore > match.awayScore }"
-                  >
-                    <img class="market-hero__score-bg" :src="homeScoreBg" alt="" />
-                    <span class="market-hero__score-num">{{ match.homeScore }}</span>
-                  </span>
-                </div>
-                <div class="market-hero__score-wrap market-hero__score-wrap--away">
-                  <span
-                    class="market-hero__score"
-                    :class="{ 'market-hero__score--lead': match.awayScore > match.homeScore }"
-                  >
-                    <img class="market-hero__score-bg" :src="awayScoreBg" alt="" />
-                    <span class="market-hero__score-num">{{ match.awayScore }}</span>
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="market-hero__vol">
-            <span class="market-hero__vol-lab">{{ t('总成交量') }}:</span>
-            <span class="market-hero__vol-val">{{ match.volume }}</span>
-          </div>
-
-          <button type="button" class="btn btn--primary market-hero__cta" @click="scrollToScoreMarket">
-            {{ t('进入市场') }}
-          </button>
-        </section>
 
         <section id="score-market" class="score-table card-default">
           <div class="score-table__head">
@@ -314,57 +172,57 @@ function closeBuyPanel() {
 
 .market-detail {
   @include container;
-  padding-top: $spacing-lg;
+  @include web-main-column-max;
+  padding-top: $spacing-md;
   padding-bottom: $spacing-4xl;
 
-  &__cta-dock {
-    position: fixed;
-    z-index: 25;
-    right: 0;
-    left: 0;
-    padding: 10px 12px;
-    border-bottom: 1px solid rgb(228, 240, 254);
-    background: rgba(243, 248, 255, 0.96);
-    backdrop-filter: blur(6px);
-
-    @include web-only {
-      top: $web-header-height;
-    }
-
-    @include mobile-only {
-      top: $mobile-header-height;
-    }
-  }
-
-  &__cta-dock-inner {
-    max-width: 920px;
-    margin: 0 auto;
-  }
-
-  &__cta-dock-btn {
-    width: 100%;
-    height: 44px;
-
-    @include web-only {
-      height: 48px;
-    }
+  @include web-only {
+    padding-top: 20px;
+    /* 与侧栏 1px 白边形成对比 */
+    background: #e3ecfb;
+    border-radius: 0;
+    box-sizing: border-box;
   }
 
   &__layout {
-    display: grid;
+    display: flex;
+    align-items: flex-start;
     gap: 16px;
 
     @include web-only {
-      grid-template-columns: 200px minmax(0, 1fr);
-      align-items: start;
-      gap: 24px;
+      justify-content: center;
+      /* 勿 stretch：否则侧栏被拉成与主列同高，position:sticky 无法相对主区“钉住” */
+      align-items: flex-start;
+      gap: 28px;
+    }
+
+    @include mobile-only {
+      flex-direction: column;
+      gap: 12px;
     }
   }
 
   &__sidebar {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 0;
+    flex-shrink: 0;
+
+    @include web-only {
+      width: 180px;
+      box-sizing: border-box;
+      padding: 0 0 20px;
+      background: #fff;
+      border-radius: 32px;
+      border: 1px solid #fff;
+      box-shadow: 0 6px 20px 0 rgba(21, 58, 118, 0.18);
+      position: sticky;
+      top: calc(#{$web-market-detail-sidebar-sticky-top} + 16px);
+      align-self: flex-start;
+      min-height: calc(100vh - #{$web-market-detail-sidebar-sticky-top} - 36px);
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
 
     @include mobile-only {
       flex-direction: row;
@@ -372,28 +230,69 @@ function closeBuyPanel() {
       align-items: center;
       justify-content: space-between;
       gap: 12px;
+      width: 100%;
+      position: sticky;
+      top: calc(#{$mobile-market-detail-sidebar-sticky-top} + 8px);
+      z-index: 4;
+      padding: 12px;
+      margin-bottom: -4px;
+      box-sizing: border-box;
+      background: #fff;
+      border-radius: 20px;
+      border: 1px solid #fff;
+      box-shadow: 0 4px 16px rgba(21, 58, 118, 0.12);
     }
   }
 
   &__brand {
-    display: inline-flex;
-    align-items: center;
+    display: block;
+    flex-shrink: 0;
+    line-height: 0;
+    text-decoration: none;
+    color: inherit;
+
+    &--flush {
+      @include web-only {
+        width: 100%;
+        margin: 0;
+      }
+    }
 
     @include mobile-only {
       order: 0;
+      max-width: 52%;
     }
   }
 
   &__brand-img {
     display: block;
-    height: 36px;
-    width: auto;
+    width: 100%;
+    height: auto;
+    vertical-align: top;
+
+    @include web-only {
+      width: 100%;
+      max-width: none;
+      margin: 0;
+    }
+
+    @include mobile-only {
+      max-height: 44px;
+      width: auto;
+      max-width: 100%;
+    }
   }
 
   &__side-nav {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 0;
+
+    @include web-only {
+      flex: 1;
+      padding: 14px 12px 0;
+      box-sizing: border-box;
+    }
 
     @include mobile-only {
       flex: 1;
@@ -404,293 +303,109 @@ function closeBuyPanel() {
     }
   }
 
+  &__side-divider {
+    @include web-only {
+      height: 1px;
+      margin: 10px 14px;
+      background: rgba(11, 52, 98, 0.12);
+      flex-shrink: 0;
+    }
+
+    @include mobile-only {
+      display: none;
+    }
+  }
+
   &__side-tab {
     width: 100%;
     padding: 12px 14px;
-    border-radius: 14px;
-    border: 1.5px solid rgb(228, 240, 254);
-    background: #fff;
-    font-size: $font-size-md;
-    font-weight: 600;
+    border-radius: 16px;
+    border: none;
+    background: transparent;
+    font-size: 18px;
+    font-weight: 400;
     color: #0b3462;
     cursor: pointer;
-    text-align: left;
+    text-align: center;
     transition:
-      background 0.2s,
-      color 0.2s,
-      border-color 0.2s;
+      background 0.2s ease,
+      color 0.2s ease;
+
+    @include web-only {
+      position: relative;
+      z-index: 0;
+      box-sizing: border-box;
+      width: 156px;
+      max-width: 100%;
+      min-height: 56px;
+      margin-inline: auto;
+      padding: 0 14px 0 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+
+      &:hover:not(.market-detail__side-tab--active) {
+        background: rgba(28, 123, 255, 0.04);
+        color: #0b3462;
+      }
+
+      &:focus-visible {
+        outline: 2px solid rgba(28, 123, 255, 0.45);
+        outline-offset: 2px;
+      }
+    }
 
     @include mobile-only {
       width: auto;
       padding: 8px 14px;
       font-size: 13px;
+      font-weight: 600;
+      border: 1.5px solid rgb(228, 240, 254);
+      background: #fff;
+      text-align: left;
     }
 
     &--active {
-      border-color: #1c7bff;
-      background: #1c7bff;
-      color: #fff;
+      @include web-only {
+        z-index: 1;
+        font-weight: 400;
+        color: #1c7bff;
+        /* Figma：#1C7BFF 10% */
+        background: rgba(28, 123, 255, 0.1);
+        box-shadow: none;
+        border-left: 4px solid #1c7bff;
+        padding-left: 14px;
+
+        &:hover {
+          background: rgba(28, 123, 255, 0.14);
+          color: #1c7bff;
+        }
+      }
+
+      @include mobile-only {
+        border-color: #1c7bff;
+        background: #1c7bff;
+        color: #fff;
+        box-shadow: none;
+      }
     }
   }
 
   &__main {
+    flex: 1;
     min-width: 0;
-  }
-
-  &__toolbar {
-    margin-bottom: $spacing-md;
-  }
-
-  &__back {
-    font-size: $font-size-md;
-    color: var(--theme-primary);
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-  }
-}
-
-.market-hero {
-  border-radius: 24px;
-  padding: 16px;
-  margin-bottom: $spacing-lg;
-  background: var(--auxiliary-1);
-  border: 1.5px solid rgba(255, 255, 255, 1);
-  box-shadow: 0 8px 20px 0 rgba(21, 58, 118, 0.12);
-
-  @include web-only {
-    padding: 20px 24px 24px;
-  }
-
-  &__top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 12px;
-  }
-
-  &__league {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-weight: 600;
-    color: #0b3462;
-    min-width: 0;
-  }
-
-  &__league-icon {
-    flex-shrink: 0;
-    width: 22px;
-    height: 22px;
-    object-fit: contain;
-  }
-
-  &__date {
-    font-family: $font-family-num;
-    font-weight: 700;
-    font-size: $font-size-md;
-    color: #0b3462;
-    flex-shrink: 0;
-  }
-
-  &__arena {
-    position: relative;
-    border-radius: 16px;
-    overflow: hidden;
-    border: 1px solid rgb(228, 240, 254);
-    background: linear-gradient(180deg, #f3f8ff 0%, #e8f2ff 100%);
-  }
-
-  &__arena-bg {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    pointer-events: none;
-  }
-
-  &__arena-inner {
-    position: relative;
-    z-index: 1;
-    padding: 16px 12px 18px;
-  }
-
-  &__grid {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    grid-template-rows: auto auto auto;
-    grid-template-areas:
-      'hlogo . alogo'
-      'hname vs aname'
-      'hscore . ascore';
-    align-items: center;
-    column-gap: 8px;
-    row-gap: 10px;
-  }
-
-  &__logo {
-    display: flex;
-    justify-content: center;
-
-    &--home {
-      grid-area: hlogo;
-    }
-
-    &--away {
-      grid-area: alogo;
-    }
-  }
-
-  &__badge {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background: #fff;
-    border: 0.5px solid rgb(228, 240, 254);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
 
     @include web-only {
-      width: 52px;
-      height: 52px;
+      flex: 0 1 800px;
+      width: 800px;
+      max-width: 100%;
+      box-sizing: border-box;
     }
   }
 
-  &__badge-img {
-    width: 72%;
-    height: 72%;
-    object-fit: contain;
-  }
-
-  &__badge-txt {
-    font-weight: 700;
-    color: #1c7bff;
-    font-size: 16px;
-  }
-
-  &__name {
-    font-size: $font-size-md;
-    font-weight: 500;
-    color: #0b3462;
-    text-align: center;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-
-    &--home {
-      grid-area: hname;
-    }
-
-    &--away {
-      grid-area: aname;
-    }
-  }
-
-  &__vs {
-    grid-area: vs;
-    font-family: $font-family-num;
-    font-weight: 800;
-    color: #1c7bff;
-    font-size: 20px;
-    justify-self: center;
-    transform: translateY(-40%);
-
-    @include web-only {
-      font-size: 24px;
-    }
-  }
-
-  &__score-wrap {
-    display: flex;
-    justify-content: center;
-
-    &--home {
-      grid-area: hscore;
-    }
-
-    &--away {
-      grid-area: ascore;
-    }
-  }
-
-  &__score {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 32px;
-
-    @include web-only {
-      width: 48px;
-      height: 36px;
-    }
-
-    &--lead .market-hero__score-num {
-      color: #fff;
-    }
-  }
-
-  &__score-bg {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: fill;
-  }
-
-  &__score-num {
-    position: relative;
-    z-index: 1;
-    font-family: $font-family-num;
-    font-weight: 700;
-    font-size: 18px;
-    color: #0b3462;
-
-    @include web-only {
-      font-size: 22px;
-    }
-  }
-
-  &__vol {
-    display: flex;
-    align-items: baseline;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 14px;
-    margin-bottom: 12px;
-  }
-
-  &__vol-lab {
-    font-size: 14px;
-    color: rgba(11, 52, 98, 0.55);
-  }
-
-  &__vol-val {
-    font-size: 20px;
-    font-weight: 700;
-    color: #1c7bff;
-
-    @include web-only {
-      font-size: 22px;
-    }
-  }
-
-  &__cta {
-    width: 100%;
-    height: 44px;
-    font-weight: 600;
-
-    @include web-only {
-      height: 48px;
-      font-size: $font-size-lg;
-    }
+  &__hero {
+    margin-bottom: $spacing-lg;
   }
 }
 
