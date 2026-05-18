@@ -1,9 +1,12 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
+import { storeToRefs } from 'pinia';
 
 import { getHotMatchById } from '@/constants/hotMatchCatalog';
+import { useAppStore } from '@/store/modules/app';
+import MarketDetailScoreSection from '@/views/Market/Detail/components/MarketDetailScoreSection.vue';
 import HomeMatchCard from '@/views/Home/components/HomeMatchCard.vue';
 
 import iconArrowRightUrl from '@/assets/images/common/icon_arrow_right.svg?url';
@@ -12,8 +15,20 @@ import logoMarketUrl from '@/assets/images/common/logo-market.svg?url';
 
 const { t } = useI18n();
 const route = useRoute();
+const router = useRouter();
+const appStore = useAppStore();
+const { isMobile } = storeToRefs(appStore);
 
 const activeTab = ref('fulltime');
+const expandedSections = ref({
+  fulltime: true,
+  halftime: false,
+});
+
+const mobileSections = [
+  { tab: 'fulltime', titleKey: '全场赛果' },
+  { tab: 'halftime', titleKey: '半场赛果' },
+];
 const buyType = ref('standard');
 const buyAmount = ref('');
 const showBuyPanel = ref(false);
@@ -44,6 +59,20 @@ function buildScoreRows(matchId, tab) {
 }
 
 const scoreRows = computed(() => buildScoreRows(match.value.id, activeTab.value));
+const scoreRowsFulltime = computed(() => buildScoreRows(match.value.id, 'fulltime'));
+const scoreRowsHalftime = computed(() => buildScoreRows(match.value.id, 'halftime'));
+
+function scoreRowsForTab(tab) {
+  return tab === 'halftime' ? scoreRowsHalftime.value : scoreRowsFulltime.value;
+}
+
+function isSectionExpanded(tab) {
+  return expandedSections.value[tab];
+}
+
+function toggleSection(tab) {
+  expandedSections.value[tab] = !expandedSections.value[tab];
+}
 
 watch(activeTab, () => {
   closeBuyPanel();
@@ -53,6 +82,7 @@ watch(
   () => route.params.id,
   (id) => {
     match.value = getHotMatchById(id);
+    expandedSections.value = { fulltime: true, halftime: false };
     closeBuyPanel();
   },
 );
@@ -61,7 +91,8 @@ function scrollToScoreMarket() {
   document.getElementById('score-market')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function selectRow(row) {
+function selectRow(row, tab = activeTab.value) {
+  activeTab.value = tab;
   selectedRow.value = row;
   showBuyPanel.value = true;
 }
@@ -75,11 +106,25 @@ function closeBuyPanel() {
 function formatScoreLabel(score) {
   return score.replace('-', ' - ');
 }
+
+function goToPurchaseDetails(row, tab = activeTab.value) {
+  router.push({
+    name: 'trade-purchases',
+    query: {
+      tab: 'ordered',
+      marketId: String(match.value.id),
+      score: row.score,
+      probability: row.probability,
+      marketTab: tab,
+      from: 'market',
+    },
+  });
+}
 </script>
 
 <template>
   <div class="market-detail">
-    <div class="market-detail__layout">
+    <div v-if="!isMobile" class="market-detail__layout">
       <aside class="market-detail__sidebar" aria-label="market-nav">
         <RouterLink to="/" class="market-detail__brand market-detail__brand--flush">
           <img :src="logoMarketUrl" alt="" class="market-detail__brand-img" width="180" height="96" />
@@ -110,7 +155,11 @@ function formatScoreLabel(score) {
           <HomeMatchCard :match="match" detail-mode @enter-market="scrollToScoreMarket" />
         </div>
 
-        <section id="score-market" class="score-table card-default">
+        <section
+          id="score-market"
+          class="score-table card-default"
+          :class="{ 'score-table--halftime': activeTab === 'halftime' }"
+        >
           <div class="score-table__head">
             <span class="score-table__head-label score-table__head-label--score">{{ t('比分') }}</span>
             <span class="score-table__head-label score-table__head-label--prob">{{ t('概率') }}</span>
@@ -146,10 +195,70 @@ function formatScoreLabel(score) {
                 height="24"
                 alt=""
                 aria-hidden="true"
+                @click.stop="goToPurchaseDetails(row)"
               />
             </li>
           </ul>
         </section>
+
+        <Transition name="slide">
+          <div v-if="showBuyPanel" class="buy-panel card-default">
+            <div class="buy-panel__header">
+              <h3 class="buy-panel__title">
+                {{ t('比分') }} {{ selectedRow?.score }} · {{ selectedRow?.probability }}
+              </h3>
+              <button type="button" class="buy-panel__close" @click="closeBuyPanel">✕</button>
+            </div>
+
+            <div class="buy-panel__type">
+              <button type="button" class="type-btn" :class="{ active: buyType === 'standard' }" @click="buyType = 'standard'">
+                {{ t('一般买入') }}
+              </button>
+              <button type="button" class="type-btn" :class="{ active: buyType === 'scheduled' }" @click="buyType = 'scheduled'">
+                {{ t('预约买入') }}
+              </button>
+            </div>
+
+            <div class="buy-panel__amount">
+              <label class="form-label">{{ t('买入金额') }}</label>
+              <input v-model="buyAmount" type="number" class="form-input" placeholder="0.00" />
+            </div>
+
+            <div class="buy-panel__actions">
+              <button type="button" class="btn btn--default-2 cancel-btn" @click="closeBuyPanel">
+                {{ t('取消') }}
+              </button>
+              <button type="button" class="btn btn--primary confirm-btn">
+                {{ t('确认买入') }}
+              </button>
+            </div>
+          </div>
+        </Transition>
+      </div>
+    </div>
+
+    <!-- H5：赛事卡 + 全场/半场折叠面板 -->
+    <div v-else class="market-detail__layout market-detail__layout--m">
+      <div class="market-detail__main market-detail__main--m">
+        <div class="market-detail__hero market-detail__hero--m">
+          <HomeMatchCard :match="match" detail-mode />
+        </div>
+
+        <div class="market-detail__sections">
+          <MarketDetailScoreSection
+            v-for="sec in mobileSections"
+            :key="sec.tab"
+            :title-key="sec.titleKey"
+            :tab="sec.tab"
+            :rows="scoreRowsForTab(sec.tab)"
+            :expanded="isSectionExpanded(sec.tab)"
+            :active-score="selectedRow?.score"
+            :show-active="showBuyPanel && activeTab === sec.tab"
+            @toggle="toggleSection(sec.tab)"
+            @select-row="selectRow($event, sec.tab)"
+            @open-purchase="goToPurchaseDetails($event, sec.tab)"
+          />
+        </div>
 
         <Transition name="slide">
           <div v-if="showBuyPanel" class="buy-panel card-default">
@@ -434,6 +543,32 @@ function formatScoreLabel(score) {
     margin-top: 0;
     margin-bottom: $spacing-lg;
   }
+
+  @include mobile-only {
+    padding-top: 8px;
+    padding-bottom: calc($mobile-tab-bar-offset + $spacing-3xl);
+    background: #e3ecfb;
+  }
+
+  &__layout--m {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  &__main--m {
+    width: 100%;
+    min-width: 0;
+  }
+
+  &__hero--m {
+    margin-bottom: 12px;
+  }
+
+  &__sections {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
 }
 
 .score-table {
@@ -552,6 +687,14 @@ function formatScoreLabel(score) {
     }
   }
 
+  &--halftime {
+    @include web-only {
+      .score-table__cell--prob {
+        color: #fb5c0d;
+      }
+    }
+  }
+
   &__row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr) 32px;
@@ -653,7 +796,7 @@ function formatScoreLabel(score) {
       height: 24px;
       flex-shrink: 0;
       justify-self: end;
-      pointer-events: none;
+      cursor: pointer;
     }
   }
 }

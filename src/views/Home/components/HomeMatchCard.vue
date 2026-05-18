@@ -27,7 +27,7 @@ const props = defineProps({
     type: Object,
     required: true,
   },
-  /** 详情页嵌入：整卡不跳转，底部「进入市场」改为按钮并向外 emit */
+  /** ??????????????????????????? emit */
   detailMode: {
     type: Boolean,
     default: false,
@@ -53,7 +53,7 @@ const LEAGUE_ICON_BY_NAME = {
   西甲: iconSpainUrl,
   德甲: iconGermaryUrl,
   法甲: iconFranceUrl,
-  欧联: iconEventsUrl,
+  赛事: iconEventsUrl,
 };
 
 const leagueIconUrl = computed(() => {
@@ -67,6 +67,22 @@ const homeTeamLogoUrl = computed(() =>
 const awayTeamLogoUrl = computed(() =>
   resolveTeamLogoUrl(props.match.awayTeam, props.match.awayTeamLogo),
 );
+
+const isDetailH5 = computed(() => props.detailMode && isMobile.value);
+
+const detailCountdownLabel = computed(() => {
+  const minutes = props.match.countdownMinutes;
+  if (minutes != null && minutes !== '') {
+    return `${minutes}`;
+  }
+  return props.match.countdown ?? '';
+});
+
+const detailMatchDate = computed(() => {
+  const raw = props.match.date ?? '';
+  if (/^\d{4}-/.test(raw)) return raw;
+  return `2026-${raw}`;
+});
 </script>
 
 <template>
@@ -74,11 +90,34 @@ const awayTeamLogoUrl = computed(() =>
     :is="rootComponent"
     v-bind="rootBind"
     class="match-card"
-    :class="{ 'match-card--detail': props.detailMode }"
+    :class="{ 'match-card--detail': props.detailMode, 'match-card--detail-h5': isDetailH5 }"
   >
-    <!-- H5：联赛+成交量同行 → 分割线 → 时间+开赛倒数 → 主体仅网格区（成交量不在此展示） -->
+    <!-- H5????????????????????+???? ?????????????????? -->
     <div v-if="isMobile" class="match-card__inner match-card__inner--m">
-      <div class="match-card__m-top">
+      <div v-if="isDetailH5" class="match-card__m-top match-card__m-top--detail">
+        <div class="match-card__m-league-row match-card__m-league-row--detail">
+          <div class="match-card__league">
+            <img
+              class="match-card__league-icon"
+              :src="leagueIconUrl"
+              alt=""
+              width="22"
+              height="22"
+              draggable="false"
+            />
+            <span class="match-card__league-name">{{ match.league }}</span>
+          </div>
+          <div class="match-card__pill match-card__pill--detail">
+            <span class="match-card__pill-lab">
+              <span class="match-card__pill-lab-keyword">{{ t('倒计时') }}</span><span class="match-card__pill-lab-sep">:</span>
+            </span>
+            <span class="match-card__pill-time">{{ detailCountdownLabel }}</span>
+          </div>
+        </div>
+        <span class="match-card__date match-card__date--detail">{{ detailMatchDate }}</span>
+      </div>
+
+      <div v-else class="match-card__m-top">
         <div class="match-card__m-league-row">
           <div class="match-card__league">
             <img
@@ -173,7 +212,7 @@ const awayTeamLogoUrl = computed(() =>
                   </div>
                 </div>
 
-                <span class="match-card__team-name match-card__team-name--home">{{ match.homeTeam }}</span>
+                <span class="match-card__team-name match-card__team-name--home"><span v-if="isDetailH5" class="match-card__home-tag">{{ t('主') }}</span>{{ match.homeTeam }}</span>
                 <span class="match-card__vs">VS</span>
                 <span class="match-card__team-name match-card__team-name--away">{{ match.awayTeam }}</span>
 
@@ -222,13 +261,12 @@ const awayTeamLogoUrl = computed(() =>
           class="btn btn--primary match-card__btn"
           @click="$emit('enter-market')"
         >
-          {{ t('进入市场') }}
-        </button>
+          {{ t('进入市场') }}</button>
         <span v-else class="btn btn--primary match-card__btn">{{ t('进入市场') }}</span>
       </div>
     </div>
 
-    <!-- PC：联赛行 → 全宽分割线 → 距分割 14px 时间行 → 距时间 14px 主体（上成交量无底 / 下网格） -->
+    <!-- PC???? ??????????????14px ??????????14px ??????????/ ???? -->
     <div v-else class="match-card__inner match-card__inner--w">
       <div class="match-card__w-top">
         <div class="match-card__w-league-row">
@@ -247,9 +285,20 @@ const awayTeamLogoUrl = computed(() =>
         <div class="match-card__divider" aria-hidden="true" />
         <div class="match-card__w-time-row">
           <span class="match-card__date match-card__date--w">{{ match.date }}</span>
-          <div class="match-card__pill match-card__pill--w">
-            <span class="match-card__pill-lab">{{ t('开赛倒数') }}</span>
-            <span class="match-card__pill-time">{{ match.countdown }}</span>
+          <div
+            class="match-card__pill match-card__pill--w"
+            :class="{ 'match-card__pill--detail-w': detailMode }"
+          >
+            <template v-if="detailMode">
+              <span class="match-card__pill-lab">
+                <span class="match-card__pill-lab-keyword">{{ t('倒计时') }}</span><span class="match-card__pill-lab-sep">:</span>
+              </span>
+              <span class="match-card__pill-time">{{ detailCountdownLabel }}</span>
+            </template>
+            <template v-else>
+              <span class="match-card__pill-lab">{{ t('开赛倒数') }}</span>
+              <span class="match-card__pill-time">{{ match.countdown }}</span>
+            </template>
           </div>
         </div>
       </div>
@@ -374,8 +423,7 @@ const awayTeamLogoUrl = computed(() =>
           class="btn btn--primary match-card__btn"
           @click="$emit('enter-market')"
         >
-          {{ t('进入市场') }}
-        </button>
+          {{ t('进入市场') }}</button>
         <span v-else class="btn btn--primary match-card__btn">{{ t('进入市场') }}</span>
       </div>
     </div>
@@ -434,6 +482,35 @@ const awayTeamLogoUrl = computed(() =>
         max-width: 300px;
       }
 
+      .match-card__pill--detail-w {
+        gap: 4px;
+        padding: 6px 12px;
+        border-radius: 8px;
+        background: rgba(228, 240, 254, 0.95);
+
+        .match-card__pill-lab-keyword,
+        .match-card__pill-lab-sep,
+        .match-card__pill-time {
+          font-size: 14px;
+          font-weight: 500;
+          line-height: 1;
+        }
+
+        .match-card__pill-lab-keyword {
+          color: rgba(11, 52, 98, 1);
+        }
+
+        .match-card__pill-lab-sep,
+        .match-card__pill-time {
+          color: #1f7cff;
+        }
+
+        .match-card__pill-time {
+          font-family: $font-family-num;
+          font-weight: 600;
+        }
+      }
+
       &:hover {
         transform: none;
         box-shadow: 0 8px 20px 0 rgba(21, 58, 118, 0.18);
@@ -445,6 +522,118 @@ const awayTeamLogoUrl = computed(() =>
         transform: none;
         box-shadow: 0 8px 20px 0 rgba(21, 58, 118, 0.18);
       }
+    }
+  }
+
+  &--detail-h5 {
+    @include mobile-only {
+      padding: 14px 12px 12px;
+      border-radius: 16px;
+      box-shadow: var(--shadow-card);
+
+      &:hover {
+        transform: none;
+        box-shadow: var(--shadow-card);
+      }
+
+      .match-card__foot {
+        display: none;
+      }
+
+      .match-card__mg-score-slot {
+        display: none;
+      }
+
+      .match-card__arena-grid-inner {
+        padding: 16px 8px 12px;
+      }
+
+      .match-card__mg--m {
+        row-gap: 8px;
+      }
+
+      .match-card__vs {
+        font-size: 22px;
+        font-weight: 700;
+        color: #1c7bff;
+      }
+    }
+  }
+
+  &__m-top--detail {
+    @include mobile-only {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+  }
+
+  &__m-league-row--detail {
+    @include mobile-only {
+      padding-bottom: 0;
+    }
+  }
+
+  &__pill--detail {
+    @include mobile-only {
+      flex-shrink: 0;
+      min-height: 24px;
+      padding: 0 8px;
+      gap: 2px;
+      border-radius: 6px;
+      background: rgba(228, 240, 254, 0.95);
+
+      .match-card__pill-lab-keyword,
+      .match-card__pill-lab-sep,
+      .match-card__pill-time {
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 1;
+      }
+
+      .match-card__pill-lab-keyword {
+        color: rgba(11, 52, 98, 1);
+      }
+
+      .match-card__pill-lab-sep,
+      .match-card__pill-time {
+        color: #1f7cff;
+      }
+
+      .match-card__pill-time {
+        font-family: $font-family-num;
+        font-weight: 600;
+      }
+    }
+  }
+
+  &__date--detail {
+    @include mobile-only {
+      display: block;
+      font-family: $font-family-num;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.2;
+      color: #0b3462;
+    }
+  }
+
+  &__home-tag {
+    @include mobile-only {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 4px;
+      padding: 1px 4px;
+      border-radius: 4px;
+      background: rgba(28, 123, 255, 0.12);
+      font-family: $font-family-base;
+      font-size: 10px;
+      font-weight: 500;
+      line-height: 1;
+      color: #1c7bff;
+      vertical-align: middle;
     }
   }
 

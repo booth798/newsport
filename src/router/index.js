@@ -22,6 +22,12 @@ const routes = [
     meta: { titleKey: '比分市场' },
   },
   {
+    path: '/trade/purchases',
+    name: 'trade-purchases',
+    component: () => import('@/views/Trade/PurchaseDetails/index.vue'),
+    meta: { titleKey: '买入明细' },
+  },
+  {
     path: '/finance',
     name: 'finance',
     component: () => import('@/views/Finance/index.vue'),

@@ -1,0 +1,536 @@
+<script setup>
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+
+import iconChampionUrl from '@/assets/images/events/icon_champion.svg?url';
+import iconEventsUrl from '@/assets/images/events/icon_events.svg?url';
+import iconFranceUrl from '@/assets/images/events/icon_france.svg?url';
+import iconGermaryUrl from '@/assets/images/events/icon_germary.svg?url';
+import iconItalyUrl from '@/assets/images/events/icon_italy.svg?url';
+import iconSpainUrl from '@/assets/images/events/icon_spain.svg?url';
+import iconUkUrl from '@/assets/images/events/icon_uk.svg?url';
+import iconChevronDownUrl from '@/assets/images/common/icon_drawer_section_chevron_down.svg?url';
+import iconChevronUpUrl from '@/assets/images/common/icon_drawer_section_chevron_up.svg?url';
+import { resolveTeamLogoUrl } from '@/constants/teamLogos';
+
+const props = defineProps({
+  order: {
+    type: Object,
+    required: true,
+  },
+  expanded: {
+    type: Boolean,
+    default: false,
+  },
+});
+
+const emit = defineEmits(['toggle']);
+
+const { t } = useI18n();
+
+const LEAGUE_ICON_BY_NAME = {
+  欧冠: iconChampionUrl,
+  英超: iconUkUrl,
+  意甲: iconItalyUrl,
+  西甲: iconSpainUrl,
+  德甲: iconGermaryUrl,
+  法甲: iconFranceUrl,
+};
+
+const leagueIconUrl = computed(() => LEAGUE_ICON_BY_NAME[props.order.league] ?? iconEventsUrl);
+const homeLogoUrl = computed(() => resolveTeamLogoUrl(props.order.homeTeam));
+const awayLogoUrl = computed(() => resolveTeamLogoUrl(props.order.awayTeam));
+const chevronSrc = computed(() => (props.expanded ? iconChevronUpUrl : iconChevronDownUrl));
+
+const statusClass = computed(() => `purchase-card__status--${props.order.statusTone}`);
+
+async function copyOrderNo() {
+  try {
+    await navigator.clipboard.writeText(props.order.orderNo);
+  } catch {
+    /* clipboard unavailable */
+  }
+}
+</script>
+
+<template>
+  <article class="purchase-card" :class="{ 'purchase-card--expanded': expanded }">
+    <header class="purchase-card__head">
+      <div class="purchase-card__head-left">
+        <span class="purchase-card__platform">{{ order.platform }}</span>
+        <span class="purchase-card__date">{{ order.dateShort }}</span>
+      </div>
+      <span class="purchase-card__status" :class="statusClass">{{ t(order.statusKey) }}</span>
+    </header>
+
+    <div class="purchase-card__head-divider" aria-hidden="true" />
+
+    <div class="purchase-card__panel">
+      <div class="purchase-card__league">
+      <img class="purchase-card__league-icon" :src="leagueIconUrl" width="18" height="18" alt="" />
+      <span class="purchase-card__league-name">{{ order.league }}</span>
+      </div>
+
+      <div class="purchase-card__arena">
+      <div class="purchase-card__arena-grid">
+        <div class="purchase-card__arena-inner">
+          <div class="purchase-card__team purchase-card__team--home">
+          <img
+            v-if="homeLogoUrl"
+            class="purchase-card__team-logo"
+            :src="homeLogoUrl"
+            :alt="order.homeTeam"
+            width="48"
+            height="48"
+            decoding="async"
+            draggable="false"
+          />
+          <span v-else class="purchase-card__team-placeholder" aria-hidden="true" />
+          <p class="purchase-card__team-name">
+            <span class="purchase-card__home-tag">{{ t('主') }}</span>
+            {{ order.homeTeam }}
+          </p>
+        </div>
+        <span class="purchase-card__vs">VS</span>
+        <div class="purchase-card__team purchase-card__team--away">
+          <img
+            v-if="awayLogoUrl"
+            class="purchase-card__team-logo"
+            :src="awayLogoUrl"
+            :alt="order.awayTeam"
+            width="48"
+            height="48"
+            decoding="async"
+            draggable="false"
+          />
+          <span v-else class="purchase-card__team-placeholder" aria-hidden="true" />
+          <p class="purchase-card__team-name">{{ order.awayTeam }}</p>
+          </div>
+        </div>
+        </div>
+      </div>
+
+      <div class="purchase-card__summary">
+        <div class="purchase-card__summary-row">
+          <span class="purchase-card__summary-label">{{ t('交易金额') }}</span>
+          <span class="purchase-card__summary-val purchase-card__summary-val--amount">{{ order.tradeAmountFormatted }}</span>
+        </div>
+        <div class="purchase-card__summary-row">
+          <span class="purchase-card__summary-label">{{ t('盈利') }}</span>
+          <span class="purchase-card__summary-val purchase-card__summary-val--profit">{{ order.profitFormatted }}</span>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        class="purchase-card__toggle"
+        :aria-expanded="expanded"
+        @click="emit('toggle')"
+      >
+        <img class="purchase-card__toggle-icon" :src="chevronSrc" width="20" height="20" alt="" />
+      </button>
+    </div>
+
+    <div v-if="expanded" class="purchase-card__detail">
+      <div class="purchase-card__detail-row">
+        <span class="purchase-card__detail-label">{{ t('订单号码') }}</span>
+        <span class="purchase-card__detail-val purchase-card__detail-val--order">
+          <span class="purchase-card__order-no">{{ order.orderNo }}</span>
+          <button type="button" class="purchase-card__copy" :aria-label="t('复制')" @click.stop="copyOrderNo">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <rect x="5" y="5" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.2" />
+              <path d="M4 11V4.5A1.5 1.5 0 0 1 5.5 3H11" stroke="currentColor" stroke-width="1.2" />
+            </svg>
+          </button>
+        </span>
+      </div>
+      <div class="purchase-card__detail-row">
+        <span class="purchase-card__detail-label">{{ t('交易时间') }}</span>
+        <span class="purchase-card__detail-val">{{ order.tradeTime }}</span>
+      </div>
+      <div class="purchase-card__detail-row">
+        <span class="purchase-card__detail-label">{{ t('投注市场') }}</span>
+        <span class="purchase-card__detail-val">{{ order.marketLabel }}</span>
+      </div>
+      <div class="purchase-card__detail-row">
+        <span class="purchase-card__detail-label">{{ t('金额') }}</span>
+        <span class="purchase-card__detail-val">{{ order.betAmountFormatted }}</span>
+      </div>
+      <div class="purchase-card__detail-row">
+        <span class="purchase-card__detail-label">{{ t('预估盈利') }}</span>
+        <span class="purchase-card__detail-val purchase-card__detail-val--profit">{{ order.estimatedProfitFormatted }}</span>
+      </div>
+
+      <button v-if="order.canCancel" type="button" class="purchase-card__cancel" @click.stop>
+        {{ t('取消订单') }}
+      </button>
+    </div>
+  </article>
+</template>
+
+<style lang="scss" scoped>
+@use '@/styles/tools.scss' as *;
+
+.purchase-card {
+  position: relative;
+  box-sizing: border-box;
+  padding: 16px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  background: linear-gradient(180deg, #f8fbff 0%, #f0f7ff 100%);
+  box-shadow: 0 6px 20px 0 rgba(21, 58, 118, 0.1);
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 0;
+  }
+
+  &__head-divider {
+    height: 1px;
+    margin: 10px 0 12px;
+    background: #fff;
+  }
+
+  &__panel {
+    position: relative;
+    box-sizing: border-box;
+    padding: 12px 12px 36px;
+    border: 1px solid #fff;
+    border-radius: 16px;
+    background: #fff;
+    overflow: hidden;
+  }
+
+  &__head-left {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  &__platform {
+    font-family: $font-family-base;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: #0b3462;
+    white-space: nowrap;
+  }
+
+  &__date {
+    font-family: $font-family-num;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.2;
+    color: rgba(11, 52, 98, 0.45);
+    white-space: nowrap;
+  }
+
+  &__status {
+    flex-shrink: 0;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
+
+    &--pending {
+      color: #1c7bff;
+      background: rgba(28, 123, 255, 0.14);
+    }
+
+    &--completed {
+      color: rgba(11, 52, 98, 0.55);
+      background: rgba(11, 52, 98, 0.1);
+    }
+
+    &--lost {
+      color: #ff2d2d;
+      background: rgba(255, 45, 45, 0.12);
+    }
+
+    &--scheduled {
+      color: #fb5c0d;
+      background: rgba(251, 92, 13, 0.14);
+    }
+  }
+
+  &__league {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  &__league-icon {
+    display: block;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  &__league-name {
+    font-family: $font-family-base;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: #0b3462;
+  }
+
+  &__arena {
+    margin-bottom: 12px;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  &__arena-grid {
+    position: relative;
+    overflow: hidden;
+    min-height: 118px;
+    background-color: #f3f8ff;
+    background-image: url('@/assets/images/events/bg_score.svg');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+  }
+
+  &__arena-inner {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 6px;
+    min-height: 118px;
+    padding: 14px 10px 12px;
+    box-sizing: border-box;
+  }
+
+  &__team {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+
+    &--home .purchase-card__team-name {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+  }
+
+  &__team-logo,
+  &__team-placeholder {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+
+  &__team-placeholder {
+    display: block;
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(228, 240, 254, 0.95);
+  }
+
+  &__team-name {
+    margin: 0;
+    font-family: $font-family-base;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.3;
+    color: #0b3462;
+    text-align: center;
+    word-break: break-word;
+  }
+
+  &__home-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 3px;
+    border-radius: 3px;
+    background: #1c7bff;
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1;
+    color: #fff;
+  }
+
+  &__vs {
+    font-family: $font-family-base;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    color: #1c7bff;
+    flex-shrink: 0;
+    align-self: center;
+  }
+
+  &__summary {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(228, 240, 254, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+  }
+
+  &__summary-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 0;
+
+    &:first-child {
+      padding-bottom: 10px;
+      margin-bottom: 2px;
+      border-bottom: 1px solid #fff;
+    }
+  }
+
+  &__summary-label,
+  &__detail-label {
+    font-family: $font-family-base;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.2;
+    color: rgba(11, 52, 98, 0.55);
+  }
+
+  &__summary-val {
+    font-family: $font-family-num;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: #0b3462;
+
+    &--profit {
+      color: #1c7bff;
+    }
+  }
+
+  &__toggle {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    cursor: pointer;
+
+    &:hover {
+      opacity: 0.72;
+    }
+  }
+
+  &__toggle-icon {
+    display: block;
+    width: 20px;
+    height: 20px;
+    pointer-events: none;
+  }
+
+  &__detail {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 12px;
+    padding: 14px;
+    border-radius: 14px;
+    background: rgba(240, 247, 255, 0.6);
+    border: 1px solid rgba(228, 240, 254, 0.9);
+  }
+
+  &__detail-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  &__detail-val {
+    font-family: $font-family-num;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.3;
+    color: #0b3462;
+    text-align: right;
+    min-width: 0;
+    word-break: break-all;
+
+    &--order {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+
+    &--profit {
+      color: #1c7bff;
+      font-weight: 600;
+    }
+  }
+
+  &__order-no {
+    font-size: 12px;
+  }
+
+  &__copy {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: rgba(28, 123, 255, 0.08);
+    color: #1c7bff;
+    cursor: pointer;
+    flex-shrink: 0;
+
+    &:hover {
+      background: rgba(28, 123, 255, 0.16);
+    }
+  }
+
+  &__cancel {
+    align-self: flex-start;
+    margin-top: 2px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 999px;
+    background: rgba(255, 45, 45, 0.1);
+    color: #ff2d2d;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s ease;
+
+    &:hover {
+      background: rgba(255, 45, 45, 0.16);
+    }
+  }
+
+}
+</style>

@@ -64,7 +64,7 @@ const navMenus = {
     { labelKey: '即时比分', to: '/market', icon: iconLiveScores },
   ],
   trade: [
-    { labelKey: '买入明细', to: '/finance/deposit', icon: iconPurchaseDetails },
+    { labelKey: '买入明细', to: '/trade/purchases', icon: iconPurchaseDetails },
     { labelKey: '交易记录', to: '/finance/records', icon: iconTransactionRecords },
   ],
   member: [
@@ -93,7 +93,7 @@ const isNavActive = (item) => {
   if (item.key === 'market') {
     return route.name === 'market' || route.name === 'market-detail';
   }
-  if (item.key === 'trade') return route.path.startsWith('/finance');
+  if (item.key === 'trade') return route.path.startsWith('/finance') || route.name === 'trade-purchases';
   if (item.key === 'member') return false;
   if (item.key === 'myBenefit') return route.path.startsWith('/profile');
   return false;
@@ -110,6 +110,7 @@ const isSubmenuLinkActive = (sub) => {
     return route.path === to.path && (route.hash || '') === hash;
   }
   if (to === '/market') return route.name === 'market' || route.name === 'market-detail';
+  if (to === '/trade/purchases') return route.name === 'trade-purchases';
   if (to === '/finance/deposit') return route.name === 'finance-deposit';
   if (to === '/finance/records') return route.name === 'finance-records';
   if (to === '/profile') return route.name === 'profile-home';
@@ -121,6 +122,21 @@ const isSubmenuLinkActive = (sub) => {
 
 /** 比分市场详情：顶栏改为「返回 + 右侧账户区」，与首页主导航区分 */
 const isMarketDetailPage = computed(() => route.name === 'market-detail');
+const isPurchaseDetailsPage = computed(() => route.name === 'trade-purchases');
+const isCompactDetailHeader = computed(
+  () => isMarketDetailPage.value || isPurchaseDetailsPage.value,
+);
+const compactHeaderBackTo = computed(() => {
+  if (isPurchaseDetailsPage.value) {
+    const raw = route.query.marketId;
+    const id = Number(Array.isArray(raw) ? raw[0] : raw);
+    if (Number.isFinite(id) && id > 0) {
+      return { name: 'market-detail', params: { id: String(id) } };
+    }
+    return '/market';
+  }
+  return '/';
+});
 
 const beijingNowStr = ref('');
 let beijingTimer = null;
@@ -149,7 +165,12 @@ function clearBeijingTimer() {
 
 function startBeijingTimerIfNeeded() {
   clearBeijingTimer();
-  if (typeof window === 'undefined' || route.name !== 'market-detail') return;
+  if (
+    typeof window === 'undefined' ||
+    (route.name !== 'market-detail' && route.name !== 'trade-purchases')
+  ) {
+    return;
+  }
   updateBeijingClock();
   beijingTimer = window.setInterval(updateBeijingClock, 1000);
 }
@@ -168,12 +189,12 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="header" :class="{ 'header--market-detail': isMarketDetailPage }">
+  <div class="header" :class="{ 'header--market-detail': isCompactDetailHeader }">
 
-    <div class="card-primary norem" :class="{ 'card-primary--market-detail': isMarketDetailPage }">
+    <div class="card-primary norem" :class="{ 'card-primary--market-detail': isCompactDetailHeader }">
       <RouterLink
-        v-if="isMobile && isMarketDetailPage"
-        to="/"
+        v-if="isMobile && isCompactDetailHeader"
+        :to="compactHeaderBackTo"
         class="header-market-back-btn header-market-back-btn--m"
         :aria-label="t('返回')"
       >
@@ -182,8 +203,8 @@ onUnmounted(() => {
       <img v-else-if="isMobile" class="logo" :src="logoUrl" alt="logo" />
 
       <RouterLink
-        v-if="!isMobile && isMarketDetailPage"
-        to="/"
+        v-if="!isMobile && isCompactDetailHeader"
+        :to="compactHeaderBackTo"
         custom
         v-slot="{ navigate, href }"
       >
@@ -198,7 +219,7 @@ onUnmounted(() => {
       </RouterLink>
       <img v-else-if="!isMobile" class="logo" :src="logoUrl" alt="logo" />
 
-      <div class="navbar" v-if="!isMobile && !isMarketDetailPage">
+      <div class="navbar" v-if="!isMobile && !isCompactDetailHeader">
         <template v-for="item in navbarList" :key="item.key">
           <RouterLink
             v-if="item.kind === 'plain'"
@@ -291,11 +312,11 @@ onUnmounted(() => {
         v-else
         class="header-toolbar"
         :class="{
-          'header-toolbar--member': isLoggedIn && !isMarketDetailPage,
-          'header-toolbar--market-detail': isMarketDetailPage,
+          'header-toolbar--member': isLoggedIn && !isCompactDetailHeader,
+          'header-toolbar--market-detail': isCompactDetailHeader,
         }"
       >
-        <div v-if="!isMarketDetailPage" class="i18n-select">
+        <div v-if="!isCompactDetailHeader" class="i18n-select">
           <button
             type="button"
             class="i18n-select__btn"
@@ -322,7 +343,7 @@ onUnmounted(() => {
           </button>
         </div>
 
-        <template v-if="isMarketDetailPage && isLoggedIn">
+        <template v-if="isCompactDetailHeader && isLoggedIn">
           <div class="header-market-detail-stack">
             <div class="header-market-belt-row">
               <div class="header-user-strip" role="group" :aria-label="loggedInUserId">
@@ -346,7 +367,7 @@ onUnmounted(() => {
           </div>
         </template>
 
-        <template v-else-if="isMarketDetailPage && !isLoggedIn">
+        <template v-else-if="isCompactDetailHeader && !isLoggedIn">
           <div class="header-market-detail-stack">
             <div class="header-market-belt-row">
               <a href="#" class="header-forgot" @click.prevent>{{ t('忘记密码') }}</a>
