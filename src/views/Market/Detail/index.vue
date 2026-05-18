@@ -6,6 +6,8 @@ import { useRoute } from 'vue-router';
 import { getHotMatchById } from '@/constants/hotMatchCatalog';
 import HomeMatchCard from '@/views/Home/components/HomeMatchCard.vue';
 
+import iconArrowRightUrl from '@/assets/images/common/icon_arrow_right.svg?url';
+import iconVolumeThumbUpUrl from '@/assets/images/common/icon_volume_thumb_up.svg?url';
 import logoMarketUrl from '@/assets/images/common/logo-market.svg?url';
 
 const { t } = useI18n();
@@ -69,6 +71,10 @@ function closeBuyPanel() {
   selectedRow.value = null;
   buyAmount.value = '';
 }
+
+function formatScoreLabel(score) {
+  return score.replace('-', ' - ');
+}
 </script>
 
 <template>
@@ -106,9 +112,18 @@ function closeBuyPanel() {
 
         <section id="score-market" class="score-table card-default">
           <div class="score-table__head">
-            <span>{{ t('比分') }}</span>
-            <span>{{ t('概率') }}</span>
-            <span class="score-table__head-vol">{{ t('成交量') }}</span>
+            <span class="score-table__head-label score-table__head-label--score">{{ t('比分') }}</span>
+            <span class="score-table__head-label score-table__head-label--prob">{{ t('概率') }}</span>
+            <span class="score-table__head-vol">
+              <img
+                class="score-table__head-vol-icon"
+                :src="iconVolumeThumbUpUrl"
+                width="20"
+                height="20"
+                alt=""
+              />
+              <span class="score-table__head-vol-text">{{ t('成交量') }}</span>
+            </span>
           </div>
           <ul class="score-table__body">
             <li
@@ -121,10 +136,17 @@ function closeBuyPanel() {
               @click="selectRow(row)"
               @keydown.enter.prevent="selectRow(row)"
             >
-              <span class="score-table__cell score-table__cell--score">{{ row.score }}</span>
-              <span class="score-table__cell">{{ row.probability }}</span>
+              <span class="score-table__cell score-table__cell--score">{{ formatScoreLabel(row.score) }}</span>
+              <span class="score-table__cell score-table__cell--prob">{{ row.probability }}</span>
               <span class="score-table__cell score-table__cell--vol">{{ row.volumeFormatted }}</span>
-              <span class="score-table__arrow" aria-hidden="true">›</span>
+              <img
+                class="score-table__arrow"
+                :src="iconArrowRightUrl"
+                width="24"
+                height="24"
+                alt=""
+                aria-hidden="true"
+              />
             </li>
           </ul>
         </section>
@@ -177,7 +199,7 @@ function closeBuyPanel() {
   padding-bottom: $spacing-4xl;
 
   @include web-only {
-    padding-top: 20px;
+    padding-top: 16px;
     /* 与侧栏 1px 白边形成对比 */
     background: #e3ecfb;
     border-radius: 0;
@@ -190,9 +212,10 @@ function closeBuyPanel() {
     gap: 16px;
 
     @include web-only {
+      display: grid;
+      grid-template-columns: 180px minmax(0, 800px);
       justify-content: center;
-      /* 勿 stretch：否则侧栏被拉成与主列同高，position:sticky 无法相对主区“钉住” */
-      align-items: flex-start;
+      align-items: start;
       gap: 28px;
     }
 
@@ -212,13 +235,15 @@ function closeBuyPanel() {
       width: 180px;
       box-sizing: border-box;
       padding: 0 0 20px;
+      /* 抵消 sticky 顶栏占位与主列起始位的差值，使侧栏白卡与右侧大卡片顶对齐 */
+      // margin-top: -9px;
       background: #fff;
       border-radius: 32px;
       border: 1px solid #fff;
       box-shadow: 0 6px 20px 0 rgba(21, 58, 118, 0.18);
       position: sticky;
-      top: calc(#{$web-market-detail-sidebar-sticky-top} + 16px);
-      align-self: flex-start;
+      top: $web-market-detail-sidebar-sticky-top;
+      align-self: start;
       min-height: calc(100vh - #{$web-market-detail-sidebar-sticky-top} - 36px);
       overflow-x: hidden;
       overflow-y: auto;
@@ -397,14 +422,16 @@ function closeBuyPanel() {
     min-width: 0;
 
     @include web-only {
-      flex: 0 1 800px;
+      flex: none;
       width: 800px;
       max-width: 100%;
       box-sizing: border-box;
+      align-self: start;
     }
   }
 
   &__hero {
+    margin-top: 0;
     margin-bottom: $spacing-lg;
   }
 }
@@ -414,6 +441,15 @@ function closeBuyPanel() {
   overflow: hidden;
   border: 1px solid rgb(228, 240, 254);
   background: #fff;
+
+  @include web-only {
+    overflow: visible;
+    padding: 25px 44px 32px;
+    border-radius: 32px;
+    border: 1px solid rgb(228, 240, 254);
+    background: #fff;
+    box-shadow: var(--shadow-card);
+  }
 
   &__head {
     display: grid;
@@ -427,19 +463,93 @@ function closeBuyPanel() {
     border-bottom: 1px solid rgb(228, 240, 254);
 
     @include web-only {
-      padding: 14px 18px;
-      font-size: $font-size-md;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr) 24px;
+      gap: 12px;
+      align-items: center;
+      min-height: 34px;
+      padding: 0;
+      margin-bottom: 16px;
+      background: transparent;
+      border-bottom: none;
+    }
+  }
+
+  &__head-label {
+    @include web-only {
+      font-family: $font-family-base;
+      font-size: 16px;
+      font-weight: 500;
+      line-height: 1;
+      color: #0b3462;
+    }
+
+    &--score {
+      @include web-only {
+        text-align: left;
+      }
+    }
+
+    &--prob {
+      @include web-only {
+        text-align: center;
+      }
     }
   }
 
   &__head-vol {
     color: #e11d48;
+
+    @include web-only {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      box-sizing: border-box;
+      width: 100px;
+      height: 34px;
+      padding: 0 10px;
+      border-radius: 49.58px;
+      border: 1px solid #fff;
+      background: rgba(255, 45, 45, 1);
+      color: #fff;
+      justify-self: end;
+      box-shadow:
+        0 4px 12px rgba(255, 45, 45, 0.28),
+        inset 6px 6px 12px 0 rgba(255, 255, 255, 0.2),
+        inset 3px 2px 10px 0 rgba(255, 255, 255, 0.2);
+    }
+  }
+
+  &__head-vol-icon {
+    @include web-only {
+      display: block;
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      pointer-events: none;
+    }
+  }
+
+  &__head-vol-text {
+    @include web-only {
+      font-family: $font-family-base;
+      font-size: 16px;
+      font-weight: 500;
+      line-height: 1;
+      white-space: nowrap;
+    }
   }
 
   &__body {
     list-style: none;
     margin: 0;
     padding: 0;
+
+    @include web-only {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
   }
 
   &__row {
@@ -450,10 +560,19 @@ function closeBuyPanel() {
     padding: 12px 14px;
     border-bottom: 1px solid rgb(240, 246, 255);
     cursor: pointer;
-    transition: background 0.15s;
+    transition:
+      background 0.15s ease,
+      box-shadow 0.15s ease;
 
     @include web-only {
-      padding: 14px 18px;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr) 24px;
+      gap: 12px;
+      min-height: 48px;
+      padding: 10px 20px;
+      border-bottom: none;
+      border-radius: 16px;
+      background: rgba(240, 247, 255, 0.92);
+      border: 1px solid rgba(228, 240, 254, 0.9);
     }
 
     &:last-child {
@@ -462,10 +581,21 @@ function closeBuyPanel() {
 
     &:hover {
       background: rgba(28, 123, 255, 0.04);
+
+      @include web-only {
+        background: rgba(228, 240, 254, 0.98);
+        box-shadow: 0 2px 8px rgba(21, 58, 118, 0.08);
+      }
     }
 
     &--active {
       background: rgba(28, 123, 255, 0.08);
+
+      @include web-only {
+        background: rgba(28, 123, 255, 0.12);
+        border-color: rgba(28, 123, 255, 0.28);
+        box-shadow: 0 2px 10px rgba(28, 123, 255, 0.12);
+      }
     }
   }
 
@@ -473,9 +603,27 @@ function closeBuyPanel() {
     font-size: $font-size-md;
     color: #0b3462;
 
+    @include web-only {
+      font-size: 16px;
+    }
+
     &--score {
       font-family: $font-family-num;
       font-weight: 700;
+
+      @include web-only {
+        font-weight: 600;
+        text-align: left;
+      }
+    }
+
+    &--prob {
+      @include web-only {
+        font-family: $font-family-num;
+        font-weight: 600;
+        color: #1c7bff;
+        text-align: center;
+      }
     }
 
     &--vol {
@@ -485,7 +633,9 @@ function closeBuyPanel() {
       font-size: 13px;
 
       @include web-only {
-        font-size: $font-size-md;
+        font-weight: 500;
+        color: #0b3462;
+        text-align: right;
       }
     }
   }
@@ -496,6 +646,15 @@ function closeBuyPanel() {
     font-weight: 700;
     color: #1c7bff;
     line-height: 1;
+
+    @include web-only {
+      display: block;
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+      justify-self: end;
+      pointer-events: none;
+    }
   }
 }
 

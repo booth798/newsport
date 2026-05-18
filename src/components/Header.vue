@@ -169,9 +169,7 @@ onUnmounted(() => {
 
 <template>
   <div class="header" :class="{ 'header--market-detail': isMarketDetailPage }">
-    <div  class="header-beijing-bar" aria-live="polite">
-      <span class="header-beijing-bar__text" lang="en">Beijing Time: {{ beijingNowStr }}</span>
-    </div>
+
     <div class="card-primary norem" :class="{ 'card-primary--market-detail': isMarketDetailPage }">
       <RouterLink
         v-if="isMobile && isMarketDetailPage"
@@ -963,9 +961,9 @@ onUnmounted(() => {
   }
 
   .header-beijing-bar {
-    width: 100%;
     box-sizing: border-box;
     text-align: right;
+    pointer-events: none;
 
     &__text {
       font-family: $font-family-num, $font-family-base;
@@ -974,35 +972,6 @@ onUnmounted(() => {
       line-height: 1.2;
       color: rgba(11, 52, 98, 0.48);
       white-space: nowrap;
-    }
-
-    @include web-only {
-      /* 与胶囊同一顶栏视觉区：不占文档流高度，避免整体加高 */
-      position: fixed;
-      top: 0px;
-      right: 30px;
-      left: auto;
-      width: auto;
-      max-width: min(420px, 46vw);
-      padding: 0;
-      z-index: 2;
-      pointer-events: none;
-    }
-
-    @include mobile-only {
-      position: absolute;
-      top: 4px;
-      right: 8px;
-      left: auto;
-      width: auto;
-      max-width: min(280px, 72vw);
-      padding: 0;
-      z-index: 2;
-      pointer-events: none;
-
-      &__text {
-        font-size: 12px;
-      }
     }
   }
 
@@ -1035,6 +1004,30 @@ onUnmounted(() => {
       background: #e3ecfb;
       padding-top: 0;
       padding-bottom: 8px;
+    }
+
+    .header-beijing-bar {
+      @include web-only {
+        position: absolute;
+        top: 0;
+        right: 44px;
+        left: auto;
+        width: auto;
+        max-width: min(420px, 42vw);
+        padding: 0;
+        z-index: 2;
+      }
+
+      @include mobile-only {
+        position: absolute;
+        top: 4px;
+        right: 8px;
+        left: auto;
+        width: auto;
+        max-width: min(280px, 72vw);
+        padding: 0;
+        z-index: 2;
+      }
     }
   }
 

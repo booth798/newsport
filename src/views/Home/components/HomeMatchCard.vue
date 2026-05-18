@@ -424,6 +424,16 @@ const awayTeamLogoUrl = computed(() =>
     cursor: default;
 
     @include web-only {
+      .match-card__foot {
+        display: flex;
+        justify-content: center;
+      }
+
+      .match-card__btn {
+        width: min(100%, 300px);
+        max-width: 300px;
+      }
+
       &:hover {
         transform: none;
         box-shadow: 0 8px 20px 0 rgba(21, 58, 118, 0.18);
