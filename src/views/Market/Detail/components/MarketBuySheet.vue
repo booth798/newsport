@@ -12,6 +12,7 @@ import iconGermaryUrl from '@/assets/images/events/icon_germary.svg?url';
 import iconItalyUrl from '@/assets/images/events/icon_italy.svg?url';
 import iconSpainUrl from '@/assets/images/events/icon_spain.svg?url';
 import iconUkUrl from '@/assets/images/events/icon_uk.svg?url';
+import iconTradeSuccessUrl from '@/assets/images/common/icon_trade_success.svg?url';
 import { useAppStore } from '@/store/modules/app';
 import { resolveTeamLogoUrl } from '@/constants/teamLogos';
 
@@ -170,12 +171,15 @@ function onBackdropKeydown(e) {
         <div v-if="phase === 'success'" class="buy-sheet__success-stack">
         <div class="buy-sheet__success">
         <div class="buy-sheet__success-head">
-          <span class="buy-sheet__success-icon" aria-hidden="true">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-              <circle cx="14" cy="14" r="13" stroke="#fff" stroke-width="2" />
-              <path d="M8 14.5L12 18.5L20 10" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-          </span>
+          <img
+            class="buy-sheet__success-icon"
+            :src="iconTradeSuccessUrl"
+            alt=""
+            width="64"
+            height="56"
+            decoding="async"
+            draggable="false"
+          />
           <span class="buy-sheet__success-title">{{ t('交易成功') }}!</span>
         </div>
 
@@ -197,12 +201,14 @@ function onBackdropKeydown(e) {
             <div class="buy-sheet__success-teams">
               <span class="buy-sheet__success-team">
                 <img v-if="homeLogoUrl" :src="homeLogoUrl" alt="" width="20" height="20" />
-                <span class="buy-sheet__home-tag">{{ t('主') }}</span>
-                {{ match.homeTeam }}
+                <span class="buy-sheet__success-team-name">
+                  {{ match.homeTeam }}
+                  <span class="buy-sheet__home-tag buy-sheet__home-tag--after">{{ t('主') }}</span>
+                </span>
               </span>
               <span class="buy-sheet__success-team">
                 <img v-if="awayLogoUrl" :src="awayLogoUrl" alt="" width="20" height="20" />
-                {{ match.awayTeam }}
+                <span class="buy-sheet__success-team-name">{{ match.awayTeam }}</span>
               </span>
             </div>
           </div>
@@ -225,6 +231,15 @@ function onBackdropKeydown(e) {
               <span class="buy-sheet__success-summary-val buy-sheet__success-summary-val--profit">+ ¥ {{ successProfit }}</span>
             </div>
           </div>
+
+          <button
+            v-if="!isMobile"
+            type="button"
+            class="btn btn--default-1 buy-sheet__success-btn"
+            @click="goPurchaseDetails"
+          >
+            {{ t('前往买入明细') }}
+          </button>
         </div>
 
         </div>
@@ -232,15 +247,7 @@ function onBackdropKeydown(e) {
         <button
           v-if="isMobile"
           type="button"
-          class="btn btn--default-1 buy-sheet__success-btn buy-sheet__success-btn--outer norem"
-          @click="goPurchaseDetails"
-        >
-          {{ t('前往买入明细') }}
-        </button>
-        <button
-          v-else
-          type="button"
-          class="btn btn--default-1 buy-sheet__success-btn"
+          class="btn btn--primary buy-sheet__success-btn buy-sheet__success-btn--outer norem"
           @click="goPurchaseDetails"
         >
           {{ t('前往买入明细') }}
@@ -469,6 +476,17 @@ function onBackdropKeydown(e) {
       flex: 1;
       gap: 12px;
       max-height: 100%;
+    }
+  }
+
+  @include mobile-only {
+    &__success-stack {
+      align-items: center;
+    }
+
+    &__success-stack &__success {
+      width: 100%;
+      align-self: stretch;
     }
   }
 
@@ -1051,8 +1069,12 @@ function onBackdropKeydown(e) {
   }
 
   &__success-icon {
-    display: flex;
+    display: block;
+    width: 64px;
+    height: 56px;
+    flex-shrink: 0;
     z-index: 1;
+    object-fit: contain;
   }
 
   &__success-title {
@@ -1064,10 +1086,12 @@ function onBackdropKeydown(e) {
 
   &__success-body {
     margin: 0;
-    padding: 16px 14px;
+    padding: 16px 14px 14px;
     border-radius: 0 0 16px 16px;
     border: 3px solid #1c7bff;
     border-top: none;
+    display: flex;
+    flex-direction: column;
   }
 
   &__success-field {
@@ -1110,9 +1134,31 @@ function onBackdropKeydown(e) {
     color: #0b3462;
 
     img {
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
       object-fit: contain;
+      flex-shrink: 0;
     }
+  }
+
+  &__success-team-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    line-height: 1.3;
+    min-width: 0;
+  }
+
+  &__home-tag--after {
+    margin-right: 0;
+    margin-left: 0;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 3px;
+    font-size: 10px;
+    line-height: 1;
+    vertical-align: unset;
   }
 
   &__success-summary {
@@ -1150,19 +1196,30 @@ function onBackdropKeydown(e) {
     border-radius: 999px;
     font-size: 15px;
     font-weight: 600;
+    flex-shrink: 0;
 
     @include web-only {
-      width: calc(100% - 24px);
-      margin: 12px auto 14px;
+      width: 100%;
+      margin: 14px 0 0;
+      border: none;
+      box-shadow: var(--shadow-card);
     }
   }
 
-  &__success-btn--outer {
-    width: 100%;
-    flex-shrink: 0;
-    border: 1.5px solid #1c7bff;
-    color: #1c7bff;
-    background: #fff;
+  /* H5：前往买入明细在弹框外，稿图 166×44 居中主按钮 */
+  @include mobile-only {
+    &__success-btn--outer.norem {
+      width: 166px;
+      height: 44px;
+      min-height: 44px;
+      flex-shrink: 0;
+      align-self: center;
+      padding: 0 16px;
+      font-size: 15px;
+      border-radius: 999px;
+      border: none;
+      white-space: nowrap;
+    }
   }
 }
 </style>
