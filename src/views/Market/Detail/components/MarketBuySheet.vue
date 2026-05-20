@@ -394,6 +394,11 @@ function onBackdropKeydown(e) {
   padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
   box-sizing: border-box;
 
+  @include web-only {
+    align-items: center;
+    padding: 24px;
+  }
+
   &__backdrop {
     position: absolute;
     inset: 0;
@@ -428,6 +433,11 @@ function onBackdropKeydown(e) {
     max-width: 420px;
     max-height: calc(100vh - 56px);
     overflow-y: auto;
+
+    @include web-only {
+      max-width: 440px;
+      max-height: min(90vh, 820px);
+    }
     box-sizing: border-box;
     border-radius: 20px;
     border: 3px solid #1c7bff;

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
@@ -30,9 +30,6 @@ const mobileSections = [
   { tab: 'fulltime', titleKey: '全场赛果' },
   { tab: 'halftime', titleKey: '半场赛果' },
 ];
-const buyType = ref('standard');
-const buyAmount = ref('');
-const showBuyPanel = ref(false);
 const showBuySheet = ref(false);
 const selectedRow = ref(null);
 
@@ -77,7 +74,6 @@ function toggleSection(tab) {
 }
 
 watch(activeTab, () => {
-  closeBuyPanel();
   closeBuySheet();
 });
 
@@ -86,14 +82,9 @@ watch(
   (id) => {
     match.value = getHotMatchById(id);
     expandedSections.value = { fulltime: true, halftime: false };
-    closeBuyPanel();
     closeBuySheet();
   },
 );
-
-function scrollToScoreMarket() {
-  document.getElementById('score-market')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
 
 function defaultScoreRow(tab = 'fulltime') {
   const rows = scoreRowsForTab(tab);
@@ -104,43 +95,20 @@ function openBuySheet(row, tab = activeTab.value) {
   if (!row) return;
   activeTab.value = tab;
   selectedRow.value = row;
-  if (isMobile.value) {
-    showBuySheet.value = true;
-    showBuyPanel.value = false;
-  } else {
-    showBuyPanel.value = true;
-    showBuySheet.value = false;
-  }
+  showBuySheet.value = true;
 }
 
 function openBuySheetFromHero() {
   openBuySheet(defaultScoreRow('fulltime'), 'fulltime');
 }
 
-/** 顶部「进入市场」：H5 弹层；PC 打开下方买入区并滚到盘口 */
-function onEnterMarket() {
-  openBuySheetFromHero();
-  if (!isMobile.value) {
-    nextTick(() => scrollToScoreMarket());
-  }
-}
-
 function selectRow(row, tab = activeTab.value) {
   openBuySheet(row, tab);
-}
-
-function closeBuyPanel() {
-  showBuyPanel.value = false;
-  if (!showBuySheet.value) {
-    selectedRow.value = null;
-    buyAmount.value = '';
-  }
 }
 
 function closeBuySheet() {
   showBuySheet.value = false;
   selectedRow.value = null;
-  buyAmount.value = '';
 }
 
 function formatScoreLabel(score) {
@@ -192,7 +160,7 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
 
       <div class="market-detail__main">
         <div class="market-detail__hero">
-          <HomeMatchCard :match="match" detail-mode @enter-market="onEnterMarket" />
+          <HomeMatchCard :match="match" detail-mode @enter-market="openBuySheetFromHero" />
         </div>
 
         <section
@@ -219,7 +187,7 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
               v-for="row in scoreRows"
               :key="`${activeTab}-${row.score}`"
               class="score-table__row"
-              :class="{ 'score-table__row--active': selectedRow?.score === row.score && showBuyPanel }"
+              :class="{ 'score-table__row--active': selectedRow?.score === row.score && showBuySheet }"
               role="button"
               tabindex="0"
               @click="selectRow(row)"
@@ -240,40 +208,6 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
             </li>
           </ul>
         </section>
-
-        <Transition name="slide">
-          <div v-if="showBuyPanel" class="buy-panel card-default">
-            <div class="buy-panel__header">
-              <h3 class="buy-panel__title">
-                {{ t('比分') }} {{ selectedRow?.score }} · {{ selectedRow?.probability }}
-              </h3>
-              <button type="button" class="buy-panel__close" @click="closeBuyPanel">✕</button>
-            </div>
-
-            <div class="buy-panel__type">
-              <button type="button" class="type-btn" :class="{ active: buyType === 'standard' }" @click="buyType = 'standard'">
-                {{ t('一般买入') }}
-              </button>
-              <button type="button" class="type-btn" :class="{ active: buyType === 'scheduled' }" @click="buyType = 'scheduled'">
-                {{ t('预约买入') }}
-              </button>
-            </div>
-
-            <div class="buy-panel__amount">
-              <label class="form-label">{{ t('买入金额') }}</label>
-              <input v-model="buyAmount" type="number" class="form-input" placeholder="0.00" />
-            </div>
-
-            <div class="buy-panel__actions">
-              <button type="button" class="btn btn--default-2 cancel-btn" @click="closeBuyPanel">
-                {{ t('取消') }}
-              </button>
-              <button type="button" class="btn btn--primary confirm-btn">
-                {{ t('确认买入') }}
-              </button>
-            </div>
-          </div>
-        </Transition>
       </div>
     </div>
 
@@ -293,22 +227,23 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
             :rows="scoreRowsForTab(sec.tab)"
             :expanded="isSectionExpanded(sec.tab)"
             :active-score="selectedRow?.score"
-            :show-active="showBuyPanel && activeTab === sec.tab"
+            :show-active="showBuySheet && activeTab === sec.tab"
             @toggle="toggleSection(sec.tab)"
             @select-row="selectRow($event, sec.tab)"
             @open-purchase="goToPurchaseDetails($event, sec.tab)"
           />
         </div>
 
-        <MarketBuySheet
-          :visible="showBuySheet"
-          :match="match"
-          :row="selectedRow"
-          :market-tab="activeTab"
-          @close="closeBuySheet"
-        />
       </div>
     </div>
+
+    <MarketBuySheet
+      :visible="showBuySheet"
+      :match="match"
+      :row="selectedRow"
+      :market-tab="activeTab"
+      @close="closeBuySheet"
+    />
   </div>
 </template>
 
@@ -815,121 +750,4 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
   }
 }
 
-.buy-panel {
-  margin-top: $spacing-xl;
-  border-radius: $radius-lg;
-  padding: $spacing-3xl;
-
-  @include mobile-only {
-    padding: $spacing-lg;
-  }
-
-  &__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: $spacing-xl;
-  }
-
-  &__title {
-    font-size: $font-size-lg;
-    font-weight: 700;
-    color: var(--theme-text);
-    margin: 0;
-  }
-
-  &__close {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: var(--surface-tint);
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    color: var(--theme-text-1);
-  }
-
-  &__type {
-    display: flex;
-    gap: $spacing-sm;
-    margin-bottom: $spacing-xl;
-  }
-
-  &__amount {
-    margin-bottom: $spacing-xl;
-  }
-
-  &__actions {
-    display: flex;
-    gap: $spacing-md;
-  }
-}
-
-.type-btn {
-  flex: 1;
-  height: 44px;
-  border-radius: $radius-pill;
-  border: 1.5px solid var(--theme-divider);
-  background: transparent;
-  font-size: $font-size-md;
-  color: var(--theme-text);
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &.active {
-    background: var(--theme-primary);
-    color: #fff;
-    border-color: var(--theme-primary);
-  }
-}
-
-.form-label {
-  display: block;
-  font-size: $font-size-md;
-  color: var(--theme-text-1);
-  margin-bottom: $spacing-sm;
-}
-
-.form-input {
-  width: 100%;
-  height: 52px;
-  border: 1.5px solid var(--theme-divider);
-  border-radius: $radius-md;
-  padding: 0 $spacing-lg;
-  font-size: $font-size-xl;
-  font-family: $font-family-num;
-  color: var(--theme-text);
-  background: transparent;
-  outline: none;
-  transition: border-color 0.2s;
-
-  &:focus {
-    border-color: var(--theme-primary);
-  }
-}
-
-.cancel-btn {
-  flex: 1;
-  height: 48px;
-  border: 1.5px solid var(--theme-divider);
-}
-
-.confirm-btn {
-  flex: 2;
-  height: 48px;
-}
-
-.slide-enter-active,
-.slide-leave-active {
-  transition: all 0.3s ease;
-}
-
-.slide-enter-from,
-.slide-leave-to {
-  opacity: 0;
-  transform: translateY(20px);
-}
 </style>
