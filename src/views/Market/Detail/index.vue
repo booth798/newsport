@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
@@ -7,6 +7,7 @@ import { storeToRefs } from 'pinia';
 import { getHotMatchById } from '@/constants/hotMatchCatalog';
 import { useAppStore } from '@/store/modules/app';
 import MarketDetailScoreSection from '@/views/Market/Detail/components/MarketDetailScoreSection.vue';
+import MarketBuySheet from '@/views/Market/Detail/components/MarketBuySheet.vue';
 import HomeMatchCard from '@/views/Home/components/HomeMatchCard.vue';
 
 import iconArrowRightUrl from '@/assets/images/common/icon_arrow_right.svg?url';
@@ -32,6 +33,7 @@ const mobileSections = [
 const buyType = ref('standard');
 const buyAmount = ref('');
 const showBuyPanel = ref(false);
+const showBuySheet = ref(false);
 const selectedRow = ref(null);
 
 const match = ref(getHotMatchById(route.params.id));
@@ -76,6 +78,7 @@ function toggleSection(tab) {
 
 watch(activeTab, () => {
   closeBuyPanel();
+  closeBuySheet();
 });
 
 watch(
@@ -84,6 +87,7 @@ watch(
     match.value = getHotMatchById(id);
     expandedSections.value = { fulltime: true, halftime: false };
     closeBuyPanel();
+    closeBuySheet();
   },
 );
 
@@ -91,14 +95,50 @@ function scrollToScoreMarket() {
   document.getElementById('score-market')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function selectRow(row, tab = activeTab.value) {
+function defaultScoreRow(tab = 'fulltime') {
+  const rows = scoreRowsForTab(tab);
+  return rows.find((r) => r.score === '0-0') ?? rows[0] ?? null;
+}
+
+function openBuySheet(row, tab = activeTab.value) {
+  if (!row) return;
   activeTab.value = tab;
   selectedRow.value = row;
-  showBuyPanel.value = true;
+  if (isMobile.value) {
+    showBuySheet.value = true;
+    showBuyPanel.value = false;
+  } else {
+    showBuyPanel.value = true;
+    showBuySheet.value = false;
+  }
+}
+
+function openBuySheetFromHero() {
+  openBuySheet(defaultScoreRow('fulltime'), 'fulltime');
+}
+
+/** 顶部「进入市场」：H5 弹层；PC 打开下方买入区并滚到盘口 */
+function onEnterMarket() {
+  openBuySheetFromHero();
+  if (!isMobile.value) {
+    nextTick(() => scrollToScoreMarket());
+  }
+}
+
+function selectRow(row, tab = activeTab.value) {
+  openBuySheet(row, tab);
 }
 
 function closeBuyPanel() {
   showBuyPanel.value = false;
+  if (!showBuySheet.value) {
+    selectedRow.value = null;
+    buyAmount.value = '';
+  }
+}
+
+function closeBuySheet() {
+  showBuySheet.value = false;
   selectedRow.value = null;
   buyAmount.value = '';
 }
@@ -152,7 +192,7 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
 
       <div class="market-detail__main">
         <div class="market-detail__hero">
-          <HomeMatchCard :match="match" detail-mode @enter-market="scrollToScoreMarket" />
+          <HomeMatchCard :match="match" detail-mode @enter-market="onEnterMarket" />
         </div>
 
         <section
@@ -241,7 +281,7 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
     <div v-else class="market-detail__layout market-detail__layout--m">
       <div class="market-detail__main market-detail__main--m">
         <div class="market-detail__hero market-detail__hero--m">
-          <HomeMatchCard :match="match" detail-mode />
+          <HomeMatchCard :match="match" detail-mode @enter-market="openBuySheetFromHero" />
         </div>
 
         <div class="market-detail__sections">
@@ -260,39 +300,13 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
           />
         </div>
 
-        <Transition name="slide">
-          <div v-if="showBuyPanel" class="buy-panel card-default">
-            <div class="buy-panel__header">
-              <h3 class="buy-panel__title">
-                {{ t('比分') }} {{ selectedRow?.score }} · {{ selectedRow?.probability }}
-              </h3>
-              <button type="button" class="buy-panel__close" @click="closeBuyPanel">✕</button>
-            </div>
-
-            <div class="buy-panel__type">
-              <button type="button" class="type-btn" :class="{ active: buyType === 'standard' }" @click="buyType = 'standard'">
-                {{ t('一般买入') }}
-              </button>
-              <button type="button" class="type-btn" :class="{ active: buyType === 'scheduled' }" @click="buyType = 'scheduled'">
-                {{ t('预约买入') }}
-              </button>
-            </div>
-
-            <div class="buy-panel__amount">
-              <label class="form-label">{{ t('买入金额') }}</label>
-              <input v-model="buyAmount" type="number" class="form-input" placeholder="0.00" />
-            </div>
-
-            <div class="buy-panel__actions">
-              <button type="button" class="btn btn--default-2 cancel-btn" @click="closeBuyPanel">
-                {{ t('取消') }}
-              </button>
-              <button type="button" class="btn btn--primary confirm-btn">
-                {{ t('确认买入') }}
-              </button>
-            </div>
-          </div>
-        </Transition>
+        <MarketBuySheet
+          :visible="showBuySheet"
+          :match="match"
+          :row="selectedRow"
+          :market-tab="activeTab"
+          @close="closeBuySheet"
+        />
       </div>
     </div>
   </div>

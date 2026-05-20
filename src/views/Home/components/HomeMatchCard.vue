@@ -537,7 +537,14 @@ const detailMatchDate = computed(() => {
       }
 
       .match-card__foot {
-        display: none;
+        display: flex;
+        justify-content: center;
+        margin-top: 10px;
+        padding-top: 4px;
+      }
+
+      .match-card__btn {
+        max-width: 280px;
       }
 
       .match-card__mg-score-slot {
