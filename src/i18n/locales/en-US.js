@@ -104,6 +104,7 @@ export default {
   确认买入: 'Confirm Buy',
   取消: 'Cancel',
   确认: 'Confirm',
+  确定: 'Confirm',
   确定预约: 'Confirm Schedule',
   您正在投资: 'You are investing in',
   选项: 'Option',

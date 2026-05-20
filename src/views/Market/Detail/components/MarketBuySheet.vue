@@ -39,7 +39,7 @@ const emit = defineEmits(['close']);
 const { t } = useI18n();
 const router = useRouter();
 const appStore = useAppStore();
-const { loggedInUserId, loggedInAssetsFormatted } = storeToRefs(appStore);
+const { loggedInUserId, loggedInAssetsFormatted, isMobile } = storeToRefs(appStore);
 
 const buyType = ref('standard');
 const buyAmount = ref('');
@@ -162,12 +162,13 @@ function onBackdropKeydown(e) {
       <div class="buy-sheet__backdrop" aria-hidden="true" @click="closeSheet" />
 
       <div class="buy-sheet__panel-wrap">
-        <button type="button" class="buy-sheet__close" :aria-label="t('取消')" @click="closeSheet">
+        <button type="button" class="buy-sheet__close norem" :aria-label="t('取消')" @click="closeSheet">
           <span aria-hidden="true">×</span>
         </button>
 
         <!-- 交易成功 -->
-        <div v-if="phase === 'success'" class="buy-sheet__success">
+        <div v-if="phase === 'success'" class="buy-sheet__success-stack">
+        <div class="buy-sheet__success">
         <div class="buy-sheet__success-head">
           <span class="buy-sheet__success-icon" aria-hidden="true">
             <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
@@ -226,13 +227,30 @@ function onBackdropKeydown(e) {
           </div>
         </div>
 
-        <button type="button" class="btn btn--default-1 buy-sheet__success-btn" @click="goPurchaseDetails">
+        </div>
+
+        <button
+          v-if="isMobile"
+          type="button"
+          class="btn btn--default-1 buy-sheet__success-btn buy-sheet__success-btn--outer norem"
+          @click="goPurchaseDetails"
+        >
+          {{ t('前往买入明细') }}
+        </button>
+        <button
+          v-else
+          type="button"
+          class="btn btn--default-1 buy-sheet__success-btn"
+          @click="goPurchaseDetails"
+        >
           {{ t('前往买入明细') }}
         </button>
         </div>
 
         <!-- 买入表单 -->
-        <div v-else class="buy-sheet__frame">
+        <div v-else class="buy-sheet__form-stack">
+        <div class="buy-sheet__frame">
+        <div class="buy-sheet__body">
         <nav class="buy-sheet__tabs card-primary norem" :aria-label="t('买入金额')">
           <button
             type="button"
@@ -267,18 +285,22 @@ function onBackdropKeydown(e) {
             <span class="buy-sheet__match-league">{{ match.league }}</span>
           </div>
           <p class="buy-sheet__match-date">{{ matchDateDisplay }}</p>
-          <div class="buy-sheet__match-teams">
-            <div class="buy-sheet__match-team">
-              <img v-if="homeLogoUrl" class="buy-sheet__match-logo" :src="homeLogoUrl" :alt="match.homeTeam" width="40" height="40" />
-              <span class="buy-sheet__match-name">
-                <span class="buy-sheet__home-tag">{{ t('主') }}</span>
-                {{ match.homeTeam }}
-              </span>
-            </div>
-            <span class="buy-sheet__match-vs">VS</span>
-            <div class="buy-sheet__match-team">
-              <img v-if="awayLogoUrl" class="buy-sheet__match-logo" :src="awayLogoUrl" :alt="match.awayTeam" width="40" height="40" />
-              <span class="buy-sheet__match-name">{{ match.awayTeam }}</span>
+          <div class="buy-sheet__match-arena">
+            <div class="buy-sheet__match-arena-grid">
+              <div class="buy-sheet__match-teams">
+                <div class="buy-sheet__match-team">
+                  <img v-if="homeLogoUrl" class="buy-sheet__match-logo" :src="homeLogoUrl" :alt="match.homeTeam" width="40" height="40" />
+                  <span class="buy-sheet__match-name">
+                    <span class="buy-sheet__home-tag">{{ t('主') }}</span>
+                    {{ match.homeTeam }}
+                  </span>
+                </div>
+                <span class="buy-sheet__match-vs">VS</span>
+                <div class="buy-sheet__match-team">
+                  <img v-if="awayLogoUrl" class="buy-sheet__match-logo" :src="awayLogoUrl" :alt="match.awayTeam" width="40" height="40" />
+                  <span class="buy-sheet__match-name">{{ match.awayTeam }}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -359,6 +381,7 @@ function onBackdropKeydown(e) {
             <span class="buy-sheet__fee-inline">{{ t('手续费') }}-5%</span>
           </p>
         </div>
+        </div>
 
         <div class="buy-sheet__wallet card-primary norem">
           <img class="buy-sheet__wallet-avatar" :src="avatarDefaultUrl" alt="" width="32" height="32" />
@@ -369,12 +392,22 @@ function onBackdropKeydown(e) {
           </span>
         </div>
 
-        <div class="buy-sheet__actions">
+        <div v-if="!isMobile" class="buy-sheet__actions">
           <button type="button" class="btn btn--default-1 buy-sheet__cancel-btn" @click="closeSheet">
             {{ t('取消') }}
           </button>
           <button type="button" class="btn btn--primary buy-sheet__confirm-btn" @click="confirmBuy">
-            {{ buyType === 'scheduled' ? t('确定预约') : t('确认') }}
+            {{ buyType === 'scheduled' ? t('确定预约') : t('确定') }}
+          </button>
+        </div>
+        </div>
+
+        <div v-if="isMobile" class="buy-sheet__actions buy-sheet__actions--outer norem">
+          <button type="button" class="btn buy-sheet__cancel-btn" @click="closeSheet">
+            {{ t('取消') }}
+          </button>
+          <button type="button" class="btn btn--primary buy-sheet__confirm-btn" @click="confirmBuy">
+            {{ buyType === 'scheduled' ? t('确定预约') : t('确定') }}
           </button>
         </div>
         </div>
@@ -391,13 +424,13 @@ function onBackdropKeydown(e) {
   inset: 0;
   z-index: 1200;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+  /* 顶部多留空间，避免关闭钮（在面板上方向上偏移）贴边或被裁切 */
+  padding: calc(44px + env(safe-area-inset-top, 0px)) 12px calc(12px + env(safe-area-inset-bottom, 0px));
   box-sizing: border-box;
 
   @include web-only {
-    align-items: center;
     padding: 24px;
   }
 
@@ -411,6 +444,8 @@ function onBackdropKeydown(e) {
   &__panel-wrap {
     position: relative;
     z-index: 2;
+    display: flex;
+    flex-direction: column;
     width: 100%;
     max-width: 420px;
     max-height: calc(100vh - 56px);
@@ -419,6 +454,21 @@ function onBackdropKeydown(e) {
     @include web-only {
       max-width: 440px;
       max-height: min(90vh, 820px);
+    }
+  }
+
+  /* H5：弹框主体 + 外部按钮纵向排列 */
+  &__form-stack,
+  &__success-stack {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-height: 0;
+
+    @include mobile-only {
+      flex: 1;
+      gap: 12px;
+      max-height: 100%;
     }
   }
 
@@ -442,6 +492,17 @@ function onBackdropKeydown(e) {
     transform: translateY(calc(-100% - 8px));
     padding: 0;
 
+    @include mobile-only {
+      &.norem {
+        width: 26px;
+        height: 26px;
+        right: 10px;
+        border-width: 1px;
+        font-size: 16px;
+        transform: translateY(calc(-100% - 6px));
+      }
+    }
+
     @include web-only {
       right: 8px;
       transform: translateY(calc(-100% - 10px));
@@ -454,11 +515,6 @@ function onBackdropKeydown(e) {
     z-index: 1;
     width: 100%;
     max-height: calc(100vh - 56px);
-    overflow-y: auto;
-
-    @include web-only {
-      max-height: min(90vh, 820px);
-    }
     box-sizing: border-box;
     border-radius: 24px;
     border: 0.8px solid rgba(214, 224, 235, 1);
@@ -469,6 +525,31 @@ function onBackdropKeydown(e) {
     display: flex;
     flex-direction: column;
     gap: 12px;
+
+    @include mobile-only {
+      flex: 1;
+      min-height: 0;
+      max-height: none;
+      overflow: hidden;
+    }
+
+    @include web-only {
+      max-height: min(90vh, 820px);
+      overflow-y: auto;
+    }
+  }
+
+  /* H5：仅弹框内可滚动；PC：整块表单区滚动 */
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    @include mobile-only {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+    }
   }
 
   &__tabs {
@@ -560,11 +641,41 @@ function onBackdropKeydown(e) {
     color: rgba(11, 52, 98, 0.55);
   }
 
+  &__match-arena {
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  &__match-arena-grid {
+    position: relative;
+    overflow: hidden;
+    min-height: 100px;
+    background-color: #f3f8ff;
+    background-image: url('@/assets/images/events/bg_score.svg');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+
+    @include web-only {
+      min-height: 118px;
+    }
+  }
+
   &__match-teams {
+    position: relative;
+    z-index: 1;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
     gap: 8px;
+    min-height: 100px;
+    padding: 12px 10px;
+    box-sizing: border-box;
+
+    @include web-only {
+      min-height: 118px;
+      padding: 14px 12px;
+    }
   }
 
   &__match-team {
@@ -813,6 +924,8 @@ function onBackdropKeydown(e) {
     padding: 8px 10px;
     border-radius: 999px;
     flex-shrink: 0;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   &__wallet-avatar {
@@ -848,21 +961,58 @@ function onBackdropKeydown(e) {
     display: flex;
     gap: 10px;
     flex-shrink: 0;
-    padding-top: 2px;
+  }
+
+  /* H5：取消/确定在蓝色弹框外、蒙层上 */
+  &__actions--outer {
+    width: 100%;
+    flex-shrink: 0;
   }
 
   &__cancel-btn,
   &__confirm-btn {
     flex: 1;
     min-height: 44px;
-    font-size: 15px;
     font-weight: 600;
+
+    @include web-only {
+      font-size: 15px;
+    }
   }
 
-  &__cancel-btn {
-    border: 1.5px solid #1c7bff;
-    color: #1c7bff;
-    background: #fff;
+  /* PC：蓝边蓝字取消钮（沿用原样式） */
+  @include web-only {
+    &__cancel-btn {
+      border: 1.5px solid #1c7bff;
+      color: #1c7bff;
+      background: #fff;
+    }
+  }
+
+  /* H5：红边红字胶囊按钮（设计稿，在弹框外部） */
+  @include mobile-only {
+    &__actions--outer.norem &__cancel-btn,
+    &__actions--outer.norem &__confirm-btn {
+      padding: 10px 16px;
+      border-radius: 999px;
+      font-size: 15px;
+      line-height: 1.2;
+    }
+
+    &__actions--outer.norem &__cancel-btn {
+      border: 1.5px solid var(--auxiliary-2);
+      color: var(--auxiliary-2);
+      background: #fff;
+      box-shadow: none;
+
+      &::after {
+        display: none;
+      }
+    }
+
+    &__actions--outer.norem &__confirm-btn {
+      border: none;
+    }
   }
 
   /* 交易成功 */
@@ -996,12 +1146,23 @@ function onBackdropKeydown(e) {
   }
 
   &__success-btn {
-    width: calc(100% - 24px);
-    margin: 12px auto 14px;
     min-height: 44px;
     border-radius: 999px;
     font-size: 15px;
     font-weight: 600;
+
+    @include web-only {
+      width: calc(100% - 24px);
+      margin: 12px auto 14px;
+    }
+  }
+
+  &__success-btn--outer {
+    width: 100%;
+    flex-shrink: 0;
+    border: 1.5px solid #1c7bff;
+    color: #1c7bff;
+    background: #fff;
   }
 }
 </style>
