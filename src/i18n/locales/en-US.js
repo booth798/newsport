@@ -86,7 +86,7 @@ export default {
   预约中: 'Scheduled',
   待开奖: 'Pending',
   已完成: 'Completed',
-  已逃散: 'Settled',
+  已退款: 'Settled',
   交易金额: 'Trade Amount',
   盈利: 'Profit',
   订单号码: 'Order No.',

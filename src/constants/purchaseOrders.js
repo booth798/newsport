@@ -3,7 +3,7 @@ import { getHotMatchById } from '@/constants/hotMatchCatalog';
 const STATUS_ORDERED = [
   { key: '待开奖', tone: 'pending' },
   { key: '已完成', tone: 'completed' },
-  { key: '已逃散', tone: 'lost' },
+  { key: '已退款', tone: 'lost' },
 ];
 
 const PLATFORMS = ['UNI BET平台', 'UNIBET平台'];
