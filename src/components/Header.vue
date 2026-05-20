@@ -202,6 +202,26 @@ onUnmounted(() => {
       </RouterLink>
       <img v-else-if="isMobile" class="logo" :src="logoUrl" alt="logo" />
 
+      <div
+        v-if="isMobile && isCompactDetailHeader && isLoggedIn"
+        class="header-mobile-user-strip"
+        role="group"
+        :aria-label="loggedInUserId"
+      >
+        <img
+          class="header-user-strip__avatar"
+          :src="avatarDefaultUrl"
+          width="32"
+          height="32"
+          alt=""
+        />
+        <span class="header-user-strip__id">{{ loggedInUserId }}</span>
+        <div class="header-user-strip__assets">
+          <span class="header-user-strip__assets-label">{{ t('总资产') }}</span>
+          <span class="header-user-strip__assets-value">{{ loggedInAssetsFormatted }}</span>
+        </div>
+      </div>
+
       <RouterLink
         v-if="!isMobile && isCompactDetailHeader"
         :to="compactHeaderBackTo"
@@ -287,7 +307,17 @@ onUnmounted(() => {
         </template>
       </div>
       <div v-if="isMobile" class="header-mobile-actions">
-        <template v-if="isLoggedIn">
+        <template v-if="isCompactDetailHeader">
+          <template v-if="!isLoggedIn">
+            <button type="button" class="header-mobile-btn" :aria-label="t('登录')" @click="appStore.openLoginModal">
+              <img class="header-mobile-btn__img" :src="loginIconUrl" alt="" />
+            </button>
+          </template>
+          <button type="button" class="header-mobile-btn" :aria-label="t('菜单')" @click="mobileDrawerOpen = true">
+            <img class="header-mobile-btn__img" :src="moreIconUrl" alt="" />
+          </button>
+        </template>
+        <template v-else-if="isLoggedIn">
           <RouterLink
             to="/profile"
             class="header-mobile-avatar"
@@ -463,6 +493,72 @@ onUnmounted(() => {
       height: 28px;
       object-fit: contain;
       flex-shrink: 0;
+    }
+
+    .header-mobile-user-strip {
+      display: flex;
+      align-items: center;
+      flex: 1 1 auto;
+      min-width: 0;
+      height: 40px;
+      margin: 0 8px;
+      padding: 4px 8px 4px 4px;
+      gap: 6px;
+      box-sizing: border-box;
+      background: #fff;
+      border: 1px solid var(--border-light);
+      border-radius: 999px;
+      box-shadow: 0 1px 8px rgba(13, 108, 251, 0.1);
+
+      .header-user-strip__avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        object-fit: cover;
+        flex-shrink: 0;
+      }
+
+      .header-user-strip__id {
+        flex-shrink: 0;
+        font-size: 13px;
+        font-weight: 500;
+        color: rgba(11, 52, 98, 0.58);
+        line-height: 1.2;
+        max-width: 72px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .header-user-strip__assets {
+        margin-left: auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        flex-shrink: 1;
+        min-width: 0;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: rgba(228, 240, 254, 0.98);
+        border: 0.8px solid rgba(13, 108, 251, 0.14);
+      }
+
+      .header-user-strip__assets-label {
+        font-size: 11px;
+        font-weight: 500;
+        color: rgba(11, 52, 98, 0.48);
+        white-space: nowrap;
+      }
+
+      .header-user-strip__assets-value {
+        font-family: $font-family-num, $font-family-base;
+        font-size: 12px;
+        font-weight: 700;
+        color: #0d6cfb;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
     }
 
     .header-mobile-actions {
@@ -971,8 +1067,9 @@ onUnmounted(() => {
     &--m {
       width: 40px;
       height: 40px;
-      margin-right: auto;
+      margin-right: 0;
       margin-left: 0;
+      flex-shrink: 0;
 
       .header-market-back-btn__img {
         width: 40px;
@@ -1066,6 +1163,8 @@ onUnmounted(() => {
 
     @include mobile-only {
       margin-top: 22px;
+      justify-content: flex-start;
+      gap: 0;
     }
   }
 }

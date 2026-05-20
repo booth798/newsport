@@ -126,41 +126,34 @@ function toggleCard(id) {
       </div>
     </div>
 
-    <div v-else class="purchase-details__layout purchase-details__layout--m">
-      <aside class="purchase-details__sidebar purchase-details__sidebar--m">
-        <RouterLink to="/" class="purchase-details__brand">
-          <img :src="logoMarketUrl" alt="" class="purchase-details__brand-img" width="120" height="64" />
-        </RouterLink>
-        <nav class="purchase-details__side-nav">
-          <button
-            type="button"
-            class="purchase-details__side-tab"
-            :class="{ 'purchase-details__side-tab--active': sideTab === 'ordered' }"
-            @click="setSideTab('ordered')"
-          >
-            {{ t('已下单') }}
-          </button>
-          <button
-            type="button"
-            class="purchase-details__side-tab"
-            :class="{ 'purchase-details__side-tab--active': sideTab === 'scheduled' }"
-            @click="setSideTab('scheduled')"
-          >
-            {{ t('预约中') }}
-          </button>
-        </nav>
-      </aside>
+    <div v-else class="purchase-details__mobile">
+      <nav class="purchase-details__tabs card-primary norem" :aria-label="t('买入明细')">
+        <button
+          type="button"
+          class="purchase-details__tab btn"
+          :class="sideTab === 'ordered' ? 'btn--primary' : 'purchase-details__tab--idle'"
+          @click="setSideTab('ordered')"
+        >
+          {{ t('已下单') }}
+        </button>
+        <button
+          type="button"
+          class="purchase-details__tab btn"
+          :class="sideTab === 'scheduled' ? 'btn--primary' : 'purchase-details__tab--idle'"
+          @click="setSideTab('scheduled')"
+        >
+          {{ t('预约中') }}
+        </button>
+      </nav>
 
-      <div class="purchase-details__main purchase-details__main--m">
-        <div class="purchase-details__grid purchase-details__grid--m">
-          <PurchaseOrderCard
-            v-for="order in orders"
-            :key="order.id"
-            :order="order"
-            :expanded="isExpanded(order.id)"
-            @toggle="toggleCard(order.id)"
-          />
-        </div>
+      <div class="purchase-details__list">
+        <PurchaseOrderCard
+          v-for="order in orders"
+          :key="order.id"
+          :order="order"
+          :expanded="isExpanded(order.id)"
+          @toggle="toggleCard(order.id)"
+        />
       </div>
     </div>
   </div>
@@ -174,6 +167,13 @@ function toggleCard(id) {
   @include web-main-column-max;
   padding-top: 8px;
   padding-bottom: $spacing-4xl;
+
+  @include mobile-only {
+    padding-top: 0;
+    padding-bottom: 16px;
+    background: transparent;
+    box-sizing: border-box;
+  }
 
   @include web-only {
     padding-top: 16px;
@@ -194,10 +194,6 @@ function toggleCard(id) {
       gap: 28px;
     }
 
-    &--m {
-      flex-direction: column;
-      gap: 12px;
-    }
   }
 
   &__sidebar {
@@ -221,23 +217,6 @@ function toggleCard(id) {
       overflow-y: auto;
     }
 
-    &--m {
-      flex-direction: row;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      width: 100%;
-      position: sticky;
-      top: calc(#{$mobile-market-detail-sidebar-sticky-top} + 8px);
-      z-index: 4;
-      padding: 12px;
-      box-sizing: border-box;
-      background: #fff;
-      border-radius: 20px;
-      border: 1px solid #fff;
-      box-shadow: 0 4px 16px rgba(21, 58, 118, 0.12);
-    }
   }
 
   &__brand {
@@ -268,12 +247,6 @@ function toggleCard(id) {
       padding: 14px 12px 0;
     }
 
-    @include mobile-only {
-      flex: 1;
-      flex-direction: row;
-      justify-content: flex-end;
-      gap: 8px;
-    }
   }
 
   &__side-divider {
@@ -321,21 +294,6 @@ function toggleCard(id) {
       }
     }
 
-    @include mobile-only {
-      width: auto;
-      padding: 8px 14px;
-      border-radius: 999px;
-      font-size: 13px;
-      font-weight: 600;
-      border: 1.5px solid rgb(228, 240, 254);
-      background: #fff;
-
-      &--active {
-        border-color: #1c7bff;
-        background: #1c7bff;
-        color: #fff;
-      }
-    }
   }
 
   &__main {
@@ -359,11 +317,52 @@ function toggleCard(id) {
       align-items: start;
     }
 
-    &--m {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+  }
+
+  &__mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  &__tabs {
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
+    width: 100%;
+    padding: 4px;
+    box-sizing: border-box;
+    border-radius: 999px;
+  }
+
+  &__tab {
+    flex: 1;
+    min-height: 36px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.2;
+
+    &--idle {
+      background: rgba(255, 255, 255, 0.55);
+      color: var(--theme-primary);
+      border: none;
+      box-shadow: none;
+
+      &::after {
+        display: none;
+      }
     }
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
   }
 }
 </style>

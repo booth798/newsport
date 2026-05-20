@@ -44,6 +44,10 @@ const chevronSrc = computed(() => (props.expanded ? iconChevronUpUrl : iconChevr
 
 const statusClass = computed(() => `purchase-card__status--${props.order.statusTone}`);
 
+const summaryProfitLabelKey = computed(() =>
+  props.order.statusTone === 'pending' || props.order.statusTone === 'scheduled' ? '预估盈利' : '盈利',
+);
+
 async function copyOrderNo() {
   try {
     await navigator.clipboard.writeText(props.order.orderNo);
@@ -116,7 +120,7 @@ async function copyOrderNo() {
           <span class="purchase-card__summary-val purchase-card__summary-val--amount">{{ order.tradeAmountFormatted }}</span>
         </div>
         <div class="purchase-card__summary-row">
-          <span class="purchase-card__summary-label">{{ t('盈利') }}</span>
+          <span class="purchase-card__summary-label">{{ t(summaryProfitLabelKey) }}</span>
           <span class="purchase-card__summary-val purchase-card__summary-val--profit">{{ order.profitFormatted }}</span>
         </div>
       </div>
@@ -127,7 +131,7 @@ async function copyOrderNo() {
         :aria-expanded="expanded"
         @click="emit('toggle')"
       >
-        <img class="purchase-card__toggle-icon" :src="chevronSrc" width="20" height="20" alt="" />
+        <img class="purchase-card__chevron" :src="chevronSrc" width="20" height="20" alt="" />
       </button>
     </div>
 
@@ -180,6 +184,14 @@ async function copyOrderNo() {
   background: linear-gradient(180deg, #f8fbff 0%, #f0f7ff 100%);
   box-shadow: 0 6px 20px 0 rgba(21, 58, 118, 0.1);
 
+  @include mobile-only {
+    padding: 12px;
+    border-radius: 16px;
+    border: 0.8px solid var(--auxiliary-1);
+    background: var(--surface-card);
+    box-shadow: var(--shadow-card);
+  }
+
   &__head {
     display: flex;
     align-items: center;
@@ -192,6 +204,11 @@ async function copyOrderNo() {
     height: 1px;
     margin: 10px 0 12px;
     background: #fff;
+
+    @include mobile-only {
+      margin: 8px 0 10px;
+      background: rgba(11, 52, 98, 0.08);
+    }
   }
 
   &__panel {
@@ -202,6 +219,13 @@ async function copyOrderNo() {
     border-radius: 16px;
     background: #fff;
     overflow: hidden;
+
+    @include mobile-only {
+      padding: 0 0 28px;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+    }
   }
 
   &__head-left {
@@ -297,6 +321,10 @@ async function copyOrderNo() {
     background-repeat: no-repeat;
     background-position: center;
     background-size: cover;
+
+    @include mobile-only {
+      min-height: 100px;
+    }
   }
 
   &__arena-inner {
@@ -309,6 +337,11 @@ async function copyOrderNo() {
     min-height: 118px;
     padding: 14px 10px 12px;
     box-sizing: border-box;
+
+    @include mobile-only {
+      min-height: 100px;
+      padding: 10px 8px;
+    }
   }
 
   &__team {
@@ -334,6 +367,11 @@ async function copyOrderNo() {
     border-radius: 50%;
     object-fit: contain;
     flex-shrink: 0;
+
+    @include mobile-only {
+      width: 40px;
+      height: 40px;
+    }
   }
 
   &__team-placeholder {
@@ -387,6 +425,13 @@ async function copyOrderNo() {
     border-radius: 14px;
     background: rgba(228, 240, 254, 0.55);
     border: 1px solid rgba(255, 255, 255, 0.85);
+
+    @include mobile-only {
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #ebf2f9;
+      border: none;
+    }
   }
 
   &__summary-row {
@@ -400,6 +445,10 @@ async function copyOrderNo() {
       padding-bottom: 10px;
       margin-bottom: 2px;
       border-bottom: 1px solid #fff;
+
+      @include mobile-only {
+        border-bottom-color: rgba(11, 52, 98, 0.08);
+      }
     }
   }
 
@@ -441,12 +490,18 @@ async function copyOrderNo() {
     &:hover {
       opacity: 0.72;
     }
+
+    @include mobile-only {
+      right: 0;
+      bottom: 0;
+    }
   }
 
-  &__toggle-icon {
+  &__chevron {
     display: block;
     width: 20px;
     height: 20px;
+    flex-shrink: 0;
     pointer-events: none;
   }
 
@@ -459,6 +514,15 @@ async function copyOrderNo() {
     border-radius: 14px;
     background: rgba(240, 247, 255, 0.6);
     border: 1px solid rgba(228, 240, 254, 0.9);
+
+    @include mobile-only {
+      gap: 0;
+      margin-top: 10px;
+      padding: 0;
+      border: none;
+      border-radius: 0;
+      background: #fff;
+    }
   }
 
   &__detail-row {
@@ -466,6 +530,15 @@ async function copyOrderNo() {
     align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
+
+    @include mobile-only {
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(11, 52, 98, 0.08);
+
+      &:last-of-type {
+        border-bottom: none;
+      }
+    }
   }
 
   &__detail-val {
@@ -529,6 +602,13 @@ async function copyOrderNo() {
 
     &:hover {
       background: rgba(255, 45, 45, 0.16);
+    }
+
+    @include mobile-only {
+      margin-top: 0;
+      padding: 8px 14px;
+      background: #ffebee;
+      border-radius: 8px;
     }
   }
 
