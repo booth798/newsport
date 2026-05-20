@@ -44,9 +44,13 @@ const chevronSrc = computed(() => (props.expanded ? iconChevronUpUrl : iconChevr
 
 const statusClass = computed(() => `purchase-card__status--${props.order.statusTone}`);
 
-const summaryProfitLabelKey = computed(() =>
-  props.order.statusTone === 'pending' || props.order.statusTone === 'scheduled' ? '预估盈利' : '盈利',
-);
+const summaryProfitLabelKey = computed(() => {
+  const key = props.order.statusKey;
+  if (key === '待开奖' || key === '预约中') return '预估盈利';
+  return '盈利';
+});
+
+const showCancelAction = computed(() => props.order.canCancel);
 
 async function copyOrderNo() {
   try {
@@ -90,9 +94,9 @@ async function copyOrderNo() {
             draggable="false"
           />
           <span v-else class="purchase-card__team-placeholder" aria-hidden="true" />
-          <p class="purchase-card__team-name">
-            <span class="purchase-card__home-tag">{{ t('主') }}</span>
+          <p class="purchase-card__team-name purchase-card__team-name--home">
             {{ order.homeTeam }}
+            <span class="purchase-card__home-tag">{{ t('主') }}</span>
           </p>
         </div>
         <span class="purchase-card__vs">VS</span>
@@ -125,15 +129,20 @@ async function copyOrderNo() {
         </div>
       </div>
 
-      <button
-        v-if="!expanded"
-        type="button"
-        class="purchase-card__toggle"
-        :aria-expanded="expanded"
-        @click="emit('toggle')"
-      >
-        <img class="purchase-card__chevron" :src="chevronSrc" width="20" height="20" alt="" />
-      </button>
+      <div v-if="!expanded" class="purchase-card__panel-foot">
+        <button v-if="showCancelAction" type="button" class="purchase-card__cancel" @click.stop>
+          {{ t('取消订单') }}
+        </button>
+        <button
+          type="button"
+          class="purchase-card__toggle purchase-card__toggle--circle"
+          :class="{ 'purchase-card__toggle--solo': !showCancelAction }"
+          :aria-expanded="expanded"
+          @click="emit('toggle')"
+        >
+          <img class="purchase-card__chevron" :src="chevronSrc" width="20" height="20" alt="" />
+        </button>
+      </div>
     </div>
 
     <div v-if="expanded" class="purchase-card__detail">
@@ -144,8 +153,7 @@ async function copyOrderNo() {
             <span class="purchase-card__order-no">{{ order.orderNo }}</span>
             <button type="button" class="purchase-card__copy" :aria-label="t('复制')" @click.stop="copyOrderNo">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <rect x="5" y="5" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.2" />
-                <path d="M4 11V4.5A1.5 1.5 0 0 1 5.5 3H11" stroke="currentColor" stroke-width="1.2" />
+                <rect x="4.5" y="4.5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.2" />
               </svg>
             </button>
           </span>
@@ -169,12 +177,12 @@ async function copyOrderNo() {
       </div>
 
       <div class="purchase-card__detail-foot">
-        <button v-if="order.canCancel" type="button" class="purchase-card__cancel" @click.stop>
+        <button v-if="showCancelAction" type="button" class="purchase-card__cancel" @click.stop>
           {{ t('取消订单') }}
         </button>
         <button
           type="button"
-          class="purchase-card__toggle purchase-card__toggle--foot"
+          class="purchase-card__toggle purchase-card__toggle--circle purchase-card__toggle--foot"
           :aria-expanded="expanded"
           @click="emit('toggle')"
         >
@@ -227,17 +235,30 @@ async function copyOrderNo() {
   &__panel {
     position: relative;
     box-sizing: border-box;
-    padding: 12px 12px 36px;
+    padding: 12px;
     border: 1px solid #fff;
     border-radius: 16px;
     background: #fff;
     overflow: hidden;
 
     @include mobile-only {
-      padding: 0 0 28px;
+      padding: 0;
       border: none;
       border-radius: 0;
       background: transparent;
+    }
+  }
+
+  &__panel-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 10px;
+    min-height: 36px;
+
+    @include mobile-only {
+      margin-top: 8px;
     }
   }
 
@@ -278,7 +299,8 @@ async function copyOrderNo() {
 
     &--pending {
       color: #1c7bff;
-      background: rgba(28, 123, 255, 0.14);
+      background: rgba(28, 123, 255, 0.12);
+      border-radius: 6px;
     }
 
     &--completed {
@@ -364,13 +386,14 @@ async function copyOrderNo() {
     gap: 6px;
     min-width: 0;
 
-    &--home .purchase-card__team-name {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 4px;
-    }
+  }
+
+  &__team-name--home {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px;
   }
 
   &__team-logo,
@@ -483,14 +506,12 @@ async function copyOrderNo() {
 
     &--profit {
       color: #1c7bff;
+      font-size: 18px;
+      font-weight: 700;
     }
   }
 
   &__toggle {
-    position: absolute;
-    right: 8px;
-    bottom: 8px;
-    z-index: 2;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -499,19 +520,23 @@ async function copyOrderNo() {
     background: transparent;
     box-shadow: none;
     cursor: pointer;
+    flex-shrink: 0;
 
     &:hover {
       opacity: 0.72;
     }
 
-    @include mobile-only {
-      right: 0;
-      bottom: 0;
+    &--circle {
+      width: 32px;
+      height: 32px;
+      border: 1px solid rgba(28, 123, 255, 0.28);
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(21, 58, 118, 0.08);
     }
 
-    &--foot {
-      position: static;
-      flex-shrink: 0;
+    &--foot,
+    &--solo {
       margin-left: auto;
     }
   }
@@ -556,6 +581,7 @@ async function copyOrderNo() {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+    padding: 6px 0;
 
     @include mobile-only {
       min-height: 40px;
@@ -569,18 +595,12 @@ async function copyOrderNo() {
   }
 
   &__detail-foot {
-    @include web-only {
-      display: contents;
-    }
-
-    @include mobile-only {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-top: 10px;
-      padding-top: 2px;
-    }
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 10px;
+    padding-top: 2px;
   }
 
   &__detail-val {
@@ -619,20 +639,19 @@ async function copyOrderNo() {
     height: 24px;
     padding: 0;
     border: none;
-    border-radius: 6px;
-    background: rgba(28, 123, 255, 0.08);
+    border-radius: 4px;
+    background: transparent;
     color: #1c7bff;
     cursor: pointer;
     flex-shrink: 0;
 
     &:hover {
-      background: rgba(28, 123, 255, 0.16);
+      background: rgba(28, 123, 255, 0.08);
     }
   }
 
   &__cancel {
-    align-self: flex-start;
-    margin-top: 2px;
+    flex-shrink: 0;
     padding: 8px 16px;
     border: none;
     border-radius: 999px;
@@ -640,6 +659,7 @@ async function copyOrderNo() {
     color: #ff2d2d;
     font-size: 14px;
     font-weight: 500;
+    line-height: 1.2;
     cursor: pointer;
     transition: background 0.15s ease;
 
@@ -648,19 +668,8 @@ async function copyOrderNo() {
     }
 
     @include mobile-only {
-      margin-top: 0;
       padding: 6px 14px;
-      border-radius: 999px;
-      background: rgba(255, 45, 45, 0.12);
       font-size: 13px;
-    }
-  }
-
-  &--expanded {
-    @include mobile-only {
-      .purchase-card__panel {
-        padding-bottom: 4px;
-      }
     }
   }
 
