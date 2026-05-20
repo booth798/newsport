@@ -161,12 +161,13 @@ function onBackdropKeydown(e) {
     >
       <div class="buy-sheet__backdrop" aria-hidden="true" @click="closeSheet" />
 
-      <button type="button" class="buy-sheet__close" :aria-label="t('取消')" @click="closeSheet">
-        <span aria-hidden="true">×</span>
-      </button>
+      <div class="buy-sheet__panel-wrap">
+        <button type="button" class="buy-sheet__close" :aria-label="t('取消')" @click="closeSheet">
+          <span aria-hidden="true">×</span>
+        </button>
 
-      <!-- 交易成功 -->
-      <div v-if="phase === 'success'" class="buy-sheet__success">
+        <!-- 交易成功 -->
+        <div v-if="phase === 'success'" class="buy-sheet__success">
         <div class="buy-sheet__success-head">
           <span class="buy-sheet__success-icon" aria-hidden="true">
             <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
@@ -228,10 +229,10 @@ function onBackdropKeydown(e) {
         <button type="button" class="btn btn--default-1 buy-sheet__success-btn" @click="goPurchaseDetails">
           {{ t('前往买入明细') }}
         </button>
-      </div>
+        </div>
 
-      <!-- 买入表单 -->
-      <div v-else class="buy-sheet__frame">
+        <!-- 买入表单 -->
+        <div v-else class="buy-sheet__frame">
         <nav class="buy-sheet__tabs card-primary norem" :aria-label="t('买入金额')">
           <button
             type="button"
@@ -376,6 +377,7 @@ function onBackdropKeydown(e) {
             {{ buyType === 'scheduled' ? t('确定预约') : t('确认') }}
           </button>
         </div>
+        </div>
       </div>
     </div>
   </Teleport>
@@ -406,47 +408,67 @@ function onBackdropKeydown(e) {
     backdrop-filter: blur(4px);
   }
 
-  &__close {
-    position: absolute;
-    top: max(12px, env(safe-area-inset-top, 0px));
-    right: 16px;
-    z-index: 3;
-    width: 36px;
-    height: 36px;
-    border: 2px solid rgba(255, 255, 255, 0.85);
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.15);
-    color: #fff;
-    font-size: 22px;
-    line-height: 1;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  &__frame,
-  &__success {
+  &__panel-wrap {
     position: relative;
     z-index: 2;
     width: 100%;
     max-width: 420px;
     max-height: calc(100vh - 56px);
-    overflow-y: auto;
+    flex-shrink: 0;
 
     @include web-only {
       max-width: 440px;
       max-height: min(90vh, 820px);
     }
+  }
+
+  &__close {
+    position: absolute;
+    top: 0;
+    right: 12px;
+    z-index: 3;
+    width: 32px;
+    height: 32px;
+    border: 1.5px solid rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translateY(calc(-100% - 8px));
+    padding: 0;
+
+    @include web-only {
+      right: 8px;
+      transform: translateY(calc(-100% - 10px));
+    }
+  }
+
+  &__frame,
+  &__success {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-height: calc(100vh - 56px);
+    overflow-y: auto;
+
+    @include web-only {
+      max-height: min(90vh, 820px);
+    }
     box-sizing: border-box;
-    border-radius: 20px;
-    border: 3px solid #1c7bff;
-    background: linear-gradient(180deg, rgba(234, 241, 249, 0.98) 0%, rgba(227, 236, 251, 0.98) 100%);
+    border-radius: 24px;
+    border: 0.8px solid rgba(214, 224, 235, 1);
+    background:
+      radial-gradient(100% 100% at 50% 100%, #68b3fd 0%, #0d6cfb 100%);
     box-shadow: 0 12px 40px rgba(21, 58, 118, 0.28);
     padding: 12px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
   }
 
   &__tabs {
