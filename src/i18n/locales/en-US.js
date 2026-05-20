@@ -94,6 +94,7 @@ export default {
   投注市场: 'Market',
   金额: 'Amount',
   预估盈利: 'Est. Profit',
+  预估回报: 'Est. Return',
   取消订单: 'Cancel Order',
   复制: 'Copy',
   主队: 'Home',

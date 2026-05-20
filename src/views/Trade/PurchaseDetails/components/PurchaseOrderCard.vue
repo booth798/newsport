@@ -126,6 +126,7 @@ async function copyOrderNo() {
       </div>
 
       <button
+        v-if="!expanded"
         type="button"
         class="purchase-card__toggle"
         :aria-expanded="expanded"
@@ -136,38 +137,50 @@ async function copyOrderNo() {
     </div>
 
     <div v-if="expanded" class="purchase-card__detail">
-      <div class="purchase-card__detail-row">
-        <span class="purchase-card__detail-label">{{ t('订单号码') }}</span>
-        <span class="purchase-card__detail-val purchase-card__detail-val--order">
-          <span class="purchase-card__order-no">{{ order.orderNo }}</span>
-          <button type="button" class="purchase-card__copy" :aria-label="t('复制')" @click.stop="copyOrderNo">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <rect x="5" y="5" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.2" />
-              <path d="M4 11V4.5A1.5 1.5 0 0 1 5.5 3H11" stroke="currentColor" stroke-width="1.2" />
-            </svg>
-          </button>
-        </span>
-      </div>
-      <div class="purchase-card__detail-row">
-        <span class="purchase-card__detail-label">{{ t('交易时间') }}</span>
-        <span class="purchase-card__detail-val">{{ order.tradeTime }}</span>
-      </div>
-      <div class="purchase-card__detail-row">
-        <span class="purchase-card__detail-label">{{ t('投注市场') }}</span>
-        <span class="purchase-card__detail-val">{{ order.marketLabel }}</span>
-      </div>
-      <div class="purchase-card__detail-row">
-        <span class="purchase-card__detail-label">{{ t('金额') }}</span>
-        <span class="purchase-card__detail-val">{{ order.betAmountFormatted }}</span>
-      </div>
-      <div class="purchase-card__detail-row">
-        <span class="purchase-card__detail-label">{{ t('预估盈利') }}</span>
-        <span class="purchase-card__detail-val purchase-card__detail-val--profit">{{ order.estimatedProfitFormatted }}</span>
+      <div class="purchase-card__detail-rows">
+        <div class="purchase-card__detail-row">
+          <span class="purchase-card__detail-label">{{ t('订单号码') }}</span>
+          <span class="purchase-card__detail-val purchase-card__detail-val--order">
+            <span class="purchase-card__order-no">{{ order.orderNo }}</span>
+            <button type="button" class="purchase-card__copy" :aria-label="t('复制')" @click.stop="copyOrderNo">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <rect x="5" y="5" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.2" />
+                <path d="M4 11V4.5A1.5 1.5 0 0 1 5.5 3H11" stroke="currentColor" stroke-width="1.2" />
+              </svg>
+            </button>
+          </span>
+        </div>
+        <div class="purchase-card__detail-row">
+          <span class="purchase-card__detail-label">{{ t('交易时间') }}</span>
+          <span class="purchase-card__detail-val">{{ order.tradeTime }}</span>
+        </div>
+        <div class="purchase-card__detail-row">
+          <span class="purchase-card__detail-label">{{ t('投注市场') }}</span>
+          <span class="purchase-card__detail-val">{{ order.marketLabel }}</span>
+        </div>
+        <div class="purchase-card__detail-row">
+          <span class="purchase-card__detail-label">{{ t('金额') }}</span>
+          <span class="purchase-card__detail-val">{{ order.betAmountFormatted }}</span>
+        </div>
+        <div class="purchase-card__detail-row purchase-card__detail-row--last">
+          <span class="purchase-card__detail-label">{{ t('预估回报') }}</span>
+          <span class="purchase-card__detail-val purchase-card__detail-val--return">{{ order.estimatedProfitFormatted }}</span>
+        </div>
       </div>
 
-      <button v-if="order.canCancel" type="button" class="purchase-card__cancel" @click.stop>
-        {{ t('取消订单') }}
-      </button>
+      <div class="purchase-card__detail-foot">
+        <button v-if="order.canCancel" type="button" class="purchase-card__cancel" @click.stop>
+          {{ t('取消订单') }}
+        </button>
+        <button
+          type="button"
+          class="purchase-card__toggle purchase-card__toggle--foot"
+          :aria-expanded="expanded"
+          @click="emit('toggle')"
+        >
+          <img class="purchase-card__chevron" :src="chevronSrc" width="20" height="20" alt="" />
+        </button>
+      </div>
     </div>
   </article>
 </template>
@@ -495,6 +508,12 @@ async function copyOrderNo() {
       right: 0;
       bottom: 0;
     }
+
+    &--foot {
+      position: static;
+      flex-shrink: 0;
+      margin-left: auto;
+    }
   }
 
   &__chevron {
@@ -517,27 +536,50 @@ async function copyOrderNo() {
 
     @include mobile-only {
       gap: 0;
-      margin-top: 10px;
+      margin-top: 8px;
       padding: 0;
       border: none;
       border-radius: 0;
-      background: #fff;
+      background: transparent;
+    }
+  }
+
+  &__detail-rows {
+    @include mobile-only {
+      display: flex;
+      flex-direction: column;
     }
   }
 
   &__detail-row {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 12px;
 
     @include mobile-only {
-      padding: 10px 0;
-      border-bottom: 1px solid rgba(11, 52, 98, 0.08);
+      min-height: 40px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(11, 52, 98, 0.1);
 
-      &:last-of-type {
+      &--last {
         border-bottom: none;
       }
+    }
+  }
+
+  &__detail-foot {
+    @include web-only {
+      display: contents;
+    }
+
+    @include mobile-only {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 10px;
+      padding-top: 2px;
     }
   }
 
@@ -558,7 +600,8 @@ async function copyOrderNo() {
       gap: 6px;
     }
 
-    &--profit {
+    &--profit,
+    &--return {
       color: #1c7bff;
       font-weight: 600;
     }
@@ -606,9 +649,18 @@ async function copyOrderNo() {
 
     @include mobile-only {
       margin-top: 0;
-      padding: 8px 14px;
-      background: #ffebee;
-      border-radius: 8px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(255, 45, 45, 0.12);
+      font-size: 13px;
+    }
+  }
+
+  &--expanded {
+    @include mobile-only {
+      .purchase-card__panel {
+        padding-bottom: 4px;
+      }
     }
   }
 
