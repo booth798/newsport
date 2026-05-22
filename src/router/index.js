@@ -104,6 +104,12 @@ const routes = [
       },
     ],
   },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'not-found',
+    component: () => import('@/views/NotFound.vue'),
+    meta: { titleKey: '页面未找到' },
+  },
 ];
 
 const router = createRouter({

@@ -1,10 +1,36 @@
 <script setup>
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useToast } from '@/hooks/useToast';
 
 const { t } = useI18n();
+const toast = useToast();
 const amount = ref('');
 const balance = ref('10,000.00');
+const submitting = ref(false);
+
+function handleSubmit() {
+  const val = Number(amount.value);
+  if (!amount.value.trim()) {
+    toast.error(t('请输入金额'));
+    return;
+  }
+  if (!Number.isFinite(val) || val <= 0) {
+    toast.error(t('金额必须大于零'));
+    return;
+  }
+  const balanceNum = Number(balance.value.replace(/,/g, ''));
+  if (val > balanceNum) {
+    toast.error(t('请输入有效金额'));
+    return;
+  }
+  submitting.value = true;
+  setTimeout(() => {
+    submitting.value = false;
+    toast.success(t('操作成功'));
+    amount.value = '';
+  }, 800);
+}
 </script>
 
 <template>
@@ -30,8 +56,8 @@ const balance = ref('10,000.00');
           </div>
         </div>
 
-        <button class="btn btn--primary submit-btn">
-          {{ t('提交') }}
+        <button class="btn btn--primary submit-btn" :disabled="submitting" @click="handleSubmit">
+          {{ submitting ? t('加载中') : t('提交') }}
         </button>
       </div>
     </div>
@@ -42,16 +68,8 @@ const balance = ref('10,000.00');
 @use '@/styles/tools.scss' as *;
 
 .withdraw-page {
-  @include container;
-  padding-top: $spacing-xl;
-  padding-bottom: $spacing-4xl;
-
-  &__inner {
-    @include web-only {
-      max-width: $web-content-max;
-      margin: 0 auto;
-    }
-  }
+  padding-top: 0;
+  padding-bottom: $spacing-xl;
 }
 
 .page-title {

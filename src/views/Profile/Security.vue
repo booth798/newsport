@@ -1,24 +1,54 @@
 <script setup>
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useToast } from '@/hooks/useToast';
 
 const { t } = useI18n();
+const toast = useToast();
 
 const activeSection = ref('');
-const currentPassword = ref('');
-const newPassword = ref('');
-const confirmPassword = ref('');
+const submitting = ref(false);
+
+const loginCurrent = ref('');
+const loginNew = ref('');
+const loginConfirm = ref('');
+const withdrawCurrent = ref('');
+const withdrawNew = ref('');
+const withdrawConfirm = ref('');
 
 const resetForm = () => {
-  currentPassword.value = '';
-  newPassword.value = '';
-  confirmPassword.value = '';
+  loginCurrent.value = '';
+  loginNew.value = '';
+  loginConfirm.value = '';
+  withdrawCurrent.value = '';
+  withdrawNew.value = '';
+  withdrawConfirm.value = '';
 };
 
 const toggleSection = (section) => {
   activeSection.value = activeSection.value === section ? '' : section;
   resetForm();
 };
+
+function handleSave(section) {
+  const current = section === 'login' ? loginCurrent.value : withdrawCurrent.value;
+  const newPwd = section === 'login' ? loginNew.value : withdrawNew.value;
+  const confirm = section === 'login' ? loginConfirm.value : withdrawConfirm.value;
+
+  if (!current.trim()) { toast.error(t('请输入当前密码')); return; }
+  if (!newPwd.trim()) { toast.error(t('请输入新密码')); return; }
+  if (newPwd.length < 6) { toast.error(t('密码长度至少6位')); return; }
+  if (!confirm.trim()) { toast.error(t('请确认新密码')); return; }
+  if (newPwd !== confirm) { toast.error(t('两次密码输入不一致')); return; }
+
+  submitting.value = true;
+  setTimeout(() => {
+    submitting.value = false;
+    toast.success(t('操作成功'));
+    resetForm();
+    activeSection.value = '';
+  }, 800);
+}
 </script>
 
 <template>
@@ -34,17 +64,19 @@ const toggleSection = (section) => {
         <div v-if="activeSection === 'login'" class="security-item__form">
           <div class="form-group">
             <label class="form-label">{{ t('当前密码') }}</label>
-            <input v-model="currentPassword" type="password" class="form-input" />
+            <input v-model="loginCurrent" type="password" class="form-input" :placeholder="t('请输入当前密码')" />
           </div>
           <div class="form-group">
             <label class="form-label">{{ t('新密码') }}</label>
-            <input v-model="newPassword" type="password" class="form-input" />
+            <input v-model="loginNew" type="password" class="form-input" :placeholder="t('请输入新密码')" />
           </div>
           <div class="form-group">
             <label class="form-label">{{ t('确认新密码') }}</label>
-            <input v-model="confirmPassword" type="password" class="form-input" />
+            <input v-model="loginConfirm" type="password" class="form-input" :placeholder="t('请确认新密码')" />
           </div>
-          <button class="btn btn--primary save-btn">{{ t('保存') }}</button>
+          <button class="btn btn--primary save-btn" :disabled="submitting" @click="handleSave('login')">
+            {{ submitting ? t('加载中') : t('保存') }}
+          </button>
         </div>
       </div>
 
@@ -56,17 +88,19 @@ const toggleSection = (section) => {
         <div v-if="activeSection === 'withdraw'" class="security-item__form">
           <div class="form-group">
             <label class="form-label">{{ t('当前密码') }}</label>
-            <input v-model="currentPassword" type="password" class="form-input" />
+            <input v-model="withdrawCurrent" type="password" class="form-input" :placeholder="t('请输入当前密码')" />
           </div>
           <div class="form-group">
             <label class="form-label">{{ t('新密码') }}</label>
-            <input v-model="newPassword" type="password" class="form-input" />
+            <input v-model="withdrawNew" type="password" class="form-input" :placeholder="t('请输入新密码')" />
           </div>
           <div class="form-group">
             <label class="form-label">{{ t('确认新密码') }}</label>
-            <input v-model="confirmPassword" type="password" class="form-input" />
+            <input v-model="withdrawConfirm" type="password" class="form-input" :placeholder="t('请确认新密码')" />
           </div>
-          <button class="btn btn--primary save-btn">{{ t('保存') }}</button>
+          <button class="btn btn--primary save-btn" :disabled="submitting" @click="handleSave('withdraw')">
+            {{ submitting ? t('加载中') : t('保存') }}
+          </button>
         </div>
       </div>
     </div>

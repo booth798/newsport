@@ -1,10 +1,24 @@
 <script setup>
 import { useI18n } from 'vue-i18n';
-import { useRoute } from 'vue-router';
-import { computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { computed, ref } from 'vue';
+import { storeToRefs } from 'pinia';
+
+import { useAppStore } from '@/store/modules/app';
+import { useToast } from '@/hooks/useToast';
 
 const { t } = useI18n();
 const route = useRoute();
+const router = useRouter();
+const appStore = useAppStore();
+const toast = useToast();
+const { isLoggedIn, loggedInUserId } = storeToRefs(appStore);
+
+const showLogoutConfirm = ref(false);
+
+const displayName = computed(() => loggedInUserId.value || 'User_888');
+const displayId = computed(() => loggedInUserId.value ? `ID: ${loggedInUserId.value}` : 'ID: 10086');
+const displayInitial = computed(() => (displayName.value.charAt(0) || 'U').toUpperCase());
 
 const menuItems = [
   { label: '个人资料', to: '/profile/info', icon: 'user' },
@@ -15,6 +29,21 @@ const menuItems = [
 ];
 
 const activeMenu = computed(() => route.path);
+
+function handleLogout() {
+  showLogoutConfirm.value = true;
+}
+
+function confirmLogout() {
+  showLogoutConfirm.value = false;
+  appStore.clearWebLogin();
+  toast.success(t('操作成功'));
+  router.push('/');
+}
+
+function cancelLogout() {
+  showLogoutConfirm.value = false;
+}
 </script>
 
 <template>
@@ -23,11 +52,11 @@ const activeMenu = computed(() => route.path);
       <aside class="profile-sidebar">
         <div class="profile-sidebar__user card-default">
           <div class="user-avatar">
-            <div class="user-avatar__placeholder">U</div>
+            <div class="user-avatar__placeholder">{{ displayInitial }}</div>
           </div>
           <div class="user-info">
-            <div class="user-name">User_888</div>
-            <div class="user-id">ID: 10086</div>
+            <div class="user-name">{{ displayName }}</div>
+            <div class="user-id">{{ displayId }}</div>
           </div>
         </div>
 
@@ -41,7 +70,7 @@ const activeMenu = computed(() => route.path);
           >
             {{ t(item.label) }}
           </RouterLink>
-          <button class="profile-nav__item profile-nav__logout">
+          <button class="profile-nav__item profile-nav__logout" @click="handleLogout">
             {{ t('退出登录') }}
           </button>
         </nav>
@@ -50,6 +79,20 @@ const activeMenu = computed(() => route.path);
       <main class="profile-content card-default">
         <RouterView />
       </main>
+
+      <Teleport to="body">
+        <Transition name="confirm-fade">
+          <div v-if="showLogoutConfirm" class="logout-overlay" @click.self="cancelLogout">
+            <div class="logout-dialog card-default" role="alertdialog" aria-modal="true">
+              <p class="logout-dialog__text">{{ t('确定退出登录吗') }}</p>
+              <div class="logout-dialog__actions">
+                <button type="button" class="btn logout-dialog__cancel" @click="cancelLogout">{{ t('取消') }}</button>
+                <button type="button" class="btn btn--primary logout-dialog__confirm" @click="confirmLogout">{{ t('确定') }}</button>
+              </div>
+            </div>
+          </div>
+        </Transition>
+      </Teleport>
     </div>
   </div>
 </template>
@@ -186,5 +229,62 @@ const activeMenu = computed(() => route.path);
   @include mobile-only {
     padding: $spacing-lg;
   }
+}
+
+.logout-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(11, 52, 98, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.logout-dialog {
+  width: min(360px, calc(100vw - 48px));
+  padding: 32px 24px 24px;
+  border-radius: $radius-lg;
+  text-align: center;
+
+  &__text {
+    font-size: $font-size-base;
+    font-weight: 500;
+    color: var(--theme-text);
+    margin: 0 0 24px;
+  }
+
+  &__actions {
+    display: flex;
+    gap: $spacing-md;
+  }
+
+  &__cancel,
+  &__confirm {
+    flex: 1;
+    height: 44px;
+  }
+
+  &__cancel {
+    border: 1.5px solid var(--theme-divider);
+    background: #fff;
+    color: var(--theme-text);
+
+    &:hover {
+      border-color: var(--theme-primary);
+      color: var(--theme-primary);
+    }
+  }
+}
+
+.confirm-fade-enter-active,
+.confirm-fade-leave-active {
+  transition: opacity 0.2s;
+}
+
+.confirm-fade-enter-from,
+.confirm-fade-leave-to {
+  opacity: 0;
 }
 </style>

@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useToast } from '@/hooks/useToast';
 
 import iconChampionUrl from '@/assets/images/events/icon_champion.svg?url';
 import iconEventsUrl from '@/assets/images/events/icon_events.svg?url';
@@ -27,6 +28,7 @@ const props = defineProps({
 const emit = defineEmits(['toggle']);
 
 const { t } = useI18n();
+const toast = useToast();
 
 const LEAGUE_ICON_BY_NAME = {
   欧冠: iconChampionUrl,
@@ -55,8 +57,9 @@ const showCancelAction = computed(() => props.order.canCancel);
 async function copyOrderNo() {
   try {
     await navigator.clipboard.writeText(props.order.orderNo);
+    toast.success(t('复制成功'));
   } catch {
-    /* clipboard unavailable */
+    toast.error(t('复制失败'));
   }
 }
 </script>

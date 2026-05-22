@@ -4,8 +4,9 @@ import Footer from '@/components/Footer.vue';
 import FloatingService from '@/components/FloatingService.vue';
 import LoginModal from '@/components/LoginModal.vue';
 import MobileTabBar from '@/components/MobileTabBar.vue';
+import GlobalToast from '@/components/GlobalToast.vue';
 
-import { onBeforeUnmount, onMounted, watch } from 'vue';
+import { onBeforeUnmount, onMounted, provide, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
@@ -51,6 +52,13 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('resize', syncViewport);
 });
+
+const toastRef = ref(null);
+provide('toast', {
+  success: (msg) => toastRef.value?.show(msg, { type: 'success' }),
+  error: (msg) => toastRef.value?.show(msg, { type: 'error' }),
+  info: (msg) => toastRef.value?.show(msg, { type: 'info' }),
+});
 </script>
 
 <template>
@@ -62,6 +70,7 @@ onBeforeUnmount(() => {
   <MobileTabBar v-if="isMobile" />
   <FloatingService />
   <LoginModal :visible="appStore.loginModalOpen" @close="appStore.closeLoginModal" />
+  <GlobalToast ref="toastRef" />
 </template>
 
 <style lang="scss" scoped>

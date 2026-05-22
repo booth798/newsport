@@ -45,16 +45,8 @@ const records = ref([]);
 @use '@/styles/tools.scss' as *;
 
 .records-page {
-  @include container;
-  padding-top: $spacing-xl;
-  padding-bottom: $spacing-4xl;
-
-  &__inner {
-    @include web-only {
-      max-width: $web-content-max;
-      margin: 0 auto;
-    }
-  }
+  padding-top: 0;
+  padding-bottom: $spacing-xl;
 }
 
 .page-title {

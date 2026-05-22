@@ -1,12 +1,34 @@
 <script setup>
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useToast } from '@/hooks/useToast';
 
 const { t } = useI18n();
+const toast = useToast();
 
 const wallets = ref([]);
 const walletType = ref('');
 const walletAddress = ref('');
+const submitting = ref(false);
+
+function handleSubmit() {
+  if (!walletType.value) {
+    toast.error(t('请选择钱包类型'));
+    return;
+  }
+  if (!walletAddress.value.trim()) {
+    toast.error(t('请输入钱包地址'));
+    return;
+  }
+  submitting.value = true;
+  setTimeout(() => {
+    submitting.value = false;
+    wallets.value.push({ type: walletType.value, address: walletAddress.value.trim() });
+    toast.success(t('操作成功'));
+    walletType.value = '';
+    walletAddress.value = '';
+  }, 800);
+}
 </script>
 
 <template>
@@ -38,8 +60,8 @@ const walletAddress = ref('');
         />
       </div>
 
-      <button class="btn btn--primary submit-btn">
-        {{ t('提交') }}
+      <button class="btn btn--primary submit-btn" :disabled="submitting" @click="handleSubmit">
+        {{ submitting ? t('加载中') : t('提交') }}
       </button>
     </div>
   </div>

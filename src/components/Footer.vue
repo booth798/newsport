@@ -2,15 +2,16 @@
 import { useI18n } from 'vue-i18n';
 
 import logoUrl from '@/assets/images/common/logo.png';
+import { SITE_CONFIG } from '@/config/site';
 
 const { t } = useI18n();
 
 const footerLinks = [
-  { label: '关于我们', key: 'about' },
-  { label: '联系我们', key: 'contact' },
-  { label: '帮助中心', key: 'help' },
-  { label: '服务条款', key: 'terms' },
-  { label: '隐私政策', key: 'privacy' },
+  { label: '关于我们', key: 'about', to: '/' },
+  { label: '联系我们', key: 'contact', to: '/' },
+  { label: '帮助中心', key: 'help', to: '/' },
+  { label: '服务条款', key: 'terms', to: '/' },
+  { label: '隐私政策', key: 'privacy', to: '/' },
 ];
 </script>
 
@@ -21,17 +22,17 @@ const footerLinks = [
         <img :src="logoUrl" alt="logo" class="footer__logo-img" />
       </div>
       <div class="footer__links">
-        <a
+        <RouterLink
           v-for="link in footerLinks"
           :key="link.key"
+          :to="link.to"
           class="footer__link"
-          href="javascript:;"
         >
           {{ t(link.label) }}
-        </a>
+        </RouterLink>
       </div>
       <div class="footer__copyright">
-        © {{ new Date().getFullYear() }} MySport. {{ t('版权所有') }}
+        © {{ new Date().getFullYear() }} {{ SITE_CONFIG.siteName }}. {{ t('版权所有') }}
       </div>
     </div>
   </footer>

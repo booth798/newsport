@@ -125,7 +125,6 @@ export default {
   赛事: 'Match',
   收益率: 'Yield %',
   预估收益: 'Est. Profit',
-  设置: 'Settings',
 
   // Finance
   充值: 'Deposit',
@@ -181,4 +180,43 @@ export default {
   确定退出登录吗: 'Are you sure to logout?',
   在线客服: 'Support',
   悬浮服务下载APP: 'Download app',
+
+  // Market page
+  足球: 'Football',
+  篮球: 'Basketball',
+  电竞: 'Esports',
+  平: 'Draw',
+  未开赛: 'Upcoming',
+  总成交量冒号: 'Total volume: ',
+  暂无相关赛事: 'No matches available',
+
+  // 404
+  页面未找到: 'Page Not Found',
+  您访问的页面不存在或已被移除: 'The page you are looking for does not exist or has been removed.',
+  返回首页: 'Back to Home',
+
+  // Announcement
+  默认公告: 'Customer service hours for Greater China: 09:00-21:00. Please handle business during this time for a better experience. Thank you for your cooperation.',
+
+  // Toast
+  复制成功: 'Copied',
+  复制失败: 'Copy failed',
+  操作成功: 'Success',
+  请输入金额: 'Please enter amount',
+  金额必须大于零: 'Amount must be greater than zero',
+  请输入有效金额: 'Please enter a valid amount',
+  登录成功: 'Login successful',
+  注册成功: 'Registration successful',
+  请完成滑动验证: 'Please complete slide verification',
+
+  // Form validation
+  请输入当前密码: 'Enter current password',
+  请输入新密码: 'Enter new password',
+  请确认新密码: 'Confirm new password',
+  两次密码输入不一致: 'Passwords do not match',
+  密码长度至少6位: 'Password must be at least 6 characters',
+  请输入钱包地址: 'Enter wallet address',
+  请选择钱包类型: 'Select wallet type',
+  身份证号格式不正确: 'Invalid ID number format',
+  请输入昵称: 'Please enter nickname',
 };

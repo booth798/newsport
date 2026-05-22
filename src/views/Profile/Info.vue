@@ -1,11 +1,31 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { storeToRefs } from 'pinia';
+import { useAppStore } from '@/store/modules/app';
+import { useToast } from '@/hooks/useToast';
 
 const { t } = useI18n();
+const toast = useToast();
+const appStore = useAppStore();
+const { loggedInUserId } = storeToRefs(appStore);
 
-const nickname = ref('User_888');
+const nickname = ref(loggedInUserId.value || 'User_888');
 const phone = ref('138****8888');
+const submitting = ref(false);
+const displayInitial = computed(() => (nickname.value.charAt(0) || 'U').toUpperCase());
+
+function handleSave() {
+  if (!nickname.value.trim()) {
+    toast.error(t('请输入昵称'));
+    return;
+  }
+  submitting.value = true;
+  setTimeout(() => {
+    submitting.value = false;
+    toast.success(t('操作成功'));
+  }, 600);
+}
 </script>
 
 <template>
@@ -16,7 +36,7 @@ const phone = ref('138****8888');
       <div class="info-row">
         <span class="info-label">{{ t('头像') }}</span>
         <div class="info-avatar">
-          <div class="info-avatar__placeholder">U</div>
+          <div class="info-avatar__placeholder">{{ displayInitial }}</div>
         </div>
       </div>
 
@@ -31,8 +51,8 @@ const phone = ref('138****8888');
       </div>
     </div>
 
-    <button class="btn btn--primary save-btn">
-      {{ t('保存') }}
+    <button class="btn btn--primary save-btn" :disabled="submitting" @click="handleSave">
+      {{ submitting ? t('加载中') : t('保存') }}
     </button>
   </div>
 </template>

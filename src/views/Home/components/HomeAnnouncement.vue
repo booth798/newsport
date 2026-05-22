@@ -1,11 +1,13 @@
 <script setup>
+import { useI18n } from 'vue-i18n';
 import noticeIconUrl from '@/assets/images/common/notice.svg?url';
+
+const { t } = useI18n();
 
 defineProps({
   text: {
     type: String,
-    default:
-      '大中华区人工客服工作时间为09:00-21:00，为了给大家更好的体验感，请尽量在这个时间段办理相关业务，感谢配合，如有造成不便敬请理解。',
+    default: '',
   },
 });
 </script>
@@ -16,7 +18,7 @@ defineProps({
       <div class="announcement__icon">
         <img class="announcement__icon-img" :src="noticeIconUrl" alt="" />
       </div>
-      <p class="announcement__text">{{ text }}</p>
+      <p class="announcement__text">{{ text || t('默认公告') }}</p>
     </div>
   </section>
 </template>

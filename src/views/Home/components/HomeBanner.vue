@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
 import bannerDefault from '@/assets/images/slide/banner.png';
 import slideLeftIcon from '@/assets/images/common/icon_slide-left.svg';
@@ -7,15 +7,16 @@ import slideLeftHoverIcon from '@/assets/images/common/icon_slide-left_hover.svg
 import slideRightIcon from '@/assets/images/common/icon_slide-right.svg';
 import slideRightHoverIcon from '@/assets/images/common/icon_slide-right_hover.svg';
 
-/** 轮播图列表：暂为同一张图占 3 屏，便于显示箭头与圆点；后续可替换为不同资源 */
 const bannerSlides = [bannerDefault, bannerDefault, bannerDefault];
 
 const bannerIndex = ref(0);
 const bannerCount = computed(() => bannerSlides.length);
+const isTransitioning = ref(true);
 
 const trackStyle = computed(() => ({
   transform: `translateX(-${bannerIndex.value * (100 / bannerSlides.length)}%)`,
   width: `${bannerSlides.length * 100}%`,
+  transition: isTransitioning.value ? 'transform 0.35s ease' : 'none',
 }));
 
 const nextBanner = () => {
@@ -29,12 +30,63 @@ const prevBanner = () => {
   if (n <= 1) return;
   bannerIndex.value = (bannerIndex.value + n - 1) % n;
 };
+
+let autoTimer = null;
+const AUTO_INTERVAL = 4000;
+
+function startAutoPlay() {
+  stopAutoPlay();
+  if (bannerCount.value <= 1) return;
+  autoTimer = setInterval(nextBanner, AUTO_INTERVAL);
+}
+
+function stopAutoPlay() {
+  if (autoTimer) {
+    clearInterval(autoTimer);
+    autoTimer = null;
+  }
+}
+
+onMounted(() => startAutoPlay());
+onBeforeUnmount(() => stopAutoPlay());
+
+const touchStartX = ref(0);
+const touchDeltaX = ref(0);
+
+function onTouchStart(e) {
+  stopAutoPlay();
+  touchStartX.value = e.touches[0].clientX;
+  touchDeltaX.value = 0;
+}
+
+function onTouchMove(e) {
+  touchDeltaX.value = e.touches[0].clientX - touchStartX.value;
+}
+
+function onTouchEnd() {
+  const threshold = 50;
+  if (touchDeltaX.value < -threshold) {
+    nextBanner();
+  } else if (touchDeltaX.value > threshold) {
+    prevBanner();
+  }
+  touchDeltaX.value = 0;
+  startAutoPlay();
+}
 </script>
 
 <template>
   <section class="home-banner">
     <div class="banner">
-      <div class="banner__slide" :style="{ '--banner-count': bannerCount }">
+      <div
+        class="banner__slide"
+        :style="{ '--banner-count': bannerCount }"
+        @touchstart.passive="onTouchStart"
+        @touchmove.passive="onTouchMove"
+        @touchend="onTouchEnd"
+        @mouseenter="stopAutoPlay"
+        @mouseleave="startAutoPlay"
+      >
         <div class="banner__track" :style="trackStyle">
           <div
             v-for="(src, idx) in bannerSlides"

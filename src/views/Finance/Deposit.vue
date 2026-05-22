@@ -1,14 +1,35 @@
 <script setup>
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useToast } from '@/hooks/useToast';
 
 const { t } = useI18n();
+const toast = useToast();
 const amount = ref('');
+const submitting = ref(false);
 const quickAmounts = [100, 300, 500, 1000, 3000, 5000];
 
 const selectAmount = (val) => {
   amount.value = String(val);
 };
+
+function handleSubmit() {
+  const val = Number(amount.value);
+  if (!amount.value.trim()) {
+    toast.error(t('请输入金额'));
+    return;
+  }
+  if (!Number.isFinite(val) || val <= 0) {
+    toast.error(t('金额必须大于零'));
+    return;
+  }
+  submitting.value = true;
+  setTimeout(() => {
+    submitting.value = false;
+    toast.success(t('操作成功'));
+    amount.value = '';
+  }, 800);
+}
 </script>
 
 <template>
@@ -41,8 +62,8 @@ const selectAmount = (val) => {
           </button>
         </div>
 
-        <button class="btn btn--primary submit-btn">
-          {{ t('提交') }}
+        <button class="btn btn--primary submit-btn" :disabled="submitting" @click="handleSubmit">
+          {{ submitting ? t('加载中') : t('提交') }}
         </button>
       </div>
     </div>
@@ -53,16 +74,8 @@ const selectAmount = (val) => {
 @use '@/styles/tools.scss' as *;
 
 .deposit-page {
-  @include container;
-  padding-top: $spacing-xl;
-  padding-bottom: $spacing-4xl;
-
-  &__inner {
-    @include web-only {
-      max-width: $web-content-max;
-      margin: 0 auto;
-    }
-  }
+  padding-top: 0;
+  padding-bottom: $spacing-xl;
 }
 
 .page-title {

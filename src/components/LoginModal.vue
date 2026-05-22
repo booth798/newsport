@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import logoLoginUrl from '@/assets/images/common/logo_login.svg?url';
@@ -8,9 +8,11 @@ import iconLoginLockUrl from '@/assets/images/login/icon_login_lock.svg?url';
 import iconEyeClosedUrl from '@/assets/images/login/icon_login_eye_closed.svg?url';
 import iconEyeOpenUrl from '@/assets/images/login/icon_login_eye_open.svg?url';
 import { useAppStore } from '@/store/modules/app';
+import { useToast } from '@/hooks/useToast';
 
 const { t } = useI18n();
 const appStore = useAppStore();
+const toast = useToast();
 
 const props = defineProps({
   visible: Boolean,
@@ -46,7 +48,11 @@ watch(isLogin, () => {
 watch(
   () => props.visible,
   (open) => {
-    if (!open) resetSlider();
+    if (!open) {
+      resetSlider();
+    } else {
+      loadRemembered();
+    }
   },
 );
 
@@ -112,9 +118,32 @@ const canSubmit = computed(
 /** 与稿图一致：须完成滑动验证后才可登入 */
 const canSubmitLogin = computed(() => canSubmit.value && sliderVerified.value);
 
+const REMEMBER_KEY = 'mysport:remember_account';
+
+function loadRemembered() {
+  try {
+    const saved = localStorage.getItem(REMEMBER_KEY);
+    if (saved) {
+      const data = JSON.parse(saved);
+      account.value = data.account || '';
+      rememberPassword.value = true;
+    }
+  } catch { /* ignore */ }
+}
+
+function saveRemembered() {
+  if (rememberPassword.value && account.value.trim()) {
+    localStorage.setItem(REMEMBER_KEY, JSON.stringify({ account: account.value.trim() }));
+  } else {
+    localStorage.removeItem(REMEMBER_KEY);
+  }
+}
+
 function submitWebLogin() {
   if (!canSubmitLogin.value) return;
+  saveRemembered();
   appStore.completeWebLogin(account.value.trim());
+  toast.success(t('登录成功'));
   account.value = '';
   password.value = '';
   rememberPassword.value = false;
@@ -122,7 +151,33 @@ function submitWebLogin() {
   resetSlider();
 }
 
+function submitRegister() {
+  if (!canSubmit.value) return;
+  if (!sliderVerified.value) {
+    toast.error(t('请完成滑动验证'));
+    return;
+  }
+  appStore.completeWebLogin(account.value.trim());
+  toast.success(t('注册成功'));
+  account.value = '';
+  password.value = '';
+  showPassword.value = false;
+  resetSlider();
+}
+
 const close = () => emit('close');
+
+function onKeydown(e) {
+  if (e.key === 'Escape' && props.visible) close();
+}
+
+onMounted(() => {
+  document.addEventListener('keydown', onKeydown);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', onKeydown);
+});
 
 const toggleMode = () => {
   isLogin.value = !isLogin.value;
@@ -258,6 +313,7 @@ const passwordInputType = computed(() => (showPassword.value ? 'text' : 'passwor
                     class="btn btn--primary login-modal__submit login-modal__submit--register"
                     :class="{ 'login-modal__submit--ready': canSubmit }"
                     :disabled="!canSubmit"
+                    @click="submitRegister"
                   >
                     {{ t('注册') }}
                   </button>

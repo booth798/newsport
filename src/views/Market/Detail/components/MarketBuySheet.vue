@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
+import { useToast } from '@/hooks/useToast';
 
 import avatarDefaultUrl from '@/assets/images/common/avatar_default.png?url';
 import iconChampionUrl from '@/assets/images/events/icon_champion.svg?url';
@@ -40,6 +41,7 @@ const emit = defineEmits(['close']);
 const { t } = useI18n();
 const router = useRouter();
 const appStore = useAppStore();
+const toast = useToast();
 const { loggedInUserId, loggedInAssetsFormatted, isMobile } = storeToRefs(appStore);
 
 const buyType = ref('standard');
@@ -123,8 +125,17 @@ function closeSheet() {
 }
 
 function confirmBuy() {
-  const amt = Number(buyAmount.value);
-  successAmount.value = Number.isFinite(amt) && amt > 0 ? amt.toFixed(2) : '100.00';
+  const raw = buyAmount.value.trim();
+  if (!raw) {
+    toast.error(t('请输入金额'));
+    return;
+  }
+  const amt = Number(raw);
+  if (!Number.isFinite(amt) || amt <= 0) {
+    toast.error(t('金额必须大于零'));
+    return;
+  }
+  successAmount.value = amt.toFixed(2);
   successYield.value = profitPercent.value;
   successProfit.value = (Number(successAmount.value) * (Number(successYield.value) / 100)).toFixed(2);
   successOrderNo.value = `NO.B0177485348351173${Date.now() % 1000}`;

@@ -1,14 +1,20 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 
+const SPORT_LEAGUES = {
+  football: ['欧冠', '英超', '西甲', '德甲', '意甲', '法甲'],
+  basketball: ['NBA', 'CBA', '欧篮'],
+  esports: ['LPL', 'LCK', 'DOTA2'],
+};
+
 const tabs = [
-  { key: 'all', label: '全部' },
-  { key: 'football', label: '足球' },
-  { key: 'basketball', label: '篮球' },
-  { key: 'esports', label: '电竞' },
+  { key: 'all', labelKey: '全部' },
+  { key: 'football', labelKey: '足球' },
+  { key: 'basketball', labelKey: '篮球' },
+  { key: 'esports', labelKey: '电竞' },
 ];
 const activeTab = ref('all');
 
@@ -16,6 +22,7 @@ const markets = ref([
   {
     id: 1,
     league: '欧冠',
+    sport: 'football',
     date: '03-19 02:30',
     homeTeam: '亚特兰大',
     awayTeam: '拜仁慕尼黑',
@@ -28,6 +35,7 @@ const markets = ref([
   {
     id: 2,
     league: '英超',
+    sport: 'football',
     date: '03-19 03:00',
     homeTeam: '利物浦',
     awayTeam: '曼联',
@@ -40,6 +48,7 @@ const markets = ref([
   {
     id: 3,
     league: '西甲',
+    sport: 'football',
     date: '03-20 01:00',
     homeTeam: '巴塞罗那',
     awayTeam: '皇家马德里',
@@ -52,6 +61,7 @@ const markets = ref([
   {
     id: 4,
     league: '德甲',
+    sport: 'football',
     date: '03-20 03:30',
     homeTeam: '多特蒙德',
     awayTeam: '勒沃库森',
@@ -64,6 +74,7 @@ const markets = ref([
   {
     id: 5,
     league: '意甲',
+    sport: 'football',
     date: '03-21 01:00',
     homeTeam: 'AC米兰',
     awayTeam: '国际米兰',
@@ -74,6 +85,11 @@ const markets = ref([
     status: 'upcoming',
   },
 ]);
+
+const filteredMarkets = computed(() => {
+  if (activeTab.value === 'all') return markets.value;
+  return markets.value.filter((m) => m.sport === activeTab.value);
+});
 </script>
 
 <template>
@@ -84,18 +100,22 @@ const markets = ref([
         <div class="market-tabs">
           <button v-for="tab in tabs" :key="tab.key" class="market-tab" :class="{ active: activeTab === tab.key }"
             @click="activeTab = tab.key">
-            {{ tab.label }}
+            {{ t(tab.labelKey) }}
           </button>
         </div>
       </div>
 
-      <div class="market-list">
-        <RouterLink v-for="item in markets" :key="item.id" :to="`/market/${item.id}`" class="market-item card-default">
+      <div v-if="filteredMarkets.length === 0" class="market-empty">
+        <p class="market-empty__text">{{ t('暂无相关赛事') }}</p>
+      </div>
+
+      <div v-else class="market-list">
+        <RouterLink v-for="item in filteredMarkets" :key="item.id" :to="`/market/${item.id}`" class="market-item card-default">
           <div class="market-item__top">
             <span class="market-item__league">{{ item.league }}</span>
             <span class="market-item__date">{{ item.date }}</span>
             <span class="market-item__status" :class="{ live: item.status === 'live' }">
-              {{ item.status === 'live' ? 'LIVE' : '未开赛' }}
+              {{ item.status === 'live' ? 'LIVE' : t('未开赛') }}
             </span>
           </div>
 
@@ -117,7 +137,7 @@ const markets = ref([
               <span class="odds-btn__value">{{ item.homeOdds }}</span>
             </div>
             <div class="odds-btn">
-              <span class="odds-btn__label">平</span>
+              <span class="odds-btn__label">{{ t('平') }}</span>
               <span class="odds-btn__value">{{ item.drawOdds }}</span>
             </div>
             <div class="odds-btn">
@@ -127,7 +147,7 @@ const markets = ref([
           </div>
 
           <div class="market-item__volume">
-            总成交量：<strong>{{ item.volume }}</strong>
+            {{ t('总成交量冒号') }}<strong>{{ item.volume }}</strong>
           </div>
         </RouterLink>
       </div>
@@ -351,6 +371,21 @@ const markets = ref([
     font-size: $font-size-lg;
     font-weight: 700;
     color: var(--theme-text);
+  }
+}
+
+.market-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  background: var(--surface-card);
+  border-radius: $radius-lg;
+  border: 1.5px dashed var(--theme-divider);
+
+  &__text {
+    font-size: $font-size-base;
+    color: var(--theme-text-1);
   }
 }
 

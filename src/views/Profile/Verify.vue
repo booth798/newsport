@@ -1,12 +1,39 @@
 <script setup>
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useToast } from '@/hooks/useToast';
 
 const { t } = useI18n();
+const toast = useToast();
 
 const status = ref('unverified');
 const realName = ref('');
 const idNumber = ref('');
+const submitting = ref(false);
+
+const ID_REG = /^[1-9]\d{5}(18|19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[\dXx]$/;
+
+function handleSubmit() {
+  if (!realName.value.trim()) {
+    toast.error(t('请输入真实姓名'));
+    return;
+  }
+  if (!idNumber.value.trim()) {
+    toast.error(t('请输入身份证号'));
+    return;
+  }
+  if (!ID_REG.test(idNumber.value.trim())) {
+    toast.error(t('身份证号格式不正确'));
+    return;
+  }
+
+  submitting.value = true;
+  setTimeout(() => {
+    submitting.value = false;
+    status.value = 'verified';
+    toast.success(t('操作成功'));
+  }, 1000);
+}
 </script>
 
 <template>
@@ -38,8 +65,8 @@ const idNumber = ref('');
           />
         </div>
 
-        <button class="btn btn--primary submit-btn">
-          {{ t('提交') }}
+        <button class="btn btn--primary submit-btn" :disabled="submitting" @click="handleSubmit">
+          {{ submitting ? t('加载中') : t('提交') }}
         </button>
       </div>
     </template>
