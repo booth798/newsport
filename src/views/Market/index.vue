@@ -1,14 +1,9 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { fetchMarketList } from '@/api/match';
 
 const { t } = useI18n();
-
-const SPORT_LEAGUES = {
-  football: ['欧冠', '英超', '西甲', '德甲', '意甲', '法甲'],
-  basketball: ['NBA', 'CBA', '欧篮'],
-  esports: ['LPL', 'LCK', 'DOTA2'],
-};
 
 const tabs = [
   { key: 'all', labelKey: '全部' },
@@ -17,79 +12,25 @@ const tabs = [
   { key: 'esports', labelKey: '电竞' },
 ];
 const activeTab = ref('all');
+const markets = ref([]);
+const loading = ref(true);
+const error = ref(false);
 
-const markets = ref([
-  {
-    id: 1,
-    league: '欧冠',
-    sport: 'football',
-    date: '03-19 02:30',
-    homeTeam: '亚特兰大',
-    awayTeam: '拜仁慕尼黑',
-    homeOdds: 2.45,
-    drawOdds: 3.20,
-    awayOdds: 2.80,
-    volume: '10.00M',
-    status: 'upcoming',
-  },
-  {
-    id: 2,
-    league: '英超',
-    sport: 'football',
-    date: '03-19 03:00',
-    homeTeam: '利物浦',
-    awayTeam: '曼联',
-    homeOdds: 1.85,
-    drawOdds: 3.50,
-    awayOdds: 4.20,
-    volume: '8.50M',
-    status: 'upcoming',
-  },
-  {
-    id: 3,
-    league: '西甲',
-    sport: 'football',
-    date: '03-20 01:00',
-    homeTeam: '巴塞罗那',
-    awayTeam: '皇家马德里',
-    homeOdds: 2.10,
-    drawOdds: 3.30,
-    awayOdds: 3.40,
-    volume: '15.00M',
-    status: 'upcoming',
-  },
-  {
-    id: 4,
-    league: '德甲',
-    sport: 'football',
-    date: '03-20 03:30',
-    homeTeam: '多特蒙德',
-    awayTeam: '勒沃库森',
-    homeOdds: 2.60,
-    drawOdds: 3.10,
-    awayOdds: 2.70,
-    volume: '6.20M',
-    status: 'live',
-  },
-  {
-    id: 5,
-    league: '意甲',
-    sport: 'football',
-    date: '03-21 01:00',
-    homeTeam: 'AC米兰',
-    awayTeam: '国际米兰',
-    homeOdds: 3.20,
-    drawOdds: 3.10,
-    awayOdds: 2.25,
-    volume: '12.80M',
-    status: 'upcoming',
-  },
-]);
+async function loadMarkets() {
+  try {
+    loading.value = true;
+    error.value = false;
+    const res = await fetchMarketList(activeTab.value);
+    markets.value = res.data || [];
+  } catch {
+    error.value = true;
+  } finally {
+    loading.value = false;
+  }
+}
 
-const filteredMarkets = computed(() => {
-  if (activeTab.value === 'all') return markets.value;
-  return markets.value.filter((m) => m.sport === activeTab.value);
-});
+onMounted(loadMarkets);
+watch(activeTab, loadMarkets);
 </script>
 
 <template>
@@ -105,12 +46,22 @@ const filteredMarkets = computed(() => {
         </div>
       </div>
 
-      <div v-if="filteredMarkets.length === 0" class="market-empty">
+      <div v-if="loading" class="market-loading">
+        <div class="market-loading__spinner" />
+        <span>{{ t('加载中') }}</span>
+      </div>
+
+      <div v-else-if="error" class="market-error">
+        <span>{{ t('加载失败') }}</span>
+        <button type="button" class="market-error__retry" @click="loadMarkets">{{ t('重试') }}</button>
+      </div>
+
+      <div v-else-if="markets.length === 0" class="market-empty">
         <p class="market-empty__text">{{ t('暂无相关赛事') }}</p>
       </div>
 
       <div v-else class="market-list">
-        <RouterLink v-for="item in filteredMarkets" :key="item.id" :to="`/market/${item.id}`" class="market-item card-default">
+        <RouterLink v-for="item in markets" :key="item.id" :to="`/market/${item.id}`" class="market-item card-default">
           <div class="market-item__top">
             <span class="market-item__league">{{ item.league }}</span>
             <span class="market-item__date">{{ item.date }}</span>
@@ -371,6 +322,57 @@ const filteredMarkets = computed(() => {
     font-size: $font-size-lg;
     font-weight: 700;
     color: var(--theme-text);
+  }
+}
+
+.market-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 240px;
+  color: var(--theme-text-1);
+  font-size: $font-size-md;
+
+  &__spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid var(--theme-divider);
+    border-top-color: var(--theme-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.market-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 240px;
+  color: var(--theme-text-1);
+  font-size: $font-size-md;
+
+  &__retry {
+    padding: 8px 24px;
+    border-radius: $radius-pill;
+    border: 1.5px solid var(--theme-primary);
+    background: transparent;
+    color: var(--theme-primary);
+    font-size: $font-size-md;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      background: var(--theme-primary);
+      color: #fff;
+    }
   }
 }
 

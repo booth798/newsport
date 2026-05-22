@@ -1,15 +1,30 @@
 <script setup>
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/hooks/useToast';
+import { fetchBalance, submitWithdraw } from '@/api/finance';
 
 const { t } = useI18n();
 const toast = useToast();
 const amount = ref('');
-const balance = ref('10,000.00');
+const balance = ref('--');
+const balanceRaw = ref(0);
 const submitting = ref(false);
+const balanceLoading = ref(true);
 
-function handleSubmit() {
+onMounted(async () => {
+  try {
+    const res = await fetchBalance();
+    balance.value = res.data.formatted;
+    balanceRaw.value = res.data.available;
+  } catch {
+    balance.value = '--';
+  } finally {
+    balanceLoading.value = false;
+  }
+});
+
+async function handleSubmit() {
   const val = Number(amount.value);
   if (!amount.value.trim()) {
     toast.error(t('请输入金额'));
@@ -19,17 +34,20 @@ function handleSubmit() {
     toast.error(t('金额必须大于零'));
     return;
   }
-  const balanceNum = Number(balance.value.replace(/,/g, ''));
-  if (val > balanceNum) {
+  if (val > balanceRaw.value) {
     toast.error(t('请输入有效金额'));
     return;
   }
-  submitting.value = true;
-  setTimeout(() => {
-    submitting.value = false;
+  try {
+    submitting.value = true;
+    await submitWithdraw(val);
     toast.success(t('操作成功'));
     amount.value = '';
-  }, 800);
+  } catch {
+    toast.error(t('提交失败，请重试'));
+  } finally {
+    submitting.value = false;
+  }
 }
 </script>
 

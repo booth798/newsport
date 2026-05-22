@@ -1,9 +1,10 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
 import { useToast } from '@/hooks/useToast';
+import { submitBuyOrder } from '@/api/order';
 
 import avatarDefaultUrl from '@/assets/images/common/avatar_default.png?url';
 import iconChampionUrl from '@/assets/images/events/icon_champion.svg?url';
@@ -95,9 +96,15 @@ const successAmount = ref('100.00');
 const successYield = ref('2.1');
 const successProfit = ref('2.00');
 
+const lockScroll = (locked) => {
+  if (typeof document === 'undefined') return;
+  document.body.style.overflow = locked ? 'hidden' : '';
+};
+
 watch(
   () => props.visible,
   (open) => {
+    lockScroll(open);
     if (open) {
       phase.value = 'form';
       buyType.value = 'standard';
@@ -107,6 +114,10 @@ watch(
     }
   },
 );
+
+onBeforeUnmount(() => {
+  lockScroll(false);
+});
 
 function formatScoreOption(score) {
   return score.replace('-', ' - ');
@@ -124,7 +135,9 @@ function closeSheet() {
   emit('close');
 }
 
-function confirmBuy() {
+const submitting = ref(false);
+
+async function confirmBuy() {
   const raw = buyAmount.value.trim();
   if (!raw) {
     toast.error(t('请输入金额'));
@@ -135,11 +148,27 @@ function confirmBuy() {
     toast.error(t('金额必须大于零'));
     return;
   }
-  successAmount.value = amt.toFixed(2);
-  successYield.value = profitPercent.value;
-  successProfit.value = (Number(successAmount.value) * (Number(successYield.value) / 100)).toFixed(2);
-  successOrderNo.value = `NO.B0177485348351173${Date.now() % 1000}`;
-  phase.value = 'success';
+
+  try {
+    submitting.value = true;
+    const res = await submitBuyOrder({
+      matchId: props.match.id,
+      score: props.row?.score ?? '0-0',
+      marketTab: props.marketTab,
+      type: buyType.value,
+      amount: amt,
+      yieldPercent: Number(profitPercent.value),
+    });
+    successAmount.value = amt.toFixed(2);
+    successYield.value = profitPercent.value;
+    successProfit.value = res.data.profit;
+    successOrderNo.value = res.data.orderNo;
+    phase.value = 'success';
+  } catch {
+    toast.error(t('提交失败，请重试'));
+  } finally {
+    submitting.value = false;
+  }
 }
 
 function goPurchaseDetails() {
@@ -164,6 +193,7 @@ function onBackdropKeydown(e) {
 
 <template>
   <Teleport to="body">
+    <Transition name="buy-sheet-fade">
     <div
       v-if="visible"
       class="buy-sheet"
@@ -174,7 +204,7 @@ function onBackdropKeydown(e) {
       <div class="buy-sheet__backdrop" aria-hidden="true" @click="closeSheet" />
 
       <div class="buy-sheet__panel-wrap">
-        <button type="button" class="buy-sheet__close norem" :aria-label="t('取消')" @click="closeSheet">
+        <button type="button" class="buy-sheet__close norem" :aria-label="t('关闭')" @click="closeSheet">
           <span aria-hidden="true">×</span>
         </button>
 
@@ -414,8 +444,8 @@ function onBackdropKeydown(e) {
           <button type="button" class="btn btn--default-1 buy-sheet__cancel-btn" @click="closeSheet">
             {{ t('取消') }}
           </button>
-          <button type="button" class="btn btn--primary buy-sheet__confirm-btn" @click="confirmBuy">
-            {{ buyType === 'scheduled' ? t('确定预约') : t('确定') }}
+          <button type="button" class="btn btn--primary buy-sheet__confirm-btn" :disabled="submitting" @click="confirmBuy">
+            {{ submitting ? t('提交中...') : buyType === 'scheduled' ? t('确定预约') : t('确定') }}
           </button>
         </div>
         </div>
@@ -424,13 +454,14 @@ function onBackdropKeydown(e) {
           <button type="button" class="btn buy-sheet__cancel-btn" @click="closeSheet">
             {{ t('取消') }}
           </button>
-          <button type="button" class="btn btn--primary buy-sheet__confirm-btn" @click="confirmBuy">
-            {{ buyType === 'scheduled' ? t('确定预约') : t('确定') }}
+          <button type="button" class="btn btn--primary buy-sheet__confirm-btn" :disabled="submitting" @click="confirmBuy">
+            {{ submitting ? t('提交中...') : buyType === 'scheduled' ? t('确定预约') : t('确定') }}
           </button>
         </div>
         </div>
       </div>
     </div>
+    </Transition>
   </Teleport>
 </template>
 
@@ -444,9 +475,9 @@ function onBackdropKeydown(e) {
   display: flex;
   align-items: center;
   justify-content: center;
-  /* 顶部多留空间，避免关闭钮（在面板上方向上偏移）贴边或被裁切 */
   padding: calc(44px + env(safe-area-inset-top, 0px)) 12px calc(12px + env(safe-area-inset-bottom, 0px));
   box-sizing: border-box;
+  overflow: hidden;
 
   @include web-only {
     padding: 24px;
@@ -468,6 +499,7 @@ function onBackdropKeydown(e) {
     max-width: 420px;
     max-height: calc(100vh - 56px);
     flex-shrink: 0;
+    overflow: hidden;
 
     @include web-only {
       max-width: 440px;
@@ -518,23 +550,37 @@ function onBackdropKeydown(e) {
     display: flex;
     align-items: center;
     justify-content: center;
-    transform: translateY(calc(-100% - 8px));
+    transform: translateY(calc(-100% - 10px));
     padding: 0;
+    backdrop-filter: blur(4px);
+    transition:
+      background 0.2s ease,
+      border-color 0.2s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.35);
+      border-color: #fff;
+    }
+
+    &:focus-visible {
+      outline: 2px solid rgba(255, 255, 255, 0.6);
+      outline-offset: 2px;
+    }
 
     @include mobile-only {
       &.norem {
-        width: 26px;
-        height: 26px;
+        width: 28px;
+        height: 28px;
         right: 10px;
         border-width: 1px;
-        font-size: 16px;
-        transform: translateY(calc(-100% - 6px));
+        font-size: 17px;
+        transform: translateY(calc(-100% - 8px));
       }
     }
 
     @include web-only {
       right: 8px;
-      transform: translateY(calc(-100% - 10px));
+      transform: translateY(calc(-100% - 12px));
     }
   }
 
@@ -793,6 +839,9 @@ function onBackdropKeydown(e) {
     border: 1.5px solid #1c7bff;
     background: #fff;
     margin-bottom: 6px;
+    overflow: hidden;
+    box-sizing: border-box;
+    max-width: 100%;
 
     &--plain {
       border-color: rgba(228, 240, 254, 0.95);
@@ -809,6 +858,7 @@ function onBackdropKeydown(e) {
   &__amount-input {
     flex: 1;
     min-width: 0;
+    max-width: 100%;
     border: none;
     background: transparent;
     font-family: $font-family-num;
@@ -817,6 +867,7 @@ function onBackdropKeydown(e) {
     color: #0b3462;
     text-align: right;
     outline: none;
+    box-sizing: border-box;
 
     &--full {
       text-align: left;
@@ -922,10 +973,11 @@ function onBackdropKeydown(e) {
     border: 1px solid rgba(228, 240, 254, 0.95);
     background: #fff;
     font-family: $font-family-num;
-    font-size: 13px;
+    font-size: 16px;
     text-align: center;
     color: #0b3462;
     outline: none;
+    box-sizing: border-box;
   }
 
   &__range-sep {
@@ -1231,6 +1283,24 @@ function onBackdropKeydown(e) {
       border: none;
       white-space: nowrap;
     }
+  }
+}
+
+.buy-sheet-fade-enter-active,
+.buy-sheet-fade-leave-active {
+  transition: opacity 0.25s ease;
+
+  .buy-sheet__panel-wrap {
+    transition: transform 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
+  }
+}
+
+.buy-sheet-fade-enter-from,
+.buy-sheet-fade-leave-to {
+  opacity: 0;
+
+  .buy-sheet__panel-wrap {
+    transform: scale(0.95) translateY(16px);
   }
 }
 </style>

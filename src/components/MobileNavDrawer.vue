@@ -102,6 +102,7 @@ const onContact = () => {
 
 <template>
   <Teleport to="body">
+    <Transition name="mobile-nav-drawer-transition">
     <div v-if="modelValue" class="mobile-nav-drawer">
       <div class="mobile-nav-drawer__backdrop" @click="close" />
       <aside
@@ -203,6 +204,7 @@ const onContact = () => {
         </div>
       </aside>
     </div>
+    </Transition>
   </Teleport>
 </template>
 
@@ -250,7 +252,7 @@ $divider-gap: 16px;
     position: absolute;
     inset: 0;
     background: rgba(17, 24, 39, 0.45);
-    animation: mobile-nav-drawer-backdrop-in 0.22s ease forwards;
+    transition: opacity 0.25s ease;
   }
 
   &__panel {
@@ -264,7 +266,7 @@ $divider-gap: 16px;
     overflow: hidden;
     background: #fff;
     box-shadow: -6px 0 24px rgba(21, 58, 119, 0.12);
-    animation: mobile-nav-drawer-panel-in 0.28s ease forwards;
+    transition: transform 0.28s ease;
   }
 
   &__arena {
@@ -500,21 +502,23 @@ $divider-gap: 16px;
   }
 }
 
-@keyframes mobile-nav-drawer-backdrop-in {
-  from {
-    opacity: 0;
+.mobile-nav-drawer-transition-enter-active,
+.mobile-nav-drawer-transition-leave-active {
+  .mobile-nav-drawer__backdrop {
+    transition: opacity 0.25s ease;
   }
-  to {
-    opacity: 1;
+  .mobile-nav-drawer__panel {
+    transition: transform 0.28s ease;
   }
 }
 
-@keyframes mobile-nav-drawer-panel-in {
-  from {
-    transform: translateX(100%);
+.mobile-nav-drawer-transition-enter-from,
+.mobile-nav-drawer-transition-leave-to {
+  .mobile-nav-drawer__backdrop {
+    opacity: 0;
   }
-  to {
-    transform: translateX(0);
+  .mobile-nav-drawer__panel {
+    transform: translateX(100%);
   }
 }
 </style>

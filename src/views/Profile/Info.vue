@@ -1,9 +1,10 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import { useAppStore } from '@/store/modules/app';
 import { useToast } from '@/hooks/useToast';
+import { fetchUserProfile, updateProfile } from '@/api/user';
 
 const { t } = useI18n();
 const toast = useToast();
@@ -13,18 +14,35 @@ const { loggedInUserId } = storeToRefs(appStore);
 const nickname = ref(loggedInUserId.value || 'User_888');
 const phone = ref('138****8888');
 const submitting = ref(false);
+const loading = ref(true);
 const displayInitial = computed(() => (nickname.value.charAt(0) || 'U').toUpperCase());
 
-function handleSave() {
+onMounted(async () => {
+  try {
+    const res = await fetchUserProfile();
+    nickname.value = res.data.nickname || loggedInUserId.value || 'User_888';
+    phone.value = res.data.phone || '138****8888';
+  } catch {
+    /* keep defaults */
+  } finally {
+    loading.value = false;
+  }
+});
+
+async function handleSave() {
   if (!nickname.value.trim()) {
     toast.error(t('请输入昵称'));
     return;
   }
-  submitting.value = true;
-  setTimeout(() => {
-    submitting.value = false;
+  try {
+    submitting.value = true;
+    await updateProfile({ nickname: nickname.value });
     toast.success(t('操作成功'));
-  }, 600);
+  } catch {
+    toast.error(t('提交失败，请重试'));
+  } finally {
+    submitting.value = false;
+  }
 }
 </script>
 

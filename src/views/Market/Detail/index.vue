@@ -1,11 +1,11 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
-import { getHotMatchById } from '@/constants/hotMatchCatalog';
 import { useAppStore } from '@/store/modules/app';
+import { fetchMatchDetail, fetchScoreMarket } from '@/api/match';
 import MarketDetailScoreSection from '@/views/Market/Detail/components/MarketDetailScoreSection.vue';
 import MarketBuySheet from '@/views/Market/Detail/components/MarketBuySheet.vue';
 import HomeMatchCard from '@/views/Home/components/HomeMatchCard.vue';
@@ -33,33 +33,15 @@ const mobileSections = [
 const showBuySheet = ref(false);
 const selectedRow = ref(null);
 
-const match = ref(getHotMatchById(route.params.id));
+const match = ref(null);
+const loading = ref(true);
+const error = ref(false);
 
-function formatVolumeMoney(n) {
-  return `¥${n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
+const scoreRowsFulltime = ref([]);
+const scoreRowsHalftime = ref([]);
+const scoreRowsLoading = ref(false);
 
-function buildScoreRows(matchId, tab) {
-  const rows = [];
-  const tabSalt = tab === 'halftime' ? 41 : 0;
-  for (let h = 0; h <= 3; h += 1) {
-    for (let a = 0; a <= 3; a += 1) {
-      const k = (h * 4 + a + matchId * 7 + tabSalt) % 97;
-      const prob = 2.1 + (k * 0.191) % 9.2;
-      const volumeBase = 6_000_000 + (k * 97_127 + h * 11_000 + a * 19_000) % 92_000_000;
-      rows.push({
-        score: `${h}-${a}`,
-        probability: `${prob.toFixed(2)}%`,
-        volumeFormatted: formatVolumeMoney(volumeBase),
-      });
-    }
-  }
-  return rows;
-}
-
-const scoreRows = computed(() => buildScoreRows(match.value.id, activeTab.value));
-const scoreRowsFulltime = computed(() => buildScoreRows(match.value.id, 'fulltime'));
-const scoreRowsHalftime = computed(() => buildScoreRows(match.value.id, 'halftime'));
+const scoreRows = ref([]);
 
 function scoreRowsForTab(tab) {
   return tab === 'halftime' ? scoreRowsHalftime.value : scoreRowsFulltime.value;
@@ -73,16 +55,39 @@ function toggleSection(tab) {
   expandedSections.value[tab] = !expandedSections.value[tab];
 }
 
+async function loadMatchData(id) {
+  try {
+    loading.value = true;
+    error.value = false;
+    const [matchRes, fulltimeRes, halftimeRes] = await Promise.all([
+      fetchMatchDetail(id),
+      fetchScoreMarket(Number(id), 'fulltime'),
+      fetchScoreMarket(Number(id), 'halftime'),
+    ]);
+    match.value = matchRes.data;
+    scoreRowsFulltime.value = fulltimeRes.data;
+    scoreRowsHalftime.value = halftimeRes.data;
+    scoreRows.value = fulltimeRes.data;
+  } catch {
+    error.value = true;
+  } finally {
+    loading.value = false;
+  }
+}
+
+onMounted(() => loadMatchData(route.params.id));
+
 watch(activeTab, () => {
+  scoreRows.value = activeTab.value === 'halftime' ? scoreRowsHalftime.value : scoreRowsFulltime.value;
   closeBuySheet();
 });
 
 watch(
   () => route.params.id,
   (id) => {
-    match.value = getHotMatchById(id);
     expandedSections.value = { fulltime: true, halftime: false };
     closeBuySheet();
+    loadMatchData(id);
   },
 );
 
@@ -132,7 +137,17 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
 
 <template>
   <div class="market-detail">
-    <div v-if="!isMobile" class="market-detail__layout">
+    <div v-if="loading" class="market-detail__loading">
+      <div class="market-detail__spinner" />
+      <span>{{ t('加载中') }}</span>
+    </div>
+
+    <div v-else-if="error" class="market-detail__error">
+      <span>{{ t('加载失败') }}</span>
+      <button type="button" class="market-detail__retry" @click="loadMatchData(route.params.id)">{{ t('重试') }}</button>
+    </div>
+
+    <div v-else-if="!isMobile" class="market-detail__layout">
       <aside class="market-detail__sidebar" aria-label="market-nav">
         <RouterLink to="/" class="market-detail__brand market-detail__brand--flush">
           <img :src="logoMarketUrl" alt="" class="market-detail__brand-img" width="180" height="96" />
@@ -262,6 +277,47 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
     background: #e3ecfb;
     border-radius: 0;
     box-sizing: border-box;
+  }
+
+  &__loading,
+  &__error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    min-height: 300px;
+    color: var(--theme-text-1);
+    font-size: $font-size-md;
+  }
+
+  &__spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid var(--theme-divider);
+    border-top-color: var(--theme-primary);
+    border-radius: 50%;
+    animation: market-spin 0.8s linear infinite;
+  }
+
+  @keyframes market-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  &__retry {
+    padding: 8px 24px;
+    border-radius: $radius-pill;
+    border: 1.5px solid var(--theme-primary);
+    background: transparent;
+    color: var(--theme-primary);
+    font-size: $font-size-md;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      background: var(--theme-primary);
+      color: #fff;
+    }
   }
 
   &__layout {

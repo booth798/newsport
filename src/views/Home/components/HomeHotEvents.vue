@@ -1,10 +1,11 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 
 import { useAppStore } from '@/store/modules/app';
 import HomeMatchCard from './HomeMatchCard.vue';
+import { fetchHotMatches } from '@/api/match';
 
 import iconEventsUrl from '@/assets/images/events/icon_events.svg?url';
 import iconHotUrl from '@/assets/images/events/icon_hot.svg?url';
@@ -15,17 +16,26 @@ import iconSpainUrl from '@/assets/images/events/icon_spain.svg?url';
 import iconGermaryUrl from '@/assets/images/events/icon_germary.svg?url';
 import iconFranceUrl from '@/assets/images/events/icon_france.svg?url';
 import btnMoreUrl from '@/assets/images/events/btn_more.svg?url';
-import { DEFAULT_HOT_MATCHES } from '@/constants/hotMatchCatalog';
 
 const { t } = useI18n();
 const appStore = useAppStore();
 const { isMobile } = storeToRefs(appStore);
 
-const props = defineProps({
-  matches: {
-    type: Array,
-    default: () => [],
-  },
+const matchList = ref([]);
+const loading = ref(true);
+const error = ref(false);
+
+onMounted(async () => {
+  try {
+    loading.value = true;
+    error.value = false;
+    const res = await fetchHotMatches();
+    matchList.value = res.data || [];
+  } catch {
+    error.value = true;
+  } finally {
+    loading.value = false;
+  }
 });
 
 const leagueTabs = [
@@ -45,14 +55,23 @@ const tabLabel = (tab) => {
 
 const activeLeague = ref('hot');
 
-const displayMatches = computed(() =>
-  props.matches && props.matches.length ? props.matches : DEFAULT_HOT_MATCHES,
-);
-
 const filteredMatches = computed(() => {
-  if (activeLeague.value === 'hot') return displayMatches.value;
-  return displayMatches.value.filter((m) => m.league === activeLeague.value);
+  if (activeLeague.value === 'hot') return matchList.value;
+  return matchList.value.filter((m) => m.league === activeLeague.value);
 });
+
+async function reload() {
+  try {
+    loading.value = true;
+    error.value = false;
+    const res = await fetchHotMatches();
+    matchList.value = res.data || [];
+  } catch {
+    error.value = true;
+  } finally {
+    loading.value = false;
+  }
+}
 </script>
 
 <template>
@@ -88,7 +107,15 @@ const filteredMatches = computed(() => {
       </RouterLink>
     </div>
 
-    <div v-if="!filteredMatches.length" class="hot-events__empty">
+    <div v-if="loading" class="hot-events__loading">
+      <div class="hot-events__spinner" />
+      <span>{{ t('加载中') }}</span>
+    </div>
+    <div v-else-if="error" class="hot-events__error">
+      <span>{{ t('加载失败') }}</span>
+      <button type="button" class="hot-events__retry" @click="reload">{{ t('重试') }}</button>
+    </div>
+    <div v-else-if="!filteredMatches.length" class="hot-events__empty">
       {{ t('暂无数据') }}
     </div>
     <div v-else class="hot-events__grid">
@@ -201,6 +228,11 @@ const filteredMatches = computed(() => {
     text-decoration: none;
     background: transparent;
     box-shadow: none;
+    transition: opacity 0.2s ease;
+
+    &:hover {
+      opacity: 0.82;
+    }
 
     @include web-only {
       grid-column: 3;
@@ -294,13 +326,17 @@ const filteredMatches = computed(() => {
       font-weight: 400;
       line-height: 1;
       letter-spacing: 0;
-      /* 默认：稿图主字色 #0B3462（勿用偏灰的 rgba） */
       color: var(--theme-text);
+
+      &:hover:not(.hot-events__tab--active) {
+        border-color: rgba(31, 124, 255, 0.45);
+        background: #f5f9ff;
+        box-shadow: 0 3px 10px rgba(21, 58, 119, 0.12);
+      }
 
       &--active {
         border-color: #1f7cff;
         background: #f0f7ff;
-        /* 高亮字色与描边同色（Figma 热门赛事选中态） */
         color: #1f7cff;
         box-shadow: 0 3px 10px rgba(21, 58, 119, 0.14);
       }
@@ -347,6 +383,57 @@ const filteredMatches = computed(() => {
 
   &__tab-label {
     white-space: nowrap;
+  }
+
+  &__loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 48px 16px;
+    color: var(--theme-text-1);
+    font-size: $font-size-md;
+  }
+
+  &__spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid var(--theme-divider);
+    border-top-color: var(--theme-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  &__error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 48px 16px;
+    color: var(--theme-text-1);
+    font-size: $font-size-md;
+  }
+
+  &__retry {
+    padding: 8px 24px;
+    border-radius: $radius-pill;
+    border: 1.5px solid var(--theme-primary);
+    background: transparent;
+    color: var(--theme-primary);
+    font-size: $font-size-md;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      background: var(--theme-primary);
+      color: #fff;
+    }
   }
 
   &__empty {

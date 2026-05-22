@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/hooks/useToast';
+import { submitDeposit } from '@/api/finance';
 
 const { t } = useI18n();
 const toast = useToast();
@@ -13,7 +14,7 @@ const selectAmount = (val) => {
   amount.value = String(val);
 };
 
-function handleSubmit() {
+async function handleSubmit() {
   const val = Number(amount.value);
   if (!amount.value.trim()) {
     toast.error(t('请输入金额'));
@@ -23,12 +24,16 @@ function handleSubmit() {
     toast.error(t('金额必须大于零'));
     return;
   }
-  submitting.value = true;
-  setTimeout(() => {
-    submitting.value = false;
+  try {
+    submitting.value = true;
+    await submitDeposit(val);
     toast.success(t('操作成功'));
     amount.value = '';
-  }, 800);
+  } catch {
+    toast.error(t('提交失败，请重试'));
+  } finally {
+    submitting.value = false;
+  }
 }
 </script>
 

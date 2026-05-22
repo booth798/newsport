@@ -1,10 +1,10 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
-import { getOrderedPurchaseList, getScheduledPurchaseList } from '@/constants/purchaseOrders';
+import { fetchOrderedList, fetchScheduledList } from '@/api/order';
 import { useAppStore } from '@/store/modules/app';
 import PurchaseOrderCard from '@/views/Trade/PurchaseDetails/components/PurchaseOrderCard.vue';
 
@@ -18,6 +18,9 @@ const { isMobile } = storeToRefs(appStore);
 
 const sideTab = ref(route.query.tab === 'scheduled' ? 'scheduled' : 'ordered');
 const expandedIds = ref(new Set());
+const orders = ref([]);
+const loading = ref(true);
+const error = ref(false);
 
 const marketId = computed(() => {
   const raw = route.query.marketId;
@@ -40,11 +43,20 @@ const listOptions = computed(() => ({
   highlightProbability: highlightProbability.value,
 }));
 
-const orders = computed(() =>
-  sideTab.value === 'scheduled'
-    ? getScheduledPurchaseList(marketId.value, listOptions.value)
-    : getOrderedPurchaseList(marketId.value, listOptions.value),
-);
+async function loadOrders() {
+  try {
+    loading.value = true;
+    error.value = false;
+    const fetcher = sideTab.value === 'scheduled' ? fetchScheduledList : fetchOrderedList;
+    const res = await fetcher(marketId.value, listOptions.value);
+    orders.value = res.data || [];
+    syncExpandedFromQuery();
+  } catch {
+    error.value = true;
+  } finally {
+    loading.value = false;
+  }
+}
 
 function syncExpandedFromQuery() {
   const next = new Set();
@@ -56,7 +68,7 @@ function syncExpandedFromQuery() {
   expandedIds.value = next;
 }
 
-watch([orders, highlightScore], syncExpandedFromQuery, { immediate: true });
+onMounted(loadOrders);
 
 watch(
   () => route.query.tab,
@@ -64,6 +76,8 @@ watch(
     sideTab.value = tab === 'scheduled' ? 'scheduled' : 'ordered';
   },
 );
+
+watch(sideTab, loadOrders);
 
 function setSideTab(tab) {
   sideTab.value = tab;
@@ -82,6 +96,10 @@ function toggleCard(id) {
   if (next.has(id)) next.delete(id);
   else next.add(id);
   expandedIds.value = next;
+}
+
+function handleCancelled(orderId) {
+  orders.value = orders.value.filter((o) => o.id !== orderId);
 }
 </script>
 
@@ -114,13 +132,25 @@ function toggleCard(id) {
       </aside>
 
       <div class="purchase-details__main">
-        <div class="purchase-details__grid">
+        <div v-if="loading" class="purchase-details__state">
+          <div class="purchase-details__spinner" />
+          <span>{{ t('加载中') }}</span>
+        </div>
+        <div v-else-if="error" class="purchase-details__state">
+          <span>{{ t('加载失败') }}</span>
+          <button type="button" class="purchase-details__retry" @click="loadOrders">{{ t('重试') }}</button>
+        </div>
+        <div v-else-if="orders.length === 0" class="purchase-details__state">
+          <span>{{ t('暂无数据') }}</span>
+        </div>
+        <div v-else class="purchase-details__grid">
           <PurchaseOrderCard
             v-for="order in orders"
             :key="order.id"
             :order="order"
             :expanded="isExpanded(order.id)"
             @toggle="toggleCard(order.id)"
+            @cancelled="handleCancelled"
           />
         </div>
       </div>
@@ -146,13 +176,25 @@ function toggleCard(id) {
         </button>
       </nav>
 
-      <div class="purchase-details__list">
+      <div v-if="loading" class="purchase-details__state">
+        <div class="purchase-details__spinner" />
+        <span>{{ t('加载中') }}</span>
+      </div>
+      <div v-else-if="error" class="purchase-details__state">
+        <span>{{ t('加载失败') }}</span>
+        <button type="button" class="purchase-details__retry" @click="loadOrders">{{ t('重试') }}</button>
+      </div>
+      <div v-else-if="orders.length === 0" class="purchase-details__state">
+        <span>{{ t('暂无数据') }}</span>
+      </div>
+      <div v-else class="purchase-details__list">
         <PurchaseOrderCard
           v-for="order in orders"
           :key="order.id"
           :order="order"
           :expanded="isExpanded(order.id)"
           @toggle="toggleCard(order.id)"
+          @cancelled="handleCancelled"
         />
       </div>
     </div>
@@ -363,6 +405,46 @@ function toggleCard(id) {
     flex-direction: column;
     gap: 12px;
     width: 100%;
+  }
+
+  &__state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    min-height: 240px;
+    color: var(--theme-text-1);
+    font-size: $font-size-md;
+  }
+
+  &__spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid var(--theme-divider);
+    border-top-color: var(--theme-primary);
+    border-radius: 50%;
+    animation: purchase-spin 0.8s linear infinite;
+  }
+
+  @keyframes purchase-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  &__retry {
+    padding: 8px 24px;
+    border-radius: $radius-pill;
+    border: 1.5px solid var(--theme-primary);
+    background: transparent;
+    color: var(--theme-primary);
+    font-size: $font-size-md;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      background: var(--theme-primary);
+      color: #fff;
+    }
   }
 }
 </style>

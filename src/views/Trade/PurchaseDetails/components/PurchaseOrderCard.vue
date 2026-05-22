@@ -1,7 +1,8 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/hooks/useToast';
+import { cancelOrder } from '@/api/order';
 
 import iconChampionUrl from '@/assets/images/events/icon_champion.svg?url';
 import iconEventsUrl from '@/assets/images/events/icon_events.svg?url';
@@ -25,10 +26,26 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['toggle']);
+const emit = defineEmits(['toggle', 'cancelled']);
 
 const { t } = useI18n();
 const toast = useToast();
+const cancelling = ref(false);
+const showCancelConfirm = ref(false);
+
+async function handleCancel() {
+  try {
+    cancelling.value = true;
+    await cancelOrder(props.order.id);
+    toast.success(t('取消成功'));
+    showCancelConfirm.value = false;
+    emit('cancelled', props.order.id);
+  } catch {
+    toast.error(t('取消失败'));
+  } finally {
+    cancelling.value = false;
+  }
+}
 
 const LEAGUE_ICON_BY_NAME = {
   欧冠: iconChampionUrl,
@@ -133,7 +150,7 @@ async function copyOrderNo() {
       </div>
 
       <div v-if="!expanded" class="purchase-card__panel-foot">
-        <button v-if="showCancelAction" type="button" class="purchase-card__cancel" @click.stop>
+        <button v-if="showCancelAction" type="button" class="purchase-card__cancel" @click.stop="showCancelConfirm = true">
           {{ t('取消订单') }}
         </button>
         <button
@@ -180,7 +197,7 @@ async function copyOrderNo() {
       </div>
 
       <div class="purchase-card__detail-foot">
-        <button v-if="showCancelAction" type="button" class="purchase-card__cancel" @click.stop>
+        <button v-if="showCancelAction" type="button" class="purchase-card__cancel" @click.stop="showCancelConfirm = true">
           {{ t('取消订单') }}
         </button>
         <button
@@ -193,6 +210,19 @@ async function copyOrderNo() {
         </button>
       </div>
     </div>
+    <Teleport to="body">
+      <div v-if="showCancelConfirm" class="cancel-modal" @click.self="showCancelConfirm = false">
+        <div class="cancel-modal__card">
+          <p class="cancel-modal__text">{{ t('确认取消该订单？') }}</p>
+          <div class="cancel-modal__actions">
+            <button type="button" class="cancel-modal__btn cancel-modal__btn--no" @click="showCancelConfirm = false">{{ t('取消') }}</button>
+            <button type="button" class="cancel-modal__btn cancel-modal__btn--yes" :disabled="cancelling" @click="handleCancel">
+              {{ cancelling ? t('处理中...') : t('确认') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </article>
 </template>
 
@@ -524,6 +554,7 @@ async function copyOrderNo() {
     box-shadow: none;
     cursor: pointer;
     flex-shrink: 0;
+    transition: opacity 0.18s ease;
 
     &:hover {
       opacity: 0.72;
@@ -647,6 +678,7 @@ async function copyOrderNo() {
     color: #1c7bff;
     cursor: pointer;
     flex-shrink: 0;
+    transition: background 0.18s ease;
 
     &:hover {
       background: rgba(28, 123, 255, 0.08);
@@ -675,6 +707,62 @@ async function copyOrderNo() {
       font-size: 13px;
     }
   }
+}
 
+.cancel-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(11, 52, 98, 0.4);
+  backdrop-filter: blur(4px);
+
+  &__card {
+    background: #fff;
+    border-radius: $radius-lg;
+    padding: 28px 24px 20px;
+    box-shadow: 0 12px 40px rgba(21, 58, 118, 0.2);
+    max-width: 320px;
+    width: 80%;
+    text-align: center;
+  }
+
+  &__text {
+    font-size: $font-size-base;
+    color: var(--theme-text);
+    margin: 0 0 24px;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 12px;
+  }
+
+  &__btn {
+    flex: 1;
+    height: 40px;
+    border-radius: $radius-pill;
+    font-size: $font-size-md;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+
+    &--no {
+      background: var(--auxiliary-1);
+      color: var(--theme-text);
+    }
+
+    &--yes {
+      background: #ff2d2d;
+      color: #fff;
+
+      &:disabled {
+        opacity: 0.6;
+      }
+    }
+  }
 }
 </style>

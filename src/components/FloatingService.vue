@@ -176,6 +176,7 @@ onBeforeUnmount(() => {
     object-fit: contain;
     pointer-events: none;
     user-select: none;
+    transition: opacity 0.18s ease;
 
     &--hover,
     &--active {

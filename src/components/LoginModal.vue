@@ -9,6 +9,7 @@ import iconEyeClosedUrl from '@/assets/images/login/icon_login_eye_closed.svg?ur
 import iconEyeOpenUrl from '@/assets/images/login/icon_login_eye_open.svg?url';
 import { useAppStore } from '@/store/modules/app';
 import { useToast } from '@/hooks/useToast';
+import { loginApi, registerApi } from '@/api/user';
 
 const { t } = useI18n();
 const appStore = useAppStore();
@@ -26,18 +27,29 @@ const isLogin = ref(true);
 const showPassword = ref(false);
 const rememberPassword = ref(false);
 
-/** 滑块：横向圆角矩形手柄尺寸（与样式一致，用于计算最大位移） */
 const SLIDER_KNOB_W = 52;
 const SLIDER_TRACK_PAD_X = 4;
 
 const verifyTrackRef = ref(null);
 const sliderOffsetPx = ref(0);
 const sliderVerified = ref(false);
+const sliderDragging = ref(false);
+const sliderAnimating = ref(false);
 
 function resetSlider() {
   sliderOffsetPx.value = 0;
   sliderVerified.value = false;
+  sliderDragging.value = false;
+  sliderAnimating.value = false;
 }
+
+const sliderProgress = computed(() => {
+  const max = getSliderMaxOffset();
+  if (max <= 0) return 0;
+  return Math.min(1, sliderOffsetPx.value / max);
+});
+
+const labelOpacity = computed(() => Math.max(0, 1 - sliderProgress.value * 2.5));
 
 watch(isLogin, () => {
   showPassword.value = false;
@@ -45,9 +57,15 @@ watch(isLogin, () => {
   resetSlider();
 });
 
+const lockScroll = (locked) => {
+  if (typeof document === 'undefined') return;
+  document.body.style.overflow = locked ? 'hidden' : '';
+};
+
 watch(
   () => props.visible,
   (open) => {
+    lockScroll(open);
     if (!open) {
       resetSlider();
     } else {
@@ -58,6 +76,12 @@ watch(
 
 const knobTransformStyle = computed(() => ({
   transform: `translate(${sliderOffsetPx.value}px, -50%)`,
+  transition: sliderDragging.value ? 'none' : 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
+}));
+
+const fillStyle = computed(() => ({
+  width: `${sliderOffsetPx.value + SLIDER_KNOB_W + SLIDER_TRACK_PAD_X}px`,
+  transition: sliderDragging.value ? 'none' : 'width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
 }));
 
 function getSliderMaxOffset() {
@@ -68,7 +92,7 @@ function getSliderMaxOffset() {
 }
 
 function onSliderKnobPointerDown(e) {
-  if (sliderVerified.value) return;
+  if (sliderVerified.value || sliderAnimating.value) return;
   if (e.pointerType === 'mouse' && e.button !== 0) return;
   e.preventDefault();
 
@@ -76,6 +100,7 @@ function onSliderKnobPointerDown(e) {
   if (!(knobEl instanceof Element)) return;
 
   knobEl.setPointerCapture(e.pointerId);
+  sliderDragging.value = true;
 
   const startClientX = e.clientX;
   const startOffset = sliderOffsetPx.value;
@@ -91,12 +116,17 @@ function onSliderKnobPointerDown(e) {
     knobEl.removeEventListener('pointermove', onMove);
     knobEl.removeEventListener('pointerup', onUp);
     knobEl.removeEventListener('pointercancel', onUp);
+    sliderDragging.value = false;
 
     const max = getSliderMaxOffset();
     const threshold = max * 0.88;
     if (max > 0 && sliderOffsetPx.value >= threshold) {
-      sliderVerified.value = true;
       sliderOffsetPx.value = max;
+      sliderAnimating.value = true;
+      setTimeout(() => {
+        sliderVerified.value = true;
+        sliderAnimating.value = false;
+      }, 300);
     } else {
       sliderOffsetPx.value = 0;
     }
@@ -109,6 +139,7 @@ function onSliderKnobPointerDown(e) {
 
 onBeforeUnmount(() => {
   resetSlider();
+  lockScroll(false);
 });
 
 const canSubmit = computed(
@@ -139,30 +170,48 @@ function saveRemembered() {
   }
 }
 
-function submitWebLogin() {
-  if (!canSubmitLogin.value) return;
-  saveRemembered();
-  appStore.completeWebLogin(account.value.trim());
-  toast.success(t('登录成功'));
-  account.value = '';
-  password.value = '';
-  rememberPassword.value = false;
-  showPassword.value = false;
-  resetSlider();
+const loginSubmitting = ref(false);
+
+async function submitWebLogin() {
+  if (!canSubmitLogin.value || loginSubmitting.value) return;
+  try {
+    loginSubmitting.value = true;
+    saveRemembered();
+    await loginApi(account.value.trim(), password.value);
+    appStore.completeWebLogin(account.value.trim());
+    toast.success(t('登录成功'));
+    account.value = '';
+    password.value = '';
+    rememberPassword.value = false;
+    showPassword.value = false;
+    resetSlider();
+  } catch {
+    toast.error(t('提交失败，请重试'));
+  } finally {
+    loginSubmitting.value = false;
+  }
 }
 
-function submitRegister() {
-  if (!canSubmit.value) return;
+async function submitRegister() {
+  if (!canSubmit.value || loginSubmitting.value) return;
   if (!sliderVerified.value) {
     toast.error(t('请完成滑动验证'));
     return;
   }
-  appStore.completeWebLogin(account.value.trim());
-  toast.success(t('注册成功'));
-  account.value = '';
-  password.value = '';
-  showPassword.value = false;
-  resetSlider();
+  try {
+    loginSubmitting.value = true;
+    await registerApi(account.value.trim(), password.value);
+    appStore.completeWebLogin(account.value.trim());
+    toast.success(t('注册成功'));
+    account.value = '';
+    password.value = '';
+    showPassword.value = false;
+    resetSlider();
+  } catch {
+    toast.error(t('提交失败，请重试'));
+  } finally {
+    loginSubmitting.value = false;
+  }
 }
 
 const close = () => emit('close');
@@ -193,6 +242,9 @@ const passwordInputType = computed(() => (showPassword.value ? 'text' : 'passwor
     <Transition name="modal">
       <div v-if="visible" class="login-overlay" @click.self="close">
         <div class="login-overlay__stack">
+          <button type="button" class="login-overlay__close" :aria-label="t('关闭')" @click="close">
+            <span aria-hidden="true">×</span>
+          </button>
           <div class="login-modal" role="dialog" aria-modal="true" :aria-label="isLogin ? t('登录') : t('注册')">
             <div class="login-modal__watermark" aria-hidden="true">UNIBET</div>
 
@@ -312,10 +364,10 @@ const passwordInputType = computed(() => (showPassword.value ? 'text' : 'passwor
                     type="button"
                     class="btn btn--primary login-modal__submit login-modal__submit--register"
                     :class="{ 'login-modal__submit--ready': canSubmit }"
-                    :disabled="!canSubmit"
+                    :disabled="!canSubmit || loginSubmitting"
                     @click="submitRegister"
                   >
-                    {{ t('注册') }}
+                    {{ loginSubmitting ? t('提交中...') : t('注册') }}
                   </button>
 
                   <div class="login-modal__switch">
@@ -330,48 +382,59 @@ const passwordInputType = computed(() => (showPassword.value ? 'text' : 'passwor
 
             <div v-if="isLogin" class="login-modal__blue-footer">
               <div class="login-verify">
-                <div
-                  v-if="sliderVerified"
-                  class="login-verify__track login-verify__track--success"
-                  role="status"
-                  aria-live="polite"
-                >
-                  <span class="login-verify__success-text">{{ t('验证成功') }}</span>
-                </div>
-                <div
-                  v-else
-                  ref="verifyTrackRef"
-                  class="login-verify__track"
-                >
-                  <button
-                    type="button"
-                    class="login-verify__knob"
-                    :style="knobTransformStyle"
-                    :aria-label="t('向右滑动验证')"
-                    @pointerdown="onSliderKnobPointerDown"
+                <Transition name="verify-flip" mode="out-in">
+                  <div
+                    v-if="sliderVerified"
+                    key="success"
+                    class="login-verify__track login-verify__track--success"
+                    role="status"
+                    aria-live="polite"
                   >
-                    <svg width="16" height="16" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path
-                        d="M3.25 2.5L6.75 5L3.25 7.5"
-                        stroke="white"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
+                    <svg class="login-verify__check-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path d="M4 10.5L8.5 15L16 5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
                     </svg>
-                  </button>
-                  <span class="login-verify__label" aria-hidden="true">{{ t('向右滑动验证') }}</span>
-                </div>
+                    <span class="login-verify__success-text">{{ t('验证成功') }}</span>
+                  </div>
+                  <div
+                    v-else
+                    key="track"
+                    ref="verifyTrackRef"
+                    class="login-verify__track"
+                    :class="{ 'login-verify__track--dragging': sliderDragging }"
+                  >
+                    <div class="login-verify__fill" :style="fillStyle" />
+                    <button
+                      type="button"
+                      class="login-verify__knob"
+                      :class="{ 'login-verify__knob--dragging': sliderDragging }"
+                      :style="knobTransformStyle"
+                      :aria-label="t('向右滑动验证')"
+                      @pointerdown="onSliderKnobPointerDown"
+                    >
+                      <svg class="login-verify__knob-icon" width="18" height="18" viewBox="0 0 18 18" fill="none">
+                        <path d="M7 4.5L11.5 9L7 13.5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </button>
+                    <span
+                      class="login-verify__label"
+                      :class="{ 'login-verify__label--dragging': sliderDragging }"
+                      :style="{ '--_label-opacity': labelOpacity, opacity: sliderDragging ? labelOpacity : undefined }"
+                      aria-hidden="true"
+                    >
+                      {{ t('向右滑动验证') }}
+                    </span>
+                  </div>
+                </Transition>
               </div>
 
               <button
                 type="button"
                 class="btn btn--primary login-modal__submit login-modal__submit--inverse"
                 :class="{ 'login-modal__submit--ready': canSubmitLogin }"
-                :disabled="!canSubmitLogin"
+                :disabled="!canSubmitLogin || loginSubmitting"
                 @click="submitWebLogin"
               >
-                {{ t('登入') }}
+                {{ loginSubmitting ? t('提交中...') : t('登入') }}
               </button>
             </div>
           </div>
@@ -404,16 +467,61 @@ $login-input-text: rgba(11, 52, 98, 1);
   align-items: center;
   justify-content: center;
   backdrop-filter: blur(8px);
+  overflow: hidden;
 }
 
 .login-overlay__stack {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
+  max-width: min(400px, calc(100vw - 24px));
   max-height: 100%;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 16px 0;
   box-sizing: border-box;
+}
+
+.login-overlay__close {
+  align-self: flex-end;
+  flex-shrink: 0;
+  margin-bottom: 10px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.35);
+    border-color: #fff;
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.6);
+    outline-offset: 2px;
+  }
+
+  @include mobile-only {
+    width: 28px;
+    height: 28px;
+    font-size: 17px;
+    border-width: 1px;
+    margin-bottom: 8px;
+  }
 }
 
 .login-modal {
@@ -424,7 +532,7 @@ $login-input-text: rgba(11, 52, 98, 1);
   flex-direction: column;
   align-items: stretch;
   width: 100%;
-  max-width: min(400px, calc(100vw - 24px));
+  max-width: 100%;
   padding: 20px 12px;
   border-radius: 28px;
   border: 0.8px solid $login-frame-border;
@@ -441,6 +549,7 @@ $login-input-text: rgba(11, 52, 98, 1);
   @include mobile-only {
     min-height: 0;
   }
+
 
   &__watermark {
     position: absolute;
@@ -623,16 +732,51 @@ $login-input-text: rgba(11, 52, 98, 1);
   background: #fff;
   border: 0.8px solid $login-frame-border;
   touch-action: none;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
 
-  // 滑到底后：整条约蓝底、白字、细白边（稿图）
+  &--dragging {
+    border-color: rgba(13, 108, 251, 0.35);
+    box-shadow: 0 0 0 3px rgba(13, 108, 251, 0.1);
+  }
+
   &--success {
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 8px;
     touch-action: auto;
     background: $login-cta-blue;
     border: 1px solid rgba(255, 255, 255, 0.92);
     box-shadow: 0 2px 14px rgba(13, 108, 251, 0.4);
+    overflow: visible;
+  }
+}
+
+.login-verify__fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: $radius-pill;
+  background: linear-gradient(90deg, rgba(13, 108, 251, 0.08) 0%, rgba(13, 108, 251, 0.18) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.login-verify__check-icon {
+  flex-shrink: 0;
+  animation: verify-check-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes verify-check-pop {
+  0% {
+    transform: scale(0) rotate(-45deg);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) rotate(0);
+    opacity: 1;
   }
 }
 
@@ -650,7 +794,6 @@ $login-input-text: rgba(11, 52, 98, 1);
   left: 4px;
   top: 50%;
   z-index: 2;
-  // 左右半圆胶囊（非正圆），与稿图滑块一致
   width: 52px;
   height: 40px;
   border-radius: 20px;
@@ -665,14 +808,26 @@ $login-input-text: rgba(11, 52, 98, 1);
   cursor: grab;
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
+  transition: box-shadow 0.2s, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  &:active {
+  &--dragging {
     cursor: grabbing;
+    box-shadow: 0 4px 16px rgba(13, 108, 251, 0.5);
+    transition: box-shadow 0.15s;
   }
 
   &:focus-visible {
     outline: 2px solid rgba(13, 108, 251, 0.55);
     outline-offset: 2px;
+  }
+}
+
+.login-verify__knob-icon {
+  transition: transform 0.2s;
+  flex-shrink: 0;
+
+  .login-verify__knob--dragging & {
+    transform: translateX(1px);
   }
 }
 
@@ -684,13 +839,42 @@ $login-input-text: rgba(11, 52, 98, 1);
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  padding: 0 12px;
+  padding: 0 60px 0 12px;
   font-size: 15px;
   font-weight: 500;
   color: $login-cta-blue;
   text-align: center;
   line-height: 1.2;
   pointer-events: none;
+  transition: opacity 0.15s;
+  animation: slider-label-shimmer 2.5s ease-in-out infinite;
+}
+
+.login-verify__label--dragging {
+  animation: none;
+}
+
+@keyframes slider-label-shimmer {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+.verify-flip-enter-active {
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.verify-flip-leave-active {
+  transition: all 0.2s ease-in;
+}
+
+.verify-flip-enter-from {
+  opacity: 0;
+  transform: scale(0.92);
+}
+
+.verify-flip-leave-to {
+  opacity: 0;
+  transform: scale(0.95);
 }
 
 // 登入：白底蓝字（稿图底部主按钮），覆盖全局 .btn--primary

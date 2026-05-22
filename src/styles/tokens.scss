@@ -37,6 +37,18 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    transition:
+      opacity 0.18s ease,
+      box-shadow 0.18s ease,
+      background 0.18s ease;
+
+    &:hover {
+      opacity: 0.88;
+    }
+
+    &:active {
+      opacity: 0.78;
+    }
 
     // 重要按钮1
     &--primary {
@@ -46,6 +58,11 @@
       border-image-source: linear-gradient(101.26deg, #FFFFFF 0%, rgba(255, 255, 255, 0.6) 16.38%, rgba(255, 255, 255, 0.02) 79.58%);
       box-shadow: var(--shadow-primary-btn);
       position: relative;
+
+      &:hover {
+        opacity: 1;
+        box-shadow: 0 4px 16px rgba(28, 123, 255, 0.35);
+      }
     }
 
     // 重要按钮2

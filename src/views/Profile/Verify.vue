@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/hooks/useToast';
+import { submitVerification } from '@/api/user';
 
 const { t } = useI18n();
 const toast = useToast();
@@ -13,7 +14,7 @@ const submitting = ref(false);
 
 const ID_REG = /^[1-9]\d{5}(18|19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[\dXx]$/;
 
-function handleSubmit() {
+async function handleSubmit() {
   if (!realName.value.trim()) {
     toast.error(t('请输入真实姓名'));
     return;
@@ -27,12 +28,16 @@ function handleSubmit() {
     return;
   }
 
-  submitting.value = true;
-  setTimeout(() => {
-    submitting.value = false;
+  try {
+    submitting.value = true;
+    await submitVerification(realName.value, idNumber.value);
     status.value = 'verified';
     toast.success(t('操作成功'));
-  }, 1000);
+  } catch {
+    toast.error(t('提交失败，请重试'));
+  } finally {
+    submitting.value = false;
+  }
 }
 </script>
 

@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/hooks/useToast';
+import { addWallet } from '@/api/user';
 
 const { t } = useI18n();
 const toast = useToast();
@@ -11,7 +12,7 @@ const walletType = ref('');
 const walletAddress = ref('');
 const submitting = ref(false);
 
-function handleSubmit() {
+async function handleSubmit() {
   if (!walletType.value) {
     toast.error(t('请选择钱包类型'));
     return;
@@ -20,14 +21,18 @@ function handleSubmit() {
     toast.error(t('请输入钱包地址'));
     return;
   }
-  submitting.value = true;
-  setTimeout(() => {
-    submitting.value = false;
-    wallets.value.push({ type: walletType.value, address: walletAddress.value.trim() });
+  try {
+    submitting.value = true;
+    const res = await addWallet(walletType.value, walletAddress.value.trim());
+    wallets.value.push(res.data);
     toast.success(t('操作成功'));
     walletType.value = '';
     walletAddress.value = '';
-  }, 800);
+  } catch {
+    toast.error(t('提交失败，请重试'));
+  } finally {
+    submitting.value = false;
+  }
 }
 </script>
 
@@ -40,7 +45,14 @@ function handleSubmit() {
       <RouterLink to="/profile/blockchain" class="bind-tab active">{{ t('区块链') }}</RouterLink>
     </div>
 
-    <div v-if="wallets.length === 0" class="bind-form">
+    <div v-if="wallets.length > 0" class="wallet-list">
+      <div v-for="w in wallets" :key="w.id" class="wallet-item">
+        <span class="wallet-item__type">{{ w.type.toUpperCase() }}</span>
+        <span class="wallet-item__address">{{ w.address }}</span>
+      </div>
+    </div>
+
+    <div class="bind-form">
       <div class="form-group">
         <label class="form-label">{{ t('钱包类型') }}</label>
         <select v-model="walletType" class="form-select">
@@ -97,6 +109,39 @@ function handleSubmit() {
     background: var(--theme-primary);
     color: #fff;
     border-color: var(--theme-primary);
+  }
+}
+
+.wallet-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  margin-bottom: $spacing-3xl;
+}
+
+.wallet-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-lg;
+  border: 1.5px solid var(--theme-divider);
+  border-radius: $radius-md;
+
+  &__type {
+    flex-shrink: 0;
+    padding: 4px 10px;
+    border-radius: $radius-sm;
+    background: var(--theme-primary);
+    color: #fff;
+    font-size: $font-size-sm;
+    font-weight: 600;
+  }
+
+  &__address {
+    font-family: $font-family-num;
+    font-size: $font-size-sm;
+    color: var(--theme-text);
+    word-break: break-all;
   }
 }
 

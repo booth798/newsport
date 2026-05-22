@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/hooks/useToast';
+import { changePassword } from '@/api/user';
 
 const { t } = useI18n();
 const toast = useToast();
@@ -30,7 +31,7 @@ const toggleSection = (section) => {
   resetForm();
 };
 
-function handleSave(section) {
+async function handleSave(section) {
   const current = section === 'login' ? loginCurrent.value : withdrawCurrent.value;
   const newPwd = section === 'login' ? loginNew.value : withdrawNew.value;
   const confirm = section === 'login' ? loginConfirm.value : withdrawConfirm.value;
@@ -41,13 +42,17 @@ function handleSave(section) {
   if (!confirm.trim()) { toast.error(t('请确认新密码')); return; }
   if (newPwd !== confirm) { toast.error(t('两次密码输入不一致')); return; }
 
-  submitting.value = true;
-  setTimeout(() => {
-    submitting.value = false;
+  try {
+    submitting.value = true;
+    await changePassword(section, current, newPwd);
     toast.success(t('操作成功'));
     resetForm();
     activeSection.value = '';
-  }, 800);
+  } catch {
+    toast.error(t('提交失败，请重试'));
+  } finally {
+    submitting.value = false;
+  }
 }
 </script>
 
