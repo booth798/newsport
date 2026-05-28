@@ -65,12 +65,12 @@ const activeTab = computed(() => route.path);
   background: var(--theme-bg);
 
   @include web-only {
-    padding: 10px 30px 24px;
+    padding: 10px 30px $spacing-2xl;
   }
 
   @include mobile-only {
     min-height: 100vh;
-    padding: 0 8px 12px;
+    padding: 0 $spacing-sm $spacing-md;
   }
 }
 
@@ -81,7 +81,7 @@ const activeTab = computed(() => route.path);
 
   @include web-only {
     width: min(100%, 1088px);
-    gap: 20px;
+    gap: $spacing-xl;
     justify-content: center;
   }
 
@@ -104,8 +104,8 @@ const activeTab = computed(() => route.path);
     box-sizing: border-box;
     border: 1px solid rgba(255, 255, 255, 0.9);
     border-radius: 25px;
-    background: #fff;
-    box-shadow: 0 3px 10px rgba(21, 58, 119, 0.12);
+    background: var(--auxiliary-1);
+    box-shadow: var(--shadow-card);
   }
 }
 
@@ -177,8 +177,8 @@ const activeTab = computed(() => route.path);
     width: 100%;
     overflow: hidden;
     height: 48px;
-    margin: 0 0 8px;
-    padding: 4px 6px;
+    margin: 0 0 $spacing-sm;
+    padding: $spacing-xs $radius-sm;
     box-sizing: border-box;
     border: 1px solid rgba(255, 255, 255, 0.9);
     border-radius: 24px;
@@ -198,7 +198,7 @@ const activeTab = computed(() => route.path);
   max-width: 33.3333%;
   min-width: 0;
   height: 38px;
-  padding: 0 8px;
+  padding: 0 $spacing-sm;
   border-radius: $radius-pill;
   font-size: $font-size-base;
   color: var(--theme-primary);
@@ -214,7 +214,7 @@ const activeTab = computed(() => route.path);
 .finance-tab:hover,
 .finance-tab.active {
   background: var(--theme-primary);
-  color: #fff;
+  color: var(--auxiliary-1);
   box-shadow: 0 3px 9px rgba(28, 123, 255, 0.35);
 }
 

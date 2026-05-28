@@ -20,7 +20,7 @@ const records = [
   { id: 1, kind: 'order', typeLabel: '买入', time: '2026-03-19 02:30', status: '待开奖', statusTone: 'pending', amount: '1000.00 CNY', remark: '0 - 0' },
   { id: 2, kind: 'order', typeLabel: '买入', time: '2026-03-19 02:30', status: '已结算', statusTone: 'settled', amount: '1000.00 CNY', remark: '0 - 1' },
   { id: 3, kind: 'order', typeLabel: '买入', time: '2026-03-19 02:30', status: '已取消', statusTone: 'canceled', amount: '1000.00 CNY', remark: '0 - 1' },
-  { id: 4, kind: 'deposit', typeLabel: '充值', time: '2026-03-19 02:30', status: '已完成', statusTone: 'completed', amount: '1000.00 CNY', remark: '后台-银联卡-下充值' },
+  { id: 4, kind: 'deposit', typeLabel: '充值', time: '2026-03-19 02:30', status: '已完成', statusTone: 'completed', amount: '1000.00 CNY', remark: '后台银联卡充值' },
 ];
 
 const selectedFilter = ref('all');
@@ -103,7 +103,7 @@ function selectFilter(key) {
           </div>
           <div class="record-card__row">
             <span class="record-card__label">{{ t('备注') }}</span>
-            <strong class="record-card__value">{{ record.remark }}</strong>
+            <strong class="record-card__value">{{ t(record.remark) }}</strong>
           </div>
         </div>
       </article>
@@ -129,28 +129,22 @@ function selectFilter(key) {
 .records-summary {
   position: relative;
   z-index: 2;
-  border-radius: 16px;
-  border: 1px solid #FFFFFF;
-  background: linear-gradient(180deg, rgb(139 188 255 / 20%) 0%, rgb(255 255 255 / 73%) 100%);
-  box-shadow: 0px 4px 10px 0px #153A772E;
-  color: var(--theme-text);
-  padding: 14px 16px 16px;
   height: 106px;
-
-  @include web-only {
-  }
-
-  @include mobile-only {
-  }
+  padding: 14px $spacing-lg $spacing-lg;
+  border: 1px solid var(--auxiliary-1);
+  border-radius: $radius-lg;
+  background: linear-gradient(180deg, rgb(139 188 255 / 20%) 0%, rgb(255 255 255 / 73%) 100%);
+  box-shadow: var(--shadow-card);
+  color: var(--theme-text);
 }
 
 .records-summary__top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: $spacing-md;
   color: var(--theme-text);
-  font-size: 14px;
+  font-size: $font-size-md;
   font-weight: 500;
 }
 
@@ -159,14 +153,14 @@ function selectFilter(key) {
   align-items: center;
   height: 38px;
   padding: 0 10px;
-  border-radius: 6px;
-  background: #1C7BFF1A;
+  border-radius: $radius-sm;
+  background: rgba(28, 123, 255, 0.1);
   color: var(--theme-primary);
-  font-size: 20px;
+  font-size: $font-size-xl;
   font-weight: 500;
 
   @include web-only {
-    margin-top: 12px;
+    margin-top: $spacing-md;
   }
   @include mobile-only {
     margin-top: 14px;
@@ -182,18 +176,18 @@ function selectFilter(key) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: $radius-sm;
   min-width: 64px;
   height: 24px;
-  padding: 0 12px;
+  padding: 0 $spacing-md;
   border: none;
   border-radius: $radius-pill;
   background: var(--theme-primary);
-  color: #fff;
-  font-size:14px;
+  color: var(--auxiliary-1);
+  font-size: $font-size-md;
   font-weight: 400;
   cursor: pointer;
-  box-shadow: 0px 2px 6px 0px #1C7BFF4D;
+  box-shadow: var(--shadow-primary-btn);
   @include web-only {
     height: 28px;
   }
@@ -218,9 +212,9 @@ function selectFilter(key) {
   transform: translateX(-50%);
   width: 100px;
   padding: 10px;
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0px 6px 20px 0px #153A772E;
+  border-radius: $radius-lg;
+  background: var(--auxiliary-1);
+  box-shadow: var(--shadow-card);
 }
 
 .records-filter__option {
@@ -232,7 +226,7 @@ function selectFilter(key) {
   border: none;
   background: transparent;
   color: var(--theme-text);
-  font-size: 12px;
+  font-size: $font-size-sm;
   font-weight: 500;
   cursor: pointer;
 }
@@ -240,8 +234,8 @@ function selectFilter(key) {
 .records-filter__option:hover,
 .records-filter__option.active {
   color: var(--theme-primary);
-  background: #1C7BFF1A;
-  border-radius: 12px;
+  background: rgba(28, 123, 255, 0.1);
+  border-radius: $radius-md;
 }
 
 .records-list {
@@ -253,16 +247,16 @@ function selectFilter(key) {
 .record-card {
   box-sizing: border-box;
   overflow: hidden;
-  box-shadow: 0px 4px 10px 0px #153A772E;
-  border-radius: 16px;
+  border-radius: $radius-lg;
+  box-shadow: var(--shadow-card);
 
   @include web-only {
-    padding: 16px;
-    background: #1C7BFF1A;
+    padding: $spacing-lg;
+    background: rgba(28, 123, 255, 0.1);
   }
 
   @include mobile-only {
-    padding: 14px 16px;
+    padding: 14px $spacing-lg;
   }
 }
 
@@ -271,11 +265,7 @@ function selectFilter(key) {
   grid-template-columns: 92px minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
-  margin-bottom: 12px;
-
-  @include web-only {
-
-  }
+  margin-bottom: $spacing-md;
 
   @include mobile-only {
     grid-template-columns: 88px minmax(0, 1fr) auto;
@@ -286,28 +276,31 @@ function selectFilter(key) {
   color: var(--theme-primary);
   font-weight: 500;
   position: relative;
-  margin-left: 6px;
+  margin-left: $radius-sm;
   @include web-only {
-    font-size: 16px;
+    font-size: $font-size-base;
   }
   @include mobile-only {
-    font-size: 14px;
+    font-size: $font-size-md;
   }
-  &::before {
-    content: '';
-    display: inline-block;
-    position: absolute;
-    top: 50%;
-    left: -6px;
-    transform: translateY(-50%);
-    width: 2px;
-    background: var(--theme-primary);
-    @include web-only {
-      height: 14px;
-    }
-    @include mobile-only {
-      height: 12px;
-    }
+}
+
+.record-card__type::before {
+  content: '';
+  display: inline-block;
+  position: absolute;
+  top: 50%;
+  left: -6px;
+  width: 2px;
+  background: var(--theme-primary);
+  transform: translateY(-50%);
+
+  @include web-only {
+    height: 14px;
+  }
+
+  @include mobile-only {
+    height: $spacing-md;
   }
 }
 
@@ -321,10 +314,10 @@ function selectFilter(key) {
   white-space: nowrap;
   font-weight: 300;
   @include web-only {
-    font-size: 14px;
+    font-size: $font-size-md;
   }
   @include mobile-only {
-    font-size: 12px;
+    font-size: $font-size-sm;
   }
 }
 
@@ -333,9 +326,9 @@ function selectFilter(key) {
   align-items: center;
   justify-content: center;
   min-width: 60px;
-  height: 24px;
-  border-radius: 8px;
-  font-size: 12px;
+  height: $spacing-2xl;
+  border-radius: $spacing-sm;
+  font-size: $font-size-sm;
   font-weight: 400;
   text-align: center;
 }
@@ -357,24 +350,27 @@ function selectFilter(key) {
 }
 
 .record-card__body {
-  border-radius: 12px;
-  background: #FFFFFF;
+  border-radius: $radius-md;
+  background: var(--auxiliary-1);
   position: relative;
   overflow: hidden;
-  &::before {
-    content: '';
-    width: calc(100% - 24px);
-    margin: 0 12px;
-    height: 0.5px;
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    @include web-only {
-      background: var(--theme-divider);
-    }
-    @include mobile-only {
-      background: #FFFFFF;
-    }
+}
+
+.record-card__body::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: calc(100% - 24px);
+  height: 0.5px;
+  margin: 0 $spacing-md;
+  transform: translateY(-50%);
+
+  @include web-only {
+    background: var(--theme-divider);
+  }
+
+  @include mobile-only {
+    background: var(--auxiliary-1);
   }
 }
 
@@ -382,7 +378,7 @@ function selectFilter(key) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 12px;
+  padding: 0 $spacing-md;
   
   @include web-only {
     height: 48px;
@@ -398,23 +394,23 @@ function selectFilter(key) {
   color: var(--theme-text-1);
   font-weight: 400;
   @include web-only {
-    font-size: 14px;
+    font-size: $font-size-md;
   }
   @include mobile-only {
-    font-size: 12px;
+    font-size: $font-size-sm;
   }
 }
 
 .record-card__value {
-  margin-left: 16px;
+  margin-left: $spacing-lg;
   color: var(--theme-text);
   font-weight: 500;
   text-align: right;
   @include web-only {
-    font-size: 16px;
+    font-size: $font-size-base;
   }
   @include mobile-only {
-    font-size: 14px;
+    font-size: $font-size-md;
   }
 }
 </style>

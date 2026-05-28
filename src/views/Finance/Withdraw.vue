@@ -55,7 +55,7 @@ async function handleSubmit() {
     <section class="bank-card" aria-label="bank-card">
       <div class="bank-card__header">
         <span class="bank-card__badge">中</span>
-        <span class="bank-card__name">{{ bankInfo.bankName }}</span>
+        <span class="bank-card__name">{{ t(bankInfo.bankName) }}</span>
         <span class="bank-card__status">{{ t('已启用') }}</span>
       </div>
       <div class="bank-card__number">{{ bankInfo.cardNumber }}</div>
@@ -69,7 +69,7 @@ async function handleSubmit() {
 
       <label class="finance-field">
         <span class="finance-field__label">{{ t('银行名称') }}</span>
-        <input class="finance-field__input" :value="bankInfo.bankName" />
+        <input class="finance-field__input" :value="t(bankInfo.bankName)" />
       </label>
 
       <label class="finance-field">
@@ -125,16 +125,16 @@ async function handleSubmit() {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-inline: 24px;
+  padding-inline: $spacing-2xl;
 
   @include web-only {
     height: 92px;
-    border-radius: 32px;
+    border-radius: $radius-xl;
   }
 
   @include mobile-only {
     height: 84px;
-    padding: 22px 16px;
+    padding: 22px $spacing-lg;
   }
 }
 
@@ -147,11 +147,11 @@ async function handleSubmit() {
   color: var(--theme-primary);
   font-size: 15px;
   cursor: pointer;
-  box-shadow: 0px 2px 6px 0px #1C7BFF4D;
+  box-shadow: var(--shadow-primary-btn);
 
   @include mobile-only {
     height: 44px;
-    font-size: 18px;
+    font-size: $font-size-lg;
   }
 }
 
@@ -160,27 +160,27 @@ async function handleSubmit() {
   overflow: hidden;
   width: 100%;
   max-width: 100%;
-  color: #fff;
+  color: var(--auxiliary-1);
   background:
     linear-gradient(115deg, rgba(255, 255, 255, 0.2) 0 1px, transparent 1px 44%),
     linear-gradient(90deg, rgba(28, 123, 255, 0.55), rgba(6, 25, 62, 0.98)),
     #092856;
-  border: 1px solid #FFFFFF;
+  border: 1px solid var(--auxiliary-1);
   box-shadow: 0 3px 10px rgba(13, 37, 78, 0.2);
 
   @include web-only {
-    border-radius: 32px;
+    border-radius: $radius-xl;
   }
 
   @include mobile-only {
-    border-radius: 16px;
+    border-radius: $radius-lg;
   }
 }
 
 .bank-card {
   @include web-only {
     height: 200px;
-    padding: 24px 24px 28px;
+    padding: $spacing-2xl $spacing-2xl 28px;
   }
 
   @include mobile-only {
@@ -207,10 +207,10 @@ async function handleSubmit() {
   justify-content: center;
   width: 28px;
   height: 28px;
-  border: 3px solid #fff;
+  border: 3px solid var(--auxiliary-1);
   border-radius: 50%;
   background: #d8232a;
-  color: #fff;
+  color: var(--auxiliary-1);
   font-size: 13px;
   font-weight: 800;
   line-height: 1;
@@ -226,12 +226,12 @@ async function handleSubmit() {
   align-items: center;
   justify-content: center;
   min-width: 66px;
-  height: 24px;
+  height: $spacing-2xl;
   margin-left: auto;
-  border-radius: 6px;
-  background: #1C7BFF26;
-  color: #fff;
-  font-size: 14px;
+  border-radius: $radius-sm;
+  background: rgba(28, 123, 255, 0.15);
+  color: var(--auxiliary-1);
+  font-size: $font-size-md;
   font-weight: 400;
 }
 
@@ -247,7 +247,7 @@ async function handleSubmit() {
 
   @include mobile-only {
     margin-top: 66px;
-    font-size: 18px;
+    font-size: $font-size-lg;
   }
 }
 
@@ -257,28 +257,28 @@ async function handleSubmit() {
   max-width: 100%;
 
   @include web-only {
-    padding: 24px 24px 30px;
-    border-radius: 32px;
+    padding: $spacing-2xl $spacing-2xl 30px;
+    border-radius: $radius-xl;
   }
 
   @include mobile-only {
-    padding: 16px;
-    border-radius: 16px;
+    padding: $spacing-lg;
+    border-radius: $radius-lg;
   }
 }
 
 .withdraw-form__notice {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: $spacing-xs;
   height: 38px;
-  padding: 0 20px;
+  padding: 0 $spacing-xl;
   margin-bottom: 18px;
   box-sizing: border-box;
-  border-radius: 16px;
-  background: #FB5C0D1A;
+  border-radius: $radius-lg;
+  background: rgba(251, 92, 13, 0.1);
   color: var(--auxiliary-3);
-  font-size: 14px;
+  font-size: $font-size-md;
   font-weight: 400;
 }
 
@@ -305,23 +305,23 @@ async function handleSubmit() {
   text-decoration: none;
 
   @include mobile-only {
-    font-size: 14px;
+    font-size: $font-size-md;
   }
 
   @include web-only {
-    font-size: 12px;
+    font-size: $font-size-sm;
   }
 }
 
 .withdraw-form__submit {
   width: 100%;
   height: 44px;
-  font-size: 18px;
+  font-size: $font-size-lg;
 
   @include web-only {
     width: 300px;
     height: 48px;
-    font-size: 18px;
+    font-size: $font-size-lg;
     margin: 0 auto;
   }
 }
@@ -331,26 +331,26 @@ async function handleSubmit() {
   flex-direction: column;
 
   @include web-only {
-    margin-bottom: 20px;
+    margin-bottom: $spacing-xl;
     gap: 10px;
   }
 
   @include mobile-only {
-    margin-bottom: 16px;
+    margin-bottom: $spacing-lg;
     gap: 6px;
   }
 }
 
 .finance-field__label {
-  color: #0B346280;
+  color: var(--theme-text-1);
   font-weight: 400;
 
   @include web-only {
-    font-size: 16px;
+    font-size: $font-size-base;
   }
 
   @include mobile-only {
-    font-size: 14px;
+    font-size: $font-size-md;
   }
 }
 
@@ -358,20 +358,20 @@ async function handleSubmit() {
   box-sizing: border-box;
   width: 100%;
   border: 1px solid var(--theme-divider);
-  border-radius: 12px;
+  border-radius: $radius-md;
   outline: none;
-  background: #fff;
+  background: var(--auxiliary-1);
   color: var(--theme-text);
   font-weight: 400;
 
   @include web-only {
     height: 52px;
-    font-size: 16px;
-    padding: 0 20px;
+    font-size: $font-size-base;
+    padding: 0 $spacing-xl;
   }
 
   @include mobile-only {
-    font-size: 14px;
+    font-size: $font-size-md;
     height: 44px;
     padding: 0 14px;
   }
