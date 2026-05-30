@@ -1,10 +1,24 @@
 import { delay } from './mock';
 import { DEFAULT_HOT_MATCHES, getHotMatchById } from '@/constants/hotMatchCatalog';
+import { MARKET_LEAGUE_LIST } from '@/constants/marketLeagues';
 
 /** 获取首页热门赛事列表 */
 export async function fetchHotMatches() {
   await delay(500);
   return { code: 0, data: DEFAULT_HOT_MATCHES };
+}
+
+/** 获取全部赛事联赛列表（市场列表页） */
+export async function fetchLeagueList() {
+  await delay(300);
+  return { code: 0, data: MARKET_LEAGUE_LIST };
+}
+
+/** 获取指定联赛下的赛事列表（联赛市场页） */
+export async function fetchLeagueMatches(league) {
+  await delay(350);
+  const data = DEFAULT_HOT_MATCHES.filter((m) => m.league === league);
+  return { code: 0, data };
 }
 
 /** 获取市场列表（带分类筛选） */

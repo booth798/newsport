@@ -91,7 +91,7 @@ const navbarList = [
 const isNavActive = (item) => {
   if (item.key === 'home') return route.name === 'home';
   if (item.key === 'market') {
-    return route.name === 'market' || route.name === 'market-detail';
+    return route.name === 'market' || route.name === 'market-league' || route.name === 'market-detail';
   }
   if (item.key === 'trade') return route.path.startsWith('/finance') || route.name === 'trade-purchases';
   if (item.key === 'member') return false;
@@ -109,7 +109,9 @@ const isSubmenuLinkActive = (sub) => {
     const hash = to.hash ?? '';
     return route.path === to.path && (route.hash || '') === hash;
   }
-  if (to === '/market') return route.name === 'market' || route.name === 'market-detail';
+  if (to === '/market') {
+    return route.name === 'market' || route.name === 'market-league' || route.name === 'market-detail';
+  }
   if (to === '/trade/purchases') return route.name === 'trade-purchases';
   if (to === '/finance/deposit') return route.name === 'finance-deposit';
   if (to === '/finance/records') return route.name === 'finance-records';
@@ -120,11 +122,17 @@ const isSubmenuLinkActive = (sub) => {
   return false;
 };
 
-/** 比分市场详情：顶栏改为「返回 + 右侧账户区」，与首页主导航区分 */
+/** 市场列表 / 比分市场详情：顶栏改为「返回 + 右侧账户区」，与首页主导航区分 */
+const isMarketListPage = computed(() => route.name === 'market');
+const isMarketLeaguePage = computed(() => route.name === 'market-league');
 const isMarketDetailPage = computed(() => route.name === 'market-detail');
 const isPurchaseDetailsPage = computed(() => route.name === 'trade-purchases');
 const isCompactDetailHeader = computed(
-  () => isMarketDetailPage.value || isPurchaseDetailsPage.value,
+  () =>
+    isMarketListPage.value ||
+    isMarketLeaguePage.value ||
+    isMarketDetailPage.value ||
+    isPurchaseDetailsPage.value,
 );
 const compactHeaderBackTo = computed(() => {
   if (isPurchaseDetailsPage.value) {
@@ -132,6 +140,17 @@ const compactHeaderBackTo = computed(() => {
     const id = Number(Array.isArray(raw) ? raw[0] : raw);
     if (Number.isFinite(id) && id > 0) {
       return { name: 'market-detail', params: { id: String(id) } };
+    }
+    return '/market';
+  }
+  if (isMarketLeaguePage.value) {
+    return '/market';
+  }
+  if (isMarketDetailPage.value) {
+    const raw = route.query.fromLeague;
+    const league = typeof raw === 'string' ? raw : Array.isArray(raw) ? raw[0] : '';
+    if (league) {
+      return { name: 'market-league', params: { league } };
     }
     return '/market';
   }
@@ -167,7 +186,10 @@ function startBeijingTimerIfNeeded() {
   clearBeijingTimer();
   if (
     typeof window === 'undefined' ||
-    (route.name !== 'market-detail' && route.name !== 'trade-purchases')
+    (route.name !== 'market' &&
+      route.name !== 'market-league' &&
+      route.name !== 'market-detail' &&
+      route.name !== 'trade-purchases')
   ) {
     return;
   }

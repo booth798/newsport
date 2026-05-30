@@ -32,7 +32,7 @@ const tabs = [
     labelKey: '市场',
     icon: tabMarket,
     iconActive: tabMarketActive,
-    match: (r) => r.name === 'market' || r.name === 'market-detail',
+    match: (r) => r.name === 'market' || r.name === 'market-league' || r.name === 'market-detail',
   },
   {
     key: 'service',

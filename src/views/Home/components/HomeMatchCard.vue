@@ -32,12 +32,24 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  /** 从联赛市场页进入详情时带上，供顶栏返回联赛列表 */
+  fromLeague: {
+    type: String,
+    default: '',
+  },
 });
 
 defineEmits(['enter-market']);
 
 const rootComponent = computed(() => (props.detailMode ? 'div' : RouterLink));
-const rootBind = computed(() => (props.detailMode ? {} : { to: `/market/${props.match.id}` }));
+const rootBind = computed(() => {
+  if (props.detailMode) return {};
+  const to = { name: 'market-detail', params: { id: String(props.match.id) } };
+  if (props.fromLeague) {
+    to.query = { fromLeague: props.fromLeague };
+  }
+  return { to };
+});
 
 const homeScoreBg = computed(() =>
   props.match.homeScore > props.match.awayScore ? bgScoreHighUrl : bgScoreDefaultUrl,

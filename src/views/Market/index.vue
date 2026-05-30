@@ -1,27 +1,26 @@
 <script setup>
-import { onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { fetchMarketList } from '@/api/match';
+import { useRouter } from 'vue-router';
+
+import { fetchLeagueList } from '@/api/match';
+
+import iconEventsUrl from '@/assets/images/events/icon_events.svg?url';
 
 const { t } = useI18n();
+const router = useRouter();
 
-const tabs = [
-  { key: 'all', labelKey: '全部' },
-  { key: 'football', labelKey: '足球' },
-  { key: 'basketball', labelKey: '篮球' },
-  { key: 'esports', labelKey: '电竞' },
-];
-const activeTab = ref('all');
-const markets = ref([]);
+const leagues = ref([]);
 const loading = ref(true);
 const error = ref(false);
+const searchQuery = ref('');
 
-async function loadMarkets() {
+async function loadLeagues() {
   try {
     loading.value = true;
     error.value = false;
-    const res = await fetchMarketList(activeTab.value);
-    markets.value = res.data || [];
+    const res = await fetchLeagueList();
+    leagues.value = res.data || [];
   } catch {
     error.value = true;
   } finally {
@@ -29,311 +28,313 @@ async function loadMarkets() {
   }
 }
 
-onMounted(loadMarkets);
-watch(activeTab, loadMarkets);
+onMounted(loadLeagues);
+
+const filteredLeagues = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase();
+  if (!q) return leagues.value;
+  return leagues.value.filter((item) => {
+    const label = t(item.key).toLowerCase();
+    return label.includes(q) || item.key.toLowerCase().includes(q);
+  });
+});
+
+function openLeague(leagueKey) {
+  router.push({ name: 'market-league', params: { league: leagueKey } });
+}
 </script>
 
 <template>
-  <div class="market-page">
-    <div class="market-page__inner">
-      <div class="market-page__header">
-        <h2 class="market-page__title">{{ t('市场') }}</h2>
-        <div class="market-tabs">
-          <button v-for="tab in tabs" :key="tab.key" class="market-tab" :class="{ active: activeTab === tab.key }"
-            @click="activeTab = tab.key">
-            {{ t(tab.labelKey) }}
-          </button>
+  <div class="market-leagues">
+    <section class="market-leagues__panel" aria-labelledby="market-leagues-title">
+      <header class="market-leagues__head">
+        <div class="market-leagues__title-wrap">
+          <img
+            class="market-leagues__title-icon"
+            :src="iconEventsUrl"
+            width="48"
+            height="48"
+            alt=""
+            aria-hidden="true"
+          />
+          <h2 id="market-leagues-title" class="market-leagues__title">{{ t('全部赛事') }}</h2>
         </div>
-      </div>
+        <label class="market-leagues__search" :aria-label="t('搜索')">
+          <span class="market-leagues__search-icon" aria-hidden="true" />
+          <input
+            v-model="searchQuery"
+            type="search"
+            class="market-leagues__search-input"
+            :placeholder="t('搜索')"
+            autocomplete="off"
+          />
+        </label>
+      </header>
 
-      <div v-if="loading" class="market-loading">
-        <div class="market-loading__spinner" />
+      <div v-if="loading" class="market-leagues__state">
+        <div class="market-leagues__spinner" />
         <span>{{ t('加载中') }}</span>
       </div>
 
-      <div v-else-if="error" class="market-error">
+      <div v-else-if="error" class="market-leagues__state">
         <span>{{ t('加载失败') }}</span>
-        <button type="button" class="market-error__retry" @click="loadMarkets">{{ t('重试') }}</button>
+        <button type="button" class="market-leagues__retry" @click="loadLeagues">{{ t('重试') }}</button>
       </div>
 
-      <div v-else-if="markets.length === 0" class="market-empty">
-        <p class="market-empty__text">{{ t('暂无相关赛事') }}</p>
+      <div v-else-if="filteredLeagues.length === 0" class="market-leagues__state market-leagues__state--empty">
+        <p>{{ searchQuery.trim() ? t('暂无联赛') : t('暂无相关赛事') }}</p>
       </div>
 
-      <div v-else class="market-list">
-        <RouterLink v-for="item in markets" :key="item.id" :to="`/market/${item.id}`" class="market-item card-default">
-          <div class="market-item__top">
-            <span class="market-item__league">{{ item.league }}</span>
-            <span class="market-item__date">{{ item.date }}</span>
-            <span class="market-item__status" :class="{ live: item.status === 'live' }">
-              {{ item.status === 'live' ? 'LIVE' : t('未开赛') }}
-            </span>
-          </div>
-
-          <div class="market-item__teams">
-            <div class="market-item__team">
-              <div class="market-item__team-avatar">{{ item.homeTeam.charAt(0) }}</div>
-              <span class="market-item__team-name">{{ item.homeTeam }}</span>
-            </div>
-            <span class="market-item__vs">VS</span>
-            <div class="market-item__team">
-              <div class="market-item__team-avatar">{{ item.awayTeam.charAt(0) }}</div>
-              <span class="market-item__team-name">{{ item.awayTeam }}</span>
-            </div>
-          </div>
-
-          <div class="market-item__odds">
-            <div class="odds-btn">
-              <span class="odds-btn__label">{{ t('主队') }}</span>
-              <span class="odds-btn__value">{{ item.homeOdds }}</span>
-            </div>
-            <div class="odds-btn">
-              <span class="odds-btn__label">{{ t('平') }}</span>
-              <span class="odds-btn__value">{{ item.drawOdds }}</span>
-            </div>
-            <div class="odds-btn">
-              <span class="odds-btn__label">{{ t('客队') }}</span>
-              <span class="odds-btn__value">{{ item.awayOdds }}</span>
-            </div>
-          </div>
-
-          <div class="market-item__volume">
-            {{ t('总成交量冒号') }}<strong>{{ item.volume }}</strong>
-          </div>
-        </RouterLink>
-      </div>
-    </div>
+      <ul v-else class="market-leagues__grid">
+        <li v-for="item in filteredLeagues" :key="item.key">
+          <button
+            type="button"
+            class="market-leagues__card"
+            @click="openLeague(item.key)"
+          >
+            <span class="market-leagues__card-name">{{ t(item.key) }}</span>
+            <span class="market-leagues__card-chevron" aria-hidden="true" />
+          </button>
+        </li>
+      </ul>
+    </section>
   </div>
 </template>
 
 <style lang="scss" scoped>
 @use '@/styles/tools.scss' as *;
 
-.market-page {
+/* 外层与首页 `.home__inner`、Header 同宽 */
+.market-leagues {
   @include container;
-  padding-top: $spacing-xl;
-  padding-bottom: $spacing-4xl;
+  @include web-main-column-max;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
 
-  &__inner {
+  @include web-only {
+    padding-top: 20px;
+    padding-bottom: 60px;
+  }
+
+  @include mobile-only {
+    padding-top: 8px;
+    padding-bottom: 30px;
+  }
+
+  /* 与首页 `.hot-events` 大块一致 */
+  &__panel {
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--surface-card);
+    border: 1.5px solid var(--auxiliary-1);
+    box-shadow: var(--shadow-card);
+
     @include web-only {
-      max-width: $web-content-max;
-      margin: 0 auto;
+      border-radius: 50px;
+      padding: 40px 24px;
+      box-shadow: 0 4px 8px 0 rgba(21, 58, 119, 0.18);
+    }
+
+    @include mobile-only {
+      border-radius: 20px;
+      padding: 15px 12px 16px;
+      background: #fafaff;
+      box-shadow: 0 4px 8px 0 rgba(21, 58, 119, 0.18);
     }
   }
 
-  &__header {
+  &__head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: $spacing-xl;
+    gap: 24px;
+    margin-bottom: 32px;
 
     @include mobile-only {
       flex-direction: column;
-      align-items: flex-start;
-      gap: $spacing-md;
+      align-items: stretch;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+  }
+
+  &__title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  &__title-icon {
+    flex-shrink: 0;
+    display: block;
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+
+    @include mobile-only {
+      width: 28px;
+      height: 28px;
     }
   }
 
   &__title {
-    font-size: $font-size-xl;
-    font-weight: 700;
-    color: var(--theme-text);
     margin: 0;
-  }
-}
-
-.market-tabs {
-  display: flex;
-  gap: $spacing-sm;
-}
-
-.market-tab {
-  padding: 8px 20px;
-  border-radius: $radius-pill;
-  font-size: $font-size-md;
-  color: var(--theme-text);
-  background: transparent;
-  border: 1.5px solid var(--theme-divider);
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover,
-  &.active {
-    background: var(--theme-primary);
-    color: #fff;
-    border-color: var(--theme-primary);
-  }
-}
-
-.market-list {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-lg;
-}
-
-.market-item {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-lg;
-  padding: $spacing-xl;
-  border-radius: $radius-lg;
-  transition: transform 0.2s, box-shadow 0.2s;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(21, 58, 119, 0.15);
-  }
-
-  &__top {
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-  }
-
-  &__league {
-    font-size: $font-size-base;
-    font-weight: 600;
-    color: var(--theme-text);
-  }
-
-  &__date {
-    font-family: $font-family-num;
-    font-size: $font-size-md;
-    color: var(--theme-text-1);
-  }
-
-  &__status {
-    margin-left: auto;
-    font-size: $font-size-sm;
-    padding: 4px 10px;
-    border-radius: $radius-pill;
-    background: var(--theme-divider);
-    color: var(--theme-text-1);
-
-    &.live {
-      background: var(--auxiliary-2);
-      color: #fff;
-      animation: pulse 2s infinite;
-    }
-  }
-
-  &__teams {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: $spacing-3xl;
-
-    @include mobile-only {
-      gap: $spacing-xl;
-    }
-  }
-
-  &__team {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: $spacing-sm;
-    min-width: 80px;
-  }
-
-  &__team-avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: var(--surface-tint);
-    border: 1px solid var(--theme-divider);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: $font-size-lg;
+    font-family: $font-family-base;
+    font-size: 34px;
     font-weight: 700;
-    color: var(--theme-primary);
+    line-height: 1;
+    letter-spacing: 0;
+    background: radial-gradient(circle at 50% 100%, #68b3fd, #0d6cfb);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
 
     @include mobile-only {
-      width: 40px;
+      font-size: 18px;
+      font-weight: 700;
+      -webkit-text-fill-color: var(--theme-primary);
+      color: var(--theme-primary);
+      background: none;
+    }
+  }
+
+  &__search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    width: 220px;
+    max-width: 100%;
+    height: 44px;
+    padding: 0 16px;
+    border-radius: $radius-pill;
+    border: 1px solid #d6e0eb;
+    background: #fff;
+    box-sizing: border-box;
+    cursor: text;
+
+    @include mobile-only {
+      width: 100%;
       height: 40px;
+    }
+
+    &:focus-within {
+      border-color: rgba(31, 124, 255, 0.45);
+      box-shadow: 0 0 0 2px rgba(31, 124, 255, 0.08);
+    }
+  }
+
+  &__search-icon {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 18 18' fill='none'%3E%3Ccircle cx='8' cy='8' r='5.25' stroke='%2394A8C4' stroke-width='1.2'/%3E%3Cpath d='M12.5 12.5L16 16' stroke='%2394A8C4' stroke-width='1.2' stroke-linecap='round'/%3E%3C/svg%3E");
+  }
+
+  &__search-input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: $font-size-md;
+    color: #0b3462;
+
+    &::placeholder {
+      color: rgba(11, 52, 98, 0.4);
+    }
+
+    &::-webkit-search-cancel-button {
+      display: none;
+    }
+  }
+
+  &__grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+
+    @include mobile-only {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+  }
+
+  &__card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 52px;
+    padding: 14px 18px;
+    border-radius: 16px;
+    border: 1px solid #d6e0eb;
+    background: #fff;
+    cursor: pointer;
+    text-align: left;
+    box-shadow: 0 2px 8px rgba(21, 58, 119, 0.08);
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
+
+    @include mobile-only {
+      min-height: 48px;
+      padding: 12px 16px;
+    }
+
+    &:hover {
+      border-color: rgba(31, 124, 255, 0.45);
+      background: #f5f9ff;
+      box-shadow: 0 3px 10px rgba(21, 58, 119, 0.12);
+    }
+
+    &:focus-visible {
+      outline: 2px solid rgba(28, 123, 255, 0.45);
+      outline-offset: 2px;
+    }
+  }
+
+  &__card-name {
+    font-size: 16px;
+    font-weight: 500;
+    color: #0b3462;
+
+    @include mobile-only {
       font-size: $font-size-base;
     }
   }
 
-  &__team-name {
-    font-size: $font-size-md;
-    font-weight: 500;
-    color: var(--theme-text);
-    text-align: center;
-
-    @include mobile-only {
-      font-size: $font-size-sm;
-    }
+  &__card-chevron {
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    margin-right: 4px;
+    border-right: 2px solid rgba(11, 52, 98, 0.35);
+    border-bottom: 2px solid rgba(11, 52, 98, 0.35);
+    transform: rotate(-45deg);
   }
 
-  &__vs {
-    font-family: $font-family-num;
-    font-size: 28px;
-    font-weight: 800;
-    color: var(--theme-primary);
-
-    @include mobile-only {
-      font-size: 20px;
-    }
-  }
-
-  &__odds {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: $spacing-md;
-  }
-
-  &__volume {
-    text-align: center;
-    font-size: $font-size-md;
+  &__state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    min-height: 200px;
     color: var(--theme-text-1);
+    font-size: $font-size-md;
 
-    strong {
-      color: var(--theme-primary);
-      font-family: $font-family-num;
+    &--empty p {
+      margin: 0;
     }
   }
-}
-
-.odds-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 12px;
-  border: 1.5px solid var(--theme-divider);
-  border-radius: $radius-md;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    border-color: var(--theme-primary);
-    background: rgba(28, 123, 255, 0.04);
-  }
-
-  &__label {
-    font-size: $font-size-sm;
-    color: var(--theme-text-1);
-  }
-
-  &__value {
-    font-family: $font-family-num;
-    font-size: $font-size-lg;
-    font-weight: 700;
-    color: var(--theme-text);
-  }
-}
-
-.market-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  min-height: 240px;
-  color: var(--theme-text-1);
-  font-size: $font-size-md;
 
   &__spinner {
     width: 28px;
@@ -341,23 +342,8 @@ watch(activeTab, loadMarkets);
     border: 3px solid var(--theme-divider);
     border-top-color: var(--theme-primary);
     border-radius: 50%;
-    animation: spin 0.8s linear infinite;
+    animation: market-leagues-spin 0.8s linear infinite;
   }
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.market-error {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  min-height: 240px;
-  color: var(--theme-text-1);
-  font-size: $font-size-md;
 
   &__retry {
     padding: 8px 24px;
@@ -376,30 +362,9 @@ watch(activeTab, loadMarkets);
   }
 }
 
-.market-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 240px;
-  background: var(--surface-card);
-  border-radius: $radius-lg;
-  border: 1.5px dashed var(--theme-divider);
-
-  &__text {
-    font-size: $font-size-base;
-    color: var(--theme-text-1);
-  }
-}
-
-@keyframes pulse {
-
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.7;
+@keyframes market-leagues-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 </style>

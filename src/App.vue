@@ -25,9 +25,15 @@ const syncViewport = () => {
 
 // 页面标题始终跟随当前路由和当前站点名称变化。
 const syncDocumentTitle = () => {
-  const pageTitle = i18n.global.t(route.meta?.titleKey || '首页', {
-    siteName: SITE_CONFIG.siteName,
-  });
+  let pageTitle;
+  if (route.name === 'market-league' && route.params.league) {
+    const league = String(route.params.league);
+    pageTitle = i18n.global.t('联赛市场', { league: i18n.global.t(league) });
+  } else {
+    pageTitle = i18n.global.t(route.meta?.titleKey || '首页', {
+      siteName: SITE_CONFIG.siteName,
+    });
+  }
 
   document.title = `${pageTitle} | ${SITE_CONFIG.siteName}`;
 };

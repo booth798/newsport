@@ -13,7 +13,13 @@ const routes = [
     path: '/market',
     name: 'market',
     component: () => import('@/views/Market/index.vue'),
-    meta: { titleKey: '市场' },
+    meta: { titleKey: '全部赛事' },
+  },
+  {
+    path: '/market/league/:league',
+    name: 'market-league',
+    component: () => import('@/views/Market/League/index.vue'),
+    meta: { titleKey: '联赛市场' },
   },
   {
     path: '/market/:id',

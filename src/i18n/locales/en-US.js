@@ -70,6 +70,11 @@ export default {
   隐藏密码: 'Hide password',
 
   // Market
+  全部赛事: 'All Events',
+  联赛市场: '{league} Market',
+  搜索: 'Search',
+  搜索联赛: 'Search leagues',
+  暂无联赛: 'No leagues found',
   比分市场: 'Score Market',
   比分: 'Score',
   概率: 'Probability',

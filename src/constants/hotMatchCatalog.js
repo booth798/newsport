@@ -97,6 +97,18 @@ export const DEFAULT_HOT_MATCHES = [
     awayScore: 1,
     volume: '7.10M',
   },
+  {
+    id: 9,
+    league: '法甲',
+    date: '03-22 03:00',
+    countdownMinutes: 920,
+    countdown: '74:48:46',
+    homeTeam: '巴黎圣日耳曼',
+    awayTeam: '马赛',
+    homeScore: 2,
+    awayScore: 1,
+    volume: '5.60M',
+  },
 ];
 
 export function getHotMatchById(rawId) {
