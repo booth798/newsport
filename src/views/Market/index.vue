@@ -1,19 +1,25 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
+import { storeToRefs } from 'pinia';
 
 import { fetchLeagueList } from '@/api/match';
+import { useAppStore } from '@/store/modules/app';
 
 import iconEventsUrl from '@/assets/images/events/icon_events.svg?url';
 
 const { t } = useI18n();
 const router = useRouter();
+const appStore = useAppStore();
+const { isMobile } = storeToRefs(appStore);
 
+const searchInputRef = ref(null);
 const leagues = ref([]);
 const loading = ref(true);
 const error = ref(false);
 const searchQuery = ref('');
+const isSearchActive = ref(false);
 
 async function loadLeagues() {
   try {
@@ -30,17 +36,50 @@ async function loadLeagues() {
 
 onMounted(loadLeagues);
 
-const filteredLeagues = computed(() => {
-  const q = searchQuery.value.trim().toLowerCase();
-  if (!q) return leagues.value;
-  return leagues.value.filter((item) => {
+const trimmedQuery = computed(() => searchQuery.value.trim());
+const hasQuery = computed(() => trimmedQuery.value.length > 0);
+
+function filterLeaguesByQuery(list, q) {
+  return list.filter((item) => {
     const label = t(item.key).toLowerCase();
     return label.includes(q) || item.key.toLowerCase().includes(q);
   });
+}
+
+const filteredLeagues = computed(() => {
+  const q = trimmedQuery.value.toLowerCase();
+  if (isMobile.value) {
+    if (!isSearchActive.value) return leagues.value;
+    if (!q) return [];
+    return filterLeaguesByQuery(leagues.value, q);
+  }
+  if (!q) return leagues.value;
+  return filterLeaguesByQuery(leagues.value, q);
 });
+
+const showSearchEmpty = computed(
+  () =>
+    isMobile.value &&
+    isSearchActive.value &&
+    hasQuery.value &&
+    !loading.value &&
+    !error.value &&
+    filteredLeagues.value.length === 0,
+);
 
 function openLeague(leagueKey) {
   router.push({ name: 'market-league', params: { league: leagueKey } });
+}
+
+async function openSearch() {
+  isSearchActive.value = true;
+  await nextTick();
+  searchInputRef.value?.focus();
+}
+
+function cancelSearch() {
+  isSearchActive.value = false;
+  searchQuery.value = '';
 }
 </script>
 
@@ -48,27 +87,56 @@ function openLeague(leagueKey) {
   <div class="market-leagues">
     <section class="market-leagues__panel" aria-labelledby="market-leagues-title">
       <header class="market-leagues__head">
-        <div class="market-leagues__title-wrap">
-          <img
-            class="market-leagues__title-icon"
-            :src="iconEventsUrl"
-            width="48"
-            height="48"
-            alt=""
-            aria-hidden="true"
-          />
-          <h2 id="market-leagues-title" class="market-leagues__title">{{ t('全部赛事') }}</h2>
-        </div>
-        <label class="market-leagues__search" :aria-label="t('搜索')">
-          <span class="market-leagues__search-icon" aria-hidden="true" />
-          <input
-            v-model="searchQuery"
-            type="search"
-            class="market-leagues__search-input"
-            :placeholder="t('搜索')"
-            autocomplete="off"
-          />
-        </label>
+        <template v-if="isMobile && isSearchActive">
+          <label class="market-leagues__search market-leagues__search--expanded" :aria-label="t('搜索')">
+            <span class="market-leagues__search-icon" aria-hidden="true" />
+            <input
+              ref="searchInputRef"
+              v-model="searchQuery"
+              type="search"
+              class="market-leagues__search-input"
+              :placeholder="t('搜索')"
+              autocomplete="off"
+              enterkeyhint="search"
+            />
+          </label>
+          <button type="button" class="market-leagues__cancel" @click="cancelSearch">
+            {{ t('取消') }}
+          </button>
+        </template>
+        <template v-else>
+          <div class="market-leagues__title-wrap">
+            <img
+              class="market-leagues__title-icon"
+              :src="iconEventsUrl"
+              width="48"
+              height="48"
+              alt=""
+              aria-hidden="true"
+            />
+            <h2 id="market-leagues-title" class="market-leagues__title">{{ t('全部赛事') }}</h2>
+          </div>
+          <label v-if="!isMobile" class="market-leagues__search" :aria-label="t('搜索')">
+            <span class="market-leagues__search-icon" aria-hidden="true" />
+            <input
+              v-model="searchQuery"
+              type="search"
+              class="market-leagues__search-input"
+              :placeholder="t('搜索')"
+              autocomplete="off"
+            />
+          </label>
+          <button
+            v-else
+            type="button"
+            class="market-leagues__search-trigger"
+            :aria-label="t('搜索')"
+            @click="openSearch"
+          >
+            <span class="market-leagues__search-icon" aria-hidden="true" />
+            <span class="market-leagues__search-trigger-text">{{ t('搜索') }}</span>
+          </button>
+        </template>
       </header>
 
       <div v-if="loading" class="market-leagues__state">
@@ -81,7 +149,14 @@ function openLeague(leagueKey) {
         <button type="button" class="market-leagues__retry" @click="loadLeagues">{{ t('重试') }}</button>
       </div>
 
-      <div v-else-if="filteredLeagues.length === 0" class="market-leagues__state market-leagues__state--empty">
+      <div v-else-if="showSearchEmpty" class="market-leagues__state market-leagues__state--empty">
+        <p>{{ t('没有相关内容，请重新尝试') }}</p>
+      </div>
+
+      <div
+        v-else-if="filteredLeagues.length === 0 && !(isMobile && isSearchActive)"
+        class="market-leagues__state market-leagues__state--empty"
+      >
         <p>{{ searchQuery.trim() ? t('暂无联赛') : t('暂无相关赛事') }}</p>
       </div>
 
@@ -152,9 +227,9 @@ function openLeague(leagueKey) {
     margin-bottom: 32px;
 
     @include mobile-only {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 12px;
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
       margin-bottom: 12px;
     }
   }
@@ -199,6 +274,53 @@ function openLeague(leagueKey) {
       color: var(--theme-primary);
       background: none;
     }
+  }
+
+  &__search-trigger {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    width: 120px;
+    max-width: 42%;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: $radius-pill;
+    border: 1px solid #d6e0eb;
+    background: #fff;
+    box-sizing: border-box;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  &__search--expanded {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+    height: 40px;
+    padding: 0 14px;
+  }
+
+  &__cancel {
+    flex-shrink: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    font-size: $font-size-base;
+    font-weight: 500;
+    color: #e54545;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+
+  &__search-trigger-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: $font-size-base;
+    color: rgba(11, 52, 98, 0.4);
   }
 
   &__search {
@@ -333,6 +455,9 @@ function openLeague(leagueKey) {
 
     &--empty p {
       margin: 0;
+      color: rgba(11, 52, 98, 0.45);
+      font-size: $font-size-base;
+      text-align: center;
     }
   }
 

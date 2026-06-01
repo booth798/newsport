@@ -42,6 +42,24 @@ export async function fetchUserProfile() {
   };
 }
 
+/** 个人中心首页概览（演示数据） */
+export async function fetchProfileOverview() {
+  await delay(300);
+  return {
+    code: 0,
+    data: {
+      nickname: 'Y05741',
+      memberId: 'U2026023923',
+      balance: '1,342,512.35',
+      currency: 'CNY',
+      vipLevel: 3,
+      totalBet: '3,151,724.00',
+      winRate: '12.8%',
+      totalProfit: '952,256.00',
+    },
+  };
+}
+
 /** 保存个人资料 */
 export async function updateProfile(data) {
   await delay(500);

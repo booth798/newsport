@@ -91,7 +91,11 @@ const navbarList = [
 const isNavActive = (item) => {
   if (item.key === 'home') return route.name === 'home';
   if (item.key === 'market') {
-    return route.name === 'market' || route.name === 'market-league' || route.name === 'market-detail';
+    return (
+      route.name === 'market' ||
+      route.name === 'market-league' ||
+      route.name === 'market-detail'
+    );
   }
   if (item.key === 'trade') return route.path.startsWith('/finance') || route.name === 'trade-purchases';
   if (item.key === 'member') return false;
@@ -110,7 +114,11 @@ const isSubmenuLinkActive = (sub) => {
     return route.path === to.path && (route.hash || '') === hash;
   }
   if (to === '/market') {
-    return route.name === 'market' || route.name === 'market-league' || route.name === 'market-detail';
+    return (
+      route.name === 'market' ||
+      route.name === 'market-league' ||
+      route.name === 'market-detail'
+    );
   }
   if (to === '/trade/purchases') return route.name === 'trade-purchases';
   if (to === '/finance/deposit') return route.name === 'finance-deposit';
@@ -127,12 +135,17 @@ const isMarketListPage = computed(() => route.name === 'market');
 const isMarketLeaguePage = computed(() => route.name === 'market-league');
 const isMarketDetailPage = computed(() => route.name === 'market-detail');
 const isPurchaseDetailsPage = computed(() => route.name === 'trade-purchases');
+const isProfileHomePage = computed(() => route.name === 'profile-home');
+const isProfileSubPage = computed(
+  () => route.path.startsWith('/profile') && route.name !== 'profile-home',
+);
 const isCompactDetailHeader = computed(
   () =>
     isMarketListPage.value ||
     isMarketLeaguePage.value ||
     isMarketDetailPage.value ||
-    isPurchaseDetailsPage.value,
+    isPurchaseDetailsPage.value ||
+    (isMobile.value && (isProfileHomePage.value || isProfileSubPage.value)),
 );
 const compactHeaderBackTo = computed(() => {
   if (isPurchaseDetailsPage.value) {
@@ -145,6 +158,12 @@ const compactHeaderBackTo = computed(() => {
   }
   if (isMarketLeaguePage.value) {
     return '/market';
+  }
+  if (isProfileSubPage.value) {
+    return '/profile';
+  }
+  if (isProfileHomePage.value) {
+    return '/';
   }
   if (isMarketDetailPage.value) {
     const raw = route.query.fromLeague;

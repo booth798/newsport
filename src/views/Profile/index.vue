@@ -16,6 +16,9 @@ const { isLoggedIn, loggedInUserId } = storeToRefs(appStore);
 
 const showLogoutConfirm = ref(false);
 
+const isProfileHome = computed(() => route.name === 'profile-home');
+const hideSidebarOnHome = computed(() => isProfileHome.value);
+
 const displayName = computed(() => loggedInUserId.value || 'User_888');
 const displayId = computed(() => loggedInUserId.value ? `ID: ${loggedInUserId.value}` : 'ID: 10086');
 const displayInitial = computed(() => (displayName.value.charAt(0) || 'U').toUpperCase());
@@ -47,9 +50,9 @@ function cancelLogout() {
 </script>
 
 <template>
-  <div class="profile-layout">
+  <div class="profile-layout" :class="{ 'profile-layout--home': hideSidebarOnHome }">
     <div class="profile-layout__inner">
-      <aside class="profile-sidebar">
+      <aside v-if="!hideSidebarOnHome" class="profile-sidebar">
         <div class="profile-sidebar__user card-default">
           <div class="user-avatar">
             <div class="user-avatar__placeholder">{{ displayInitial }}</div>
@@ -76,7 +79,13 @@ function cancelLogout() {
         </nav>
       </aside>
 
-      <main class="profile-content card-default">
+      <main
+        class="profile-content"
+        :class="{
+          'card-default': !hideSidebarOnHome,
+          'profile-content--home': hideSidebarOnHome,
+        }"
+      >
         <RouterView />
       </main>
 
@@ -109,6 +118,30 @@ function cancelLogout() {
   @include container;
   padding-top: $spacing-xl;
   padding-bottom: $spacing-4xl;
+
+  &--home {
+    @include web-main-column-max;
+    box-sizing: border-box;
+
+    @include web-only {
+      padding-top: 16px;
+      padding-bottom: 60px;
+      background: #e3ecfb;
+    }
+
+    @include mobile-only {
+      padding-top: 8px;
+      padding-bottom: calc($mobile-tab-bar-offset + $spacing-3xl);
+      background: #e3ecfb;
+    }
+
+    .profile-layout__inner {
+      display: block;
+      max-width: none;
+      width: 100%;
+      margin: 0;
+    }
+  }
 
   &__inner {
     display: flex;
@@ -233,6 +266,20 @@ function cancelLogout() {
 
   @include mobile-only {
     padding: $spacing-lg;
+  }
+
+  &--home {
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    border: none;
+
+    @include web-only {
+      width: 800px;
+      max-width: 100%;
+      margin: 0 auto;
+    }
   }
 }
 
