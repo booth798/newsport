@@ -6,6 +6,7 @@ import { storeToRefs } from 'pinia';
 
 import { useAppStore } from '@/store/modules/app';
 import { useToast } from '@/hooks/useToast';
+import ProfileLogoutConfirmModal from '@/views/Profile/components/ProfileLogoutConfirmModal.vue';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -42,10 +43,6 @@ function confirmLogout() {
   appStore.clearWebLogin();
   toast.success(t('操作成功'));
   router.push('/');
-}
-
-function cancelLogout() {
-  showLogoutConfirm.value = false;
 }
 </script>
 
@@ -89,24 +86,10 @@ function cancelLogout() {
         <RouterView />
       </main>
 
-      <Teleport to="body">
-        <Transition name="confirm-fade">
-          <div v-if="showLogoutConfirm" class="logout-overlay" @click.self="cancelLogout">
-            <div class="logout-dialog card-default" role="alertdialog" aria-modal="true">
-              <button type="button" class="logout-dialog__close" :aria-label="t('关闭')" @click="cancelLogout">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                  <path d="M11 3L3 11M3 3l8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                </svg>
-              </button>
-              <p class="logout-dialog__text">{{ t('确定退出登录吗') }}</p>
-              <div class="logout-dialog__actions">
-                <button type="button" class="btn logout-dialog__cancel" @click="cancelLogout">{{ t('取消') }}</button>
-                <button type="button" class="btn btn--primary logout-dialog__confirm" @click="confirmLogout">{{ t('确定') }}</button>
-              </div>
-            </div>
-          </div>
-        </Transition>
-      </Teleport>
+      <ProfileLogoutConfirmModal
+        v-model="showLogoutConfirm"
+        @confirm="confirmLogout"
+      />
     </div>
   </div>
 </template>
@@ -281,96 +264,5 @@ function cancelLogout() {
       margin: 0 auto;
     }
   }
-}
-
-.logout-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1100;
-  background: rgba(11, 52, 98, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(4px);
-}
-
-.logout-dialog {
-  position: relative;
-  width: min(360px, calc(100vw - 48px));
-  padding: 32px 24px 24px;
-  border-radius: $radius-lg;
-  text-align: center;
-
-  &__close {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border: none;
-    border-radius: 50%;
-    background: transparent;
-    color: rgba(11, 52, 98, 0.35);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition:
-      background 0.2s ease,
-      color 0.2s ease;
-
-    &:hover {
-      background: rgba(11, 52, 98, 0.06);
-      color: rgba(11, 52, 98, 0.6);
-    }
-
-    &:focus-visible {
-      outline: 2px solid var(--theme-primary);
-      outline-offset: 2px;
-    }
-  }
-
-  &__text {
-    font-size: $font-size-base;
-    font-weight: 500;
-    color: var(--theme-text);
-    margin: 0 0 24px;
-  }
-
-  &__actions {
-    display: flex;
-    gap: $spacing-md;
-  }
-
-  &__cancel,
-  &__confirm {
-    flex: 1;
-    height: 44px;
-  }
-
-  &__cancel {
-    border: 1.5px solid var(--theme-divider);
-    background: #fff;
-    color: var(--theme-text);
-    transition:
-      border-color 0.2s ease,
-      color 0.2s ease;
-
-    &:hover {
-      border-color: var(--theme-primary);
-      color: var(--theme-primary);
-    }
-  }
-}
-
-.confirm-fade-enter-active,
-.confirm-fade-leave-active {
-  transition: opacity 0.2s;
-}
-
-.confirm-fade-enter-from,
-.confirm-fade-leave-to {
-  opacity: 0;
 }
 </style>

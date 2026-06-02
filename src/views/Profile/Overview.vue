@@ -10,6 +10,10 @@ import { useToast } from '@/hooks/useToast';
 import { openCustomerService } from '@/utils/customerService';
 
 import ProfileUserInfoModal from '@/views/Profile/components/ProfileUserInfoModal.vue';
+import ProfileMessagesModal from '@/views/Profile/components/ProfileMessagesModal.vue';
+import ProfileVerifyModal from '@/views/Profile/components/ProfileVerifyModal.vue';
+import ProfileSecurityModal from '@/views/Profile/components/ProfileSecurityModal.vue';
+import ProfileLogoutConfirmModal from '@/views/Profile/components/ProfileLogoutConfirmModal.vue';
 
 import avatarDefaultUrl from '@/assets/images/common/avatar_default.png?url';
 import iconProfileDeposit from '@/assets/images/profile/icon_profile_deposit.svg?url';
@@ -38,6 +42,9 @@ const loading = ref(true);
 const refreshing = ref(false);
 const showLogoutConfirm = ref(false);
 const showUserInfoModal = ref(false);
+const showMessagesModal = ref(false);
+const showVerifyModal = ref(false);
+const showSecurityModal = ref(false);
 const avatarDisplayUrl = ref('');
 
 const overview = ref({
@@ -66,10 +73,10 @@ const menuItems = [
   { label: '交易记录', icon: iconProfileRecords, to: '/finance/records' },
   { label: '下单明细', icon: iconProfileOrders, to: '/trade/purchases' },
   { label: '收藏', icon: iconProfileFavorites, action: 'favorites' },
-  { label: '消息中心', icon: iconProfileMessages, to: '/profile/messages' },
+  { label: '消息中心', icon: iconProfileMessages, action: 'messages' },
   { label: '市场列表', icon: iconProfileMarket, to: '/market' },
-  { label: '实名认证', icon: iconProfileVerify, to: '/profile/verify' },
-  { label: '安全设置', icon: iconProfileSecurity, to: '/profile/security' },
+  { label: '实名认证', icon: iconProfileVerify, action: 'verify' },
+  { label: '安全设置', icon: iconProfileSecurity, action: 'security' },
   { label: '绑定信息', icon: iconProfileBindinfo, to: '/profile/bank-card' },
   { label: '联系客服', icon: iconProfileService, action: 'service' },
   { label: '退出登录', icon: iconProfileLogout, action: 'logout' },
@@ -106,6 +113,18 @@ function handleMenuClick(item) {
     showUserInfoModal.value = true;
     return;
   }
+  if (item.action === 'messages') {
+    showMessagesModal.value = true;
+    return;
+  }
+  if (item.action === 'verify') {
+    showVerifyModal.value = true;
+    return;
+  }
+  if (item.action === 'security') {
+    showSecurityModal.value = true;
+    return;
+  }
   if (item.action === 'logout') {
     showLogoutConfirm.value = true;
     return;
@@ -128,10 +147,6 @@ function confirmLogout() {
   appStore.clearWebLogin();
   toast.success(t('操作成功'));
   router.push('/');
-}
-
-function cancelLogout() {
-  showLogoutConfirm.value = false;
 }
 
 function openUserInfoModal() {
@@ -267,33 +282,13 @@ onMounted(loadOverview);
       @saved="handleUserInfoSaved"
     />
 
-    <Teleport to="body">
-      <Transition name="confirm-fade">
-        <div v-if="showLogoutConfirm" class="profile-home__overlay" @click.self="cancelLogout">
-          <div class="profile-home__dialog" role="alertdialog" aria-modal="true">
-            <button
-              type="button"
-              class="profile-home__dialog-close"
-              :aria-label="t('关闭')"
-              @click="cancelLogout"
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <path d="M11 3L3 11M3 3l8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-              </svg>
-            </button>
-            <p class="profile-home__dialog-text">{{ t('确定退出登录吗') }}</p>
-            <div class="profile-home__dialog-actions">
-              <button type="button" class="btn profile-home__dialog-cancel" @click="cancelLogout">
-                {{ t('取消') }}
-              </button>
-              <button type="button" class="btn btn--primary profile-home__dialog-confirm" @click="confirmLogout">
-                {{ t('确定') }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <ProfileMessagesModal v-model="showMessagesModal" />
+    <ProfileVerifyModal v-model="showVerifyModal" />
+    <ProfileSecurityModal v-model="showSecurityModal" />
+    <ProfileLogoutConfirmModal
+      v-model="showLogoutConfirm"
+      @confirm="confirmLogout"
+    />
   </div>
 </template>
 
@@ -665,74 +660,6 @@ onMounted(loadOverview);
     }
   }
 
-  &__overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 1100;
-    background: rgba(11, 52, 98, 0.4);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    backdrop-filter: blur(4px);
-  }
-
-  &__dialog {
-    position: relative;
-    width: min(360px, calc(100vw - 48px));
-    padding: 32px 24px 24px;
-    border-radius: $radius-lg;
-    background: var(--surface-card);
-    text-align: center;
-    box-shadow: var(--shadow-card);
-  }
-
-  &__dialog-close {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border: none;
-    border-radius: 50%;
-    background: transparent;
-    color: rgba(11, 52, 98, 0.35);
-    cursor: pointer;
-  }
-
-  &__dialog-text {
-    font-size: $font-size-base;
-    font-weight: 500;
-    color: var(--theme-text);
-    margin: 0 0 24px;
-  }
-
-  &__dialog-actions {
-    display: flex;
-    gap: $spacing-md;
-  }
-
-  &__dialog-cancel,
-  &__dialog-confirm {
-    flex: 1;
-    height: 44px;
-  }
-
-  &__dialog-cancel {
-    border: 1.5px solid var(--theme-divider);
-    background: #fff;
-    color: var(--theme-text);
-  }
-}
-
-.confirm-fade-enter-active,
-.confirm-fade-leave-active {
-  transition: opacity 0.2s;
-}
-
-.confirm-fade-enter-from,
-.confirm-fade-leave-to {
-  opacity: 0;
 }
 
 @keyframes profile-home-spin {
