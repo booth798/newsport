@@ -87,7 +87,7 @@ const isSubmenuLinkActive = (sub) => {
   if (to === '/market') return route.name === 'market' || route.name === 'market-detail';
   if (to === '/finance/deposit') return route.name === 'finance-deposit';
   if (to === '/finance/records') return route.name === 'finance-records';
-  if (to === '/profile') return route.name === 'profile-home';
+  if (to === '/profile') return route.name === 'profile';
   if (to === '/profile/info') return route.name === 'profile-info';
   if (to === '/profile/security') return route.name === 'profile-security';
   if (to === '/') return false;

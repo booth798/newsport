@@ -123,7 +123,7 @@ const isSubmenuLinkActive = (sub) => {
   if (to === '/trade/purchases') return route.name === 'trade-purchases';
   if (to === '/finance/deposit') return route.name === 'finance-deposit';
   if (to === '/finance/records') return route.name === 'finance-records';
-  if (to === '/profile') return route.name === 'profile-home';
+  if (to === '/profile') return route.name === 'profile';
   if (to === '/profile/info') return route.name === 'profile-info';
   if (to === '/profile/security') return route.name === 'profile-security';
   if (to === '/') return false;
@@ -135,9 +135,9 @@ const isMarketListPage = computed(() => route.name === 'market');
 const isMarketLeaguePage = computed(() => route.name === 'market-league');
 const isMarketDetailPage = computed(() => route.name === 'market-detail');
 const isPurchaseDetailsPage = computed(() => route.name === 'trade-purchases');
-const isProfileHomePage = computed(() => route.name === 'profile-home');
+const isProfileHomePage = computed(() => route.name === 'profile');
 const isProfileSubPage = computed(
-  () => route.path.startsWith('/profile') && route.name !== 'profile-home',
+  () => route.path.startsWith('/profile') && route.name !== 'profile',
 );
 const isCompactDetailHeader = computed(
   () =>

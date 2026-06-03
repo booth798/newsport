@@ -43,7 +43,7 @@ export async function fetchUserProfile() {
 }
 
 /** 个人中心首页概览（演示数据） */
-export async function fetchProfileOverview() {
+export async function fetchProfileSummary() {
   await delay(300);
   return {
     code: 0,

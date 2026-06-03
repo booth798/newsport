@@ -67,12 +67,6 @@ const routes = [
     meta: { titleKey: '我的' },
     children: [
       {
-        path: '',
-        name: 'profile-home',
-        component: () => import('@/views/Profile/Overview.vue'),
-        meta: { titleKey: '我的' },
-      },
-      {
         path: 'info',
         name: 'profile-info',
         component: () => import('@/views/Profile/Info.vue'),

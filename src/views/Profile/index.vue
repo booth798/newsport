@@ -1,9 +1,10 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
+import { fetchProfileSummary } from '@/api/user';
 import arrowMoreIcon from '@/assets/images/common/icon_arrow_more.svg';
 import avatarDefaultUrl from '@/assets/images/common/avatar_default.png?url';
 import bindInfoIcon from '@/assets/images/common/icon_profile_bindinfo.svg';
@@ -21,7 +22,6 @@ import verifyIcon from '@/assets/images/common/icon_profile_verify.svg';
 import withdrawIcon from '@/assets/images/common/icon_withdraw.svg';
 import { useAppStore } from '@/store/modules/app';
 import { useToast } from '@/hooks/useToast';
-import ProfileLogoutConfirmModal from '@/views/Profile/components/ProfileLogoutConfirmModal.vue';
 import { openCustomerService } from '@/utils/customerService';
 import ProfileAvatarModal from './components/ProfileAvatarModal.vue';
 import ProfileBindingModal from './components/ProfileBindingModal.vue';
@@ -40,11 +40,25 @@ const toast = useToast();
 const { loggedInUserId, loggedInAssetsFormatted } = storeToRefs(appStore);
 
 const activeModal = ref('');
+const loading = ref(true);
+const refreshing = ref(false);
+const avatarDisplayUrl = ref('');
+const profileSummary = ref({
+  nickname: '',
+  memberId: '',
+  balance: '',
+  currency: 'CNY',
+  vipLevel: 3,
+  totalBet: '3,151,724.00',
+  winRate: '12.8%',
+  totalProfit: '952,256.00',
+});
 
-const displayName = computed(() => loggedInUserId.value || 'Y05741');
-const displayId = computed(() => `ID：${loggedInUserId.value || 'U2026023923'}`);
-const balanceValue = computed(() => loggedInAssetsFormatted.value || '1,342,512.35');
-const isProfileHome = computed(() => route.name === 'profile-home');
+const displayName = computed(() => profileSummary.value.nickname || loggedInUserId.value || 'Y05741');
+const displayId = computed(() => `ID：${profileSummary.value.memberId || loggedInUserId.value || 'U2026023923'}`);
+const balanceValue = computed(() => profileSummary.value.balance || loggedInAssetsFormatted.value || '1,342,512.35');
+const currencyValue = computed(() => profileSummary.value.currency || 'CNY');
+const isProfileHome = computed(() => route.name === 'profile');
 
 const levels = ['V1', 'V2', 'V3', 'V4', 'V5'];
 
@@ -113,23 +127,57 @@ function handleProfileSave() {
   closeProfileModal();
 }
 
+async function loadProfileSummary() {
+  try {
+    loading.value = true;
+    const res = await fetchProfileSummary();
+    profileSummary.value = { ...profileSummary.value, ...(res.data || {}) };
+  } catch {
+    /* 使用 store 和默认演示数据兜底，避免个人中心白屏 */
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function refreshBalance() {
+  if (refreshing.value) return;
+  try {
+    refreshing.value = true;
+    const res = await fetchProfileSummary();
+    profileSummary.value = { ...profileSummary.value, ...(res.data || {}) };
+    toast.success(t('操作成功'));
+  } catch {
+    toast.error(t('加载失败'));
+  } finally {
+    refreshing.value = false;
+  }
+}
+
 function confirmLogout() {
   closeProfileModal();
   appStore.clearWebLogin();
   toast.success(t('操作成功'));
   router.push('/');
 }
+
+onMounted(loadProfileSummary);
 </script>
 
 <template>
   <div class="profile-layout" :class="{ 'profile-layout--subpage': !isProfileHome }">
     <div class="profile-layout__inner">
       <template v-if="isProfileHome">
-        <section class="profile-member-card" aria-label="profile-card">
+        <div v-if="loading" class="profile-loading-state">
+          <div class="profile-loading-spinner" />
+          <span>{{ t('加载中') }}</span>
+        </div>
+
+        <template v-else>
+          <section class="profile-member-card" aria-label="profile-card">
           <div class="profile-member-card__body">
             <div class="profile-member-card__top">
               <button type="button" class="profile-user" @click="openProfileModal('avatar')">
-                <img class="profile-user__avatar" :src="avatarDefaultUrl" alt="" width="80" height="80" />
+                <img class="profile-user__avatar" :src="avatarDisplayUrl || avatarDefaultUrl" alt="" width="80" height="80" />
                 <div class="profile-user__meta">
                   <div class="profile-user__name">{{ displayName }}</div>
                   <div class="profile-user__id">{{ displayId }}</div>
@@ -150,8 +198,15 @@ function confirmLogout() {
 
             <div class="profile-member-card__balance">
               <span>{{ t('账户余额') }}：</span>
-              <strong>CNY {{ balanceValue }}</strong>
-              <button type="button" class="profile-refresh" :aria-label="t('刷新余额')">
+              <strong>{{ currencyValue }} {{ balanceValue }}</strong>
+              <button
+                type="button"
+                class="profile-refresh"
+                :class="{ 'profile-refresh--spinning': refreshing }"
+                :aria-label="t('刷新余额')"
+                :disabled="refreshing"
+                @click="refreshBalance"
+              >
                 <img :src="refreshIcon" alt="" width="34" height="34" />
               </button>
             </div>
@@ -163,7 +218,7 @@ function confirmLogout() {
                   v-for="(level, index) in levels"
                   :key="level"
                   class="profile-levels__point"
-                  :class="{ 'profile-levels__point--active': index === 2 }"
+                  :class="{ 'profile-levels__point--active': index + 1 === profileSummary.vipLevel }"
                 >
                   <span class="profile-levels__dot" />
                   <span class="profile-levels__label">{{ level }}</span>
@@ -175,29 +230,36 @@ function confirmLogout() {
           <div class="profile-stats">
             <div class="profile-stats__item">
               <span>{{ t('总投注') }}</span>
-              <strong>￥ 3,151,724.00</strong>
+              <strong>￥ {{ profileSummary.totalBet }}</strong>
             </div>
             <div class="profile-stats__item">
               <span>{{ t('胜率') }}</span>
-              <strong>12.8%</strong>
+              <strong>{{ profileSummary.winRate }}</strong>
             </div>
             <div class="profile-stats__item">
               <span>{{ t('总盈利') }}</span>
-              <strong>+ ￥ 952,256.00</strong>
+              <strong>+ ￥ {{ profileSummary.totalProfit }}</strong>
             </div>
           </div>
-        </section>
+          </section>
 
-        <section class="profile-balance-card card-default" aria-label="balance">
+          <section class="profile-balance-card card-default" aria-label="balance">
           <div class="profile-balance-card__head">
             <span>{{ t('账户余额') }}</span>
-            <button type="button" class="profile-refresh" :aria-label="t('刷新余额')">
+            <button
+              type="button"
+              class="profile-refresh"
+              :class="{ 'profile-refresh--spinning': refreshing }"
+              :aria-label="t('刷新余额')"
+              :disabled="refreshing"
+              @click="refreshBalance"
+            >
               <img :src="refreshIcon" alt="" width="34" height="34" />
             </button>
           </div>
           <div class="profile-balance-card__amount">
             <strong>{{ balanceValue }}</strong>
-            <span>CNY</span>
+            <span>{{ currencyValue }}</span>
           </div>
           <div class="profile-balance-card__actions">
             <RouterLink to="/finance/deposit" class="profile-balance-action profile-balance-action--primary">
@@ -209,9 +271,9 @@ function confirmLogout() {
               <span>{{ t('提领') }}</span>
             </RouterLink>
           </div>
-        </section>
+          </section>
 
-        <section class="profile-action-card card-default" aria-label="profile-actions">
+          <section class="profile-action-card card-default" aria-label="profile-actions">
           <template v-for="item in profileActions" :key="item.key">
             <RouterLink
               v-if="item.to"
@@ -239,7 +301,8 @@ function confirmLogout() {
               <img class="profile-action__arrow" :src="arrowMoreIcon" alt="" width="20" height="20" />
             </button>
           </template>
-        </section>
+          </section>
+        </template>
       </template>
 
       <main v-else class="profile-subpage card-default">
@@ -309,16 +372,32 @@ function confirmLogout() {
   }
 }
 
+.profile-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  min-height: 240px;
+  color: var(--theme-text);
+  font-size: $font-size-md;
+}
+
+.profile-loading-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--theme-divider);
+  border-top-color: var(--theme-primary);
+  border-radius: 50%;
+  animation: profile-refresh-spin 0.8s linear infinite;
+}
+
 .profile-member-card {
   position: relative;
   overflow: hidden;
   color: var(--auxiliary-1);
-  background:
-    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.1) 0 48px, transparent 49px),
-    radial-gradient(circle at 36% 34%, rgba(255, 255, 255, 0.08) 0 58px, transparent 59px),
-    radial-gradient(circle at 68% 24%, rgba(255, 255, 255, 0.08) 0 58px, transparent 59px),
-    linear-gradient(125deg, #0f6fff 0%, #2888ff 62%, #3c98ff 100%);
-  box-shadow: 0 12px 24px rgba(21, 58, 119, 0.16);
+  background: linear-gradient(125deg, #0f6fff 0%, #2888ff 62%, #3c98ff 100%);
+
 
   @include web-only {
     min-height: 360px;
@@ -503,6 +582,15 @@ function confirmLogout() {
   img {
     display: block;
   }
+}
+
+.profile-refresh--spinning img {
+  animation: profile-refresh-spin 0.8s linear infinite;
+}
+
+.profile-refresh:disabled {
+  cursor: default;
+  opacity: 0.72;
 }
 
 .profile-levels {
@@ -865,6 +953,12 @@ function confirmLogout() {
     width: 800px;
     max-width: 100%;
     margin: 0 auto;
+  }
+}
+
+@keyframes profile-refresh-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 </style>
