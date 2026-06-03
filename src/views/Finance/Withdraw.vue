@@ -135,6 +135,7 @@ async function handleSubmit() {
   @include mobile-only {
     height: 84px;
     padding: 22px $spacing-lg;
+    border-radius: $radius-lg;
   }
 }
 
