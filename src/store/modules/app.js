@@ -1,4 +1,6 @@
 import { defineStore } from 'pinia';
+import { setToken, clearToken } from '@/api/request';
+import { clearSession } from '@/api/encrypt';
 
 export const LOCALE_STORAGE_KEY = 'mysport:locale';
 export const DEFAULT_LOCALE = 'zh-CN';
@@ -6,26 +8,33 @@ export const DEFAULT_LOCALE = 'zh-CN';
 export const getCurrentLocale = () =>
   localStorage.getItem(LOCALE_STORAGE_KEY) || DEFAULT_LOCALE;
 
+function loadCustomer() {
+  try {
+    const raw = localStorage.getItem('mysport:customer');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 export const useAppStore = defineStore('app', {
-  state: () => ({
-    locale: getCurrentLocale(),
-    viewportWidth: typeof window === 'undefined' ? 1440 : window.innerWidth,
-    /** 导航「登录」等入口打开的登入/注册弹层 */
-    loginModalOpen: false,
-    /** PC 顶栏：演示登录成功后的已登录态（无真实鉴权时用于稿图对齐） */
-    isLoggedIn: false,
-    loggedInUserId: '',
-    /** 演示用总资产展示（千分位） */
-    loggedInAssetsFormatted: '1,342,512.35',
-  }),
+  state: () => {
+    const saved = loadCustomer();
+    const hasToken = Boolean(localStorage.getItem('mysport:token'));
+    return {
+      locale: getCurrentLocale(),
+      viewportWidth: typeof window === 'undefined' ? 1440 : window.innerWidth,
+      loginModalOpen: false,
+      isLoggedIn: hasToken && Boolean(saved),
+      loggedInUserId: saved?.username || '',
+      loggedInAssetsFormatted: '0.00',
+      customer: saved,
+    };
+  },
   getters: {
-    // 项目只区分两套端：
-    // 1. <= 750 视为移动端
-    // 2. > 750 视为 Web 端
     isMobile: (state) => state.viewportWidth <= 750,
   },
   actions: {
-    // 记录当前语言，方便下次打开页面时直接恢复。
     setLocale(locale) {
       this.locale = locale;
       localStorage.setItem(LOCALE_STORAGE_KEY, locale);
@@ -39,20 +48,32 @@ export const useAppStore = defineStore('app', {
     closeLoginModal() {
       this.loginModalOpen = false;
     },
-    /**
-     * 演示：从登录弹窗提交后写入顶栏展示用信息（后续可接真实登录接口）。
-     * @param {string} account
-     */
-    completeWebLogin(account) {
-      const id = String(account ?? '').trim() || '—';
-      this.loggedInUserId = id;
+    completeWebLogin(loginVO) {
+      const { satoken, refreshToken, customer } = loginVO;
+      setToken(satoken, refreshToken);
+      this.customer = customer;
+      this.loggedInUserId = customer?.username || customer?.customerNo || '';
       this.isLoggedIn = true;
       this.loginModalOpen = false;
+      if (customer) {
+        localStorage.setItem('mysport:customer', JSON.stringify(customer));
+      }
     },
-    /** 退出登录态（顶栏恢复访客） */
+    updateCustomer(customerVO) {
+      this.customer = customerVO;
+      this.loggedInUserId = customerVO?.username || customerVO?.customerNo || '';
+      if (customerVO) {
+        localStorage.setItem('mysport:customer', JSON.stringify(customerVO));
+      }
+    },
     clearWebLogin() {
       this.isLoggedIn = false;
       this.loggedInUserId = '';
+      this.loggedInAssetsFormatted = '0.00';
+      this.customer = null;
+      clearToken();
+      clearSession();
+      localStorage.removeItem('mysport:customer');
     },
   },
 });

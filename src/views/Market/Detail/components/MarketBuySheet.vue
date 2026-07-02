@@ -151,18 +151,28 @@ async function confirmBuy() {
 
   try {
     submitting.value = true;
-    const res = await submitBuyOrder({
-      matchId: props.match.id,
-      score: props.row?.score ?? '0-0',
-      marketTab: props.marketTab,
-      type: buyType.value,
+    const marketId = props.row?._marketId;
+    const score = (props.row?.score ?? '0-0').replace(' - ', '-');
+    const payload = {
+      marketId,
+      score,
       amount: amt,
-      yieldPercent: Number(profitPercent.value),
-    });
+      expectedYield: Number(profitPercent.value),
+    };
+
+    const res = buyType.value === 'scheduled'
+      ? await (await import('@/api/order')).submitPendingOrder({
+          ...payload,
+          yieldMin: Number(profitMin.value),
+          yieldMax: Number(profitMax.value),
+        })
+      : await submitBuyOrder(payload);
+
+    const order = res.data || {};
     successAmount.value = amt.toFixed(2);
     successYield.value = profitPercent.value;
-    successProfit.value = res.data.profit;
-    successOrderNo.value = res.data.orderNo;
+    successProfit.value = order.estimatedPayout ?? order.profit ?? (amt * Number(profitPercent.value) / 100).toFixed(2);
+    successOrderNo.value = order.orderNo || order.id || '';
     phase.value = 'success';
   } catch {
     toast.error(t('提交失败，请重试'));

@@ -1,9 +1,10 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 
 import { useAppStore } from '@/store/modules/app';
+import { fetchRecords } from '@/api/finance';
 
 const { t } = useI18n();
 const appStore = useAppStore();
@@ -13,26 +14,44 @@ const filterOptions = [
   { key: 'all', label: '全部' },
   { key: 'deposit', label: '充值' },
   { key: 'withdraw', label: '提现' },
-  { key: 'order', label: '订单' },
+  { key: 'trade', label: '订单' },
 ];
 
-const records = [
-  { id: 1, kind: 'order', typeLabel: '买入', time: '2026-03-19 02:30', status: '待开奖', statusTone: 'pending', amount: '1000.00 CNY', remark: '0 - 0' },
-  { id: 2, kind: 'order', typeLabel: '买入', time: '2026-03-19 02:30', status: '已结算', statusTone: 'settled', amount: '1000.00 CNY', remark: '0 - 1' },
-  { id: 3, kind: 'order', typeLabel: '买入', time: '2026-03-19 02:30', status: '已取消', statusTone: 'canceled', amount: '1000.00 CNY', remark: '0 - 1' },
-  { id: 4, kind: 'deposit', typeLabel: '充值', time: '2026-03-19 02:30', status: '已完成', statusTone: 'completed', amount: '1000.00 CNY', remark: '后台银联卡充值' },
-];
-
+const records = ref([]);
+const loading = ref(true);
+const error = ref(false);
 const selectedFilter = ref('all');
 const filterOpen = ref(false);
+
+const FILTER_TO_TYPES = {
+  deposit: 'DEPOSIT,TRANSFER_IN,REFUND',
+  withdraw: 'WITHDRAW,TRANSFER_OUT',
+  trade: 'BET,PAYOUT,FEE',
+};
+
+async function loadRecords() {
+  try {
+    loading.value = true;
+    error.value = false;
+    const typesParam = FILTER_TO_TYPES[selectedFilter.value];
+    const res = await fetchRecords({ types: typesParam, pageSize: 50 });
+    records.value = res.data || [];
+  } catch {
+    error.value = true;
+  } finally {
+    loading.value = false;
+  }
+}
+
+onMounted(loadRecords);
 
 const selectedFilterLabel = computed(() => {
   return filterOptions.find((item) => item.key === selectedFilter.value)?.label || '全部';
 });
 
 const filteredRecords = computed(() => {
-  if (selectedFilter.value === 'all') return records;
-  return records.filter((record) => record.kind === selectedFilter.value);
+  if (selectedFilter.value === 'all') return records.value;
+  return records.value.filter((record) => record.type === selectedFilter.value);
 });
 
 watch(
@@ -48,6 +67,7 @@ function selectFilter(key) {
   if (isMobile.value) {
     filterOpen.value = false;
   }
+  loadRecords();
 }
 </script>
 
@@ -84,26 +104,32 @@ function selectFilter(key) {
       <div class="records-summary__amount">13,764,059.00</div>
     </section>
 
-    <div class="records-list">
+    <div v-if="loading" class="records-list records-list--center">
+      <span>{{ t('加载中') }}</span>
+    </div>
+    <div v-else-if="error" class="records-list records-list--center">
+      <span>{{ t('加载失败') }}</span>
+      <button type="button" @click="loadRecords">{{ t('重试') }}</button>
+    </div>
+    <div v-else-if="!filteredRecords.length" class="records-list records-list--center">
+      <span>{{ t('暂无数据') }}</span>
+    </div>
+    <div v-else class="records-list">
       <article v-for="record in filteredRecords" :key="record.id" class="record-card card-default">
         <header class="record-card__header">
-          <span class="record-card__type" :class="{ 'record-card__type--deposit': record.kind === 'deposit' }">
-            {{ t(record.typeLabel) }}
+          <span class="record-card__type" :class="{ 'record-card__type--deposit': record.type === 'deposit' }">
+            {{ t(record.status) }}
           </span>
           <time class="record-card__time">{{ record.time }}</time>
           <span class="record-card__status" :class="`record-card__status--${record.statusTone}`">
-            {{ t(record.status) }}
+            {{ record.amount }}
           </span>
         </header>
 
         <div class="record-card__body">
-          <div class="record-card__row">
-            <span class="record-card__label">{{ t('金额') }}</span>
-            <strong class="record-card__value">{{ record.amount }}</strong>
-          </div>
-          <div class="record-card__row">
+          <div v-if="record.desc" class="record-card__row">
             <span class="record-card__label">{{ t('备注') }}</span>
-            <strong class="record-card__value">{{ t(record.remark) }}</strong>
+            <strong class="record-card__value">{{ record.desc }}</strong>
           </div>
         </div>
       </article>

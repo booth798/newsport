@@ -1,72 +1,240 @@
-import { delay } from './mock';
-import { DEFAULT_HOT_MATCHES, getHotMatchById } from '@/constants/hotMatchCatalog';
-import { MARKET_LEAGUE_LIST } from '@/constants/marketLeagues';
+import { get } from './request';
 
-/** 获取首页热门赛事列表 */
+/** 首页聚合查询（banners + hotMarkets + vip） */
+export async function fetchHomeData() {
+  return get('/home');
+}
+
+/** 获取 banner 列表 */
+export async function fetchBanners(position = 'home', platform = 'h5') {
+  return get('/banners', { position, platform });
+}
+
+/** 首页推荐赛事 */
 export async function fetchHotMatches() {
-  await delay(500);
-  return { code: 0, data: DEFAULT_HOT_MATCHES };
+  const [matchRes, leagueRes] = await Promise.all([
+    get('/matches/hot'),
+    get('/leagues').catch(() => ({ data: [] })),
+  ]);
+  const leagueMap = buildLeagueMap(leagueRes.data || []);
+  const list = (matchRes.data || []).map((m) => {
+    const norm = normalizeMatch(m);
+    const info = leagueMap[m.leagueId];
+    if (info) {
+      norm.league = info.shortName || info.name || norm.league;
+      if (!norm.leagueIcon) norm.leagueIcon = info.logoUrl || '';
+    }
+    return norm;
+  });
+  return { code: 200, data: list };
 }
 
-/** 获取全部赛事联赛列表（市场列表页） */
+/** 联赛列表 */
 export async function fetchLeagueList() {
-  await delay(300);
-  return { code: 0, data: MARKET_LEAGUE_LIST };
+  const res = await get('/leagues');
+  const list = (res.data || []).map((l) => ({
+    key: l.shortName || l.name,
+    id: l.id,
+    name: l.name,
+    shortName: l.shortName,
+    logoUrl: l.logoUrl,
+    category: l.category,
+    region: l.region,
+    hot: l.hot,
+    sortOrder: l.sortOrder,
+  }));
+  return { code: 200, data: list };
 }
 
-/** 获取指定联赛下的赛事列表（联赛市场页） */
+/** 热门联赛 tab */
+export async function fetchHotLeagues() {
+  return get('/leagues/hot');
+}
+
+/** 比赛列表（分页 + 过滤） */
+export async function fetchMatchList(params = {}) {
+  const [res, leagueRes] = await Promise.all([
+    get('/matches', {
+      leagueId: params.leagueId,
+      date: params.date,
+      status: params.status,
+      hot: params.hot,
+      pageNum: params.pageNum || 1,
+      pageSize: params.pageSize || 20,
+    }),
+    get('/leagues').catch(() => ({ data: [] })),
+  ]);
+  const leagueMap = buildLeagueMap(leagueRes.data || []);
+  if (res.data?.records) {
+    res.data.records = res.data.records.map((m) => {
+      const norm = normalizeMatch(m);
+      const info = leagueMap[m.leagueId];
+      if (info) {
+        norm.league = info.shortName || info.name || norm.league;
+        if (!norm.leagueIcon) norm.leagueIcon = info.logoUrl || '';
+      }
+      return norm;
+    });
+  }
+  return res;
+}
+
+/** 获取指定联赛下的赛事列表 */
 export async function fetchLeagueMatches(league) {
-  await delay(350);
-  const data = DEFAULT_HOT_MATCHES.filter((m) => m.league === league);
-  return { code: 0, data };
-}
+  const leagueRes = await get('/leagues');
+  const leagues = leagueRes.data || [];
+  const found = leagues.find(
+    (l) => l.name === league || l.shortName === league,
+  );
+  if (!found) return { code: 200, data: [] };
 
-/** 获取市场列表（带分类筛选） */
-export async function fetchMarketList(sport = 'all') {
-  await delay(400);
-  const SPORT_LEAGUES = {
-    football: ['欧冠', '英超', '西甲', '德甲', '意甲', '法甲'],
-    basketball: ['NBA', 'CBA', '欧篮'],
-    esports: ['LPL', 'LCK', 'DOTA2'],
+  const res = await get('/matches', {
+    leagueId: found.id,
+    pageNum: 1,
+    pageSize: 50,
+  });
+  const records = res.data?.records || [];
+  return {
+    code: 200,
+    data: records.map((m) => {
+      const norm = normalizeMatch(m);
+      norm.league = found.shortName || found.name || norm.league;
+      norm.leagueIcon = found.logoUrl || '';
+      return norm;
+    }),
   };
-  const allMarkets = [
-    { id: 1, league: '欧冠', sport: 'football', date: '03-19 02:30', homeTeam: '亚特兰大', awayTeam: '拜仁慕尼黑', homeOdds: 2.45, drawOdds: 3.20, awayOdds: 2.80, volume: '10.00M', status: 'upcoming' },
-    { id: 2, league: '英超', sport: 'football', date: '03-19 03:00', homeTeam: '利物浦', awayTeam: '曼联', homeOdds: 1.85, drawOdds: 3.50, awayOdds: 4.20, volume: '8.50M', status: 'upcoming' },
-    { id: 3, league: '西甲', sport: 'football', date: '03-20 01:00', homeTeam: '巴塞罗那', awayTeam: '皇家马德里', homeOdds: 2.10, drawOdds: 3.30, awayOdds: 3.40, volume: '15.00M', status: 'upcoming' },
-    { id: 4, league: '德甲', sport: 'football', date: '03-20 03:30', homeTeam: '多特蒙德', awayTeam: '勒沃库森', homeOdds: 2.60, drawOdds: 3.10, awayOdds: 2.70, volume: '6.20M', status: 'live' },
-    { id: 5, league: '意甲', sport: 'football', date: '03-21 01:00', homeTeam: 'AC米兰', awayTeam: '国际米兰', homeOdds: 3.20, drawOdds: 3.10, awayOdds: 2.25, volume: '12.80M', status: 'upcoming' },
-  ];
-  const filtered = sport === 'all' ? allMarkets : allMarkets.filter((m) => m.sport === sport);
-  return { code: 0, data: filtered };
 }
 
-/** 获取赛事详情 */
+/** 赛事详情 */
 export async function fetchMatchDetail(id) {
-  await delay(300);
-  const match = getHotMatchById(id);
-  return { code: 0, data: match };
-}
-
-function formatVolumeMoney(n) {
-  return `¥${n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-/** 获取比分市场数据（全场/半场） */
-export async function fetchScoreMarket(matchId, tab = 'fulltime') {
-  await delay(350);
-  const rows = [];
-  const tabSalt = tab === 'halftime' ? 41 : 0;
-  for (let h = 0; h <= 3; h += 1) {
-    for (let a = 0; a <= 3; a += 1) {
-      const k = (h * 4 + a + matchId * 7 + tabSalt) % 97;
-      const prob = 2.1 + (k * 0.191) % 9.2;
-      const volumeBase = 6_000_000 + (k * 97_127 + h * 11_000 + a * 19_000) % 92_000_000;
-      rows.push({
-        score: `${h}-${a}`,
-        probability: `${prob.toFixed(2)}%`,
-        volumeFormatted: formatVolumeMoney(volumeBase),
-      });
+  const [res, leagueRes] = await Promise.all([
+    get(`/matches/${id}`),
+    get('/leagues').catch(() => ({ data: [] })),
+  ]);
+  if (res.data) {
+    res.data = normalizeMatch(res.data);
+    const leagueMap = buildLeagueMap(leagueRes.data || []);
+    const info = leagueMap[res.data.leagueId];
+    if (info) {
+      res.data.league = info.shortName || info.name || res.data.league;
+      if (!res.data.leagueIcon) res.data.leagueIcon = info.logoUrl || '';
     }
   }
-  return { code: 0, data: rows };
+  return res;
+}
+
+/** 市场列表（当前开盘） */
+export async function fetchMarketList() {
+  return get('/markets/open');
+}
+
+/** 市场分页列表 */
+export async function fetchMarketListPaged(params = {}) {
+  return get('/markets/list', {
+    pageNum: params.pageNum || 1,
+    pageSize: params.pageSize || 20,
+    league: params.league,
+    date: params.date,
+  });
+}
+
+/** 一场比赛的全部 period 摘要 */
+export async function fetchMarketsByMatch(matchId) {
+  return get(`/markets/${matchId}`);
+}
+
+/** 一场比赛某 period 含 pool 列表 */
+export async function fetchMarketPeriod(matchId, period = 'FT') {
+  return get(`/markets/${matchId}/${period}`);
+}
+
+/** 比分赔率列表 */
+export async function fetchScoreMarket(matchId, tab = 'fulltime') {
+  const period = tab === 'halftime' ? 'HT' : 'FT';
+
+  const marketRes = await get(`/markets/${matchId}/${period}`);
+  const data = marketRes.data || {};
+  const pools = data.pools || [];
+
+  const rows = pools.map((p) => ({
+    score: (p.score || '0:0').replace(':', '-'),
+    probability: p.yieldPct != null ? `${Number(p.yieldPct).toFixed(2)}%` : '0.00%',
+    yieldPct: p.yieldPct,
+    volumeFormatted: formatVolume(p.poolAmount),
+    poolAmount: p.poolAmount,
+    buyerCount: p.buyerCount,
+    suspended: p.suspended,
+    feeRate: p.feeRate,
+    initialProb: p.initialProb,
+    _marketId: data.market?.marketId,
+  }));
+
+  return { code: 200, data: rows };
+}
+
+/** 赔率快照（历史曲线） */
+export async function fetchPoolSnapshots(marketId, score, from, to) {
+  return get(`/pools/${marketId}/snapshots`, { score, from, to });
+}
+
+/** 当前赔率列表 */
+export async function fetchPoolYields(marketId) {
+  return get(`/pools/${marketId}/yields`);
+}
+
+/** 系统公开配置 */
+export async function fetchPublicConfig() {
+  return get('/system/public-config');
+}
+
+function normalizeMatch(m) {
+  if (!m) return m;
+  return {
+    ...m,
+    id: m.id,
+    league: m.leagueName || '',
+    leagueId: m.leagueId,
+    homeTeam: m.homeTeamName || '',
+    awayTeam: m.awayTeamName || '',
+    homeTeamLogo: m.homeTeamLogo,
+    awayTeamLogo: m.awayTeamLogo,
+    homeScore: m.ftHomeScore ?? 0,
+    awayScore: m.ftAwayScore ?? 0,
+    htHomeScore: m.htHomeScore ?? 0,
+    htAwayScore: m.htAwayScore ?? 0,
+    date: m.kickoffAt ? formatDate(m.kickoffAt) : '',
+    kickoffAt: m.kickoffAt,
+    betCloseAt: m.betCloseAt,
+    status: m.status,
+    hot: m.hot,
+    volume: m.totalVolume ? formatVolume(m.totalVolume) : '',
+  };
+}
+
+function formatDate(iso) {
+  try {
+    const d = new Date(iso);
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    return `${mm}-${dd} ${hh}:${mi}`;
+  } catch {
+    return '';
+  }
+}
+
+function buildLeagueMap(leagues) {
+  const map = {};
+  for (const l of leagues) {
+    map[l.id] = l;
+  }
+  return map;
+}
+
+function formatVolume(n) {
+  if (n == null) return '¥0.00';
+  const num = Number(n);
+  if (isNaN(num)) return '¥0.00';
+  return `¥${num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }

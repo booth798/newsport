@@ -9,5 +9,7 @@ export const MARKET_LEAGUE_LIST = [
 ];
 
 export function isValidMarketLeague(league) {
-  return MARKET_LEAGUE_LIST.some((item) => item.key === league);
+  if (!league) return false;
+  if (MARKET_LEAGUE_LIST.some((item) => item.key === league)) return true;
+  return league.length > 0;
 }

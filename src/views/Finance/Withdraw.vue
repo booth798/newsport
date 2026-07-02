@@ -36,7 +36,13 @@ async function handleSubmit() {
 
   try {
     submitting.value = true;
-    await submitWithdraw(val);
+    await submitWithdraw({
+      amount: val,
+      withdrawPassword: withdrawPassword.value,
+      method: 'BANK',
+      bankName: bankInfo.value.bankName,
+      cardNumber: bankInfo.value.cardNumber,
+    });
     toast.success(t('操作成功'));
   } catch {
     toast.error(t('提交失败请重试'));

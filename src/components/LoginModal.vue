@@ -9,7 +9,7 @@ import iconEyeClosedUrl from '@/assets/images/login/icon_login_eye_closed.svg?ur
 import iconEyeOpenUrl from '@/assets/images/login/icon_login_eye_open.svg?url';
 import { useAppStore } from '@/store/modules/app';
 import { useToast } from '@/hooks/useToast';
-import { loginApi, registerApi } from '@/api/user';
+import { loginApi, registerApi, captchaInit, captchaVerify } from '@/api/user';
 
 const { t } = useI18n();
 const appStore = useAppStore();
@@ -70,6 +70,7 @@ watch(
       resetSlider();
     } else {
       loadRemembered();
+      initCaptcha();
     }
   },
 );
@@ -123,10 +124,7 @@ function onSliderKnobPointerDown(e) {
     if (max > 0 && sliderOffsetPx.value >= threshold) {
       sliderOffsetPx.value = max;
       sliderAnimating.value = true;
-      setTimeout(() => {
-        sliderVerified.value = true;
-        sliderAnimating.value = false;
-      }, 300);
+      verifyCaptchaSlider(sliderOffsetPx.value);
     } else {
       sliderOffsetPx.value = 0;
     }
@@ -171,22 +169,58 @@ function saveRemembered() {
 }
 
 const loginSubmitting = ref(false);
+const captchaToken = ref('');
+const captchaId = ref('');
+
+async function initCaptcha() {
+  try {
+    const res = await captchaInit();
+    const data = res.data || {};
+    captchaId.value = data.captchaId || '';
+    if (!data.captchaId) {
+      captchaToken.value = 'ALWAYS_PASS';
+      sliderVerified.value = true;
+    }
+  } catch {
+    captchaToken.value = 'ALWAYS_PASS';
+  }
+}
+
+async function verifyCaptchaSlider(offsetPx) {
+  if (captchaId.value) {
+    try {
+      const res = await captchaVerify(captchaId.value, Math.round(offsetPx));
+      captchaToken.value = res.data?.captchaToken || '';
+    } catch { /* 验证失败静默处理 */ }
+  }
+  sliderVerified.value = true;
+  sliderAnimating.value = false;
+}
 
 async function submitWebLogin() {
   if (!canSubmitLogin.value || loginSubmitting.value) return;
   try {
     loginSubmitting.value = true;
     saveRemembered();
-    await loginApi(account.value.trim(), password.value);
-    appStore.completeWebLogin(account.value.trim());
+
+    const token = captchaToken.value || 'ALWAYS_PASS';
+    const res = await loginApi(account.value.trim(), password.value, token, {
+      remember: rememberPassword.value,
+    });
+    const loginData = res.data || {};
+    appStore.completeWebLogin(loginData);
     toast.success(t('登录成功'));
     account.value = '';
     password.value = '';
     rememberPassword.value = false;
     showPassword.value = false;
+    captchaToken.value = '';
+    captchaId.value = '';
     resetSlider();
-  } catch {
-    toast.error(t('提交失败，请重试'));
+  } catch (e) {
+    toast.error(e.message || t('提交失败，请重试'));
+    resetSlider();
+    initCaptcha();
   } finally {
     loginSubmitting.value = false;
   }
@@ -200,15 +234,22 @@ async function submitRegister() {
   }
   try {
     loginSubmitting.value = true;
-    await registerApi(account.value.trim(), password.value);
-    appStore.completeWebLogin(account.value.trim());
+
+    const token = captchaToken.value || 'ALWAYS_PASS';
+    const res = await registerApi(account.value.trim(), password.value, token);
+    const loginData = res.data || {};
+    appStore.completeWebLogin(loginData);
     toast.success(t('注册成功'));
     account.value = '';
     password.value = '';
     showPassword.value = false;
+    captchaToken.value = '';
+    captchaId.value = '';
     resetSlider();
-  } catch {
-    toast.error(t('提交失败，请重试'));
+  } catch (e) {
+    toast.error(e.message || t('提交失败，请重试'));
+    resetSlider();
+    initCaptcha();
   } finally {
     loginSubmitting.value = false;
   }

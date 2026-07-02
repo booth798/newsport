@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
-import { fetchProfileSummary } from '@/api/user';
+import { fetchProfileSummary, logoutApi } from '@/api/user';
 import arrowMoreIcon from '@/assets/images/common/icon_arrow_more.svg';
 import avatarDefaultUrl from '@/assets/images/common/avatar_default.png?url';
 import bindInfoIcon from '@/assets/images/common/icon_profile_bindinfo.svg';
@@ -153,8 +153,11 @@ async function refreshBalance() {
   }
 }
 
-function confirmLogout() {
+async function confirmLogout() {
   closeProfileModal();
+  try {
+    await logoutApi();
+  } catch { /* 即使登出接口失败也清理本地状态 */ }
   appStore.clearWebLogin();
   toast.success(t('操作成功'));
   router.push('/');

@@ -1,39 +1,152 @@
-import { delay } from './mock';
+import { get, post, del } from './request';
 
-/** 获取账户余额 */
+/** 查询钱包 */
 export async function fetchBalance() {
-  await delay(300);
+  const res = await get('/wallet');
+  const w = res.data || {};
   return {
-    code: 0,
+    code: 200,
     data: {
-      available: 10000.00,
-      formatted: '10,000.00',
+      available: w.available ?? w.balance ?? 0,
+      balance: w.balance ?? 0,
+      frozen: w.frozen ?? 0,
+      formatted: formatMoney(w.balance),
+      currency: w.currency || 'CNY',
+      totalDeposit: w.totalDeposit,
+      totalWithdraw: w.totalWithdraw,
+      _raw: w,
     },
   };
 }
 
-/** 充值 */
-export async function submitDeposit(amount) {
-  await delay(800);
-  return { code: 0, message: '充值成功', data: { amount } };
+/** 充值渠道列表 */
+export async function fetchDepositChannels() {
+  return get('/finance/deposit/channels');
 }
 
-/** 提领 */
-export async function submitWithdraw(amount) {
-  await delay(800);
-  return { code: 0, message: '提领申请已提交', data: { amount } };
+/** 提交充值 */
+export async function submitDeposit(channel, amount, options = {}) {
+  return post('/finance/deposit/submit', {
+    channel,
+    amount,
+    paymentProofUrl: options.paymentProofUrl,
+    txHash: options.txHash,
+  }, {
+    headers: { 'Idempotency-Key': crypto.randomUUID() },
+  });
 }
 
-/** 获取交易记录 */
-export async function fetchRecords(type = 'all') {
-  await delay(500);
-  const allRecords = [
-    { id: 1, type: 'deposit', amount: '+¥5,000.00', time: '2026-05-20 14:30', status: '已完成', statusTone: 'completed' },
-    { id: 2, type: 'trade', amount: '-¥1,200.00', time: '2026-05-19 10:15', status: '已成交', statusTone: 'completed', desc: '欧冠 亚特兰大 vs 拜仁 比分1-0' },
-    { id: 3, type: 'withdraw', amount: '-¥3,000.00', time: '2026-05-18 09:00', status: '处理中', statusTone: 'pending' },
-    { id: 4, type: 'trade', amount: '+¥2,580.00', time: '2026-05-17 22:30', status: '已结算', statusTone: 'completed', desc: '英超 利物浦 vs 曼联 比分2-1' },
-    { id: 5, type: 'deposit', amount: '+¥10,000.00', time: '2026-05-16 11:00', status: '已完成', statusTone: 'completed' },
-  ];
-  const filtered = type === 'all' ? allRecords : allRecords.filter((r) => r.type === type);
-  return { code: 0, data: filtered };
+/** 充值订单列表 */
+export async function fetchDepositList(params = {}) {
+  return get('/finance/deposit/list', {
+    pageNum: params.pageNum || 1,
+    pageSize: params.pageSize || 20,
+    status: params.status,
+  });
+}
+
+/** 充值订单详情 */
+export async function fetchDepositDetail(id) {
+  return get(`/finance/deposit/${id}`);
+}
+
+/** 取消充值 */
+export async function cancelDeposit(id) {
+  return del(`/finance/deposit/${id}`);
+}
+
+/** 上传充值凭证 */
+export async function uploadDepositProof(depositOrderId, paymentProofUrl) {
+  return post('/finance/deposit/upload-proof', { depositOrderId, paymentProofUrl });
+}
+
+/** 提现方式开关 */
+export async function fetchWithdrawMethods() {
+  return get('/finance/withdraw/methods');
+}
+
+/** 提交提现 */
+export async function submitWithdraw(payload) {
+  return post('/finance/withdraw/submit', payload, {
+    headers: { 'Idempotency-Key': crypto.randomUUID() },
+  });
+}
+
+/** 提现订单列表 */
+export async function fetchWithdrawList(params = {}) {
+  return get('/finance/withdraw/list', {
+    pageNum: params.pageNum || 1,
+    pageSize: params.pageSize || 20,
+    status: params.status,
+  });
+}
+
+/** 取消提现 */
+export async function cancelWithdraw(id) {
+  return del(`/finance/withdraw/${id}`);
+}
+
+/** 资金流水 */
+export async function fetchRecords(params = {}) {
+  const res = await get('/ledger', {
+    pageNum: params.pageNum || 1,
+    pageSize: params.pageSize || 20,
+    types: params.types,
+    startAt: params.startAt,
+    endAt: params.endAt,
+  });
+  const page = res.data || {};
+  const records = (page.records || []).map((r) => ({
+    id: r.id,
+    type: mapLedgerType(r.type),
+    amount: `${Number(r.amount) >= 0 ? '+' : ''}¥${formatMoney(r.amount)}`,
+    time: r.createdAt ? formatDateTime(r.createdAt) : '',
+    status: r.typeLabel || r.type,
+    statusTone: 'completed',
+    desc: r.matchLabel || r.remark || '',
+    _raw: r,
+  }));
+  return { code: 200, data: records, total: page.total };
+}
+
+/** 划转 */
+export async function transfer(payload) {
+  return post('/wallet/transfer', payload, {
+    headers: { 'Idempotency-Key': crypto.randomUUID() },
+  });
+}
+
+function mapLedgerType(type) {
+  const map = {
+    DEPOSIT: 'deposit',
+    WITHDRAW: 'withdraw',
+    BET: 'trade',
+    PAYOUT: 'trade',
+    TRANSFER_OUT: 'withdraw',
+    TRANSFER_IN: 'deposit',
+    FEE: 'trade',
+    REFUND: 'deposit',
+  };
+  return map[type] || 'trade';
+}
+
+function formatMoney(val) {
+  if (val == null) return '0.00';
+  const n = Number(val);
+  if (isNaN(n)) return String(val);
+  return Math.abs(n).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatDateTime(iso) {
+  try {
+    const d = new Date(iso);
+    const y = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    return `${y}-${mm}-${dd} ${hh}:${mi}`;
+  } catch {
+    return '';
+  }
 }
