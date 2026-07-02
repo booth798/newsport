@@ -1,4 +1,4 @@
-import { get, post, put, request } from './request';
+import { get, post, put, del, request } from './request';
 import { bootstrapEncrypt, decryptResponse, saveSession } from './encrypt';
 
 /** 滑动验证码初始化 */
@@ -78,12 +78,22 @@ export async function registerApi(username, password, captchaToken, options = {}
 
 /** 登出 */
 export async function logoutApi() {
-  return post('/auth/logout');
+  const { clearSession } = await import('./encrypt');
+  try {
+    await post('/auth/logout');
+  } finally {
+    clearSession();
+  }
 }
 
-/** 刷新 token */
+/** 刷新 token（需要 X-Refresh-Token 头） */
 export async function refreshTokenApi() {
-  return post('/auth/refresh');
+  const { getRefreshToken } = await import('./request');
+  const rt = getRefreshToken();
+  return request('/auth/refresh', {
+    method: 'POST',
+    headers: { 'X-Refresh-Token': rt },
+  });
 }
 
 /** 获取当前用户信息 */
@@ -190,7 +200,6 @@ export async function addWallet(data) {
 
 /** 解绑收款方式 */
 export async function removeBinding(type, id) {
-  const { del } = await import('./request');
   return del(`/bindings/${type}/${id}`);
 }
 

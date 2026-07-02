@@ -1,19 +1,22 @@
 const API_BASE = '/api';
 
-const PLAINTEXT_PATHS = [
+// ─── 明文豁免列表（带 body 但不需要加密的端点） ───
+const PLAINTEXT_PATHS = new Set([
   '/captcha/slider/verify',
   '/auth/reset/send-code',
-];
+]);
 
-function isPlaintextPath(url) {
-  return PLAINTEXT_PATHS.some((p) => url === p || url.startsWith('/upload/'));
+function isPlaintextExempt(url) {
+  return PLAINTEXT_PATHS.has(url) || url.startsWith('/upload/');
 }
+
+// ─── Token 管理 ───
 
 function getToken() {
   return localStorage.getItem('mysport:token') || '';
 }
 
-function getRefreshToken() {
+export function getRefreshToken() {
   return localStorage.getItem('mysport:refresh_token') || '';
 }
 
@@ -27,7 +30,9 @@ export function clearToken() {
   localStorage.removeItem('mysport:refresh_token');
 }
 
-class ApiError extends Error {
+// ─── ApiError ───
+
+export class ApiError extends Error {
   constructor(code, msg, data) {
     super(msg || `API Error ${code}`);
     this.code = code;
@@ -35,10 +40,51 @@ class ApiError extends Error {
   }
 }
 
+// ─── 401 自动续期 ───
+
+let refreshing = null;
+
+async function tryRefreshToken() {
+  const rt = getRefreshToken();
+  if (!rt) return false;
+  if (refreshing) return refreshing;
+
+  refreshing = (async () => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Refresh-Token': rt,
+        },
+      });
+      const json = await res.json();
+      if (json.code === 200 || json.code === 0) {
+        const d = json.data || {};
+        setToken(d.satoken || d.accessToken, d.refreshToken);
+        return true;
+      }
+    } catch { /* 续期失败 */ }
+    return false;
+  })();
+
+  try {
+    return await refreshing;
+  } finally {
+    refreshing = null;
+  }
+}
+
+// ─── 响应处理 ───
+
 async function handleResponse(res, encrypted = false) {
-  if (res.status === 401) {
-    clearToken();
-    throw new ApiError(401, '登录已过期，请重新登录');
+  if (res.status === 401 || res.status === 403) {
+    const ok = await tryRefreshToken();
+    if (!ok) {
+      clearToken();
+      throw new ApiError(401, '登录已过期，请重新登录');
+    }
+    return null; // 表示需要重试
   }
 
   const contentType = res.headers.get('content-type') || '';
@@ -49,18 +95,22 @@ async function handleResponse(res, encrypted = false) {
 
   const json = await res.json();
 
-  if (encrypted && json.iv && json.d) {
-    try {
-      const { decryptSessionResponse } = await import('./encrypt');
-      const decrypted = await decryptSessionResponse(json);
-      if (decrypted.code !== 200 && decrypted.code !== 0) {
-        throw new ApiError(decrypted.code, decrypted.msg, decrypted.data);
-      }
-      return decrypted;
-    } catch (e) {
-      if (e instanceof ApiError) throw e;
-      throw new ApiError(500, '响应解密失败');
+  if (json.code === 401) {
+    const ok = await tryRefreshToken();
+    if (!ok) {
+      clearToken();
+      throw new ApiError(401, '登录已过期，请重新登录');
     }
+    return null;
+  }
+
+  if (encrypted && json.iv && json.d) {
+    const { decryptSessionResponse } = await import('./encrypt');
+    const decrypted = await decryptSessionResponse(json);
+    if (decrypted.code !== 200 && decrypted.code !== 0) {
+      throw new ApiError(decrypted.code, decrypted.msg, decrypted.data);
+    }
+    return decrypted;
   }
 
   if (json.code !== 200 && json.code !== 0) {
@@ -69,30 +119,35 @@ async function handleResponse(res, encrypted = false) {
   return json;
 }
 
-function buildHeaders(options = {}) {
-  const headers = { ...options.headers };
+// ─── Header 构建 ───
+
+function buildHeaders(extraHeaders = {}) {
+  const headers = { ...extraHeaders };
   const token = getToken();
   if (token) headers['X-Customer-Token'] = token;
-  if (!headers['Content-Type'] && options.json !== false) {
+  if (!headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
   }
   return headers;
 }
 
+// ─── 判断是否需要加密 ───
+
 function needsEncryption(method, body, url) {
   if (method === 'GET' || method === 'HEAD') return false;
   if (body === undefined || body === null) return false;
-  if (isPlaintextPath(url)) return false;
+  if (isPlaintextExempt(url)) return false;
   return true;
 }
 
-export async function request(url, options = {}) {
+// ─── 核心 request ───
+
+export async function request(url, options = {}, _retried = false) {
   const {
     method = 'GET',
     body,
     params,
     headers: extraHeaders,
-    skipEncrypt,
     ...rest
   } = options;
 
@@ -112,48 +167,55 @@ export async function request(url, options = {}) {
     if (qsStr) fullUrl += `?${qsStr}`;
   }
 
-  const mergedHeaders = buildHeaders({ headers: extraHeaders, ...rest });
+  const mergedHeaders = buildHeaders(extraHeaders || {});
 
   let finalBody;
   let usedEncryption = false;
 
   if (body !== undefined && method !== 'GET') {
-    const hasEncryptHeaders = mergedHeaders['X-Encrypted'] === '1';
+    const alreadyEncrypted = mergedHeaders['X-Encrypted'] === '1';
 
-    if (hasEncryptHeaders || skipEncrypt) {
+    if (alreadyEncrypted) {
       finalBody = typeof body === 'string' ? body : JSON.stringify(body);
-      usedEncryption = hasEncryptHeaders;
+      usedEncryption = true;
     } else if (needsEncryption(method, body, url)) {
-      try {
-        const { sessionEncrypt, hasSession } = await import('./encrypt');
-        if (hasSession()) {
-          const { encryptedBody, headers: encHeaders } = await sessionEncrypt(body);
-          Object.assign(mergedHeaders, encHeaders);
-          finalBody = JSON.stringify(encryptedBody);
-          usedEncryption = true;
-        } else {
-          finalBody = typeof body === 'string' ? body : JSON.stringify(body);
-        }
-      } catch {
-        finalBody = typeof body === 'string' ? body : JSON.stringify(body);
+      const { sessionEncrypt, hasSession } = await import('./encrypt');
+      const sessionReady = await hasSession();
+
+      if (sessionReady) {
+        const { encryptedBody, headers: encHeaders } = await sessionEncrypt(body);
+        Object.assign(mergedHeaders, encHeaders);
+        finalBody = JSON.stringify(encryptedBody);
+        usedEncryption = true;
+      } else {
+        throw new ApiError(
+          0,
+          '加密会话未建立，请重新登录',
+        );
       }
     } else {
       finalBody = typeof body === 'string' ? body : JSON.stringify(body);
     }
   }
 
-  const fetchOptions = {
-    method,
-    headers: mergedHeaders,
-  };
+  const fetchOpts = { method, headers: mergedHeaders };
+  if (finalBody !== undefined) fetchOpts.body = finalBody;
 
-  if (finalBody !== undefined) {
-    fetchOptions.body = finalBody;
+  const res = await fetch(fullUrl, fetchOpts);
+  const result = await handleResponse(res, usedEncryption);
+
+  if (result === null && !_retried) {
+    return request(url, options, true);
+  }
+  if (result === null) {
+    clearToken();
+    throw new ApiError(401, '登录已过期，请重新登录');
   }
 
-  const res = await fetch(fullUrl, fetchOptions);
-  return handleResponse(res, usedEncryption);
+  return result;
 }
+
+// ─── 快捷方法 ───
 
 export function get(url, params, options = {}) {
   return request(url, { method: 'GET', params, ...options });

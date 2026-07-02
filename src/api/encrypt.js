@@ -1,49 +1,52 @@
 import { get } from './request';
 
-let cachedKey = null;
+let cachedPubKey = null;
 let sessionAesKey = null;
 let sessionId = null;
+let restorePromise = null;
 
 export function getSessionId() {
   return sessionId || localStorage.getItem('mysport:sid') || '';
 }
 
-export function hasSession() {
-  return Boolean(getSessionId() && sessionAesKey);
-}
-
 export function clearSession() {
   sessionAesKey = null;
   sessionId = null;
+  restorePromise = null;
   localStorage.removeItem('mysport:sid');
   localStorage.removeItem('mysport:aesKey');
 }
 
-function restoreSessionKey() {
-  if (sessionAesKey) return;
+async function doRestore() {
   const stored = localStorage.getItem('mysport:aesKey');
   const sid = localStorage.getItem('mysport:sid');
-  if (stored && sid) {
-    sessionId = sid;
+  if (!stored || !sid) return;
+  try {
     const binary = atob(stored);
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    crypto.subtle
-      .importKey('raw', bytes, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'])
-      .then((k) => { sessionAesKey = k; })
-      .catch(() => { /* 失败则下次登录重建 */ });
+    sessionAesKey = await crypto.subtle.importKey(
+      'raw', bytes, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'],
+    );
+    sessionId = sid;
+  } catch {
+    sessionAesKey = null;
+    sessionId = null;
   }
 }
-restoreSessionKey();
 
-export async function fetchPubKey() {
-  if (cachedKey && cachedKey.expiresAt > Date.now() / 1000) {
-    return cachedKey;
-  }
-  const res = await get('/auth/pubkey');
-  cachedKey = res.data;
-  return cachedKey;
+restorePromise = doRestore();
+
+export async function ensureSessionReady() {
+  if (restorePromise) await restorePromise;
 }
+
+export async function hasSession() {
+  await ensureSessionReady();
+  return Boolean(sessionId && sessionAesKey);
+}
+
+// ─── base64 helpers ───
 
 function b64Encode(buffer) {
   const bytes = new Uint8Array(buffer);
@@ -63,6 +66,8 @@ function b64Decode(str) {
   return bytes;
 }
 
+// ─── RSA ───
+
 function pemToArrayBuffer(pem) {
   const b64 = pem
     .replace(/-----BEGIN PUBLIC KEY-----/, '')
@@ -73,15 +78,25 @@ function pemToArrayBuffer(pem) {
 }
 
 async function importRsaKey(pem) {
-  const keyData = pemToArrayBuffer(pem);
   return crypto.subtle.importKey(
     'spki',
-    keyData,
+    pemToArrayBuffer(pem),
     { name: 'RSA-OAEP', hash: 'SHA-256' },
     false,
     ['encrypt'],
   );
 }
+
+export async function fetchPubKey() {
+  if (cachedPubKey && cachedPubKey.expiresAt > Date.now() / 1000) {
+    return cachedPubKey;
+  }
+  const res = await get('/auth/pubkey');
+  cachedPubKey = res.data;
+  return cachedPubKey;
+}
+
+// ─── AES-GCM helpers ───
 
 function makeNonce() {
   return Array.from(crypto.getRandomValues(new Uint8Array(16)))
@@ -111,31 +126,19 @@ async function aesDecrypt(aesKey, ivB64, dataB64) {
   return JSON.parse(new TextDecoder().decode(plain));
 }
 
-/**
- * BOOTSTRAP 信封加密（登录/注册用）
- * 返回的 aesKeyForSession 可用于后续 SESSION_AES
- */
+// ─── BOOTSTRAP 信封（登录/注册/找回密码） ───
+
 export async function bootstrapEncrypt(bodyObj) {
   const pubKeyInfo = await fetchPubKey();
   const rsaKey = await importRsaKey(pubKeyInfo.pem);
 
   const aesKeyRaw = crypto.getRandomValues(new Uint8Array(32));
-
   const aesKey = await crypto.subtle.importKey(
-    'raw',
-    aesKeyRaw,
-    { name: 'AES-GCM' },
-    true,
-    ['encrypt', 'decrypt'],
+    'raw', aesKeyRaw, { name: 'AES-GCM' }, true, ['encrypt', 'decrypt'],
   );
 
   const { iv, ciphertext } = await aesEncrypt(aesKey, bodyObj);
-
-  const encSk = await crypto.subtle.encrypt(
-    { name: 'RSA-OAEP' },
-    rsaKey,
-    aesKeyRaw,
-  );
+  const encSk = await crypto.subtle.encrypt({ name: 'RSA-OAEP' }, rsaKey, aesKeyRaw);
 
   const encryptedBody = {
     encSk: b64Encode(encSk),
@@ -154,9 +157,8 @@ export async function bootstrapEncrypt(bodyObj) {
   return { encryptedBody, headers, aesKey };
 }
 
-/**
- * 解密 BOOTSTRAP / SESSION 响应（响应体为 {iv, d}）
- */
+// ─── 解密响应（BOOTSTRAP / SESSION 通用） ───
+
 export async function decryptResponse(aesKey, responseBody) {
   if (!responseBody || !responseBody.iv || !responseBody.d) {
     return responseBody;
@@ -164,21 +166,16 @@ export async function decryptResponse(aesKey, responseBody) {
   return aesDecrypt(aesKey, responseBody.iv, responseBody.d);
 }
 
-/**
- * 保存登录后的会话密钥，供后续 SESSION_AES 使用
- */
-export async function saveSession(sid, aesKey) {
-  sessionId = sid;
-  sessionAesKey = aesKey;
-  localStorage.setItem('mysport:sid', sid);
-  const exported = await crypto.subtle.exportKey('raw', aesKey);
-  localStorage.setItem('mysport:aesKey', b64Encode(exported));
+export async function decryptSessionResponse(responseBody) {
+  await ensureSessionReady();
+  if (!sessionAesKey) throw new Error('NO_SESSION_KEY');
+  return aesDecrypt(sessionAesKey, responseBody.iv, responseBody.d);
 }
 
-/**
- * SESSION_AES 加密（登录后的带 body 请求）
- */
+// ─── SESSION_AES（登录后的带 body 写请求） ───
+
 export async function sessionEncrypt(bodyObj) {
+  await ensureSessionReady();
   if (!sessionAesKey || !sessionId) {
     throw new Error('NO_SESSION');
   }
@@ -199,12 +196,12 @@ export async function sessionEncrypt(bodyObj) {
   return { encryptedBody, headers };
 }
 
-/**
- * 解密 SESSION_AES 响应
- */
-export async function decryptSessionResponse(responseBody) {
-  if (!sessionAesKey) {
-    throw new Error('NO_SESSION_KEY');
-  }
-  return aesDecrypt(sessionAesKey, responseBody.iv, responseBody.d);
+// ─── 会话持久化 ───
+
+export async function saveSession(sid, aesKey) {
+  sessionId = sid;
+  sessionAesKey = aesKey;
+  localStorage.setItem('mysport:sid', sid);
+  const exported = await crypto.subtle.exportKey('raw', aesKey);
+  localStorage.setItem('mysport:aesKey', b64Encode(exported));
 }
