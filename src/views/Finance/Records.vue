@@ -24,9 +24,9 @@ const selectedFilter = ref('all');
 const filterOpen = ref(false);
 
 const FILTER_TO_TYPES = {
-  deposit: 'DEPOSIT,TRANSFER_IN,REFUND',
-  withdraw: 'WITHDRAW,TRANSFER_OUT',
-  trade: 'BET,PAYOUT,FEE',
+  deposit: ['DEPOSIT', 'TRANSFER_IN', 'REFUND'],
+  withdraw: ['WITHDRAW', 'TRANSFER_OUT'],
+  trade: ['BET', 'PAYOUT', 'FEE'],
 };
 
 async function loadRecords() {
@@ -118,7 +118,7 @@ function selectFilter(key) {
       <article v-for="record in filteredRecords" :key="record.id" class="record-card card-default">
         <header class="record-card__header">
           <span class="record-card__type" :class="{ 'record-card__type--deposit': record.type === 'deposit' }">
-            {{ t(record.status) }}
+            {{ t(record.typeLabel) }}
           </span>
           <time class="record-card__time">{{ record.time }}</time>
           <span class="record-card__status" :class="`record-card__status--${record.statusTone}`">

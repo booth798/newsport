@@ -1,4 +1,4 @@
-import { get } from './request';
+import { get, post } from './request';
 
 /** 首页聚合查询（banners + hotMarkets + vip） */
 export async function fetchHomeData() {
@@ -163,6 +163,7 @@ export async function fetchScoreMarket(matchId, tab = 'fulltime') {
 
   const rows = pools.map((p) => ({
     score: (p.score || '0:0').replace(':', '-'),
+    scoreRaw: p.score || '0:0',
     probability: p.yieldPct != null ? `${Number(p.yieldPct).toFixed(2)}%` : '0.00%',
     yieldPct: p.yieldPct,
     volumeFormatted: formatVolume(p.poolAmount),
@@ -194,6 +195,7 @@ export async function fetchPublicConfig() {
 
 function normalizeMatch(m) {
   if (!m) return m;
+  const cd = computeCountdown(m.kickoffAt);
   return {
     ...m,
     id: m.id,
@@ -212,8 +214,29 @@ function normalizeMatch(m) {
     betCloseAt: m.betCloseAt,
     status: m.status,
     hot: m.hot,
-    volume: m.totalVolume ? formatVolume(m.totalVolume) : '',
+    volume: m.totalVolume != null ? formatVolume(m.totalVolume) : (m.totalPool != null ? formatVolume(m.totalPool) : ''),
+    countdown: cd.text,
+    countdownMinutes: cd.minutes,
   };
+}
+
+function computeCountdown(kickoffAt) {
+  if (!kickoffAt) return { text: '', minutes: 0 };
+  try {
+    const diff = new Date(kickoffAt).getTime() - Date.now();
+    if (diff <= 0) return { text: '', minutes: 0 };
+    const totalMin = Math.floor(diff / 60000);
+    const d = Math.floor(totalMin / 1440);
+    const h = Math.floor((totalMin % 1440) / 60);
+    const min = totalMin % 60;
+    const parts = [];
+    if (d > 0) parts.push(`${d}天`);
+    if (h > 0 || d > 0) parts.push(`${h}时`);
+    parts.push(`${min}分`);
+    return { text: parts.join(''), minutes: totalMin };
+  } catch {
+    return { text: '', minutes: 0 };
+  }
 }
 
 function formatDate(iso) {

@@ -23,7 +23,7 @@ const _S = {
 async function bootstrapRequest(url, payload, extraHeaders = {}) {
   if (__DEV__) {
     try {
-      console.groupCollapsed(
+      console.log(
         `%c API %c POST %c${url} %cBOOTSTRAP`,
         _S.tag, _S.method, _S.url, _S.encrypt,
       );
@@ -57,8 +57,7 @@ async function bootstrapRequest(url, payload, extraHeaders = {}) {
 
       if (__DEV__) {
         try {
-          console.log('%c响应数据（解密后）', 'font-weight:bold;color:#2e7d32', decrypted);
-          console.groupEnd();
+          console.log('%c响应数据', 'font-weight:bold;color:#2e7d32', decrypted);
         } catch { /* */ }
       }
 
@@ -73,8 +72,7 @@ async function bootstrapRequest(url, payload, extraHeaders = {}) {
 
     if (__DEV__) {
       try {
-        console.log('%c响应数据（未加密）', 'font-weight:bold;color:#ff8f00', json);
-        console.groupEnd();
+        console.log('%c响应数据', 'font-weight:bold;color:#2e7d32', json);
       } catch { /* */ }
     }
 
@@ -90,7 +88,6 @@ async function bootstrapRequest(url, payload, extraHeaders = {}) {
     if (__DEV__) {
       try {
         console.log('%c响应异常', 'color:#c62828;font-weight:bold', e.message);
-        console.groupEnd();
       } catch { /* */ }
     }
     throw e;
@@ -174,8 +171,12 @@ export async function fetchProfileSummary() {
       currency: wallet.currency || 'CNY',
       vipLevel: customer.vipLevel || 1,
       totalBet: formatMoney(stats.totalBet),
-      winRate: stats.winRate != null ? `${stats.winRate}%` : '0%',
-      totalProfit: formatMoney(stats.profit),
+      winRate: stats.winRate != null ? stats.winRate : 0,
+      winRateFormatted: stats.winRate != null ? `${Number(stats.winRate).toFixed(1)}%` : '0%',
+      totalProfit: stats.profit != null ? stats.profit : 0,
+      totalProfitFormatted: stats.profit != null
+        ? `${Number(stats.profit) >= 0 ? '+' : ''}¥${formatMoney(stats.profit)}`
+        : '¥0.00',
       _customer: customer,
       _wallet: wallet,
       _stats: stats,
@@ -217,14 +218,34 @@ export async function changePassword(type, currentPwd, newPwd) {
   });
 }
 
-/** 获取消息列表 */
+/** 获取消息列表（解包分页结构，返回 { data: MessageVO[], total }） */
 export async function fetchMessages(params = {}) {
-  return get('/messages', {
+  const res = await get('/messages', {
     pageNum: params.pageNum || 1,
     pageSize: params.pageSize || 20,
     category: params.category,
     unread: params.unread,
   });
+  const page = res.data || {};
+  const list = (page.records || page.list || (Array.isArray(page) ? page : [])).map((m) => ({
+    ...m,
+    time: m.pushAt ? formatTime(m.pushAt) : (m.createdAt ? formatTime(m.createdAt) : ''),
+  }));
+  return { ...res, data: list, total: page.total ?? list.length };
+}
+
+function formatTime(iso) {
+  try {
+    const d = new Date(iso);
+    const y = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    return `${y}-${mm}-${dd} ${hh}:${mi}`;
+  } catch {
+    return '';
+  }
 }
 
 /** 未读消息数 */

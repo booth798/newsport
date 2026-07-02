@@ -23,6 +23,7 @@ const emit = defineEmits(['close']);
 
 const account = ref('');
 const password = ref('');
+const inviteCode = ref('');
 const isLogin = ref(true);
 const showPassword = ref(false);
 const rememberPassword = ref(false);
@@ -64,6 +65,7 @@ watch(isLogin, () => {
   resetSlider();
   showResetFlow.value = false;
   resetStep.value = 1;
+  initCaptcha();
 });
 
 const lockScroll = (locked) => {
@@ -237,8 +239,24 @@ async function submitWebLogin() {
   }
 }
 
+const canSubmitRegister = computed(
+  () => canSubmit.value && sliderVerified.value
+    && account.value.trim().length >= 4
+    && password.value.trim().length >= 6,
+);
+
 async function submitRegister() {
-  if (!canSubmit.value || loginSubmitting.value) return;
+  const name = account.value.trim();
+  const pwd = password.value.trim();
+  if (!name || !pwd || loginSubmitting.value) return;
+  if (name.length < 4 || name.length > 20) {
+    toast.error(t('用户名需4-20位'));
+    return;
+  }
+  if (pwd.length < 6 || pwd.length > 32) {
+    toast.error(t('密码需6-32位'));
+    return;
+  }
   if (!sliderVerified.value) {
     toast.error(t('请完成滑动验证'));
     return;
@@ -247,12 +265,15 @@ async function submitRegister() {
     loginSubmitting.value = true;
 
     const token = captchaToken.value || 'ALWAYS_PASS';
-    const res = await registerApi(account.value.trim(), password.value, token);
+    const res = await registerApi(name, password.value, token, {
+      inviteCode: inviteCode.value.trim() || undefined,
+    });
     const loginData = res.data || {};
     appStore.completeWebLogin(loginData);
     toast.success(t('注册成功'));
     account.value = '';
     password.value = '';
+    inviteCode.value = '';
     showPassword.value = false;
     captchaToken.value = '';
     captchaId.value = '';
@@ -343,6 +364,7 @@ const toggleMode = () => {
   isLogin.value = !isLogin.value;
   account.value = '';
   password.value = '';
+  inviteCode.value = '';
 };
 
 const passwordInputType = computed(() => (showPassword.value ? 'text' : 'password'));
@@ -356,7 +378,7 @@ const passwordInputType = computed(() => (showPassword.value ? 'text' : 'passwor
           <button type="button" class="login-overlay__close" :aria-label="t('关闭')" @click="close">
             <span aria-hidden="true">×</span>
           </button>
-          <div class="login-modal" role="dialog" aria-modal="true" :aria-label="isLogin ? t('登录') : t('注册')">
+          <div class="login-modal" role="dialog" aria-modal="true" :aria-label="isLogin ? t('会员登入') : t('会员注册')">
             <div class="login-modal__watermark" aria-hidden="true">UNIBET</div>
 
             <div class="login-modal__brand">
@@ -365,7 +387,7 @@ const passwordInputType = computed(() => (showPassword.value ? 'text' : 'passwor
 
             <div class="login-modal__panel">
               <h2 class="login-modal__title">
-                {{ isLogin ? t('会员登入') : t('注册') }}
+                {{ isLogin ? t('会员登入') : t('会员注册') }}
               </h2>
 
               <div class="login-modal__form">
@@ -427,8 +449,8 @@ const passwordInputType = computed(() => (showPassword.value ? 'text' : 'passwor
                 </template>
 
                 <template v-else>
-                  <div class="form-group">
-                    <label class="form-label" for="login-modal-account-reg">{{ t('账号') }}</label>
+                  <div class="form-group form-group--compact">
+                    <label class="form-label form-label--sr-only" for="login-modal-account-reg">{{ t('用户名') }}</label>
                     <div class="form-input-wrap">
                       <span class="form-input__prefix" aria-hidden="true">
                         <img class="form-input__prefix-img" :src="iconLoginUserUrl" width="28" height="28" alt="" />
@@ -437,14 +459,15 @@ const passwordInputType = computed(() => (showPassword.value ? 'text' : 'passwor
                         id="login-modal-account-reg"
                         v-model="account"
                         class="form-input form-input--has-prefix"
-                        :placeholder="t('请输入账号')"
+                        :placeholder="t('请输入用户名') + ' (4-20' + t('位') + ')'"
                         autocomplete="username"
+                        maxlength="20"
                       />
                     </div>
                   </div>
 
-                  <div class="form-group">
-                    <label class="form-label" for="login-modal-password-reg">{{ t('密码') }}</label>
+                  <div class="form-group form-group--compact">
+                    <label class="form-label form-label--sr-only" for="login-modal-password-reg">{{ t('密码') }}</label>
                     <div class="form-input-wrap">
                       <span class="form-input__prefix" aria-hidden="true">
                         <img class="form-input__prefix-img" :src="iconLoginLockUrl" width="28" height="28" alt="" />
@@ -455,8 +478,9 @@ const passwordInputType = computed(() => (showPassword.value ? 'text' : 'passwor
                         class="form-input form-input--has-prefix form-input--has-suffix"
                         :class="{ 'form-input--password-dots': !showPassword }"
                         :type="passwordInputType"
-                        :placeholder="t('请输入密码')"
+                        :placeholder="t('请输入密码') + ' (6-32' + t('位') + ')'"
                         autocomplete="new-password"
+                        maxlength="32"
                       />
                       <button
                         type="button"
@@ -474,23 +498,87 @@ const passwordInputType = computed(() => (showPassword.value ? 'text' : 'passwor
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    class="btn btn--primary login-modal__submit login-modal__submit--register"
-                    :class="{ 'login-modal__submit--ready': canSubmit }"
-                    :disabled="!canSubmit || loginSubmitting"
-                    @click="submitRegister"
-                  >
-                    {{ loginSubmitting ? t('提交中...') : t('注册') }}
-                  </button>
-
-                  <div class="login-modal__switch">
-                    <span>
-                      {{ t('已有账号') }}
-                      <a href="javascript:;" @click="toggleMode">{{ t('登录') }}</a>
-                    </span>
+                  <div class="form-group form-group--compact">
+                    <label class="form-label form-label--sr-only" for="login-modal-invite-code">{{ t('邀请码') }}</label>
+                    <div class="form-input-wrap">
+                      <span class="form-input__prefix" aria-hidden="true">
+                        <img class="form-input__prefix-img" :src="iconLoginUserUrl" width="28" height="28" alt="" />
+                      </span>
+                      <input
+                        id="login-modal-invite-code"
+                        v-model="inviteCode"
+                        class="form-input form-input--has-prefix"
+                        :placeholder="t('邀请码') + ' (' + t('选填') + ')'"
+                        autocomplete="off"
+                      />
+                    </div>
                   </div>
                 </template>
+              </div>
+            </div>
+
+            <div v-if="!isLogin" class="login-modal__blue-footer">
+              <div class="login-verify">
+                <Transition name="verify-flip" mode="out-in">
+                  <div
+                    v-if="sliderVerified"
+                    key="success"
+                    class="login-verify__track login-verify__track--success"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    <svg class="login-verify__check-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path d="M4 10.5L8.5 15L16 5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <span class="login-verify__success-text">{{ t('验证成功') }}</span>
+                  </div>
+                  <div
+                    v-else
+                    key="track"
+                    ref="verifyTrackRef"
+                    class="login-verify__track"
+                    :class="{ 'login-verify__track--dragging': sliderDragging }"
+                  >
+                    <div class="login-verify__fill" :style="fillStyle" />
+                    <button
+                      type="button"
+                      class="login-verify__knob"
+                      :class="{ 'login-verify__knob--dragging': sliderDragging }"
+                      :style="knobTransformStyle"
+                      :aria-label="t('向右滑动验证')"
+                      @pointerdown="onSliderKnobPointerDown"
+                    >
+                      <svg class="login-verify__knob-icon" width="18" height="18" viewBox="0 0 18 18" fill="none">
+                        <path d="M7 4.5L11.5 9L7 13.5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </button>
+                    <span
+                      class="login-verify__label"
+                      :class="{ 'login-verify__label--dragging': sliderDragging }"
+                      :style="{ '--_label-opacity': labelOpacity, opacity: sliderDragging ? labelOpacity : undefined }"
+                      aria-hidden="true"
+                    >
+                      {{ t('向右滑动验证') }}
+                    </span>
+                  </div>
+                </Transition>
+              </div>
+
+              <button
+                type="button"
+                class="btn btn--primary login-modal__submit login-modal__submit--inverse"
+                :class="{ 'login-modal__submit--ready': canSubmitRegister }"
+                :disabled="!canSubmitRegister || loginSubmitting"
+                @click="submitRegister"
+              >
+                {{ loginSubmitting ? t('提交中...') : t('注册') }}
+              </button>
+
+              <div class="login-modal__switch login-modal__switch--on-blue">
+                <span>
+                  {{ t('已有账号？') }}
+                  <a href="javascript:;" @click="toggleMode">{{ t('立即登入') }}</a>
+                </span>
               </div>
             </div>
 
@@ -612,6 +700,13 @@ const passwordInputType = computed(() => (showPassword.value ? 'text' : 'passwor
               >
                 {{ loginSubmitting ? t('提交中...') : t('登入') }}
               </button>
+
+              <div class="login-modal__switch login-modal__switch--on-blue">
+                <span>
+                  {{ t('没有账号？') }}
+                  <a href="javascript:;" @click="toggleMode">{{ t('立即注册') }}</a>
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -898,6 +993,15 @@ $login-input-text: rgba(11, 52, 98, 1);
 
       &:hover {
         text-decoration: underline;
+      }
+    }
+
+    &--on-blue {
+      color: rgba(255, 255, 255, 0.75);
+
+      a {
+        color: #fff;
+        font-weight: 600;
       }
     }
   }

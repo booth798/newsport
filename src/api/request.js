@@ -22,7 +22,7 @@ function logRequest(method, url, body, encryptType) {
   const badge = encryptType || 'PLAIN';
   const badgeStyle = encryptType ? STYLES.encrypt : STYLES.plain;
   try {
-    console.groupCollapsed(
+    console.log(
       `%c API %c ${method} %c${url} %c${badge}`,
       STYLES.tag, STYLES.method, STYLES.url, badgeStyle,
     );
@@ -38,9 +38,8 @@ function logResponse(data, error) {
     if (error) {
       console.log('%c响应异常', STYLES.err, error.message || error);
     } else {
-      console.log('%c响应数据（解密后）', 'font-weight:bold;color:#2e7d32', data);
+      console.log('%c响应数据', 'font-weight:bold;color:#2e7d32', data);
     }
-    console.groupEnd();
   } catch { /* SSR safe */ }
 }
 

@@ -17,7 +17,7 @@ export async function fetchOrderDetail(id) {
   return get(`/orders/${id}`);
 }
 
-/** 即时下注 */
+/** 即时下注（返回已解包的 order 对象） */
 export async function submitBuyOrder(payload) {
   const res = await post('/orders/instant', {
     marketId: payload.marketId,
@@ -26,12 +26,12 @@ export async function submitBuyOrder(payload) {
     expectedYield: payload.expectedYield,
     deviceFp: payload.deviceFp,
   });
-  return res;
+  return unwrapOrderResult(res);
 }
 
-/** 预约买入 */
+/** 预约买入（返回已解包的 order 对象） */
 export async function submitPendingOrder(payload) {
-  return post('/orders/pending', {
+  const res = await post('/orders/pending', {
     marketId: payload.marketId,
     score: payload.score,
     amount: payload.amount,
@@ -40,6 +40,22 @@ export async function submitPendingOrder(payload) {
     validUntil: payload.validUntil,
     deviceFp: payload.deviceFp,
   });
+  return unwrapOrderResult(res);
+}
+
+function unwrapOrderResult(res) {
+  const raw = res.data;
+  if (!raw) return res;
+  if (raw.order) {
+    return {
+      ...res,
+      data: raw.order,
+      matchedImmediately: raw.matchedImmediately,
+      walletBalance: raw.walletBalance,
+      walletFrozen: raw.walletFrozen,
+    };
+  }
+  return res;
 }
 
 /** 撤单 */
@@ -80,11 +96,17 @@ function normalizeOrder(o) {
   return {
     ...o,
     orderNo: o.orderNo || o.id,
+    league: o.leagueShortName || o.leagueName || '',
+    homeTeam: o.homeTeamName || '',
+    awayTeam: o.awayTeamName || '',
     matchLabel: [o.leagueName, `${o.homeTeamName} vs ${o.awayTeamName}`]
       .filter(Boolean)
       .join(' '),
     amountFormatted: formatMoney(o.amount),
+    tradeAmountFormatted: `¥${formatMoney(o.amount)}`,
     yieldPercent: o.yieldAtBuy,
+    statusKey: o.statusLabel || o.status || '',
+    tradeTime: o.placedAt || o.createdAt || '',
     profitFormatted: formatMoney(o.estimatedPayout ?? o.payout),
   };
 }

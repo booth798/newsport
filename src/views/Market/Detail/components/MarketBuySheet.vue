@@ -65,8 +65,15 @@ const homeLogoUrl = computed(() => resolveTeamLogoUrl(props.match.homeTeam, prop
 const awayLogoUrl = computed(() => resolveTeamLogoUrl(props.match.awayTeam, props.match.awayTeamLogo));
 
 const profitPercent = computed(() => {
+  if (props.row?.yieldPct != null) return String(props.row.yieldPct);
   const raw = props.row?.probability ?? '6.99%';
   return String(raw).replace(/%$/, '') || '6.99';
+});
+
+const feeRateDisplay = computed(() => {
+  const rate = props.row?.feeRate;
+  if (rate != null) return `-${Number(rate)}%`;
+  return '-5%';
 });
 
 const scoreLabel = computed(() => {
@@ -152,7 +159,7 @@ async function confirmBuy() {
   try {
     submitting.value = true;
     const marketId = props.row?._marketId;
-    const score = (props.row?.score ?? '0-0').replace(' - ', '-');
+    const score = props.row?.scoreRaw ?? (props.row?.score ?? '0-0').replace(/-/g, ':');
     const payload = {
       marketId,
       score,
@@ -171,7 +178,7 @@ async function confirmBuy() {
     const order = res.data || {};
     successAmount.value = amt.toFixed(2);
     successYield.value = profitPercent.value;
-    successProfit.value = order.estimatedPayout ?? order.profit ?? (amt * Number(profitPercent.value) / 100).toFixed(2);
+    successProfit.value = order.estimatedPayout ?? order.payout ?? (amt * Number(profitPercent.value) / 100).toFixed(2);
     successOrderNo.value = order.orderNo || order.id || '';
     phase.value = 'success';
   } catch {
@@ -187,7 +194,8 @@ function goPurchaseDetails() {
     name: 'trade-purchases',
     query: {
       tab: buyType.value === 'scheduled' ? 'scheduled' : 'ordered',
-      marketId: String(props.match.id),
+      marketId: String(props.row?._marketId || props.match.id),
+      matchId: String(props.match.id),
       score: props.row?.score ?? '0-0',
       probability: props.row?.probability,
       marketTab: props.marketTab,
@@ -379,7 +387,7 @@ function onBackdropKeydown(e) {
               :placeholder="t('输入金额')"
             />
           </div>
-          <p class="buy-sheet__fee">{{ t('手续费') }} -5%</p>
+          <p class="buy-sheet__fee">{{ t('手续费') }} {{ feeRateDisplay }}</p>
           <div class="buy-sheet__chips">
             <button type="button" class="buy-sheet__chip buy-sheet__chip--icon" :aria-label="t('设置')">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -436,7 +444,7 @@ function onBackdropKeydown(e) {
           </div>
           <p class="buy-sheet__est">
             {{ t('预估收益') }} {{ estimatedProfitRange }}
-            <span class="buy-sheet__fee-inline">{{ t('手续费') }}-5%</span>
+            <span class="buy-sheet__fee-inline">{{ t('手续费') }}{{ feeRateDisplay }}</span>
           </p>
         </div>
         </div>

@@ -50,8 +50,10 @@ const profileSummary = ref({
   currency: 'CNY',
   vipLevel: 3,
   totalBet: '3,151,724.00',
-  winRate: '12.8%',
-  totalProfit: '952,256.00',
+  winRate: 0,
+  winRateFormatted: '0%',
+  totalProfit: 0,
+  totalProfitFormatted: '¥0.00',
 });
 
 const displayName = computed(() => profileSummary.value.nickname || loggedInUserId.value || 'Y05741');
@@ -237,11 +239,11 @@ onMounted(loadProfileSummary);
             </div>
             <div class="profile-stats__item">
               <span>{{ t('胜率') }}</span>
-              <strong>{{ profileSummary.winRate }}</strong>
+              <strong>{{ profileSummary.winRateFormatted }}</strong>
             </div>
             <div class="profile-stats__item">
               <span>{{ t('总盈利') }}</span>
-              <strong>+ ￥ {{ profileSummary.totalProfit }}</strong>
+              <strong>{{ profileSummary.totalProfitFormatted }}</strong>
             </div>
           </div>
           </section>
