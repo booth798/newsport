@@ -1,18 +1,38 @@
 <script setup>
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/hooks/useToast';
-import { addBankCard } from '@/api/user';
+import { addBankCard, fetchBindings, removeBinding } from '@/api/user';
 
 const { t } = useI18n();
 const toast = useToast();
 
 const cards = ref([]);
+const loading = ref(true);
 const showForm = ref(false);
 const cardName = ref('');
 const cardNumber = ref('');
 const bankName = ref('');
 const submitting = ref(false);
+
+onMounted(async () => {
+  try {
+    const res = await fetchBindings();
+    const list = res.data || [];
+    cards.value = list.filter((b) => b.type === 'BANK_CARD' || b.type === 'BANK');
+  } catch { /* keep empty */ }
+  finally { loading.value = false; }
+});
+
+async function handleRemove(card) {
+  try {
+    await removeBinding('bank-card', card.id);
+    cards.value = cards.value.filter((c) => c.id !== card.id);
+    toast.success(t('操作成功'));
+  } catch {
+    toast.error(t('提交失败，请重试'));
+  }
+}
 
 async function handleAdd() {
   if (!cardName.value.trim()) {
@@ -57,10 +77,18 @@ async function handleAdd() {
       <RouterLink to="/profile/blockchain" class="bind-tab">{{ t('区块链') }}</RouterLink>
     </div>
 
-    <div v-if="cards.length > 0" class="card-list">
+    <div v-if="loading" class="loading-state">
+      <div class="loading-spinner" />
+      <span>{{ t('加载中') }}</span>
+    </div>
+
+    <div v-else-if="cards.length > 0" class="card-list">
       <div v-for="card in cards" :key="card.id" class="card-item">
-        <span class="card-item__bank">{{ card.bankName }}</span>
-        <span class="card-item__number">{{ card.maskedNumber }}</span>
+        <div class="card-item__info">
+          <span class="card-item__bank">{{ card.bankName || card.name }}</span>
+          <span class="card-item__number">{{ card.maskedNumber || card.cardNumber || card.accountNo }}</span>
+        </div>
+        <button type="button" class="card-item__delete" @click="handleRemove(card)">{{ t('解绑') }}</button>
       </div>
     </div>
 
@@ -139,6 +167,12 @@ async function handleAdd() {
   border: 1.5px solid var(--theme-divider);
   border-radius: $radius-md;
 
+  &__info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
   &__bank {
     font-size: $font-size-md;
     font-weight: 600;
@@ -150,6 +184,45 @@ async function handleAdd() {
     font-size: $font-size-md;
     color: var(--theme-text-1);
   }
+
+  &__delete {
+    padding: 4px 12px;
+    border: 1px solid var(--auxiliary-2);
+    border-radius: $radius-sm;
+    background: transparent;
+    color: var(--auxiliary-2);
+    font-size: $font-size-sm;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      background: var(--auxiliary-2);
+      color: #fff;
+    }
+  }
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-md;
+  padding: 40px 0;
+  color: var(--theme-text-1);
+  font-size: $font-size-md;
+}
+
+.loading-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--theme-divider);
+  border-top-color: var(--theme-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .bank-form {

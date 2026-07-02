@@ -49,8 +49,8 @@ export const useAppStore = defineStore('app', {
       this.loginModalOpen = false;
     },
     completeWebLogin(loginVO) {
-      const { satoken, refreshToken, customer } = loginVO;
-      setToken(satoken, refreshToken);
+      const { satoken, accessToken, refreshToken, customer } = loginVO;
+      setToken(satoken || accessToken, refreshToken);
       this.customer = customer;
       this.loggedInUserId = customer?.username || customer?.customerNo || '';
       this.isLoggedIn = true;

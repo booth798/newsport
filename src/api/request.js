@@ -71,6 +71,9 @@ export function setToken(token, refreshToken) {
 export function clearToken() {
   localStorage.removeItem('mysport:token');
   localStorage.removeItem('mysport:refresh_token');
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('mysport:session-expired'));
+  }
 }
 
 // ─── ApiError ───
@@ -94,12 +97,16 @@ async function tryRefreshToken() {
 
   refreshing = (async () => {
     try {
+      const headers = {
+        'Content-Type': 'application/json',
+        'X-Refresh-Token': rt,
+      };
+      const token = getToken();
+      if (token) headers['X-Customer-Token'] = token;
+
       const res = await fetch(`${API_BASE}/auth/refresh`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Refresh-Token': rt,
-        },
+        headers,
       });
       const json = await res.json();
       if (json.code === 200 || json.code === 0) {

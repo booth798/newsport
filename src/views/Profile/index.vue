@@ -217,7 +217,7 @@ onMounted(loadProfileSummary);
             </div>
 
             <div class="profile-levels" aria-label="member-level">
-              <div class="profile-levels__title">{{ t('会员等级') }}</div>
+              <RouterLink to="/vip" class="profile-levels__title profile-levels__title--link">{{ t('会员等级') }}</RouterLink>
               <div class="profile-levels__track">
                 <span
                   v-for="(level, index) in levels"
@@ -624,6 +624,17 @@ onMounted(loadProfileSummary);
   @include mobile-only {
     font-size: $font-size-sm;
     margin-bottom: 5px;
+  }
+
+  &--link {
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.2s;
+
+    &:hover {
+      color: #fff;
+      text-decoration: underline;
+    }
   }
 }
 

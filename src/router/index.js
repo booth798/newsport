@@ -38,7 +38,7 @@ const routes = [
     name: 'finance',
     component: () => import('@/views/Finance/index.vue'),
     redirect: '/finance/deposit',
-    meta: { titleKey: '交易账务' },
+    meta: { titleKey: '交易账务', requiresAuth: true },
     children: [
       {
         path: 'deposit',
@@ -64,7 +64,7 @@ const routes = [
     path: '/profile',
     name: 'profile',
     component: () => import('@/views/Profile/index.vue'),
-    meta: { titleKey: '我的' },
+    meta: { titleKey: '我的', requiresAuth: true },
     children: [
       {
         path: 'info',
@@ -105,6 +105,18 @@ const routes = [
     ],
   },
   {
+    path: '/service',
+    name: 'service',
+    component: () => import('@/views/Service/index.vue'),
+    meta: { titleKey: '在线客服', requiresAuth: true },
+  },
+  {
+    path: '/vip',
+    name: 'vip',
+    component: () => import('@/views/Vip/index.vue'),
+    meta: { titleKey: 'VIP中心', requiresAuth: true },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: () => import('@/views/NotFound.vue'),
@@ -121,6 +133,18 @@ const router = createRouter({
     }
     return { top: 0 };
   },
+});
+
+router.beforeEach(async (to) => {
+  if (to.matched.some((r) => r.meta.requiresAuth)) {
+    const hasToken = Boolean(localStorage.getItem('mysport:token'));
+    if (!hasToken) {
+      const { useAppStore } = await import('@/store/modules/app');
+      const appStore = useAppStore();
+      appStore.openLoginModal();
+      return { name: 'home' };
+    }
+  }
 });
 
 export default router;

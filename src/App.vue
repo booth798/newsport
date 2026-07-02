@@ -50,13 +50,22 @@ watch(
 
 watch(() => route.fullPath, syncDocumentTitle);
 
+function onSessionExpired() {
+  if (appStore.isLoggedIn) {
+    appStore.clearWebLogin();
+    appStore.openLoginModal();
+  }
+}
+
 onMounted(() => {
   syncViewport();
   window.addEventListener('resize', syncViewport, { passive: true });
+  window.addEventListener('mysport:session-expired', onSessionExpired);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', syncViewport);
+  window.removeEventListener('mysport:session-expired', onSessionExpired);
 });
 
 const toastRef = ref(null);

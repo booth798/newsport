@@ -18,7 +18,7 @@ export async function uploadFile(file, purpose = 'generic') {
   const nonce = crypto.randomUUID();
 
   const token = localStorage.getItem('mysport:token') || '';
-  const sessionId = localStorage.getItem('mysport:enc_sid') || '';
+  const sessionId = localStorage.getItem('mysport:sid') || '';
 
   const sigPayload = `${ts}\n${nonce}\n${sha256}\n${purpose}`;
   const encoder = new TextEncoder();

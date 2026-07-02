@@ -1,9 +1,15 @@
-let openImpl = () => {};
+import router from '@/router/index';
+
+let openImpl = null;
 
 export function registerCustomerServiceOpener(fn) {
-  openImpl = typeof fn === 'function' ? fn : () => {};
+  openImpl = typeof fn === 'function' ? fn : null;
 }
 
 export function openCustomerService() {
-  openImpl();
+  if (openImpl) {
+    openImpl();
+  } else {
+    router.push('/service');
+  }
 }

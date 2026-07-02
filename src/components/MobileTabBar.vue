@@ -36,9 +36,11 @@ const tabs = [
   },
   {
     key: 'service',
+    to: '/service',
     labelKey: '客服',
     icon: tabService,
-    isService: true,
+    iconActive: tabService,
+    match: (r) => r.path.startsWith('/service'),
   },
   {
     key: 'finance',
@@ -58,15 +60,8 @@ const tabs = [
   },
 ];
 
-const isActive = (tab) => {
-  if (tab.isService) return false;
-  return tab.match(route);
-};
-
-const iconSrc = (tab) => {
-  if (tab.isService) return tab.icon;
-  return isActive(tab) ? tab.iconActive : tab.icon;
-};
+const isActive = (tab) => tab.match(route);
+const iconSrc = (tab) => (isActive(tab) ? tab.iconActive : tab.icon);
 </script>
 
 <template>

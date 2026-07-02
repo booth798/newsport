@@ -1,16 +1,28 @@
 <script setup>
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/hooks/useToast';
-import { addWallet } from '@/api/user';
+import { addWallet, fetchBindings, removeBinding } from '@/api/user';
 
 const { t } = useI18n();
 const toast = useToast();
 
 const wallets = ref([]);
+const loading = ref(true);
 const walletType = ref('');
 const walletAddress = ref('');
 const submitting = ref(false);
+
+const WALLET_TYPES = ['USDT-TRC20', 'USDT-ERC20', 'BTC', 'ETH'];
+
+onMounted(async () => {
+  try {
+    const res = await fetchBindings();
+    const list = res.data || [];
+    wallets.value = list.filter((b) => b.type === 'CRYPTO' || b.type === 'BLOCKCHAIN');
+  } catch { /* keep empty */ }
+  finally { loading.value = false; }
+});
 
 async function handleSubmit() {
   if (!walletType.value) {
@@ -23,7 +35,10 @@ async function handleSubmit() {
   }
   try {
     submitting.value = true;
-    const res = await addWallet(walletType.value, walletAddress.value.trim());
+    const res = await addWallet({
+      network: walletType.value,
+      address: walletAddress.value.trim(),
+    });
     wallets.value.push(res.data);
     toast.success(t('操作成功'));
     walletType.value = '';
@@ -32,6 +47,16 @@ async function handleSubmit() {
     toast.error(t('提交失败，请重试'));
   } finally {
     submitting.value = false;
+  }
+}
+
+async function handleRemove(wallet) {
+  try {
+    await removeBinding('crypto', wallet.id);
+    wallets.value = wallets.value.filter((w) => w.id !== wallet.id);
+    toast.success(t('操作成功'));
+  } catch {
+    toast.error(t('提交失败，请重试'));
   }
 }
 </script>
@@ -45,10 +70,18 @@ async function handleSubmit() {
       <RouterLink to="/profile/blockchain" class="bind-tab active">{{ t('区块链') }}</RouterLink>
     </div>
 
-    <div v-if="wallets.length > 0" class="wallet-list">
+    <div v-if="loading" class="loading-state">
+      <div class="loading-spinner" />
+      <span>{{ t('加载中') }}</span>
+    </div>
+
+    <div v-else-if="wallets.length > 0" class="wallet-list">
       <div v-for="w in wallets" :key="w.id" class="wallet-item">
-        <span class="wallet-item__type">{{ w.type.toUpperCase() }}</span>
-        <span class="wallet-item__address">{{ w.address }}</span>
+        <div class="wallet-item__info">
+          <span class="wallet-item__type">{{ (w.network || w.type || '').toUpperCase() }}</span>
+          <span class="wallet-item__address">{{ w.address }}</span>
+        </div>
+        <button type="button" class="wallet-item__delete" @click="handleRemove(w)">{{ t('解绑') }}</button>
       </div>
     </div>
 
@@ -56,10 +89,8 @@ async function handleSubmit() {
       <div class="form-group">
         <label class="form-label">{{ t('钱包类型') }}</label>
         <select v-model="walletType" class="form-select">
-          <option value="">{{ t('钱包类型') }}</option>
-          <option value="trc20">TRC20</option>
-          <option value="erc20">ERC20</option>
-          <option value="bep20">BEP20</option>
+          <option value="">{{ t('请选择') }}</option>
+          <option v-for="wt in WALLET_TYPES" :key="wt" :value="wt">{{ wt }}</option>
         </select>
       </div>
 
@@ -127,6 +158,14 @@ async function handleSubmit() {
   border: 1.5px solid var(--theme-divider);
   border-radius: $radius-md;
 
+  &__info {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    flex: 1;
+    min-width: 0;
+  }
+
   &__type {
     flex-shrink: 0;
     padding: 4px 10px;
@@ -142,7 +181,48 @@ async function handleSubmit() {
     font-size: $font-size-sm;
     color: var(--theme-text);
     word-break: break-all;
+    min-width: 0;
   }
+
+  &__delete {
+    flex-shrink: 0;
+    padding: 4px 12px;
+    border: 1px solid var(--auxiliary-2);
+    border-radius: $radius-sm;
+    background: transparent;
+    color: var(--auxiliary-2);
+    font-size: $font-size-sm;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      background: var(--auxiliary-2);
+      color: #fff;
+    }
+  }
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-md;
+  padding: 40px 0;
+  color: var(--theme-text-1);
+  font-size: $font-size-md;
+}
+
+.loading-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--theme-divider);
+  border-top-color: var(--theme-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .bind-form {
