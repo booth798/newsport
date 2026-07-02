@@ -1,3 +1,5 @@
+import { resolveErrorMessage } from './errorCodes';
+
 const API_BASE = '/api';
 
 // ─── 调试日志（开发环境） ───
@@ -124,7 +126,7 @@ async function handleResponse(res, encrypted = false) {
     const ok = await tryRefreshToken();
     if (!ok) {
       clearToken();
-      throw new ApiError(401, '登录已过期，请重新登录');
+      throw new ApiError(401, resolveErrorMessage('TOKEN_EXPIRED'));
     }
     return null; // 表示需要重试
   }
@@ -141,7 +143,7 @@ async function handleResponse(res, encrypted = false) {
     const ok = await tryRefreshToken();
     if (!ok) {
       clearToken();
-      throw new ApiError(401, '登录已过期，请重新登录');
+      throw new ApiError(401, resolveErrorMessage('TOKEN_EXPIRED'));
     }
     return null;
   }
@@ -150,13 +152,13 @@ async function handleResponse(res, encrypted = false) {
     const { decryptSessionResponse } = await import('./encrypt');
     const decrypted = await decryptSessionResponse(json);
     if (decrypted.code !== 200 && decrypted.code !== 0) {
-      throw new ApiError(decrypted.code, decrypted.msg, decrypted.data);
+      throw new ApiError(decrypted.code, resolveErrorMessage(decrypted.msg), decrypted.data);
     }
     return decrypted;
   }
 
   if (json.code !== 200 && json.code !== 0) {
-    throw new ApiError(json.code, json.msg, json.data);
+    throw new ApiError(json.code, resolveErrorMessage(json.msg), json.data);
   }
   return json;
 }
@@ -236,7 +238,7 @@ export async function request(url, options = {}, _retried = false) {
       } else {
         throw new ApiError(
           0,
-          '加密会话未建立，请重新登录',
+          resolveErrorMessage('SESSION_INVALID'),
         );
       }
     } else {
@@ -261,7 +263,7 @@ export async function request(url, options = {}, _retried = false) {
     }
     if (result === null) {
       clearToken();
-      const err = new ApiError(401, '登录已过期，请重新登录');
+      const err = new ApiError(401, resolveErrorMessage('TOKEN_EXPIRED'));
       logResponse(null, err);
       throw err;
     }

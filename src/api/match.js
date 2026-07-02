@@ -10,6 +10,11 @@ export async function fetchBanners(position = 'home', platform = 'h5') {
   return get('/banners', { position, platform });
 }
 
+/** 上报 Banner 点击 */
+export async function reportBannerClick(id) {
+  return post(`/banners/${id}/click`);
+}
+
 /** 首页推荐赛事 */
 export async function fetchHotMatches() {
   const [matchRes, leagueRes] = await Promise.all([

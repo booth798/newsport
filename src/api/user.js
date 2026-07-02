@@ -1,5 +1,6 @@
 import { get, post, put, del, request } from './request';
 import { bootstrapEncrypt, decryptResponse, saveSession } from './encrypt';
+import { resolveErrorMessage } from './errorCodes';
 
 /** 滑动验证码初始化 */
 export async function captchaInit() {
@@ -47,7 +48,7 @@ async function bootstrapRequest(url, payload, extraHeaders = {}) {
       body: JSON.stringify(encryptedBody),
     });
 
-    if (res.status === 401) throw new Error('登录已过期，请重新登录');
+    if (res.status === 401) throw new Error(resolveErrorMessage('TOKEN_EXPIRED'));
 
     const json = await res.json();
 
@@ -62,7 +63,7 @@ async function bootstrapRequest(url, payload, extraHeaders = {}) {
       }
 
       if (decrypted.code !== 200 && decrypted.code !== 0) {
-        throw new Error(decrypted.msg || `API Error ${decrypted.code}`);
+        throw new Error(resolveErrorMessage(decrypted.msg) || `API Error ${decrypted.code}`);
       }
       if (decrypted.data?.sessionId) {
         await saveSession(decrypted.data.sessionId, aesKey);
@@ -78,7 +79,7 @@ async function bootstrapRequest(url, payload, extraHeaders = {}) {
     }
 
     if (!res.ok || (json.code !== 200 && json.code !== 0)) {
-      throw new Error(json.msg || `HTTP ${res.status}`);
+      throw new Error(resolveErrorMessage(json.msg) || `HTTP ${res.status}`);
     }
 
     if (json.data?.sessionId) {
@@ -139,6 +140,16 @@ export async function refreshTokenApi() {
   });
 }
 
+/** 忘记密码 — 发送验证码（明文豁免） */
+export async function sendResetCode(account, captchaToken) {
+  return post('/auth/reset/send-code', { account, captchaToken });
+}
+
+/** 忘记密码 — 验码改密（BOOTSTRAP 加密） */
+export async function resetPassword(account, code, newPassword) {
+  return bootstrapRequest('/auth/reset', { account, code, newPassword });
+}
+
 /** 获取当前用户信息 */
 export async function fetchUserProfile() {
   return get('/customer/me');
@@ -170,6 +181,11 @@ export async function fetchProfileSummary() {
       _stats: stats,
     },
   };
+}
+
+/** 设置头像（fileRef 由 uploadFile(purpose=avatar) 返回） */
+export async function updateAvatar(fileRef) {
+  return put('/customer/me/avatar', { fileRef });
 }
 
 /** 保存个人资料（联系方式） */

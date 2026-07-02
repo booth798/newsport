@@ -6,16 +6,22 @@ import slideLeftIcon from '@/assets/images/common/icon_slide-left.svg';
 import slideLeftHoverIcon from '@/assets/images/common/icon_slide-left_hover.svg';
 import slideRightIcon from '@/assets/images/common/icon_slide-right.svg';
 import slideRightHoverIcon from '@/assets/images/common/icon_slide-right_hover.svg';
+import { fetchBanners, reportBannerClick } from '@/api/match';
 
-const bannerSlides = [bannerDefault, bannerDefault, bannerDefault];
+const bannerItems = ref([]);
+const bannerSlides = computed(() =>
+  bannerItems.value.length
+    ? bannerItems.value.map((b) => b.imageUrl || bannerDefault)
+    : [bannerDefault],
+);
 
 const bannerIndex = ref(0);
-const bannerCount = computed(() => bannerSlides.length);
+const bannerCount = computed(() => bannerSlides.value.length);
 const isTransitioning = ref(true);
 
 const trackStyle = computed(() => ({
-  transform: `translateX(-${bannerIndex.value * (100 / bannerSlides.length)}%)`,
-  width: `${bannerSlides.length * 100}%`,
+  transform: `translateX(-${bannerIndex.value * (100 / bannerSlides.value.length)}%)`,
+  width: `${bannerSlides.value.length * 100}%`,
   transition: isTransitioning.value ? 'transform 0.35s ease' : 'none',
 }));
 
@@ -47,7 +53,33 @@ function stopAutoPlay() {
   }
 }
 
-onMounted(() => startAutoPlay());
+async function loadBanners() {
+  try {
+    const res = await fetchBanners('home', 'h5');
+    const list = res.data || [];
+    if (list.length) {
+      bannerItems.value = list;
+      bannerIndex.value = 0;
+      startAutoPlay();
+    }
+  } catch { /* 加载失败使用默认图 */ }
+}
+
+function handleBannerClick(idx) {
+  const item = bannerItems.value[idx];
+  if (!item) return;
+  if (item.id) {
+    reportBannerClick(item.id).catch(() => {});
+  }
+  if (item.linkUrl) {
+    window.open(item.linkUrl, '_blank', 'noopener');
+  }
+}
+
+onMounted(() => {
+  loadBanners();
+  startAutoPlay();
+});
 onBeforeUnmount(() => stopAutoPlay());
 
 const touchStartX = ref(0);
@@ -90,8 +122,9 @@ function onTouchEnd() {
         <div class="banner__track" :style="trackStyle">
           <div
             v-for="(src, idx) in bannerSlides"
-            :key="idx"
+            :key="bannerItems[idx]?.id || idx"
             class="banner__item"
+            @click="handleBannerClick(idx)"
           >
             <img class="banner__img" :src="src" alt="" />
           </div>
