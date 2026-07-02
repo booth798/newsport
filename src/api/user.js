@@ -11,7 +11,25 @@ export async function captchaVerify(captchaId, x) {
   return post('/captcha/slider/verify', { captchaId, x });
 }
 
+const __DEV__ = import.meta.env.DEV;
+const _S = {
+  tag:     'background:#1565c0;color:#fff;padding:2px 6px;border-radius:3px;font-weight:bold',
+  method:  'color:#e65100;font-weight:bold',
+  url:     'color:#1b5e20',
+  encrypt: 'background:#6a1b9a;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px',
+};
+
 async function bootstrapRequest(url, payload, extraHeaders = {}) {
+  if (__DEV__) {
+    try {
+      console.groupCollapsed(
+        `%c API %c POST %c${url} %cBOOTSTRAP`,
+        _S.tag, _S.method, _S.url, _S.encrypt,
+      );
+      console.log('%c请求参数（明文）', 'font-weight:bold;color:#1565c0', payload);
+    } catch { /* */ }
+  }
+
   const { encryptedBody, headers, aesKey } = await bootstrapEncrypt(payload);
   const fullUrl = `/api${url}`;
   const mergedHeaders = {
@@ -22,35 +40,60 @@ async function bootstrapRequest(url, payload, extraHeaders = {}) {
   const token = localStorage.getItem('mysport:token');
   if (token) mergedHeaders['X-Customer-Token'] = token;
 
-  const res = await fetch(fullUrl, {
-    method: 'POST',
-    headers: mergedHeaders,
-    body: JSON.stringify(encryptedBody),
-  });
+  try {
+    const res = await fetch(fullUrl, {
+      method: 'POST',
+      headers: mergedHeaders,
+      body: JSON.stringify(encryptedBody),
+    });
 
-  if (res.status === 401) throw new Error('登录已过期，请重新登录');
+    if (res.status === 401) throw new Error('登录已过期，请重新登录');
 
-  const json = await res.json();
+    const json = await res.json();
 
-  if (json.iv && json.d) {
-    const decrypted = await decryptResponse(aesKey, json);
-    if (decrypted.code !== 200 && decrypted.code !== 0) {
-      throw new Error(decrypted.msg || `API Error ${decrypted.code}`);
+    if (json.iv && json.d) {
+      const decrypted = await decryptResponse(aesKey, json);
+
+      if (__DEV__) {
+        try {
+          console.log('%c响应数据（解密后）', 'font-weight:bold;color:#2e7d32', decrypted);
+          console.groupEnd();
+        } catch { /* */ }
+      }
+
+      if (decrypted.code !== 200 && decrypted.code !== 0) {
+        throw new Error(decrypted.msg || `API Error ${decrypted.code}`);
+      }
+      if (decrypted.data?.sessionId) {
+        await saveSession(decrypted.data.sessionId, aesKey);
+      }
+      return decrypted;
     }
-    if (decrypted.data?.sessionId) {
-      await saveSession(decrypted.data.sessionId, aesKey);
+
+    if (__DEV__) {
+      try {
+        console.log('%c响应数据（未加密）', 'font-weight:bold;color:#ff8f00', json);
+        console.groupEnd();
+      } catch { /* */ }
     }
-    return decrypted;
-  }
 
-  if (!res.ok || (json.code !== 200 && json.code !== 0)) {
-    throw new Error(json.msg || `HTTP ${res.status}`);
-  }
+    if (!res.ok || (json.code !== 200 && json.code !== 0)) {
+      throw new Error(json.msg || `HTTP ${res.status}`);
+    }
 
-  if (json.data?.sessionId) {
-    await saveSession(json.data.sessionId, aesKey);
+    if (json.data?.sessionId) {
+      await saveSession(json.data.sessionId, aesKey);
+    }
+    return json;
+  } catch (e) {
+    if (__DEV__) {
+      try {
+        console.log('%c响应异常', 'color:#c62828;font-weight:bold', e.message);
+        console.groupEnd();
+      } catch { /* */ }
+    }
+    throw e;
   }
-  return json;
 }
 
 /** 登录（BOOTSTRAP 加密） */

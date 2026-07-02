@@ -1,5 +1,47 @@
 const API_BASE = '/api';
 
+// ─── 调试日志（开发环境） ───
+
+const __DEV__ = import.meta.env.DEV;
+
+const STYLES = {
+  tag:       'background:#1565c0;color:#fff;padding:2px 6px;border-radius:3px;font-weight:bold',
+  method:    'color:#e65100;font-weight:bold',
+  url:       'color:#1b5e20',
+  encrypt:   'background:#6a1b9a;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px',
+  plain:     'background:#757575;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px',
+  ok:        'color:#2e7d32;font-weight:bold',
+  err:       'color:#c62828;font-weight:bold',
+  dim:       'color:#9e9e9e',
+};
+
+function logRequest(method, url, body, encryptType) {
+  if (!__DEV__) return;
+  const badge = encryptType || 'PLAIN';
+  const badgeStyle = encryptType ? STYLES.encrypt : STYLES.plain;
+  try {
+    console.groupCollapsed(
+      `%c API %c ${method} %c${url} %c${badge}`,
+      STYLES.tag, STYLES.method, STYLES.url, badgeStyle,
+    );
+    if (body !== undefined && body !== null) {
+      console.log('%c请求参数（明文）', 'font-weight:bold;color:#1565c0', body);
+    }
+  } catch { /* SSR safe */ }
+}
+
+function logResponse(data, error) {
+  if (!__DEV__) return;
+  try {
+    if (error) {
+      console.log('%c响应异常', STYLES.err, error.message || error);
+    } else {
+      console.log('%c响应数据（解密后）', 'font-weight:bold;color:#2e7d32', data);
+    }
+    console.groupEnd();
+  } catch { /* SSR safe */ }
+}
+
 // ─── 明文豁免列表（带 body 但不需要加密的端点） ───
 const PLAINTEXT_PATHS = new Set([
   '/captcha/slider/verify',
@@ -171,6 +213,7 @@ export async function request(url, options = {}, _retried = false) {
 
   let finalBody;
   let usedEncryption = false;
+  let encryptType = null;
 
   if (body !== undefined && method !== 'GET') {
     const alreadyEncrypted = mergedHeaders['X-Encrypted'] === '1';
@@ -178,15 +221,18 @@ export async function request(url, options = {}, _retried = false) {
     if (alreadyEncrypted) {
       finalBody = typeof body === 'string' ? body : JSON.stringify(body);
       usedEncryption = true;
+      encryptType = mergedHeaders['X-Bootstrap'] ? 'BOOTSTRAP' : 'SESSION_AES';
     } else if (needsEncryption(method, body, url)) {
       const { sessionEncrypt, hasSession } = await import('./encrypt');
       const sessionReady = await hasSession();
 
       if (sessionReady) {
+        logRequest(method, url, body, 'SESSION_AES');
         const { encryptedBody, headers: encHeaders } = await sessionEncrypt(body);
         Object.assign(mergedHeaders, encHeaders);
         finalBody = JSON.stringify(encryptedBody);
         usedEncryption = true;
+        encryptType = 'SESSION_AES';
       } else {
         throw new ApiError(
           0,
@@ -198,21 +244,34 @@ export async function request(url, options = {}, _retried = false) {
     }
   }
 
+  if (!encryptType) {
+    logRequest(method, url, body, null);
+  }
+
   const fetchOpts = { method, headers: mergedHeaders };
   if (finalBody !== undefined) fetchOpts.body = finalBody;
 
-  const res = await fetch(fullUrl, fetchOpts);
-  const result = await handleResponse(res, usedEncryption);
+  try {
+    const res = await fetch(fullUrl, fetchOpts);
+    const result = await handleResponse(res, usedEncryption);
 
-  if (result === null && !_retried) {
-    return request(url, options, true);
-  }
-  if (result === null) {
-    clearToken();
-    throw new ApiError(401, '登录已过期，请重新登录');
-  }
+    if (result === null && !_retried) {
+      logResponse(null, { message: '401 → 自动续期重试' });
+      return request(url, options, true);
+    }
+    if (result === null) {
+      clearToken();
+      const err = new ApiError(401, '登录已过期，请重新登录');
+      logResponse(null, err);
+      throw err;
+    }
 
-  return result;
+    logResponse(result);
+    return result;
+  } catch (e) {
+    logResponse(null, e);
+    throw e;
+  }
 }
 
 // ─── 快捷方法 ───
