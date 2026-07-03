@@ -50,7 +50,21 @@ export const useAppStore = defineStore('app', {
     },
     completeWebLogin(loginVO) {
       const { satoken, accessToken, refreshToken, customer } = loginVO;
-      setToken(satoken || accessToken, refreshToken);
+      const finalToken = satoken || accessToken;
+      if (import.meta.env.DEV) {
+        console.log(
+          '%c[AUTH] completeWebLogin',
+          'background:#4caf50;color:#fff;padding:2px 6px;border-radius:3px',
+          {
+            satoken: satoken ? `${satoken.slice(0, 16)}…` : '(空)',
+            accessToken: accessToken ? `${accessToken.slice(0, 16)}…` : '(空)',
+            finalToken: finalToken ? `${finalToken.slice(0, 16)}…` : '(空!)',
+            refreshToken: refreshToken ? `${refreshToken.slice(0, 16)}…` : '(空)',
+            hasCustomer: Boolean(customer),
+          },
+        );
+      }
+      setToken(finalToken, refreshToken);
       this.customer = customer;
       this.loggedInUserId = customer?.username || customer?.customerNo || '';
       this.isLoggedIn = true;

@@ -22,9 +22,12 @@ function logRequest(method, url, body, encryptType) {
   const badge = encryptType || 'PLAIN';
   const badgeStyle = encryptType ? STYLES.encrypt : STYLES.plain;
   try {
+    const tk = getToken();
+    const tkLabel = tk ? `Token:${tk.slice(0, 12)}…` : 'Token:无';
     console.log(
-      `%c API %c ${method} %c${url} %c${badge}`,
+      `%c API %c ${method} %c${url} %c${badge} %c${tkLabel}`,
       STYLES.tag, STYLES.method, STYLES.url, badgeStyle,
+      tk ? 'color:#2e7d32;font-size:10px' : 'color:#c62828;font-weight:bold;font-size:10px',
     );
     if (body !== undefined && body !== null) {
       console.log('%c请求参数（明文）', 'font-weight:bold;color:#1565c0', body);
@@ -66,6 +69,14 @@ export function getRefreshToken() {
 export function setToken(token, refreshToken) {
   if (token) localStorage.setItem('mysport:token', token);
   if (refreshToken) localStorage.setItem('mysport:refresh_token', refreshToken);
+  if (import.meta.env.DEV) {
+    const stored = localStorage.getItem('mysport:token');
+    console.log(
+      '%c[AUTH] setToken',
+      'background:#ff9800;color:#fff;padding:2px 6px;border-radius:3px',
+      { saved: Boolean(token), stored: stored ? `${stored.slice(0, 16)}…` : '(空!)' },
+    );
+  }
 }
 
 export function clearToken() {
@@ -102,7 +113,7 @@ async function tryRefreshToken() {
         'X-Refresh-Token': rt,
       };
       const token = getToken();
-      if (token) headers['X-Customer-Token'] = token;
+      if (token) headers['X-Customer-Token'] = `Bearer ${token}`;
 
       const res = await fetch(`${API_BASE}/auth/refresh`, {
         method: 'POST',
@@ -171,11 +182,11 @@ async function handleResponse(res, encrypted = false) {
 
 // ─── Header 构建 ───
 
-function buildHeaders(extraHeaders = {}) {
+function buildHeaders(extraHeaders = {}, method = 'GET') {
   const headers = { ...extraHeaders };
   const token = getToken();
-  if (token) headers['X-Customer-Token'] = token;
-  if (!headers['Content-Type']) {
+  if (token) headers['X-Customer-Token'] = `Bearer ${token}`;
+  if (method !== 'GET' && method !== 'HEAD' && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
   }
   return headers;
@@ -217,7 +228,7 @@ export async function request(url, options = {}, _retried = false) {
     if (qsStr) fullUrl += `?${qsStr}`;
   }
 
-  const mergedHeaders = buildHeaders(extraHeaders || {});
+  const mergedHeaders = buildHeaders(extraHeaders || {}, method);
 
   let finalBody;
   let usedEncryption = false;

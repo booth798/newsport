@@ -16,6 +16,8 @@ export default defineConfig({
         target: 'https://api.fqphysical.com',
         changeOrigin: true,
         secure: true,
+        cookieDomainRewrite: { '*': '' },
+        cookiePathRewrite: { '*': '/' },
       },
     },
   },

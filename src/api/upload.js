@@ -41,7 +41,7 @@ export async function uploadFile(file, purpose = 'generic') {
     'X-File-Sha256': sha256,
     'X-File-Purpose': purpose,
   };
-  if (token) headers['X-Customer-Token'] = token;
+  if (token) headers['X-Customer-Token'] = `Bearer ${token}`;
   if (sessionId) headers['X-Sid'] = sessionId;
 
   const res = await fetch(`${API_BASE}/upload/file`, {
