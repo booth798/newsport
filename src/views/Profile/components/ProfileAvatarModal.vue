@@ -119,6 +119,18 @@ async function handleSave() {
   }
 }
 
+.avatar-card:first-of-type {
+  @include mobile-only {
+    min-height: 198px;
+  }
+}
+
+.avatar-card:nth-of-type(2) {
+  @include mobile-only {
+    min-height: 104px;
+  }
+}
+
 .avatar-card__label {
   display: block;
   color: rgba(11, 52, 98, 0.5);
@@ -168,8 +180,8 @@ async function handleSave() {
   }
 
   @include mobile-only {
-    width: 76px;
-    height: 76px;
+    width: 72px;
+    height: 72px;
   }
 
   &:hover {
@@ -253,7 +265,7 @@ async function handleSave() {
   }
 
   @include mobile-only {
-    height: 42px;
+    height: 44px;
     padding: 0 14px;
     font-size: 14px;
   }
@@ -275,11 +287,11 @@ async function handleSave() {
   width: 100%;
   border: 0;
   border-radius: 999px;
-  background: linear-gradient(135deg, #1478ff 0%, #3196ff 100%);
-  color: #fff;
+  background: #fff;
+  color: var(--theme-primary);
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(20, 120, 255, 0.25);
+  box-shadow: none;
   transition: opacity 0.2s, transform 0.15s;
 
   @include web-only {
@@ -294,7 +306,7 @@ async function handleSave() {
 
   &:hover:not(:disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(20, 120, 255, 0.32);
+    box-shadow: 0 6px 18px rgba(3, 34, 81, 0.14);
   }
 
   &:active:not(:disabled) {

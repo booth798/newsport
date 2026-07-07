@@ -70,7 +70,7 @@ const activeTab = computed(() => route.path);
 
   @include mobile-only {
     min-height: 100vh;
-    padding: 0 $spacing-sm $spacing-md;
+    padding: 0 16px $spacing-md;
   }
 }
 
@@ -176,9 +176,9 @@ const activeTab = computed(() => route.path);
     z-index: 3;
     width: 100%;
     overflow: hidden;
-    height: 48px;
-    margin: 0 0 $spacing-sm;
-    padding: $spacing-xs $radius-sm;
+    height: 44px;
+    margin: 0 0 16px;
+    padding: 4px;
     box-sizing: border-box;
     border: 1px solid rgba(255, 255, 255, 0.9);
     border-radius: 24px;
@@ -209,6 +209,10 @@ const activeTab = computed(() => route.path);
     box-shadow 0.18s ease;
   white-space: nowrap;
   font-weight: 700;
+
+  @include mobile-only {
+    height: 34px;
+  }
 }
 
 .finance-tab:hover,

@@ -89,7 +89,7 @@ const modalClass = computed(() => (props.type ? `profile-modal--${props.type}` :
   }
 
   @include mobile-only {
-    width: min(100%, 343px);
+    width: min(100%, 344px);
     max-height: calc(100vh - 168px);
     border-radius: $radius-lg;
   }
@@ -127,7 +127,7 @@ const modalClass = computed(() => (props.type ? `profile-modal--${props.type}` :
 
   @include mobile-only {
     min-height: 72px;
-    padding-top: 18px;
+    padding-top: 16px;
   }
 }
 
@@ -144,6 +144,8 @@ const modalClass = computed(() => (props.type ? `profile-modal--${props.type}` :
   }
 
   @include mobile-only {
+    gap: 8px;
+    padding: 0 8px 8px;
     max-height: calc(100vh - 250px);
   }
 }
@@ -469,8 +471,8 @@ const modalClass = computed(() => (props.type ? `profile-modal--${props.type}` :
   }
 
   @include mobile-only {
-    top: -10px;
-    right: -4px;
+    top: -48px;
+    right: 0;
     width: 32px;
     height: 32px;
   }

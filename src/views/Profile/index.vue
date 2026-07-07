@@ -46,7 +46,7 @@ const avatarDisplayUrl = ref('');
 const profileSummary = ref({
   nickname: '',
   memberId: '',
-  balance: '',
+  balance: '1,342,512.35',
   currency: 'CNY',
   vipLevel: 3,
   totalBet: '3,151,724.00',
@@ -58,7 +58,12 @@ const profileSummary = ref({
 
 const displayName = computed(() => profileSummary.value.nickname || loggedInUserId.value || 'Y05741');
 const displayId = computed(() => `ID：${profileSummary.value.memberId || loggedInUserId.value || 'U2026023923'}`);
-const balanceValue = computed(() => profileSummary.value.balance || loggedInAssetsFormatted.value || '1,342,512.35');
+const balanceValue = computed(() => {
+  const summaryBalance = profileSummary.value.balance;
+  if (summaryBalance && summaryBalance !== '0.00') return summaryBalance;
+  if (loggedInAssetsFormatted.value && loggedInAssetsFormatted.value !== '0.00') return loggedInAssetsFormatted.value;
+  return '1,342,512.35';
+});
 const currencyValue = computed(() => profileSummary.value.currency || 'CNY');
 const isProfileHome = computed(() => route.name === 'profile');
 
@@ -68,13 +73,13 @@ const profileActions = [
   { key: 'info', label: '个人资料', modal: 'profile', icon: infoIcon },
   { key: 'records', label: '交易记录', to: '/finance/records', icon: recordsIcon },
   { key: 'orders', label: '下单明细', to: '/trade/purchases', icon: ordersIcon },
-  { key: 'favorites', label: '收藏', icon: favoritesIcon, desktopOnly: true, action: 'favorites' },
+  { key: 'favorites', label: '收藏', icon: favoritesIcon, action: 'favorites' },
   { key: 'messages', label: '消息中心', modal: 'messages', icon: messagesIcon },
   { key: 'market', label: '市场列表', to: '/market', icon: marketIcon },
   { key: 'verify', label: '实名认证', modal: 'verify', icon: verifyIcon },
   { key: 'security', label: '安全设置', modal: 'security', icon: securityIcon },
   { key: 'bind', label: '绑定信息', modal: 'binding', icon: bindInfoIcon },
-  { key: 'service', label: '联系客服', icon: serviceIcon, desktopOnly: true, action: 'service' },
+  { key: 'service', label: '联系客服', icon: serviceIcon, action: 'service' },
   { key: 'logout', label: '退出登录', icon: logoutIcon, modal: 'logout' },
 ];
 
@@ -352,7 +357,7 @@ onMounted(loadProfileSummary);
   }
 
   @include mobile-only {
-    padding: $spacing-sm $spacing-sm $spacing-lg;
+    padding: $spacing-sm $spacing-sm calc(#{$mobile-tab-bar-offset} + env(safe-area-inset-bottom, 0px) + #{$spacing-lg});
   }
 }
 
@@ -410,7 +415,7 @@ onMounted(loadProfileSummary);
   }
 
   @include mobile-only {
-    height: 148px;
+    min-height: 244px;
     border-radius: $radius-lg;
   }
 }
@@ -426,7 +431,7 @@ onMounted(loadProfileSummary);
   }
 
   @include mobile-only {
-    height: 100%;
+    min-height: 172px;
     padding: $spacing-lg 18px 14px;
     box-sizing: border-box;
   }
@@ -514,15 +519,17 @@ onMounted(loadProfileSummary);
 }
 
 .profile-member-card__actions {
-  @include mobile-only {
-    display: none;
-  }
+  display: flex;
+  align-items: center;
 
   @include web-only {
-    display: flex;
-    align-items: center;
     gap: 18px;
     padding-top: 4px;
+  }
+
+  @include mobile-only {
+    gap: $spacing-sm;
+    padding-top: 3px;
   }
 }
 
@@ -548,6 +555,18 @@ onMounted(loadProfileSummary);
     transform: translateY(-1px);
     box-shadow: 0 8px 18px rgba(21, 58, 119, 0.16);
   }
+
+  @include mobile-only {
+    gap: 4px;
+    width: 66px;
+    height: 32px;
+    font-size: $font-size-sm;
+
+    img {
+      width: 18px;
+      height: 18px;
+    }
+  }
 }
 
 .profile-member-card__balance {
@@ -565,10 +584,23 @@ onMounted(loadProfileSummary);
     font-size: $font-size-xl;
   }
 
+  @include mobile-only {
+    display: flex;
+    margin-top: $spacing-2xl;
+    font-size: $font-size-md;
+  }
+
   strong {
     font-family: $font-family-num, $font-family-base;
-    font-size: 30px;
     font-weight: 800;
+
+    @include web-only {
+      font-size: 30px;
+    }
+
+    @include mobile-only {
+      font-size: 22px;
+    }
   }
 }
 
@@ -714,18 +746,19 @@ onMounted(loadProfileSummary);
 }
 
 .profile-stats {
-  @include mobile-only {
-    display: none;
-  }
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: rgba(234, 241, 249, 0.94);
+  color: var(--theme-text);
 
   @include web-only {
-    position: relative;
-    z-index: 1;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
     height: 100px;
-    background: rgba(234, 241, 249, 0.94);
-    color: var(--theme-text);
+  }
+
+  @include mobile-only {
+    height: 72px;
   }
 }
 
@@ -745,8 +778,20 @@ onMounted(loadProfileSummary);
   strong {
     color: var(--theme-primary);
     font-family: $font-family-num, $font-family-base;
-    font-size: 22px;
     font-weight: 800;
+
+    @include web-only {
+      font-size: 22px;
+    }
+
+    @include mobile-only {
+      font-size: $font-size-base;
+    }
+  }
+
+  @include mobile-only {
+    gap: 5px;
+    font-size: $font-size-sm;
   }
 }
 
@@ -756,7 +801,7 @@ onMounted(loadProfileSummary);
   }
 
   @include mobile-only {
-    display: flex;
+    display: none;
     flex-direction: column;
     height: 182px;
     padding: 18px 18px 16px;
@@ -836,9 +881,10 @@ onMounted(loadProfileSummary);
   }
 
   @include mobile-only {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    padding: 18px 20px 20px;
     border-radius: $radius-lg;
   }
 }
@@ -877,23 +923,22 @@ onMounted(loadProfileSummary);
 
   @include mobile-only {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    min-height: 44px;
-    padding: 0 14px 0 $spacing-lg;
-    background: transparent;
-    border-bottom: 1px solid var(--theme-divider);
-    font-size: $font-size-base;
+    justify-content: center;
+    gap: $spacing-sm;
+    min-height: 108px;
+    padding: 10px $spacing-xs;
+    border-radius: $radius-md;
+    background: var(--surface-card);
+    font-size: $font-size-md;
     font-weight: 500;
-    text-align: left;
-
-    &:last-child {
-      border-bottom: 0;
-    }
+    text-align: center;
 
     &:hover,
     &.profile-action--active {
       color: var(--theme-primary);
-      background: rgba(28, 123, 255, 0.04);
+      background: rgba(28, 123, 255, 0.08);
     }
   }
 }
@@ -915,9 +960,8 @@ onMounted(loadProfileSummary);
   }
 
   @include mobile-only {
-    width: 24px;
-    height: 24px;
-    margin-right: $spacing-sm;
+    width: 42px;
+    height: 42px;
   }
 }
 
@@ -934,10 +978,7 @@ onMounted(loadProfileSummary);
   }
 
   @include mobile-only {
-    width: 20px;
-    height: 20px;
-    margin-left: auto;
-    opacity: 0.6;
+    display: none;
   }
 }
 

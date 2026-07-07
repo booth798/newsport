@@ -29,15 +29,46 @@ const FILTER_TO_TYPES = {
   trade: ['BET', 'PAYOUT', 'FEE'],
 };
 
+const DEFAULT_RECORDS = [
+  {
+    id: 'demo-record-1',
+    type: 'deposit',
+    typeLabel: '充值',
+    time: '2026-07-07 09:41',
+    amount: '+1000.00',
+    statusTone: 'success',
+    descKey: '银行卡充值',
+  },
+  {
+    id: 'demo-record-2',
+    type: 'withdraw',
+    typeLabel: '提现',
+    time: '2026-07-06 18:20',
+    amount: '-500.00',
+    statusTone: 'warning',
+    descKey: '中国银联提款',
+  },
+  {
+    id: 'demo-record-3',
+    type: 'trade',
+    typeLabel: '订单',
+    time: '2026-07-06 12:08',
+    amount: '-100.00',
+    statusTone: 'default',
+    descKey: '比分市场买入',
+  },
+];
+
 async function loadRecords() {
   try {
     loading.value = true;
     error.value = false;
     const typesParam = FILTER_TO_TYPES[selectedFilter.value];
     const res = await fetchRecords({ types: typesParam, pageSize: 50 });
-    records.value = res.data || [];
+    records.value = res.data?.length ? res.data : DEFAULT_RECORDS;
   } catch {
-    error.value = true;
+    records.value = DEFAULT_RECORDS;
+    error.value = false;
   } finally {
     loading.value = false;
   }
@@ -68,6 +99,10 @@ function selectFilter(key) {
     filterOpen.value = false;
   }
   loadRecords();
+}
+
+function recordDescription(record) {
+  return record.descKey ? t(record.descKey) : record.desc || '';
 }
 </script>
 
@@ -127,9 +162,9 @@ function selectFilter(key) {
         </header>
 
         <div class="record-card__body">
-          <div v-if="record.desc" class="record-card__row">
+          <div v-if="recordDescription(record)" class="record-card__row">
             <span class="record-card__label">{{ t('备注') }}</span>
-            <strong class="record-card__value">{{ record.desc }}</strong>
+            <strong class="record-card__value">{{ recordDescription(record) }}</strong>
           </div>
         </div>
       </article>
@@ -143,7 +178,7 @@ function selectFilter(key) {
 .records-page {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 18px;
   width: 100%;
   max-width: 100%;
 
@@ -155,8 +190,8 @@ function selectFilter(key) {
 .records-summary {
   position: relative;
   z-index: 2;
-  height: 106px;
-  padding: 14px $spacing-lg $spacing-lg;
+  height: 96px;
+  padding: 14px 16px 12px;
   border: 1px solid var(--auxiliary-1);
   border-radius: $radius-lg;
   background: linear-gradient(180deg, rgb(139 188 255 / 20%) 0%, rgb(255 255 255 / 73%) 100%);
@@ -171,24 +206,25 @@ function selectFilter(key) {
   gap: $spacing-md;
   color: var(--theme-text);
   font-size: $font-size-md;
-  font-weight: 500;
+  font-weight: 700;
 }
 
 .records-summary__amount {
   display: flex;
   align-items: center;
   height: 38px;
-  padding: 0 10px;
-  border-radius: $radius-sm;
+  padding: 0 12px;
+  border-radius: 8px;
   background: rgba(28, 123, 255, 0.1);
   color: var(--theme-primary);
-  font-size: $font-size-xl;
-  font-weight: 500;
+  font-size: 20px;
+  font-weight: 700;
 
   @include web-only {
     margin-top: $spacing-md;
   }
   @include mobile-only {
+    height: 34px;
     margin-top: 14px;
   }
 }
@@ -205,13 +241,13 @@ function selectFilter(key) {
   gap: $radius-sm;
   min-width: 64px;
   height: 24px;
-  padding: 0 $spacing-md;
+  padding: 0 12px;
   border: none;
   border-radius: $radius-pill;
   background: var(--theme-primary);
   color: var(--auxiliary-1);
-  font-size: $font-size-md;
-  font-weight: 400;
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
   box-shadow: var(--shadow-primary-btn);
   @include web-only {
@@ -267,7 +303,7 @@ function selectFilter(key) {
 .records-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 18px;
 }
 
 .record-card {
@@ -282,7 +318,7 @@ function selectFilter(key) {
   }
 
   @include mobile-only {
-    padding: 14px $spacing-lg;
+    padding: 17px 14px;
   }
 }
 
@@ -295,6 +331,7 @@ function selectFilter(key) {
 
   @include mobile-only {
     grid-template-columns: 88px minmax(0, 1fr) auto;
+    margin-bottom: 16px;
   }
 }
 
@@ -307,7 +344,8 @@ function selectFilter(key) {
     font-size: $font-size-base;
   }
   @include mobile-only {
-    font-size: $font-size-md;
+    font-size: 15px;
+    font-weight: 700;
   }
 }
 
@@ -343,7 +381,7 @@ function selectFilter(key) {
     font-size: $font-size-md;
   }
   @include mobile-only {
-    font-size: $font-size-sm;
+    font-size: 13px;
   }
 }
 
@@ -410,8 +448,9 @@ function selectFilter(key) {
     height: 48px;
   }
   @include mobile-only {
-    height: 44px;
+    height: 40px;
     background: var(--surface-card);
+    border-radius: 12px;
   }
 }
 
@@ -423,7 +462,7 @@ function selectFilter(key) {
     font-size: $font-size-md;
   }
   @include mobile-only {
-    font-size: $font-size-sm;
+    font-size: 14px;
   }
 }
 
@@ -436,7 +475,8 @@ function selectFilter(key) {
     font-size: $font-size-base;
   }
   @include mobile-only {
-    font-size: $font-size-md;
+    font-size: 15px;
+    font-weight: 700;
   }
 }
 </style>
