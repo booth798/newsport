@@ -10,6 +10,12 @@ const routes = [
     meta: { titleKey: '首页' },
   },
   {
+    path: '/register',
+    name: 'register',
+    component: () => import('@/views/Register/index.vue'),
+    meta: { titleKey: '注册会员', bare: true },
+  },
+  {
     path: '/market',
     name: 'market',
     component: () => import('@/views/Market/index.vue'),
@@ -38,7 +44,7 @@ const routes = [
     name: 'finance',
     component: () => import('@/views/Finance/index.vue'),
     redirect: '/finance/deposit',
-    meta: { titleKey: '交易账务', requiresAuth: true },
+    meta: { titleKey: '交易账务', requiresAuth: true, guestPreview: true },
     children: [
       {
         path: 'deposit',
@@ -64,7 +70,7 @@ const routes = [
     path: '/profile',
     name: 'profile',
     component: () => import('@/views/Profile/index.vue'),
-    meta: { titleKey: '我的', requiresAuth: true },
+    meta: { titleKey: '我的', requiresAuth: true, guestPreview: true },
     children: [
       {
         path: 'info',
@@ -108,13 +114,13 @@ const routes = [
     path: '/service',
     name: 'service',
     component: () => import('@/views/Service/index.vue'),
-    meta: { titleKey: '在线客服', requiresAuth: true },
+    meta: { titleKey: '在线客服', requiresAuth: true, guestPreview: true },
   },
   {
     path: '/vip',
     name: 'vip',
     component: () => import('@/views/Vip/index.vue'),
-    meta: { titleKey: 'VIP中心', requiresAuth: true },
+    meta: { titleKey: 'VIP中心', requiresAuth: true, guestPreview: true },
   },
   {
     path: '/:pathMatch(.*)*',
@@ -137,6 +143,7 @@ const router = createRouter({
 
 router.beforeEach(async (to) => {
   if (to.matched.some((r) => r.meta.requiresAuth)) {
+    if (to.matched.some((r) => r.meta.guestPreview)) return true;
     const hasToken = Boolean(localStorage.getItem('mysport:token'));
     if (!hasToken) {
       const { useAppStore } = await import('@/store/modules/app');

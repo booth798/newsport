@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
 
 import logoLoginUrl from '@/assets/images/common/logo_login.svg?url';
 import iconLoginUserUrl from '@/assets/images/login/icon_login_user.svg?url';
@@ -12,6 +13,7 @@ import { useToast } from '@/hooks/useToast';
 import { loginApi, registerApi, captchaInit, captchaVerify, sendResetCode, resetPassword } from '@/api/user';
 
 const { t } = useI18n();
+const router = useRouter();
 const appStore = useAppStore();
 const toast = useToast();
 
@@ -382,6 +384,11 @@ const toggleMode = () => {
   inviteCode.value = '';
 };
 
+const openRegisterPage = () => {
+  close();
+  router.push('/register');
+};
+
 const passwordInputType = computed(() => (showPassword.value ? 'text' : 'password'));
 </script>
 
@@ -719,7 +726,7 @@ const passwordInputType = computed(() => (showPassword.value ? 'text' : 'passwor
               <div class="login-modal__switch login-modal__switch--on-blue">
                 <span>
                   {{ t('没有账号？') }}
-                  <a href="javascript:;" @click="toggleMode">{{ t('立即注册') }}</a>
+                  <a href="javascript:;" @click="openRegisterPage">{{ t('立即注册') }}</a>
                 </span>
               </div>
             </div>
@@ -849,7 +856,7 @@ $login-input-text: rgba(11, 52, 98, 1);
 
   @include mobile-only {
     min-height: 0;
-    padding: 16px 10px;
+    padding: 20px 10px 14px;
     border-radius: 24px;
   }
 
@@ -884,7 +891,7 @@ $login-input-text: rgba(11, 52, 98, 1);
     margin-bottom: 10px;
 
     @include mobile-only {
-      margin-bottom: 6px;
+      margin-bottom: 7px;
     }
   }
 
@@ -918,7 +925,7 @@ $login-input-text: rgba(11, 52, 98, 1);
 
     @include mobile-only {
       border-radius: 16px;
-      padding: 20px 16px 14px;
+      padding: 24px 16px 18px;
     }
   }
 
@@ -936,7 +943,7 @@ $login-input-text: rgba(11, 52, 98, 1);
 
     @include mobile-only {
       font-size: 17px;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
   }
 
@@ -946,7 +953,7 @@ $login-input-text: rgba(11, 52, 98, 1);
     gap: 10px;
 
     @include mobile-only {
-      gap: 8px;
+      gap: 12px;
     }
   }
 
@@ -1030,7 +1037,7 @@ $login-input-text: rgba(11, 52, 98, 1);
     }
 
     @include mobile-only {
-      height: 42px;
+      height: 46px;
       font-size: $font-size-base;
     }
 
@@ -1094,7 +1101,7 @@ $login-input-text: rgba(11, 52, 98, 1);
 
     @include mobile-only {
       gap: 8px;
-      margin-top: 8px;
+      margin-top: 10px;
     }
   }
 }
@@ -1115,7 +1122,7 @@ $login-input-text: rgba(11, 52, 98, 1);
   transition: border-color 0.2s, box-shadow 0.2s;
 
   @include mobile-only {
-    height: 42px;
+    height: 46px;
   }
 
   &--dragging {
@@ -1182,9 +1189,9 @@ $login-input-text: rgba(11, 52, 98, 1);
   border-radius: 20px;
 
   @include mobile-only {
-    width: 46px;
-    height: 34px;
-    border-radius: 17px;
+    width: 52px;
+    height: 40px;
+    border-radius: 20px;
   }
   padding: 0;
   margin: 0;
@@ -1392,8 +1399,8 @@ $login-input-text: rgba(11, 52, 98, 1);
   box-sizing: border-box;
 
   @include mobile-only {
-    height: 44px;
-    border-radius: 12px;
+    height: 50px;
+    border-radius: 14px;
     font-size: 15px;
   }
 
@@ -1422,7 +1429,7 @@ $login-input-text: rgba(11, 52, 98, 1);
 
     @include mobile-only {
       font-size: 18px;
-      line-height: 44px;
+      line-height: 50px;
     }
   }
 

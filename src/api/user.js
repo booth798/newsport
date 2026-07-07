@@ -114,6 +114,8 @@ export async function registerApi(username, password, captchaToken, options = {}
     agentCode: options.agentCode,
     phone: options.phone,
     email: options.email,
+    smsCode: options.smsCode,
+    verificationCode: options.verificationCode,
   }, { 'X-Device-Type': 'H5' });
 }
 

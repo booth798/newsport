@@ -20,6 +20,48 @@ const CATEGORIES = [
   { value: 'OTHER', label: '其他' },
 ];
 
+const DEMO_TICKETS = [
+  {
+    id: 'demo-1',
+    subjectKey: '充值到账咨询',
+    categoryKey: '充值问题',
+    status: 'OPEN',
+    createdAt: '2026-07-07T09:41:00+08:00',
+  },
+  {
+    id: 'demo-2',
+    subjectKey: '提款资料确认',
+    categoryKey: '提现问题',
+    status: 'RESOLVED',
+    createdAt: '2026-07-06T18:20:00+08:00',
+  },
+];
+
+const DEMO_MESSAGES = {
+  'demo-1': [
+    {
+      id: 'demo-msg-1',
+      sender: 'CUSTOMER',
+      contentKey: '您好我想确认充值到账时间',
+      createdAt: '2026-07-07T09:41:00+08:00',
+    },
+    {
+      id: 'demo-msg-2',
+      sender: 'AGENT',
+      contentKey: '充值到账时间回复',
+      createdAt: '2026-07-07T09:42:00+08:00',
+    },
+  ],
+  'demo-2': [
+    {
+      id: 'demo-msg-3',
+      sender: 'AGENT',
+      contentKey: '提款资料确认回复',
+      createdAt: '2026-07-06T18:20:00+08:00',
+    },
+  ],
+};
+
 // --- 工单列表 ---
 const tickets = ref([]);
 const listLoading = ref(true);
@@ -47,6 +89,18 @@ const canReply = computed(() =>
   activeTicket.value && activeTicket.value.status === 'OPEN',
 );
 
+function ticketSubject(ticket) {
+  return ticket?.subjectKey ? t(ticket.subjectKey) : ticket?.subject || '';
+}
+
+function ticketCategory(ticket) {
+  return ticket?.categoryKey ? t(ticket.categoryKey) : ticket?.category || '';
+}
+
+function messageContent(message) {
+  return message?.contentKey ? t(message.contentKey) : message?.content || '';
+}
+
 let pollTimer = null;
 
 async function loadTickets() {
@@ -56,7 +110,9 @@ async function loadTickets() {
     const res = await fetchTickets(50);
     tickets.value = res.data || [];
   } catch {
-    listError.value = t('加载失败，请稍后重试');
+    tickets.value = DEMO_TICKETS;
+    activeTicketId.value = DEMO_TICKETS[0]?.id ?? null;
+    messages.value = DEMO_MESSAGES[activeTicketId.value] || [];
   } finally {
     listLoading.value = false;
   }
@@ -77,7 +133,9 @@ async function loadMessages(ticketId) {
     await nextTick();
     scrollToBottom();
   } catch {
-    msgError.value = t('加载失败，请稍后重试');
+    messages.value = DEMO_MESSAGES[ticketId] || [];
+    await nextTick();
+    scrollToBottom();
   } finally {
     msgLoading.value = false;
   }
@@ -194,13 +252,13 @@ onBeforeUnmount(() => {
             @click="selectTicket(ticket)"
           >
             <div class="service-ticket-item__top">
-              <span class="service-ticket-item__subject">{{ ticket.subject }}</span>
+              <span class="service-ticket-item__subject">{{ ticketSubject(ticket) }}</span>
               <span class="service-status" :class="STATUS_MAP[ticket.status]?.cls">
                 {{ t(STATUS_MAP[ticket.status]?.label || ticket.status) }}
               </span>
             </div>
             <div class="service-ticket-item__meta">
-              <span class="service-ticket-item__category">{{ ticket.category }}</span>
+              <span class="service-ticket-item__category">{{ ticketCategory(ticket) }}</span>
               <span class="service-ticket-item__time">{{ formatTime(ticket.createdAt) }}</span>
             </div>
           </li>
@@ -268,7 +326,7 @@ onBeforeUnmount(() => {
         <template v-else>
           <div class="service-chat card-default">
             <div class="service-chat__header">
-              <h3 class="service-chat__title">{{ activeTicket?.subject }}</h3>
+              <h3 class="service-chat__title">{{ ticketSubject(activeTicket) }}</h3>
               <span class="service-status" :class="STATUS_MAP[activeTicket?.status]?.cls">
                 {{ t(STATUS_MAP[activeTicket?.status]?.label || '') }}
               </span>
@@ -299,7 +357,7 @@ onBeforeUnmount(() => {
                   :class="{ 'service-msg--self': msg.sender === 'CUSTOMER' }"
                 >
                   <div class="service-msg__bubble">
-                    <p class="service-msg__text">{{ msg.content }}</p>
+                    <p class="service-msg__text">{{ messageContent(msg) }}</p>
                     <span class="service-msg__time">{{ formatTime(msg.createdAt) }}</span>
                   </div>
                 </div>

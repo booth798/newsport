@@ -5,7 +5,7 @@ import LoginModal from '@/components/LoginModal.vue';
 import MobileTabBar from '@/components/MobileTabBar.vue';
 import GlobalToast from '@/components/GlobalToast.vue';
 
-import { onBeforeUnmount, onMounted, provide, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
@@ -16,6 +16,7 @@ import { useAppStore } from '@/store/modules/app';
 const appStore = useAppStore();
 const route = useRoute();
 const { locale, isMobile } = storeToRefs(appStore);
+const isBarePage = computed(() => Boolean(route.meta?.bare));
 
 // 统一记录窗口宽度，方便页面按需判断当前是否处于移动端布局。
 const syncViewport = () => {
@@ -76,12 +77,12 @@ provide('toast', {
 </script>
 
 <template>
-  <Header />
-  <main class="main-content">
+  <Header v-if="!isBarePage" />
+  <main class="main-content" :class="{ 'main-content--bare': isBarePage }">
     <RouterView />
   </main>
-  <MobileTabBar v-if="isMobile" />
-  <FloatingService />
+  <MobileTabBar v-if="isMobile && !isBarePage" />
+  <FloatingService v-if="!isBarePage" />
   <LoginModal :visible="appStore.loginModalOpen" @close="appStore.closeLoginModal" />
   <GlobalToast ref="toastRef" />
 </template>
@@ -94,6 +95,11 @@ provide('toast', {
 
   @include mobile-only {
     padding-bottom: calc($mobile-tab-bar-offset + env(safe-area-inset-bottom, 0px));
+  }
+
+  &--bare {
+    min-height: 100vh;
+    padding-bottom: 0;
   }
 }
 </style>
