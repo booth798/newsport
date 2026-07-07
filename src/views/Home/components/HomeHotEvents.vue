@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 
@@ -21,11 +21,30 @@ const { t } = useI18n();
 const appStore = useAppStore();
 const { isMobile } = storeToRefs(appStore);
 
+const props = defineProps({
+  preloadedMatches: { type: Array, default: () => [] },
+});
+
 const matchList = ref([]);
 const loading = ref(true);
 const error = ref(false);
 
+watch(
+  () => props.preloadedMatches,
+  (val) => {
+    if (val && val.length) {
+      matchList.value = val;
+      loading.value = false;
+    }
+  },
+  { immediate: true },
+);
+
 onMounted(async () => {
+  if (matchList.value.length) {
+    loading.value = false;
+    return;
+  }
   try {
     loading.value = true;
     error.value = false;

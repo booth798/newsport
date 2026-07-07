@@ -198,13 +198,14 @@ function normalizeMatch(m) {
   const cd = computeCountdown(m.kickoffAt);
   return {
     ...m,
-    id: m.id,
-    league: m.leagueName || '',
+    id: m.id || m.matchId,
+    league: m.leagueShortName || m.leagueName || '',
     leagueId: m.leagueId,
-    homeTeam: m.homeTeamName || '',
-    awayTeam: m.awayTeamName || '',
-    homeTeamLogo: m.homeTeamLogo,
-    awayTeamLogo: m.awayTeamLogo,
+    leagueIcon: m.leagueLogoUrl || m.leagueIcon || '',
+    homeTeam: m.homeTeamShortName || m.homeTeamName || '',
+    awayTeam: m.awayTeamShortName || m.awayTeamName || '',
+    homeTeamLogo: m.homeTeamLogoUrl || m.homeTeamLogo || '',
+    awayTeamLogo: m.awayTeamLogoUrl || m.awayTeamLogo || '',
     homeScore: m.ftHomeScore ?? 0,
     awayScore: m.ftAwayScore ?? 0,
     htHomeScore: m.htHomeScore ?? 0,
@@ -212,12 +213,36 @@ function normalizeMatch(m) {
     date: m.kickoffAt ? formatDate(m.kickoffAt) : '',
     kickoffAt: m.kickoffAt,
     betCloseAt: m.betCloseAt,
-    status: m.status,
-    hot: m.hot,
-    volume: m.totalVolume != null ? formatVolume(m.totalVolume) : (m.totalPool != null ? formatVolume(m.totalPool) : ''),
+    status: m.matchStatus || m.status || '',
+    hot: m.matchHot ?? m.hot ?? false,
+    volume: m.displayPool != null ? formatVolume(m.displayPool)
+      : m.totalVolume != null ? formatVolume(m.totalVolume)
+      : m.totalPool != null ? formatVolume(m.totalPool) : '',
     countdown: cd.text,
     countdownMinutes: cd.minutes,
   };
+}
+
+/** 将 /api/home hotMarkets（market 维度）聚合为 match 维度列表 */
+export function normalizeHomeMarkets(hotMarkets) {
+  if (!Array.isArray(hotMarkets) || !hotMarkets.length) return [];
+  const matchMap = new Map();
+  for (const mk of hotMarkets) {
+    const mid = mk.matchId;
+    if (!mid) continue;
+    const existing = matchMap.get(mid);
+    if (!existing) {
+      matchMap.set(mid, { ...mk });
+    } else {
+      const pool = Number(mk.displayPool || mk.totalPool || 0);
+      const existPool = Number(existing.displayPool || existing.totalPool || 0);
+      if (pool > existPool) {
+        existing.displayPool = mk.displayPool;
+        existing.totalPool = mk.totalPool;
+      }
+    }
+  }
+  return Array.from(matchMap.values()).map((m) => normalizeMatch(m));
 }
 
 function computeCountdown(kickoffAt) {

@@ -10,16 +10,24 @@ const { t } = useI18n();
 const router = useRouter();
 
 const vipLevel = ref(0);
+const homeMatches = ref([]);
+const homeBanners = ref([]);
 
 onMounted(async () => {
   const hasToken = Boolean(localStorage.getItem('mysport:token'));
   if (!hasToken) return;
   try {
-    const { fetchHomeData } = await import('@/api/match');
+    const { fetchHomeData, normalizeHomeMarkets } = await import('@/api/match');
     const res = await fetchHomeData();
     const data = res.data || {};
     if (data.vip) {
       vipLevel.value = data.vip.level || 0;
+    }
+    if (data.hotMarkets) {
+      homeMatches.value = normalizeHomeMarkets(data.hotMarkets);
+    }
+    if (data.banners) {
+      homeBanners.value = data.banners;
     }
   } catch { /* non-critical */ }
 });
@@ -30,7 +38,7 @@ function goService() { router.push('/service'); }
 
 <template>
   <div class="home">
-    <HomeBanner />
+    <HomeBanner :banners="homeBanners" />
 
     <div class="home__inner">
       <HomeAnnouncement />
@@ -48,7 +56,7 @@ function goService() { router.push('/service'); }
         </button>
       </div>
 
-      <HomeHotEvents />
+      <HomeHotEvents :preloaded-matches="homeMatches" />
     </div>
   </div>
 </template>

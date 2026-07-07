@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 import bannerDefault from '@/assets/images/slide/banner.png';
 import slideLeftIcon from '@/assets/images/common/icon_slide-left.svg';
@@ -8,7 +8,22 @@ import slideRightIcon from '@/assets/images/common/icon_slide-right.svg';
 import slideRightHoverIcon from '@/assets/images/common/icon_slide-right_hover.svg';
 import { fetchBanners, reportBannerClick } from '@/api/match';
 
+const props = defineProps({
+  banners: { type: Array, default: () => [] },
+});
+
 const bannerItems = ref([]);
+
+watch(
+  () => props.banners,
+  (val) => {
+    if (val && val.length) {
+      bannerItems.value = val;
+      bannerIndex.value = 0;
+      startAutoPlay();
+    }
+  },
+);
 const bannerSlides = computed(() =>
   bannerItems.value.length
     ? bannerItems.value.map((b) => b.imageUrl || bannerDefault)
