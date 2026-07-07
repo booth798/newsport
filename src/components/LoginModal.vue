@@ -352,12 +352,27 @@ function onKeydown(e) {
   if (e.key === 'Escape' && props.visible) close();
 }
 
+function onViewportResize() {
+  const active = document.activeElement;
+  if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
+    requestAnimationFrame(() => {
+      active.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  }
+}
+
 onMounted(() => {
   document.addEventListener('keydown', onKeydown);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', onViewportResize);
+  }
 });
 
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onKeydown);
+  if (window.visualViewport) {
+    window.visualViewport.removeEventListener('resize', onViewportResize);
+  }
 });
 
 const toggleMode = () => {
@@ -738,7 +753,13 @@ $login-input-text: rgba(11, 52, 98, 1);
   align-items: center;
   justify-content: center;
   backdrop-filter: blur(8px);
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+
+  @include mobile-only {
+    align-items: flex-start;
+  }
 }
 
 .login-overlay__stack {
@@ -747,11 +768,19 @@ $login-input-text: rgba(11, 52, 98, 1);
   align-items: center;
   width: 100%;
   max-width: min(400px, calc(100vw - 24px));
-  max-height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 16px 0;
   box-sizing: border-box;
+  flex-shrink: 0;
+
+  @include web-only {
+    max-height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 16px 0;
+  }
+
+  @include mobile-only {
+    padding: 12px 0 calc(12px + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 .login-overlay__close {
@@ -798,7 +827,7 @@ $login-input-text: rgba(11, 52, 98, 1);
 .login-modal {
   position: relative;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -815,10 +844,13 @@ $login-input-text: rgba(11, 52, 98, 1);
     max-width: 400px;
     min-height: 500px;
     border-radius: 32px;
+    overflow: hidden;
   }
 
   @include mobile-only {
     min-height: 0;
+    padding: 16px 10px;
+    border-radius: 24px;
   }
 
 
@@ -850,6 +882,10 @@ $login-input-text: rgba(11, 52, 98, 1);
     justify-content: center;
     align-items: center;
     margin-bottom: 10px;
+
+    @include mobile-only {
+      margin-bottom: 6px;
+    }
   }
 
   &__logo {
@@ -857,6 +893,11 @@ $login-input-text: rgba(11, 52, 98, 1);
     width: 100px;
     height: 36px;
     object-fit: contain;
+
+    @include mobile-only {
+      width: 80px;
+      height: 28px;
+    }
   }
 
   &__panel {
@@ -874,6 +915,11 @@ $login-input-text: rgba(11, 52, 98, 1);
     @include web-only {
       border-radius: 24px;
     }
+
+    @include mobile-only {
+      border-radius: 16px;
+      padding: 20px 16px 14px;
+    }
   }
 
   &__title {
@@ -887,12 +933,21 @@ $login-input-text: rgba(11, 52, 98, 1);
     @include web-only {
       font-size: 20px;
     }
+
+    @include mobile-only {
+      font-size: 17px;
+      margin-bottom: 8px;
+    }
   }
 
   &__form {
     display: flex;
     flex-direction: column;
     gap: 10px;
+
+    @include mobile-only {
+      gap: 8px;
+    }
   }
 
   &__remember-row {
@@ -974,6 +1029,11 @@ $login-input-text: rgba(11, 52, 98, 1);
       height: 48px;
     }
 
+    @include mobile-only {
+      height: 42px;
+      font-size: $font-size-base;
+    }
+
     &--register {
       margin-top: 0;
     }
@@ -1031,6 +1091,11 @@ $login-input-text: rgba(11, 52, 98, 1);
     flex-direction: column;
     gap: 10px;
     margin-top: 10px;
+
+    @include mobile-only {
+      gap: 8px;
+      margin-top: 8px;
+    }
   }
 }
 
@@ -1048,6 +1113,10 @@ $login-input-text: rgba(11, 52, 98, 1);
   touch-action: none;
   overflow: hidden;
   transition: border-color 0.2s, box-shadow 0.2s;
+
+  @include mobile-only {
+    height: 42px;
+  }
 
   &--dragging {
     border-color: rgba(13, 108, 251, 0.35);
@@ -1111,6 +1180,12 @@ $login-input-text: rgba(11, 52, 98, 1);
   width: 52px;
   height: 40px;
   border-radius: 20px;
+
+  @include mobile-only {
+    width: 46px;
+    height: 34px;
+    border-radius: 17px;
+  }
   padding: 0;
   margin: 0;
   border: none;
@@ -1316,6 +1391,12 @@ $login-input-text: rgba(11, 52, 98, 1);
   transition: border-color 0.2s;
   box-sizing: border-box;
 
+  @include mobile-only {
+    height: 44px;
+    border-radius: 12px;
+    font-size: 15px;
+  }
+
   &--has-prefix {
     padding-left: 48px;
   }
@@ -1333,18 +1414,26 @@ $login-input-text: rgba(11, 52, 98, 1);
     color: $login-placeholder;
   }
 
-  // 隐藏密码：更大圆点（依赖浏览器 password 字形 + 字号 / 字距）
   &.form-input--password-dots:not(:placeholder-shown) {
     font-size: 20px;
     font-weight: 500;
     letter-spacing: 0.32em;
     line-height: 52px;
+
+    @include mobile-only {
+      font-size: 18px;
+      line-height: 44px;
+    }
   }
 
   &.form-input--password-dots:placeholder-shown {
     font-size: 16px;
     letter-spacing: normal;
     line-height: 1.25;
+
+    @include mobile-only {
+      font-size: 15px;
+    }
   }
 
   // 输入、自动填充时保持白底（避免 Chrome 黄底、focus 改色等）
