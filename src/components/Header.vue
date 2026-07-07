@@ -15,6 +15,7 @@ import i18nEnHover from '@/assets/images/common/icon_en_hover.svg';
 import logoUrl from '@/assets/images/common/logo_nav.svg';
 import navbarHomeIcon from '@/assets/images/common/navbar_home.svg';
 import navbarHomeMutedIcon from '@/assets/images/common/navbar_home_muted.svg';
+import loginIconUrl from '@/assets/images/common/icon_login.svg?url';
 import serviceIconUrl from '@/assets/images/common/icon_header_service.svg?url';
 import moreIconUrl from '@/assets/images/common/icon_more.svg?url';
 import avatarDefaultUrl from '@/assets/images/common/avatar_default.png?url';
