@@ -241,7 +241,7 @@ function selectLeague(leagueKey) {
     @include mobile-only {
       border-radius: 20px;
       padding: 15px 12px 16px;
-      background: #fafaff;
+      background: #EAF1F9;
       box-shadow: 0 4px 8px 0 rgba(21, 58, 119, 0.18);
     }
   }

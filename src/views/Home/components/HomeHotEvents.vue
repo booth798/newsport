@@ -166,7 +166,7 @@ async function reload() {
     border-radius: 20px;
     /* 稿：上 15px、左右 12px（与标题区标注一致） */
     padding: 15px 12px 16px;
-    background: #fafaff;
+    background: #EAF1F9;
     box-shadow: 0 4px 8px 0 rgba(21, 58, 119, 0.18);
   }
 
@@ -344,7 +344,7 @@ async function reload() {
       gap: 10px;
       border-radius: 48px;
       border: 1px solid #d6e0eb;
-      background: #fafaff;
+      background: #EAF1F9;
       box-shadow: 0 2px 8px rgba(21, 58, 119, 0.1);
       font-size: 16px;
       font-weight: 400;

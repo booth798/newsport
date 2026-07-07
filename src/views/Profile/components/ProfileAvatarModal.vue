@@ -253,7 +253,7 @@ async function handleSave() {
   border: 1px solid rgba(214, 224, 235, 0.7);
   border-radius: 12px;
   outline: none;
-  background: #fafaff;
+  background: #EAF1F9;
   color: var(--theme-text);
   font-family: inherit;
   transition: border-color 0.2s, background 0.2s;

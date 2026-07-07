@@ -522,7 +522,7 @@ onUnmounted(() => {
   @include web-main-column-max;
 
   @include mobile-only {
-    padding-inline: 16px;
+    padding-inline: 8px;
     padding-top: 20px;
     /* 与首屏轮播的 8px 间距放在导航区底部，避免内容滚动时与圆角导航条视觉脱节 */
     padding-bottom: 8px;
