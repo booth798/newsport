@@ -1,6 +1,5 @@
 <script setup>
 import Header from '@/components/Header.vue';
-import Footer from '@/components/Footer.vue';
 import FloatingService from '@/components/FloatingService.vue';
 import LoginModal from '@/components/LoginModal.vue';
 import MobileTabBar from '@/components/MobileTabBar.vue';
@@ -81,7 +80,6 @@ provide('toast', {
   <main class="main-content">
     <RouterView />
   </main>
-  <Footer />
   <MobileTabBar v-if="isMobile" />
   <FloatingService />
   <LoginModal :visible="appStore.loginModalOpen" @close="appStore.closeLoginModal" />
@@ -92,7 +90,7 @@ provide('toast', {
 @use '@/styles/tools.scss' as *;
 
 .main-content {
-  min-height: calc(100vh - 120px - 180px);
+  min-height: calc(100vh - 120px);
 
   @include mobile-only {
     padding-bottom: calc($mobile-tab-bar-offset + env(safe-area-inset-bottom, 0px));
