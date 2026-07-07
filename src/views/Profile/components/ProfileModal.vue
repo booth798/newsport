@@ -32,6 +32,12 @@ const modalClass = computed(() => (props.type ? `profile-modal--${props.type}` :
     <Transition name="profile-modal-fade">
       <div v-if="visible" class="profile-modal-overlay" @click.self="emit('close')">
         <section class="profile-modal" :class="modalClass" role="dialog" aria-modal="true">
+          <button type="button" class="profile-modal-close" :aria-label="t('关闭')" @click="emit('close')">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+          </button>
+
           <div class="profile-modal__header">
             <h2>{{ t(titleKey) }}</h2>
             <p v-if="subtitleKey">{{ t(subtitleKey) }}</p>
@@ -41,12 +47,6 @@ const modalClass = computed(() => (props.type ? `profile-modal--${props.type}` :
             <slot />
           </div>
         </section>
-
-        <button type="button" class="profile-modal-close" :aria-label="t('关闭')" @click="emit('close')">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-            <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-          </svg>
-        </button>
       </div>
     </Transition>
   </Teleport>
@@ -66,10 +66,7 @@ const modalClass = computed(() => (props.type ? `profile-modal--${props.type}` :
   backdrop-filter: blur(1px);
 
   @include mobile-only {
-    flex-direction: column;
-    align-items: center;
-    gap: 14px;
-    padding: 80px $spacing-lg 40px;
+    padding: 40px $spacing-lg;
     box-sizing: border-box;
     overflow-y: auto;
   }
@@ -448,27 +445,34 @@ const modalClass = computed(() => (props.type ? `profile-modal--${props.type}` :
 
 .profile-modal-close {
   position: absolute;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.78);
+  border: 1.5px solid rgba(255, 255, 255, 0.78);
   border-radius: 50%;
   background: rgba(11, 52, 98, 0.24);
   color: var(--auxiliary-1);
   cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: rgba(11, 52, 98, 0.38);
+  }
 
   @include web-only {
-    top: calc(50% - 300px);
-    left: calc(50% + 166px);
+    top: -14px;
+    right: -14px;
+    width: 36px;
+    height: 36px;
   }
 
   @include mobile-only {
-    position: static;
-    flex: 0 0 auto;
-    transform: none;
+    top: -10px;
+    right: -4px;
+    width: 32px;
+    height: 32px;
   }
 }
 
