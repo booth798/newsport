@@ -186,6 +186,25 @@ export async function fetchProfileSummary() {
   };
 }
 
+/** 个人中心首页概览：兼容旧版个人中心 UI 的字段结构 */
+export async function fetchProfileOverview() {
+  const res = await fetchProfileSummary();
+  const data = res.data || {};
+  return {
+    code: res.code,
+    data: {
+      nickname: data.nickname || '',
+      memberId: data.memberId || '',
+      balance: data.balance,
+      currency: data.currency || 'CNY',
+      vipLevel: data.vipLevel || 1,
+      totalBet: data.totalBet,
+      winRate: data.winRateFormatted || `${Number(data.winRate || 0).toFixed(1)}%`,
+      totalProfit: data.totalProfitFormatted || '¥0.00',
+    },
+  };
+}
+
 /** 设置头像（fileRef 由 uploadFile(purpose=avatar) 返回） */
 export async function updateAvatar(fileRef) {
   return put('/customer/me/avatar', { fileRef });
