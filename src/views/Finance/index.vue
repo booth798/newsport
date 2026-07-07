@@ -15,6 +15,7 @@ const tabs = [
 ];
 
 const activeTab = computed(() => route.path);
+const isFinanceHome = computed(() => route.name === 'finance');
 </script>
 
 <template>
@@ -35,7 +36,7 @@ const activeTab = computed(() => route.path);
         </nav>
       </aside>
 
-      <nav class="finance-tabs" aria-label="finance">
+      <nav v-if="!isFinanceHome" class="finance-tabs" aria-label="finance">
         <RouterLink
           v-for="tab in tabs"
           :key="tab.to"
@@ -48,7 +49,16 @@ const activeTab = computed(() => route.path);
       </nav>
 
       <div class="finance-content">
-        <RouterView />
+        <div v-if="isFinanceHome" class="finance-empty">
+          <div class="finance-empty__illustration" aria-hidden="true">
+            <span></span>
+          </div>
+          <p>{{ t('暂无记录') }}</p>
+          <RouterLink to="/market" class="btn btn--primary finance-empty__btn">
+            {{ t('前往比赛') }}
+          </RouterLink>
+        </div>
+        <RouterView v-else />
       </div>
     </div>
   </div>
@@ -70,7 +80,7 @@ const activeTab = computed(() => route.path);
 
   @include mobile-only {
     min-height: 100vh;
-    padding: 0 16px calc(#{$mobile-tab-bar-offset} + env(safe-area-inset-bottom, 0px) + #{$spacing-md});
+    padding: 0 8px calc(#{$mobile-tab-bar-offset} + env(safe-area-inset-bottom, 0px) + #{$spacing-md});
   }
 }
 
@@ -86,8 +96,10 @@ const activeTab = computed(() => route.path);
   }
 
   @include mobile-only {
-    display: block;
+    display: flex;
+    flex-direction: column;
     max-width: 100%;
+    min-height: calc(100vh - 80px - #{$mobile-tab-bar-offset});
   }
 }
 
@@ -171,23 +183,82 @@ const activeTab = computed(() => route.path);
   }
 
   @include mobile-only {
-    position: sticky;
-    top: 0;
-    z-index: 3;
-    width: 100%;
-    overflow: hidden;
-    height: 44px;
-    margin: 0 0 16px;
-    padding: 4px;
-    box-sizing: border-box;
-    border: 1px solid rgba(255, 255, 255, 0.9);
-    border-radius: 24px;
-    background: rgba(238, 246, 255, 0.95);
-    box-shadow:
-      inset 0 1px 2px rgba(255, 255, 255, 0.85),
-      0 2px 8px rgba(21, 58, 119, 0.14);
-    backdrop-filter: blur(10px);
+    display: none;
   }
+}
+
+.finance-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: rgba(23, 59, 97, 0.48);
+
+  @include web-only {
+    min-height: 520px;
+    justify-content: center;
+  }
+
+  @include mobile-only {
+    min-height: calc(100vh - 80px - #{$mobile-tab-bar-offset} - 16px);
+    justify-content: center;
+    padding-bottom: 62px;
+    box-sizing: border-box;
+  }
+}
+
+.finance-empty__illustration {
+  position: relative;
+  width: 118px;
+  height: 118px;
+  margin-bottom: 10px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 86% 20%, #8dbdff 0 3px, transparent 4px),
+    radial-gradient(circle at 21% 62%, #8dbdff 0 3px, transparent 4px),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(116, 174, 252, 0.24));
+
+  span {
+    position: absolute;
+    left: 32px;
+    top: 25px;
+    width: 54px;
+    height: 68px;
+    border-radius: 8px;
+    background: linear-gradient(180deg, #c8def9, #8cbcff);
+    box-shadow: 14px 10px 0 rgba(115, 174, 253, 0.18);
+
+    &::before,
+    &::after {
+      content: '';
+      position: absolute;
+      left: 13px;
+      right: 13px;
+      height: 2px;
+      border-radius: 2px;
+      background: #fff;
+    }
+
+    &::before {
+      top: 22px;
+      box-shadow: 0 14px 0 #fff;
+    }
+
+    &::after {
+      top: 50px;
+    }
+  }
+}
+
+.finance-empty p {
+  margin: 0 0 42px;
+  font-size: 15px;
+}
+
+.finance-empty__btn {
+  width: 166px;
+  height: 43px;
+  border-radius: 24px;
+  font-size: 16px;
 }
 
 .finance-tab {

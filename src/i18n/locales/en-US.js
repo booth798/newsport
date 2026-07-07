@@ -54,6 +54,7 @@ export default {
   公告: 'Announcement',
   查看更多: 'View More',
   暂无数据: 'No Data',
+  暂无记录: 'No records',
   加载中: 'Loading...',
 
   // Banner
@@ -152,6 +153,7 @@ export default {
   收益区间: 'Profit range',
   赔率变动同意买入: '(If odds change, agree to buy within this range)',
   前往买入明细: 'Go to Buy Details',
+  前往比赛: 'Go to matches',
   单号: 'Order No.',
   联盟: 'League',
   开赛时间: 'Kick-off',

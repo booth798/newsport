@@ -83,6 +83,13 @@ const profileActions = [
   { key: 'logout', label: '退出登录', icon: logoutIcon, modal: 'logout' },
 ];
 
+const mobileProfileActions = [
+  { key: 'service', label: '联系客服', icon: serviceIcon, action: 'service' },
+  { key: 'info', label: '个人资料', modal: 'profile', icon: infoIcon },
+  { key: 'vip', label: 'VIP权益', to: '/vip', icon: favoritesIcon },
+  { key: 'bind', label: '绑定信息', modal: 'binding', icon: bindInfoIcon },
+];
+
 const modalMetaMap = {
   avatar: { titleKey: '用户信息', subtitleKey: '头像和昵称设置' },
   profile: { titleKey: '个人资料' },
@@ -283,6 +290,21 @@ onMounted(loadProfileSummary);
           </div>
           </section>
 
+          <section class="profile-mobile-menu card-default" aria-label="profile-mobile-actions">
+          <template v-for="item in mobileProfileActions" :key="item.key">
+            <RouterLink v-if="item.to" :to="item.to" class="profile-mobile-action">
+              <span class="profile-mobile-action__icon"><img :src="item.icon" alt="" /></span>
+              <span>{{ t(item.label) }}</span>
+              <img class="profile-mobile-action__arrow" :src="arrowMoreIcon" alt="" />
+            </RouterLink>
+            <button v-else type="button" class="profile-mobile-action" @click="handleAction(item)">
+              <span class="profile-mobile-action__icon"><img :src="item.icon" alt="" /></span>
+              <span>{{ t(item.label) }}</span>
+              <img class="profile-mobile-action__arrow" :src="arrowMoreIcon" alt="" />
+            </button>
+          </template>
+          </section>
+
           <section class="profile-action-card card-default" aria-label="profile-actions">
           <template v-for="item in profileActions" :key="item.key">
             <RouterLink
@@ -357,7 +379,7 @@ onMounted(loadProfileSummary);
   }
 
   @include mobile-only {
-    padding: $spacing-sm $spacing-sm calc(#{$mobile-tab-bar-offset} + env(safe-area-inset-bottom, 0px) + #{$spacing-lg});
+    padding: 0 $spacing-sm calc(#{$mobile-tab-bar-offset} + env(safe-area-inset-bottom, 0px) + #{$spacing-lg});
   }
 }
 
@@ -378,7 +400,7 @@ onMounted(loadProfileSummary);
   }
 
   @include mobile-only {
-    gap: $spacing-sm;
+    gap: 10px;
   }
 }
 
@@ -415,7 +437,7 @@ onMounted(loadProfileSummary);
   }
 
   @include mobile-only {
-    min-height: 244px;
+    min-height: 145px;
     border-radius: $radius-lg;
   }
 }
@@ -431,8 +453,8 @@ onMounted(loadProfileSummary);
   }
 
   @include mobile-only {
-    min-height: 172px;
-    padding: $spacing-lg 18px 14px;
+    min-height: 145px;
+    padding: 18px 18px 12px;
     box-sizing: border-box;
   }
 }
@@ -460,7 +482,7 @@ onMounted(loadProfileSummary);
   }
 
   @include mobile-only {
-    gap: $spacing-sm;
+    gap: 10px;
   }
 }
 
@@ -528,8 +550,7 @@ onMounted(loadProfileSummary);
   }
 
   @include mobile-only {
-    gap: $spacing-sm;
-    padding-top: 3px;
+    display: none;
   }
 }
 
@@ -584,12 +605,6 @@ onMounted(loadProfileSummary);
     font-size: $font-size-xl;
   }
 
-  @include mobile-only {
-    display: flex;
-    margin-top: $spacing-2xl;
-    font-size: $font-size-md;
-  }
-
   strong {
     font-family: $font-family-num, $font-family-base;
     font-weight: 800;
@@ -638,7 +653,7 @@ onMounted(loadProfileSummary);
   }
 
   @include mobile-only {
-    margin-top: 25px;
+    margin-top: 30px;
     padding: 0 10px;
   }
 }
@@ -758,7 +773,7 @@ onMounted(loadProfileSummary);
   }
 
   @include mobile-only {
-    height: 72px;
+    display: none;
   }
 }
 
@@ -801,10 +816,10 @@ onMounted(loadProfileSummary);
   }
 
   @include mobile-only {
-    display: none;
+    display: flex;
     flex-direction: column;
-    height: 182px;
-    padding: 18px 18px 16px;
+    min-height: 202px;
+    padding: 16px 18px 16px;
     border-radius: $radius-lg;
     box-sizing: border-box;
   }
@@ -881,12 +896,67 @@ onMounted(loadProfileSummary);
   }
 
   @include mobile-only {
-    display: grid;
+    display: none;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
     padding: 18px 20px 20px;
     border-radius: $radius-lg;
   }
+}
+
+.profile-mobile-menu {
+  display: none;
+
+  @include mobile-only {
+    display: flex;
+    flex-direction: column;
+    padding: 12px 16px;
+    border-radius: $radius-lg;
+    box-sizing: border-box;
+  }
+}
+
+.profile-mobile-action {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 45px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid rgba(11, 52, 98, 0.08);
+  background: transparent;
+  color: var(--theme-text);
+  font-size: 15px;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.profile-mobile-action__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-right: 10px;
+
+  img {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+  }
+}
+
+.profile-mobile-action__arrow {
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
+  opacity: 0.58;
 }
 
 .profile-action {

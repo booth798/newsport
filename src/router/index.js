@@ -43,7 +43,6 @@ const routes = [
     path: '/finance',
     name: 'finance',
     component: () => import('@/views/Finance/index.vue'),
-    redirect: '/finance/deposit',
     meta: { titleKey: '交易账务', requiresAuth: true, guestPreview: true },
     children: [
       {

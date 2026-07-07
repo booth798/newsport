@@ -130,9 +130,10 @@ const isCompactDetailHeader = computed(
     isMarketDetailPage.value ||
     isPurchaseDetailsPage.value ||
     (isMobile.value && route.meta?.compactHeader) ||
-    (isMobile.value && (isProfileHomePage.value || isProfileSubPage.value)),
+    (isMobile.value && isProfileSubPage.value),
 );
 const isMobileMarketListHeader = computed(() => isMobile.value && isMarketListPage.value);
+const isMobileProfileHomeHeader = computed(() => isMobile.value && isProfileHomePage.value);
 const compactHeaderBackTo = computed(() => {
   if (isPurchaseDetailsPage.value) {
     const raw = route.query.marketId;
@@ -355,6 +356,14 @@ onUnmounted(() => {
           <button type="button" class="header-mobile-search" :aria-label="t('搜索')" @click="openMarketSearch">
             <span aria-hidden="true"></span>
           </button>
+        </template>
+        <template v-else-if="isMobileProfileHomeHeader">
+          <RouterLink to="/profile/messages" class="header-mobile-circle-btn" :aria-label="t('消息中心')">
+            <span class="header-mobile-circle-btn__msg" aria-hidden="true"></span>
+          </RouterLink>
+          <RouterLink to="/profile/security" class="header-mobile-circle-btn" :aria-label="t('安全设置')">
+            <span class="header-mobile-circle-btn__gear" aria-hidden="true"></span>
+          </RouterLink>
         </template>
         <template v-else-if="isLoggedIn">
           <RouterLink
@@ -693,6 +702,83 @@ onUnmounted(() => {
         width: 22px;
         height: 22px;
         background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 22 22' fill='none'%3E%3Ccircle cx='9.5' cy='9.5' r='6.5' stroke='white' stroke-width='2'/%3E%3Cpath d='M14.5 14.5L20 20' stroke='white' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+      }
+    }
+
+    .header-mobile-circle-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #3ba0ff 0%, #0d6cfb 100%);
+      box-shadow: 0 4px 8px rgba(21, 58, 119, 0.12);
+      text-decoration: none;
+
+      span {
+        position: relative;
+        width: 20px;
+        height: 20px;
+        background: transparent;
+      }
+    }
+
+    .header-mobile-circle-btn__msg {
+      border: 2px solid #fff;
+      border-radius: 5px;
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 4px;
+        bottom: -5px;
+        width: 7px;
+        height: 7px;
+        border-left: 2px solid #fff;
+        border-bottom: 2px solid #fff;
+        background: #1b7cff;
+        transform: rotate(-28deg);
+      }
+
+      &::after {
+        content: '';
+        position: absolute;
+        left: 4px;
+        right: 4px;
+        top: 6px;
+        height: 2px;
+        border-radius: 2px;
+        background: #fff;
+        box-shadow: 0 5px 0 #fff;
+      }
+    }
+
+    .header-mobile-circle-btn__gear {
+      border: 2px solid #fff;
+      border-radius: 50%;
+
+      &::before {
+        content: '';
+        position: absolute;
+        inset: 5px;
+        border: 2px solid #fff;
+        border-radius: 50%;
+      }
+
+      &::after {
+        content: '';
+        position: absolute;
+        left: 50%;
+        top: -4px;
+        width: 4px;
+        height: 28px;
+        border-radius: 3px;
+        background:
+          linear-gradient(#fff, #fff) top / 100% 5px no-repeat,
+          linear-gradient(#fff, #fff) bottom / 100% 5px no-repeat;
+        transform: translateX(-50%) rotate(45deg);
       }
     }
   }
