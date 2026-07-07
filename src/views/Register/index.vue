@@ -2,7 +2,9 @@
 import { computed, onBeforeUnmount, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
+import { storeToRefs } from 'pinia';
 
+import logoUrl from '@/assets/images/common/logo_nav.svg?url';
 import iconLoginUserUrl from '@/assets/images/login/icon_login_user.svg?url';
 import iconLoginLockUrl from '@/assets/images/login/icon_login_lock.svg?url';
 import iconEyeClosedUrl from '@/assets/images/login/icon_login_eye_closed.svg?url';
@@ -15,6 +17,7 @@ const { t } = useI18n();
 const router = useRouter();
 const toast = useToast();
 const appStore = useAppStore();
+const { isMobile } = storeToRefs(appStore);
 
 const phone = ref('');
 const code = ref('');
@@ -29,10 +32,15 @@ let countdownTimer = null;
 
 const passwordType = computed(() => (showPassword.value ? 'text' : 'password'));
 const isPhoneValid = computed(() => /^1\d{10}$/.test(phone.value.trim()));
+const isAccountValid = computed(() => (isMobile.value ? isPhoneValid.value : phone.value.trim().length > 0));
 const isPasswordValid = computed(() => /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,16}$/.test(password.value));
 const canSendCode = computed(() => isPhoneValid.value && countdown.value === 0);
 const canSubmit = computed(
-  () => isPhoneValid.value && code.value.trim().length > 0 && isPasswordValid.value && !submitting.value,
+  () =>
+    isAccountValid.value &&
+    (!isMobile.value || code.value.trim().length > 0) &&
+    isPasswordValid.value &&
+    !submitting.value,
 );
 const codeButtonText = computed(() => {
   if (countdown.value > 0) return t('{seconds}s 重发', { seconds: countdown.value });
@@ -67,7 +75,7 @@ function sendCode() {
 async function submitRegister() {
   if (!canSubmit.value) return;
   codeError.value = false;
-  if (code.value.trim() === '234515') {
+  if (isMobile.value && code.value.trim() === '234515') {
     codeError.value = true;
     toast.error(t('验证码错误'));
     return;
@@ -119,6 +127,7 @@ onBeforeUnmount(clearCountdown);
       </div>
 
       <header class="register-title">
+        <img class="register-title__logo" :src="logoUrl" alt="UNIBET" />
         <h1>{{ t('注册会员') }}</h1>
       </header>
 
@@ -130,14 +139,14 @@ onBeforeUnmount(clearCountdown);
               v-model.trim="phone"
               class="register-field__input"
               type="tel"
-              inputmode="numeric"
-              maxlength="11"
-              :placeholder="t('请输入手机号')"
+              :inputmode="isMobile ? 'numeric' : 'text'"
+              :maxlength="isMobile ? 11 : 32"
+              :placeholder="isMobile ? t('请输入手机号') : t('请输入账号')"
               autocomplete="tel"
             />
           </div>
 
-          <div class="register-field register-field--code" :class="{ 'register-field--error': codeError }">
+          <div v-if="isMobile" class="register-field register-field--code" :class="{ 'register-field--error': codeError }">
             <span class="register-field__shield" aria-hidden="true">
               <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
                 <path d="M14 3.7L23 7.4V13.3C23 19.1 19.2 23.2 14 25C8.8 23.2 5 19.1 5 13.3V7.4L14 3.7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
@@ -316,6 +325,7 @@ onBeforeUnmount(clearCountdown);
 }
 
 .register-title {
+  position: relative;
   height: 60px;
   margin: 6px 0 10px;
   border: 1px solid rgba(255, 255, 255, 0.95);
@@ -336,6 +346,10 @@ onBeforeUnmount(clearCountdown);
     color: #153a61;
     letter-spacing: 0;
   }
+}
+
+.register-title__logo {
+  display: none;
 }
 
 .register-card {
@@ -402,6 +416,10 @@ onBeforeUnmount(clearCountdown);
   &::placeholder {
     color: rgba(23, 59, 97, 0.36);
     font-weight: 600;
+  }
+
+  @include mobile-only {
+    font-size: 14px;
   }
 }
 
@@ -494,6 +512,103 @@ onBeforeUnmount(clearCountdown);
   .register-page {
     align-items: flex-start;
     padding: 0;
+  }
+
+  .register-phone {
+    max-width: none;
+    min-height: 100vh;
+    padding: 12px 0 40px;
+  }
+
+  .register-status {
+    display: none;
+  }
+
+  .register-title {
+    width: min(100%, 1320px);
+    height: 80px;
+    margin: 30px auto 20px;
+    border-radius: 40px;
+  }
+
+  .register-title__logo {
+    position: absolute;
+    left: 38px;
+    top: 50%;
+    display: block;
+    width: 100px;
+    height: 36px;
+    object-fit: contain;
+    transform: translateY(-50%);
+  }
+
+  .register-title h1 {
+    font-size: 24px;
+  }
+
+  .register-card {
+    width: 800px;
+    min-height: 874px;
+    margin: 0 auto;
+    padding: 80px 200px 44px;
+    border-radius: 48px;
+    background: rgba(243, 249, 255, 0.62);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.28),
+      0 12px 30px rgba(21, 58, 119, 0.08);
+  }
+
+  .register-form {
+    gap: 20px;
+  }
+
+  .register-field {
+    height: 50px;
+    border-radius: 14px;
+  }
+
+  .register-field__icon,
+  .register-field__shield {
+    left: 14px;
+    width: 24px;
+    height: 24px;
+  }
+
+  .register-field__input {
+    padding-left: 48px;
+    font-size: 16px;
+    line-height: 50px;
+  }
+
+  .register-field__input--code {
+    padding-right: 94px;
+  }
+
+  .register-code-btn {
+    right: 7px;
+    min-width: 72px;
+    height: 28px;
+    padding: 0 10px;
+    border-width: 1px;
+    border-radius: 7px;
+    font-size: 12px;
+  }
+
+  .register-eye {
+    width: 36px;
+    height: 36px;
+  }
+
+  .register-eye img {
+    width: 24px;
+    height: 24px;
+  }
+
+  .register-submit {
+    height: 48px;
+    margin-top: 12px;
+    border-radius: 24px;
+    font-size: 17px;
   }
 }
 

@@ -1,10 +1,14 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
 
 import { fetchTickets, createTicket, fetchTicketMessages, replyTicket } from '@/api/cs';
+import iconBackUrl from '@/assets/images/common/icon_back.svg?url';
+import avatarDefaultUrl from '@/assets/images/common/avatar_default.png?url';
 
 const { t } = useI18n();
+const router = useRouter();
 
 const STATUS_MAP = {
   OPEN: { label: '进行中', cls: 'service-status--open' },
@@ -41,15 +45,27 @@ const DEMO_MESSAGES = {
   'demo-1': [
     {
       id: 'demo-msg-1',
-      sender: 'CUSTOMER',
-      contentKey: '您好我想确认充值到账时间',
-      createdAt: '2026-07-07T09:41:00+08:00',
+      sender: 'AGENT',
+      contentKey: '在线客服欢迎语',
+      createdAt: '2026-07-07T21:06:00+08:00',
     },
     {
       id: 'demo-msg-2',
       sender: 'AGENT',
-      contentKey: '充值到账时间回复',
-      createdAt: '2026-07-07T09:42:00+08:00',
+      contentKey: '在线客服帮助语',
+      createdAt: '2026-07-07T21:06:00+08:00',
+    },
+    {
+      id: 'demo-msg-3',
+      sender: 'CUSTOMER',
+      contentKey: '我有几个疑问',
+      createdAt: '2026-07-07T21:06:00+08:00',
+    },
+    {
+      id: 'demo-msg-4',
+      sender: 'AGENT',
+      contentKey: '客服继续询问',
+      createdAt: '2026-07-07T21:06:00+08:00',
     },
   ],
   'demo-2': [
@@ -85,8 +101,12 @@ const activeTicket = computed(() =>
   tickets.value.find((tk) => tk.id === activeTicketId.value) || null,
 );
 
+const activeTitle = computed(() => ticketSubject(activeTicket.value) || t('在线客服'));
+const displayMessages = computed(() => (
+  messages.value.length ? messages.value : DEMO_MESSAGES['demo-1']
+));
 const canReply = computed(() =>
-  activeTicket.value && activeTicket.value.status === 'OPEN',
+  !activeTicket.value || activeTicket.value.status === 'OPEN',
 );
 
 function ticketSubject(ticket) {
@@ -108,7 +128,9 @@ async function loadTickets() {
   listError.value = '';
   try {
     const res = await fetchTickets(50);
-    tickets.value = res.data || [];
+    tickets.value = res.data?.length ? res.data : DEMO_TICKETS;
+    activeTicketId.value = tickets.value[0]?.id ?? null;
+    messages.value = DEMO_MESSAGES[activeTicketId.value] || DEMO_MESSAGES['demo-1'];
   } catch {
     tickets.value = DEMO_TICKETS;
     activeTicketId.value = DEMO_TICKETS[0]?.id ?? null;
@@ -199,6 +221,14 @@ function formatTime(iso) {
   }
 }
 
+function goBack() {
+  if (window.history.length > 1) {
+    router.back();
+    return;
+  }
+  router.push('/');
+}
+
 function startPoll() {
   pollTimer = setInterval(() => {
     if (activeTicketId.value) loadMessages(activeTicketId.value);
@@ -217,179 +247,82 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="service-page">
+    <div class="service-statusbar" aria-hidden="true">
+      <span class="service-statusbar__time">9:41</span>
+      <span class="service-statusbar__icons">
+        <span class="service-statusbar__signal"></span>
+        <span class="service-statusbar__wifi"></span>
+        <span class="service-statusbar__battery"></span>
+      </span>
+    </div>
+
+    <header class="service-topbar">
+      <button type="button" class="service-topbar__back" :aria-label="t('返回')" @click="goBack">
+        <img :src="iconBackUrl" alt="" />
+      </button>
+      <span class="service-topbar__avatar" aria-hidden="true">
+        <img :src="avatarDefaultUrl" alt="" />
+      </span>
+      <h1 class="service-topbar__title">{{ t('在线客服') }}</h1>
+    </header>
+
     <div class="service-page__inner">
-      <!-- 工单列表 -->
-      <aside class="service-list" aria-label="ticket-list">
-        <div class="service-list__header">
-          <h2 class="service-list__title">{{ t('在线客服') }}</h2>
-          <button type="button" class="btn btn--primary service-list__create" @click="openCreateForm">
-            {{ t('新建工单') }}
-          </button>
+      <section class="service-chat" aria-label="service-chat">
+        <div class="service-chat__body">
+          <div v-if="listLoading || msgLoading" class="service-state">
+            <div class="service-spinner" />
+            <span>{{ t('加载中') }}</span>
+          </div>
+
+          <div v-else class="service-messages">
+            <div class="service-chat__welcome">
+              <span class="service-chat__welcome-avatar" aria-hidden="true">
+                <img :src="avatarDefaultUrl" alt="" />
+              </span>
+              <p>{{ t('智能客服助手为您服务') }}</p>
+            </div>
+
+            <div
+              v-for="msg in displayMessages"
+              :key="msg.id"
+              class="service-msg"
+              :class="{ 'service-msg--self': msg.sender === 'CUSTOMER' }"
+            >
+              <span v-if="msg.sender !== 'CUSTOMER'" class="service-msg__avatar" aria-hidden="true">
+                <img :src="avatarDefaultUrl" alt="" />
+              </span>
+              <div class="service-msg__bubble">
+                <p class="service-msg__text">{{ messageContent(msg) }}</p>
+                <span class="service-msg__time">{{ formatTime(msg.createdAt) }}</span>
+              </div>
+              <span v-if="msg.sender === 'CUSTOMER'" class="service-msg__avatar service-msg__avatar--self" aria-hidden="true">
+                <span></span>
+              </span>
+            </div>
+            <div ref="messagesEndRef" />
+          </div>
         </div>
 
-        <div v-if="listLoading" class="service-state">
-          <div class="service-spinner" />
-          <span>{{ t('加载中') }}</span>
-        </div>
-
-        <div v-else-if="listError" class="service-state service-state--error">
-          <span>{{ listError }}</span>
-          <button type="button" class="btn btn--primary service-state__retry" @click="loadTickets">
-            {{ t('重试') }}
-          </button>
-        </div>
-
-        <div v-else-if="tickets.length === 0" class="service-state">
-          <span>{{ t('暂无工单') }}</span>
-        </div>
-
-        <ul v-else class="service-ticket-list">
-          <li
-            v-for="ticket in tickets"
-            :key="ticket.id"
-            class="service-ticket-item"
-            :class="{ 'service-ticket-item--active': ticket.id === activeTicketId }"
-            @click="selectTicket(ticket)"
+        <footer class="service-chat__footer">
+          <textarea
+            v-model="replyContent"
+            class="service-reply-input"
+            :placeholder="canReply ? t('请输入消息...') : t('该工单已关闭，无法继续回复')"
+            :disabled="!canReply"
+            maxlength="2000"
+            rows="2"
+            @keydown.enter.ctrl.exact="handleReply"
+          />
+          <button
+            type="button"
+            class="btn btn--primary service-reply-btn"
+            :disabled="replySending || !replyContent.trim() || !canReply"
+            @click="handleReply"
           >
-            <div class="service-ticket-item__top">
-              <span class="service-ticket-item__subject">{{ ticketSubject(ticket) }}</span>
-              <span class="service-status" :class="STATUS_MAP[ticket.status]?.cls">
-                {{ t(STATUS_MAP[ticket.status]?.label || ticket.status) }}
-              </span>
-            </div>
-            <div class="service-ticket-item__meta">
-              <span class="service-ticket-item__category">{{ ticketCategory(ticket) }}</span>
-              <span class="service-ticket-item__time">{{ formatTime(ticket.createdAt) }}</span>
-            </div>
-          </li>
-        </ul>
-      </aside>
-
-      <!-- 右侧详情 -->
-      <main class="service-detail">
-        <!-- 新建工单表单 -->
-        <template v-if="showCreateForm">
-          <div class="service-create card-default">
-            <h3 class="service-create__title">{{ t('新建工单') }}</h3>
-            <div class="service-form-group">
-              <label class="service-form-label">{{ t('主题') }}</label>
-              <input
-                v-model="createForm.subject"
-                type="text"
-                class="service-form-input"
-                :placeholder="t('请输入工单主题')"
-                maxlength="100"
-              />
-            </div>
-            <div class="service-form-group">
-              <label class="service-form-label">{{ t('分类') }}</label>
-              <select v-model="createForm.category" class="service-form-input">
-                <option v-for="cat in CATEGORIES" :key="cat.value" :value="cat.value">
-                  {{ t(cat.label) }}
-                </option>
-              </select>
-            </div>
-            <div class="service-form-group">
-              <label class="service-form-label">{{ t('内容') }}</label>
-              <textarea
-                v-model="createForm.content"
-                class="service-form-textarea"
-                :placeholder="t('请详细描述您的问题')"
-                rows="5"
-                maxlength="2000"
-              />
-            </div>
-            <div class="service-create__actions">
-              <button type="button" class="btn service-create__cancel" @click="cancelCreate">
-                {{ t('取消') }}
-              </button>
-              <button
-                type="button"
-                class="btn btn--primary"
-                :disabled="createSubmitting || !createForm.subject.trim() || !createForm.content.trim()"
-                @click="submitCreate"
-              >
-                {{ createSubmitting ? t('提交中') : t('提交') }}
-              </button>
-            </div>
-          </div>
-        </template>
-
-        <!-- 未选择工单 -->
-        <template v-else-if="!activeTicketId">
-          <div class="service-empty-detail card-default">
-            <span>{{ t('请选择一个工单查看详情') }}</span>
-          </div>
-        </template>
-
-        <!-- 工单消息 -->
-        <template v-else>
-          <div class="service-chat card-default">
-            <div class="service-chat__header">
-              <h3 class="service-chat__title">{{ ticketSubject(activeTicket) }}</h3>
-              <span class="service-status" :class="STATUS_MAP[activeTicket?.status]?.cls">
-                {{ t(STATUS_MAP[activeTicket?.status]?.label || '') }}
-              </span>
-            </div>
-
-            <div class="service-chat__body">
-              <div v-if="msgLoading" class="service-state">
-                <div class="service-spinner" />
-                <span>{{ t('加载中') }}</span>
-              </div>
-
-              <div v-else-if="msgError" class="service-state service-state--error">
-                <span>{{ msgError }}</span>
-                <button type="button" class="btn btn--primary service-state__retry" @click="loadMessages(activeTicketId)">
-                  {{ t('重试') }}
-                </button>
-              </div>
-
-              <div v-else-if="messages.length === 0" class="service-state">
-                <span>{{ t('暂无消息') }}</span>
-              </div>
-
-              <div v-else class="service-messages">
-                <div
-                  v-for="msg in messages"
-                  :key="msg.id"
-                  class="service-msg"
-                  :class="{ 'service-msg--self': msg.sender === 'CUSTOMER' }"
-                >
-                  <div class="service-msg__bubble">
-                    <p class="service-msg__text">{{ messageContent(msg) }}</p>
-                    <span class="service-msg__time">{{ formatTime(msg.createdAt) }}</span>
-                  </div>
-                </div>
-                <div ref="messagesEndRef" />
-              </div>
-            </div>
-
-            <div v-if="canReply" class="service-chat__footer">
-              <textarea
-                v-model="replyContent"
-                class="service-reply-input"
-                :placeholder="t('输入回复内容')"
-                rows="2"
-                maxlength="2000"
-                @keydown.enter.ctrl.exact="handleReply"
-              />
-              <button
-                type="button"
-                class="btn btn--primary service-reply-btn"
-                :disabled="replySending || !replyContent.trim()"
-                @click="handleReply"
-              >
-                {{ replySending ? t('发送中') : t('发送') }}
-              </button>
-            </div>
-
-            <div v-else-if="activeTicket" class="service-chat__closed">
-              {{ t('该工单已关闭，无法继续回复') }}
-            </div>
-          </div>
-        </template>
-      </main>
+            {{ replySending ? t('发送中') : t('发送') }}
+          </button>
+        </footer>
+      </section>
     </div>
   </div>
 </template>
@@ -403,13 +336,208 @@ onBeforeUnmount(() => {
   min-height: 100vh;
   overflow-x: hidden;
   background: var(--theme-bg);
+  color: #173b61;
+  box-sizing: border-box;
 
   @include web-only {
-    padding: 10px 30px $spacing-2xl;
+    padding: 30px 30px 20px;
   }
 
   @include mobile-only {
-    padding: 0 $spacing-sm $spacing-md;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 0 8px 35px;
+  }
+}
+
+.service-statusbar {
+  display: none;
+
+  @include mobile-only {
+    height: 43px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 17px 0 24px;
+    color: #111827;
+    font-family: $font-family-num, $font-family-base;
+    box-sizing: border-box;
+  }
+}
+
+.service-statusbar__time {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.service-statusbar__icons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.service-statusbar__signal {
+  width: 17px;
+  height: 12px;
+  background:
+    linear-gradient(to top, #111827 0 35%, transparent 35%) 0 6px / 3px 6px no-repeat,
+    linear-gradient(to top, #111827 0 55%, transparent 55%) 5px 4px / 3px 8px no-repeat,
+    linear-gradient(to top, #111827 0 75%, transparent 75%) 10px 2px / 3px 10px no-repeat,
+    linear-gradient(to top, #111827 0 100%, transparent 100%) 15px 0 / 3px 12px no-repeat;
+}
+
+.service-statusbar__wifi {
+  position: relative;
+  width: 15px;
+  height: 11px;
+  border: 3px solid #111827;
+  border-bottom: 0;
+  border-left-color: transparent;
+  border-right-color: transparent;
+  border-radius: 14px 14px 0 0;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -5px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #111827;
+    transform: translateX(-50%);
+  }
+}
+
+.service-statusbar__battery {
+  position: relative;
+  width: 22px;
+  height: 11px;
+  border: 2px solid #111827;
+  border-radius: 4px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    right: -5px;
+    top: 3px;
+    width: 3px;
+    height: 5px;
+    border-radius: 0 2px 2px 0;
+    background: #111827;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    border-radius: 2px;
+    background: #111827;
+  }
+}
+
+.service-topbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: linear-gradient(90deg, #63b7ff 0%, #0d6cfb 100%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+  box-sizing: border-box;
+  color: #fff;
+
+  @include web-only {
+    width: min(100%, 1380px);
+    height: 80px;
+    margin: 0 auto 20px;
+    padding: 0 36px;
+    border-radius: 40px;
+  }
+
+  @include mobile-only {
+    width: 100%;
+    height: 44px;
+    margin: 8px 0 23px;
+    padding: 0 14px;
+    border-radius: 24px;
+  }
+}
+
+.service-topbar__back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+
+  @include web-only {
+    width: 44px;
+    height: 44px;
+  }
+
+  @include mobile-only {
+    width: 32px;
+    height: 32px;
+  }
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    filter: brightness(0) invert(1);
+  }
+}
+
+.service-topbar__avatar {
+  position: absolute;
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #fff;
+  transform: translateX(-84px);
+
+  @include web-only {
+    width: 48px;
+    height: 48px;
+  }
+
+  @include mobile-only {
+    width: 42px;
+    height: 42px;
+    transform: translateX(-42px);
+  }
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.service-topbar__title {
+  position: absolute;
+  left: 50%;
+  margin: 0;
+  color: #fff;
+  font-weight: 500;
+  letter-spacing: 0;
+  transform: translateX(-10px);
+
+  @include web-only {
+    font-size: 24px;
+  }
+
+  @include mobile-only {
+    font-size: 17px;
+    transform: translateX(5px);
   }
 }
 
@@ -418,15 +546,14 @@ onBeforeUnmount(() => {
 
   @include web-only {
     display: flex;
-    align-items: flex-start;
-    gap: $spacing-xl;
-    width: min(100%, 1200px);
+    justify-content: center;
+    width: min(100%, 800px);
   }
 
   @include mobile-only {
-    display: flex;
-    flex-direction: column;
-    gap: $spacing-sm;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
   }
 }
 
@@ -711,125 +838,258 @@ onBeforeUnmount(() => {
 .service-chat {
   display: flex;
   flex-direction: column;
-  border-radius: $radius-lg;
+  box-sizing: border-box;
   overflow: hidden;
+  background: rgba(243, 249, 255, 0.58);
 
   @include web-only {
-    min-height: 500px;
-    max-height: calc(100vh - 20px);
+    width: 800px;
+    height: calc(100vh - 150px);
+    min-height: 720px;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 48px;
+    box-shadow: 0 12px 30px rgba(21, 58, 119, 0.1);
   }
 
   @include mobile-only {
-    min-height: 360px;
-    max-height: calc(100vh - 340px);
+    height: 100%;
+    border-radius: 0;
+    background: transparent;
   }
-}
-
-.service-chat__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: $spacing-sm;
-  padding: $spacing-lg;
-  border-bottom: 1px solid var(--theme-divider);
-  flex-shrink: 0;
-}
-
-.service-chat__title {
-  margin: 0;
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--theme-text);
-  font-size: $font-size-base;
-  font-weight: 700;
 }
 
 .service-chat__body {
   flex: 1;
   overflow-y: auto;
-  padding: $spacing-lg;
+  min-height: 0;
+
+  @include web-only {
+    padding: 40px 34px 20px;
+  }
+
+  @include mobile-only {
+    padding: 0 0 16px;
+  }
 }
 
 .service-messages {
   display: flex;
   flex-direction: column;
-  gap: $spacing-md;
+  gap: 24px;
+
+  @include mobile-only {
+    gap: 16px;
+  }
+}
+
+.service-chat__welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  align-self: center;
+  gap: 0;
+  margin-bottom: 14px;
+
+  @include mobile-only {
+    margin-top: 0;
+    margin-bottom: 4px;
+  }
+
+  p {
+    margin: -4px 0 0;
+    padding: 12px 36px;
+    border-radius: 24px;
+    background: #fff;
+    color: #171e24;
+    font-size: 16px;
+    line-height: 1.25;
+    box-shadow: 0 2px 6px rgba(21, 58, 119, 0.04);
+
+    @include mobile-only {
+      padding: 9px 18px;
+      border-radius: 18px;
+      font-size: 12px;
+    }
+  }
+}
+
+.service-chat__welcome-avatar {
+  position: relative;
+  z-index: 1;
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #fff;
+
+  @include mobile-only {
+    width: 42px;
+    height: 42px;
+  }
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 }
 
 .service-msg {
   display: flex;
+  align-items: flex-start;
+  gap: 14px;
   justify-content: flex-start;
+
+  @include mobile-only {
+    gap: 8px;
+  }
 }
 
 .service-msg--self {
   justify-content: flex-end;
 }
 
+.service-msg__avatar {
+  width: 42px;
+  height: 42px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(21, 58, 119, 0.08);
+
+  @include mobile-only {
+    width: 35px;
+    height: 35px;
+  }
+
+  img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+  }
+}
+
+.service-msg__avatar--self {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e9f0f8;
+
+  span {
+    width: 18px;
+    height: 22px;
+    border-radius: 50% 50% 44% 44%;
+    background:
+      radial-gradient(circle at 50% 28%, #171e24 0 3px, transparent 3px),
+      linear-gradient(#f0b9a1 0 34%, #e7a78d 34% 58%, transparent 58%),
+      linear-gradient(135deg, transparent 0 43%, #0d6cfb 43% 57%, transparent 57%);
+  }
+}
+
 .service-msg__bubble {
-  max-width: 70%;
-  padding: $spacing-sm $spacing-md;
-  border-radius: $radius-md;
-  background: var(--theme-bg);
+  max-width: min(520px, 76%);
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: #fff;
+  color: #171e24;
+  box-shadow: 0 2px 8px rgba(21, 58, 119, 0.04);
   word-break: break-word;
 
   .service-msg--self & {
-    background: rgba(28, 123, 255, 0.1);
+    background: #1f7cff;
+    color: #fff;
+  }
+
+  @include mobile-only {
+    max-width: 248px;
+    padding: 9px 12px;
+    border-radius: 8px;
   }
 }
 
 .service-msg__text {
   margin: 0;
-  color: var(--theme-text);
-  font-size: $font-size-md;
-  line-height: 1.6;
+  color: inherit;
+  font-size: 16px;
+  line-height: 1.45;
+
+  @include mobile-only {
+    font-size: 12px;
+    line-height: 1.5;
+  }
 }
 
 .service-msg__time {
-  display: block;
-  margin-top: $spacing-xs;
-  color: var(--theme-text-1);
-  font-size: $font-size-sm;
+  display: inline-block;
+  margin-left: 18px;
+  color: rgba(11, 52, 98, 0.42);
+  font-size: 12px;
   text-align: right;
+
+  .service-msg--self & {
+    color: rgba(255, 255, 255, 0.72);
+  }
 }
 
 .service-chat__footer {
   display: flex;
   align-items: flex-end;
-  gap: $spacing-sm;
-  padding: $spacing-md $spacing-lg;
-  border-top: 1px solid var(--theme-divider);
+  gap: 12px;
+  background: #fff;
   flex-shrink: 0;
+  box-sizing: border-box;
+
+  @include web-only {
+    min-height: 156px;
+    margin: 0 34px 20px;
+    padding: 24px 18px 18px;
+    border-radius: 18px;
+  }
+
+  @include mobile-only {
+    min-height: 86px;
+    padding: 13px 10px 10px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 14px;
+  }
 }
 
 .service-reply-input {
   flex: 1;
-  min-height: 36px;
-  max-height: 100px;
-  padding: $spacing-sm $spacing-md;
-  border: 1px solid var(--theme-divider);
-  border-radius: $radius-sm;
-  background: var(--theme-bg);
+  min-width: 0;
+  height: 100%;
+  min-height: 58px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--theme-text);
   font-size: $font-size-md;
-  resize: none;
   outline: none;
   box-sizing: border-box;
   font-family: inherit;
+  resize: none;
 
-  &:focus {
-    border-color: var(--theme-primary);
+  &::placeholder {
+    color: rgba(23, 59, 97, 0.28);
   }
 }
 
 .service-reply-btn {
   flex-shrink: 0;
-  height: 36px;
-  padding: 0 $spacing-xl;
+  height: 34px;
+  min-width: 58px;
+  padding: 0 18px;
   border-radius: $radius-pill;
   font-size: $font-size-md;
+
+  @include mobile-only {
+    height: 36px;
+    min-width: 62px;
+    font-size: 14px;
+  }
 }
 
 .service-chat__closed {

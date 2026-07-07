@@ -114,7 +114,7 @@ const routes = [
     path: '/service',
     name: 'service',
     component: () => import('@/views/Service/index.vue'),
-    meta: { titleKey: '在线客服', requiresAuth: true, guestPreview: true },
+    meta: { titleKey: '在线客服', requiresAuth: true, guestPreview: true, bare: true },
   },
   {
     path: '/vip',
