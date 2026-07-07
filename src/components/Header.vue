@@ -132,6 +132,7 @@ const isCompactDetailHeader = computed(
     (isMobile.value && route.meta?.compactHeader) ||
     (isMobile.value && isProfileSubPage.value),
 );
+const compactTitle = computed(() => t(route.meta?.titleKey || '返回'));
 const isMobileMarketListHeader = computed(() => isMobile.value && isMarketListPage.value);
 const isMobileProfileHomeHeader = computed(() => isMobile.value && isProfileHomePage.value);
 const compactHeaderBackTo = computed(() => {
@@ -235,10 +236,11 @@ onUnmounted(() => {
       >
         <img class="header-market-back-btn__img" :src="iconNavBackMarketUrl" width="40" height="40" alt="" />
       </RouterLink>
-      <img v-else-if="isMobile" class="logo" :src="logoUrl" alt="logo" />
+      <span v-if="isMobile && isProfileSubPage" class="header-mobile-compact-title">{{ compactTitle }}</span>
+      <img v-if="isMobile && !isCompactDetailHeader" class="logo" :src="logoUrl" alt="logo" />
 
       <div
-        v-if="isMobile && isCompactDetailHeader && isLoggedIn"
+        v-if="isMobile && isCompactDetailHeader && !isProfileSubPage && isLoggedIn"
         class="header-mobile-user-strip"
         role="group"
         :aria-label="loggedInUserId"
@@ -341,7 +343,7 @@ onUnmounted(() => {
           </div>
         </template>
       </div>
-      <div v-if="isMobile" class="header-mobile-actions">
+      <div v-if="isMobile && !isProfileSubPage" class="header-mobile-actions">
         <template v-if="isCompactDetailHeader">
           <template v-if="!isLoggedIn">
             <button type="button" class="header-mobile-btn" :aria-label="t('在线客服')" @click="openCustomerService">
@@ -616,6 +618,20 @@ onUnmounted(() => {
       gap: 8px;
       flex-shrink: 0;
       margin-left: auto;
+    }
+
+    .header-mobile-compact-title {
+      position: absolute;
+      left: 64px;
+      right: 64px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #0b3462;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1;
+      text-align: center;
+      pointer-events: none;
     }
 
     .header-mobile-avatar {

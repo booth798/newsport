@@ -17,6 +17,7 @@ const appStore = useAppStore();
 const route = useRoute();
 const { locale, isMobile } = storeToRefs(appStore);
 const isBarePage = computed(() => Boolean(route.meta?.bare));
+const hideMobileTabBar = computed(() => Boolean(route.meta?.hideMobileTabBar));
 
 // 统一记录窗口宽度，方便页面按需判断当前是否处于移动端布局。
 const syncViewport = () => {
@@ -81,7 +82,7 @@ provide('toast', {
   <main class="main-content" :class="{ 'main-content--bare': isBarePage }">
     <RouterView />
   </main>
-  <MobileTabBar v-if="isMobile && !isBarePage" />
+  <MobileTabBar v-if="isMobile && !isBarePage && !hideMobileTabBar" />
   <FloatingService v-if="!isBarePage" />
   <LoginModal :visible="appStore.loginModalOpen" @close="appStore.closeLoginModal" />
   <GlobalToast ref="toastRef" />

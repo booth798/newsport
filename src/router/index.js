@@ -93,7 +93,7 @@ const routes = [
         path: 'security',
         name: 'profile-security',
         component: () => import('@/views/Profile/Security.vue'),
-        meta: { titleKey: '安全设置' },
+        meta: { titleKey: '设置', hideMobileTabBar: true },
       },
       {
         path: 'bank-card',

@@ -387,6 +387,10 @@ onMounted(loadProfileSummary);
   @include web-only {
     padding-top: $spacing-xl;
   }
+
+  @include mobile-only {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + #{$spacing-lg});
+  }
 }
 
 .profile-layout__inner {
