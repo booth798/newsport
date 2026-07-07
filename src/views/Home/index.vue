@@ -1,13 +1,11 @@
 <script setup>
 import { onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import HomeBanner from './components/HomeBanner.vue';
 import HomeAnnouncement from './components/HomeAnnouncement.vue';
 import HomeHotEvents from './components/HomeHotEvents.vue';
 
 const { t } = useI18n();
-const router = useRouter();
 
 const vipLevel = ref(0);
 const homeMatches = ref([]);
@@ -32,8 +30,6 @@ onMounted(async () => {
   } catch { /* non-critical */ }
 });
 
-function goVip() { router.push('/vip'); }
-function goService() { router.push('/service'); }
 </script>
 
 <template>
@@ -43,17 +39,11 @@ function goService() { router.push('/service'); }
     <div class="home__inner">
       <HomeAnnouncement />
 
-      <div class="home__quick-actions">
-        <button v-if="vipLevel > 0" type="button" class="quick-action" @click="goVip">
+      <div v-if="vipLevel > 0" class="home__quick-actions">
+        <RouterLink to="/vip" class="quick-action">
           <span class="quick-action__icon quick-action__icon--vip">VIP</span>
           <span class="quick-action__label">{{ t('VIP中心') }}</span>
-        </button>
-        <button type="button" class="quick-action" @click="goService">
-          <span class="quick-action__icon">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 1a9 9 0 0 0-9 9v4a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3.07A7 7 0 0 1 10 3a7 7 0 0 1 6.93 6H16a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h.5a2.5 2.5 0 0 1-2.5 2.5H12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          </span>
-          <span class="quick-action__label">{{ t('在线客服') }}</span>
-        </button>
+        </RouterLink>
       </div>
 
       <HomeHotEvents :preloaded-matches="homeMatches" />
@@ -105,6 +95,7 @@ function goService() { router.push('/service'); }
   font-size: $font-size-md;
   font-weight: 600;
   cursor: pointer;
+  text-decoration: none;
   transition: all 0.2s;
 
   &:hover {

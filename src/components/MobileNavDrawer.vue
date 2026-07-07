@@ -10,7 +10,6 @@ import bgScoreUrl from '@/assets/images/events/bg_score.svg?url';
 import iconTradeSuccess from '@/assets/images/common/icon_trade_success.svg';
 import iconWithdraw from '@/assets/images/common/icon_withdraw.svg';
 import iconInvesting from '@/assets/images/common/icon_investing.svg';
-import iconAbout from '@/assets/images/common/icon_about.svg';
 import iconContact from '@/assets/images/menu/icon_my_contact_support.svg';
 
 import { openCustomerService } from '@/utils/customerService';
@@ -35,7 +34,6 @@ const route = useRoute();
 const sections = [
   { menuKey: 'market', titleKey: '市场' },
   { menuKey: 'trade', titleKey: '交易账务' },
-  { menuKey: 'member', titleKey: '会员服务' },
   { menuKey: 'myBenefit', titleKey: '我的权益' },
 ];
 
@@ -43,7 +41,6 @@ const quickLinks = [
   { labelKey: '充值', to: '/finance/deposit', icon: iconTradeSuccess },
   { labelKey: '提领', to: '/finance/withdraw', icon: iconWithdraw },
   { labelKey: '会员互转', to: '/profile', icon: iconInvesting },
-  { labelKey: '共赢伙伴', to: '/', icon: iconAbout },
 ];
 
 const sectionOpen = ref({

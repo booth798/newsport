@@ -9,12 +9,13 @@ import iconServiceActive from '@/assets/images/float/icon-service-active.svg';
 import iconServiceDefault from '@/assets/images/float/icon-service-default.svg';
 import iconServiceHover from '@/assets/images/float/icon-service-hover.svg';
 import toolbarBg from '@/assets/images/float/toolbar-bg.svg';
+import router from '@/router';
 import { registerCustomerServiceOpener } from '@/utils/customerService';
 
 const { t } = useI18n();
 
 function handleServiceOpen() {
-  // TODO: 接入在线客服 SDK / 外链等
+  router.push('/service');
 }
 
 function handleDownloadApp() {

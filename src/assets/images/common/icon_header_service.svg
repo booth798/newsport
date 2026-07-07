@@ -1,0 +1,15 @@
+<svg width="54" height="54" viewBox="0 0 54 54" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="27" cy="27" r="25.5" fill="#1C7BFF" stroke="white" stroke-width="1.5"/>
+  <circle cx="27" cy="27" r="21.5" fill="url(#paint0_radial)"/>
+  <path d="M15 29.5V26.6C15 19.85 20.35 14.5 27 14.5C33.65 14.5 39 19.85 39 26.6V29.5" stroke="white" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M15 27.25C15 25.45 16.45 24 18.25 24H20.25C20.95 24 21.5 24.55 21.5 25.25V33.25C21.5 33.95 20.95 34.5 20.25 34.5H18.25C16.45 34.5 15 33.05 15 31.25V27.25Z" fill="white"/>
+  <path d="M32.5 25.25C32.5 24.55 33.05 24 33.75 24H35.75C37.55 24 39 25.45 39 27.25V31.25C39 33.05 37.55 34.5 35.75 34.5H33.75C33.05 34.5 32.5 33.95 32.5 33.25V25.25Z" fill="white"/>
+  <path d="M37.25 33.5C36.15 37 33.25 39 29.4 39H27.9" stroke="white" stroke-width="3" stroke-linecap="round"/>
+  <path d="M25.8 39C25.8 37.9 26.7 37 27.8 37H29.2C30.3 37 31.2 37.9 31.2 39C31.2 40.1 30.3 41 29.2 41H27.8C26.7 41 25.8 40.1 25.8 39Z" fill="white"/>
+  <defs>
+    <radialGradient id="paint0_radial" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(27 45) rotate(-90) scale(38)">
+      <stop stop-color="#68B3FD"/>
+      <stop offset="1" stop-color="#1C7BFF"/>
+    </radialGradient>
+  </defs>
+</svg>

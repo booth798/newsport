@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n';
 import { useAppStore } from '@/store/modules/app';
 import HomeMatchCard from './HomeMatchCard.vue';
 import { fetchHotMatches } from '@/api/match';
+import { DEFAULT_HOT_MATCHES } from '@/constants/hotMatchCatalog';
 
 import iconEventsUrl from '@/assets/images/events/icon_events.svg?url';
 import iconHotUrl from '@/assets/images/events/icon_hot.svg?url';
@@ -49,9 +50,11 @@ onMounted(async () => {
     loading.value = true;
     error.value = false;
     const res = await fetchHotMatches();
-    matchList.value = res.data || [];
+    const list = res.data || [];
+    matchList.value = list.length ? list : DEFAULT_HOT_MATCHES;
   } catch {
-    error.value = true;
+    matchList.value = DEFAULT_HOT_MATCHES;
+    error.value = false;
   } finally {
     loading.value = false;
   }
@@ -84,9 +87,11 @@ async function reload() {
     loading.value = true;
     error.value = false;
     const res = await fetchHotMatches();
-    matchList.value = res.data || [];
+    const list = res.data || [];
+    matchList.value = list.length ? list : DEFAULT_HOT_MATCHES;
   } catch {
-    error.value = true;
+    matchList.value = DEFAULT_HOT_MATCHES;
+    error.value = false;
   } finally {
     loading.value = false;
   }

@@ -1,6 +1,18 @@
 /** 首页热门赛事与市场详情共用的演示数据（按 id 关联路由 `/market/:id`） */
 export const DEFAULT_HOT_MATCHES = [
   {
+    id: 2,
+    league: '欧冠',
+    date: '03-19 02:30',
+    countdownMinutes: 42,
+    countdown: '10:48:46',
+    homeTeam: '亚特兰大',
+    awayTeam: '拜仁慕尼黑',
+    homeScore: 1,
+    awayScore: 6,
+    volume: '10.00M',
+  },
+  {
     id: 1,
     league: '西甲',
     date: '03-19 02:30',
@@ -11,18 +23,6 @@ export const DEFAULT_HOT_MATCHES = [
     awayTeam: '赫塔菲',
     homeScore: 1,
     awayScore: 0,
-    volume: '10.00M',
-  },
-  {
-    id: 2,
-    league: '欧冠',
-    date: '03-19 02:30',
-    countdownMinutes: 42,
-    countdown: '10:48:46',
-    homeTeam: '亚特兰大',
-    awayTeam: '拜仁慕尼黑',
-    homeScore: 1,
-    awayScore: 6,
     volume: '10.00M',
   },
   {
@@ -115,3 +115,17 @@ export function getHotMatchById(rawId) {
   const id = Number(rawId);
   return DEFAULT_HOT_MATCHES.find((m) => m.id === id) ?? DEFAULT_HOT_MATCHES[0];
 }
+
+export const DEFAULT_SCORE_MARKET_ROWS_FULLTIME = [
+  { score: '1-1', scoreRaw: '1:1', probability: '4.72%', volumeFormatted: '2.60M' },
+  { score: '0-1', scoreRaw: '0:1', probability: '3.14%', volumeFormatted: '1.80M' },
+  { score: '1-0', scoreRaw: '1:0', probability: '5.67%', volumeFormatted: '3.10M' },
+  { score: '2-1', scoreRaw: '2:1', probability: '6.35%', volumeFormatted: '1.20M' },
+  { score: '0-0', scoreRaw: '0:0', probability: '2.88%', volumeFormatted: '980K' },
+];
+
+export const DEFAULT_SCORE_MARKET_ROWS_HALFTIME = [
+  { score: '0-0', scoreRaw: '0:0', probability: '2.12%', volumeFormatted: '1.40M' },
+  { score: '1-0', scoreRaw: '1:0', probability: '3.46%', volumeFormatted: '760K' },
+  { score: '0-1', scoreRaw: '0:1', probability: '3.21%', volumeFormatted: '690K' },
+];

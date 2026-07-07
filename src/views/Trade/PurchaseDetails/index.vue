@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
 import { fetchOrderedList, fetchScheduledList } from '@/api/order';
+import { getOrderedPurchaseList, getScheduledPurchaseList } from '@/constants/purchaseOrders';
 import { useAppStore } from '@/store/modules/app';
 import PurchaseOrderCard from '@/views/Trade/PurchaseDetails/components/PurchaseOrderCard.vue';
 
@@ -52,7 +53,11 @@ async function loadOrders() {
     orders.value = res.data || [];
     syncExpandedFromQuery();
   } catch {
-    error.value = true;
+    orders.value = sideTab.value === 'scheduled'
+      ? getScheduledPurchaseList(marketId.value, listOptions.value)
+      : getOrderedPurchaseList(marketId.value, listOptions.value);
+    syncExpandedFromQuery();
+    error.value = false;
   } finally {
     loading.value = false;
   }

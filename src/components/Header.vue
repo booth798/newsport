@@ -4,7 +4,6 @@ import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
-import iconAnnouncement from '@/assets/images/common/icon_announcement.svg';
 import navCollapsedIcon from '@/assets/images/common/icon_nav_collapsed.svg';
 import navExpandedIcon from '@/assets/images/common/icon_nav_expanded.svg';
 import i18nCnIcon from '@/assets/images/common/i18n_cn.svg';
@@ -16,24 +15,20 @@ import i18nEnHover from '@/assets/images/common/icon_en_hover.svg';
 import logoUrl from '@/assets/images/common/logo_nav.svg';
 import navbarHomeIcon from '@/assets/images/common/navbar_home.svg';
 import navbarHomeMutedIcon from '@/assets/images/common/navbar_home_muted.svg';
-import loginIconUrl from '@/assets/images/common/icon_login.svg?url';
+import serviceIconUrl from '@/assets/images/common/icon_header_service.svg?url';
 import moreIconUrl from '@/assets/images/common/icon_more.svg?url';
 import avatarDefaultUrl from '@/assets/images/common/avatar_default.png?url';
 import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.svg?url';
 import MobileNavDrawer from '@/components/MobileNavDrawer.vue';
 import { useAppStore } from '@/store/modules/app';
+import { openCustomerService } from '@/utils/customerService';
 
-import iconAboutUnibet from '@/assets/images/menu/icon_about_unibet.svg';
-import iconLiveScores from '@/assets/images/menu/icon_live_scores.svg';
 import iconMarketList from '@/assets/images/menu/icon_market_list.svg';
-import iconMatchResults from '@/assets/images/menu/icon_match_results.svg';
 import iconMy from '@/assets/images/menu/icon_my.svg';
 import iconPersonalProfile from '@/assets/images/menu/icon_personal_profile.svg';
 import iconPurchaseDetails from '@/assets/images/menu/icon_purchase_details.svg';
-import iconRulesDescription from '@/assets/images/menu/icon_rules_description.svg';
 import iconSettings from '@/assets/images/menu/icon_settings.svg';
 import iconTransactionRecords from '@/assets/images/menu/icon_transaction_records.svg';
-import iconVipRules from '@/assets/images/menu/icon_vip_rules.svg';
 
 const { t } = useI18n();
 
@@ -60,18 +55,10 @@ const enIconSrc = computed(() => {
 const navMenus = {
   market: [
     { labelKey: '市场列表', to: '/market', icon: iconMarketList },
-    { labelKey: '赛事结果', to: '/market', icon: iconMatchResults },
-    { labelKey: '即时比分', to: '/market', icon: iconLiveScores },
   ],
   trade: [
     { labelKey: '买入明细', to: '/trade/purchases', icon: iconPurchaseDetails },
     { labelKey: '交易记录', to: '/finance/records', icon: iconTransactionRecords },
-  ],
-  member: [
-    { labelKey: '公告', to: { path: '/', hash: '#home-announcement' }, icon: iconAnnouncement },
-    { labelKey: 'VIP规则', to: '/', icon: iconVipRules },
-    { labelKey: '规则说明', to: '/', icon: iconRulesDescription },
-    { labelKey: '关于UNIBET', to: '/', icon: iconAboutUnibet },
   ],
   myBenefit: [
     { labelKey: '我的', to: '/profile', icon: iconMy },
@@ -84,7 +71,6 @@ const navbarList = [
   { kind: 'plain', labelKey: '首页', key: 'home', width: 104, to: '/' },
   { kind: 'dropdown', labelKey: '市场', key: 'market', width: 104, to: '/market', menuKey: 'market' },
   { kind: 'dropdown', labelKey: '交易账务', key: 'trade', width: 124, to: '/finance/deposit', menuKey: 'trade' },
-  { kind: 'dropdown', labelKey: '会员服务', key: 'member', width: 124, to: '/', menuKey: 'member' },
   { kind: 'dropdown', labelKey: '我的权益', key: 'myBenefit', width: 124, to: '/profile', menuKey: 'myBenefit' },
 ];
 
@@ -98,7 +84,6 @@ const isNavActive = (item) => {
     );
   }
   if (item.key === 'trade') return route.path.startsWith('/finance') || route.name === 'trade-purchases';
-  if (item.key === 'member') return false;
   if (item.key === 'myBenefit') return route.path.startsWith('/profile');
   return false;
 };
@@ -145,6 +130,7 @@ const isCompactDetailHeader = computed(
     isMarketLeaguePage.value ||
     isMarketDetailPage.value ||
     isPurchaseDetailsPage.value ||
+    (isMobile.value && route.meta?.compactHeader) ||
     (isMobile.value && (isProfileHomePage.value || isProfileSubPage.value)),
 );
 const compactHeaderBackTo = computed(() => {
@@ -163,6 +149,9 @@ const compactHeaderBackTo = computed(() => {
     return '/profile';
   }
   if (isProfileHomePage.value) {
+    return '/';
+  }
+  if (route.meta?.compactHeader) {
     return '/';
   }
   if (isMarketDetailPage.value) {
@@ -350,8 +339,8 @@ onUnmounted(() => {
       <div v-if="isMobile" class="header-mobile-actions">
         <template v-if="isCompactDetailHeader">
           <template v-if="!isLoggedIn">
-            <button type="button" class="header-mobile-btn" :aria-label="t('登录')" @click="appStore.openLoginModal">
-              <img class="header-mobile-btn__img" :src="loginIconUrl" alt="" />
+            <button type="button" class="header-mobile-btn" :aria-label="t('在线客服')" @click="openCustomerService">
+              <img class="header-mobile-btn__service-img" :src="serviceIconUrl" alt="" />
             </button>
           </template>
           <button type="button" class="header-mobile-btn" :aria-label="t('菜单')" @click="mobileDrawerOpen = true">
@@ -371,8 +360,8 @@ onUnmounted(() => {
           </button>
         </template>
         <template v-else>
-          <button type="button" class="header-mobile-btn" :aria-label="t('登录')" @click="appStore.openLoginModal">
-            <img class="header-mobile-btn__img" :src="loginIconUrl" alt="" />
+          <button type="button" class="header-mobile-btn" :aria-label="t('在线客服')" @click="openCustomerService">
+            <img class="header-mobile-btn__service-img" :src="serviceIconUrl" alt="" />
           </button>
           <button type="button" class="header-mobile-btn" :aria-label="t('菜单')" @click="mobileDrawerOpen = true">
             <img class="header-mobile-btn__img" :src="moreIconUrl" alt="" />
@@ -513,13 +502,14 @@ onUnmounted(() => {
   @include web-main-column-max;
 
   @include mobile-only {
-    padding-top: 12px;
+    padding-inline: 16px;
+    padding-top: 20px;
     /* 与首屏轮播的 8px 间距放在导航区底部，避免内容滚动时与圆角导航条视觉脱节 */
     padding-bottom: 8px;
 
     .card-primary.norem {
-      height: 57px;
-      min-height: 57px;
+      height: 52px;
+      min-height: 52px;
       padding: 0 12px;
       border-radius: 30px;
       background: var(--surface-card);
@@ -662,6 +652,15 @@ onUnmounted(() => {
         width: 36px;
         height: 36px;
         display: block;
+        pointer-events: none;
+        border-radius: 50%;
+      }
+
+      &__service-img {
+        width: 36px;
+        height: 36px;
+        display: block;
+        object-fit: contain;
         pointer-events: none;
         border-radius: 50%;
       }

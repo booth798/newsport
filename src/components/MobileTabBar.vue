@@ -11,8 +11,7 @@ import tabMarketActive from '@/assets/images/tabs/tab_market_active@3x.png';
 import tabProfile from '@/assets/images/tabs/tab_profile@3x.png';
 import tabProfileActive from '@/assets/images/tabs/tab_profile_active@3x.png';
 import tabService from '@/assets/images/tabs/tab_service@3x.png';
-
-import { openCustomerService } from '@/utils/customerService';
+import tabServiceActive from '@/assets/images/tabs/tab_service_active@3x.png';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -39,7 +38,7 @@ const tabs = [
     to: '/service',
     labelKey: '客服',
     icon: tabService,
-    iconActive: tabService,
+    iconActive: tabServiceActive,
     match: (r) => r.path.startsWith('/service'),
   },
   {
@@ -78,16 +77,6 @@ const iconSrc = (tab) => (isActive(tab) ? tab.iconActive : tab.icon);
           <span class="mobile-tab-bar__label">{{ t(tab.labelKey) }}</span>
         </a>
       </RouterLink>
-      <button
-        v-else
-        type="button"
-        class="mobile-tab-bar__item"
-        :aria-label="t(tab.labelKey)"
-        @click="openCustomerService"
-      >
-        <img class="mobile-tab-bar__icon" :src="iconSrc(tab)" alt="" width="28" height="28" />
-        <span class="mobile-tab-bar__label">{{ t(tab.labelKey) }}</span>
-      </button>
     </template>
   </nav>
 </template>
