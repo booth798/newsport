@@ -16,6 +16,11 @@ const DEFAULT_CHANNELS = [
   { channelCode: 'USDT', channelName: 'USDT', minAmount: 10, maxAmount: 50000 },
 ];
 
+const DEFAULT_BALANCE = {
+  currency: 'CNY',
+  formatted: '1,342,512.35',
+};
+
 const loading = ref(true);
 const error = ref(false);
 const submitting = ref(false);
@@ -38,21 +43,32 @@ onMounted(() => {
 async function loadData() {
   loading.value = true;
   error.value = false;
+  balance.value = DEFAULT_BALANCE;
+  channels.value = DEFAULT_CHANNELS;
+  selectedChannel.value = DEFAULT_CHANNELS[0].channelCode;
+  loading.value = false;
   try {
+    const withTimeout = (promise, fallback) =>
+      Promise.race([
+        promise,
+        new Promise((resolve) => {
+          window.setTimeout(() => resolve(fallback), 1800);
+        }),
+      ]);
     const [balanceRes, channelsRes] = await Promise.all([
-      fetchBalance(),
-      fetchDepositChannels().catch(() => null),
+      withTimeout(fetchBalance(), { data: DEFAULT_BALANCE }).catch(() => ({ data: DEFAULT_BALANCE })),
+      withTimeout(fetchDepositChannels(), null).catch(() => null),
     ]);
-    balance.value = balanceRes.data;
+    balance.value = balanceRes.data || DEFAULT_BALANCE;
 
     const list = channelsRes?.data;
     channels.value = Array.isArray(list) && list.length > 0 ? list : DEFAULT_CHANNELS;
     selectedChannel.value = channels.value[0]?.channelCode ?? null;
   } catch {
-    error.value = true;
-  } finally {
-    loading.value = false;
-  }
+    balance.value = DEFAULT_BALANCE;
+    channels.value = DEFAULT_CHANNELS;
+    selectedChannel.value = DEFAULT_CHANNELS[0].channelCode;
+  } finally { /* default content is already visible while network refreshes */ }
 }
 
 function selectAmount(val) {

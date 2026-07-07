@@ -70,7 +70,7 @@ const activeTab = computed(() => route.path);
 
   @include mobile-only {
     min-height: 100vh;
-    padding: 0 16px $spacing-md;
+    padding: 0 16px calc(#{$mobile-tab-bar-offset} + env(safe-area-inset-bottom, 0px) + #{$spacing-md});
   }
 }
 
