@@ -37,7 +37,7 @@ const route = useRoute();
 const router = useRouter();
 const appStore = useAppStore();
 const toast = useToast();
-const { loggedInUserId, loggedInAssetsFormatted } = storeToRefs(appStore);
+const { loggedInUserId, loggedInAssetsFormatted, isMobile } = storeToRefs(appStore);
 
 const activeModal = ref('');
 const loading = ref(true);
@@ -337,7 +337,7 @@ onMounted(loadProfileSummary);
         </template>
       </template>
 
-      <main v-else class="profile-subpage card-default">
+      <main v-else class="profile-subpage" :class="{ 'card-default': !isMobile }">
         <RouterView />
       </main>
     </div>

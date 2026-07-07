@@ -389,7 +389,7 @@ onUnmounted(() => {
         </template>
       </div>
       <div
-        v-else
+        v-if="!isMobile || !isProfileSubPage"
         class="header-toolbar"
         :class="{
           'header-toolbar--member': isLoggedIn && !isCompactDetailHeader,
