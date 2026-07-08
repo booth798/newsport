@@ -1,13 +1,21 @@
-import { get, post } from './request';
+import { get, post, resolveApiAssetUrl } from './request';
 
 /** 首页聚合查询（banners + hotMarkets + vip） */
 export async function fetchHomeData() {
-  return get('/home');
+  const res = await get('/home');
+  if (Array.isArray(res.data?.banners)) {
+    res.data.banners = normalizeBanners(res.data.banners);
+  }
+  return res;
 }
 
 /** 获取 banner 列表 */
 export async function fetchBanners(position = 'home', platform = 'h5') {
-  return get('/banners', { position, platform });
+  const res = await get('/banners', { position, platform });
+  if (Array.isArray(res.data)) {
+    res.data = normalizeBanners(res.data);
+  }
+  return res;
 }
 
 /** 上报 Banner 点击 */
@@ -27,7 +35,7 @@ export async function fetchHotMatches() {
     const info = leagueMap[m.leagueId];
     if (info) {
       norm.league = info.shortName || info.name || norm.league;
-      if (!norm.leagueIcon) norm.leagueIcon = info.logoUrl || '';
+      if (!norm.leagueIcon) norm.leagueIcon = resolveApiAssetUrl(info.logoUrl) || '';
     }
     return norm;
   });
@@ -42,7 +50,7 @@ export async function fetchLeagueList() {
     id: l.id,
     name: l.name,
     shortName: l.shortName,
-    logoUrl: l.logoUrl,
+    logoUrl: resolveApiAssetUrl(l.logoUrl),
     category: l.category,
     region: l.region,
     hot: l.hot,
@@ -76,7 +84,7 @@ export async function fetchMatchList(params = {}) {
       const info = leagueMap[m.leagueId];
       if (info) {
         norm.league = info.shortName || info.name || norm.league;
-        if (!norm.leagueIcon) norm.leagueIcon = info.logoUrl || '';
+        if (!norm.leagueIcon) norm.leagueIcon = resolveApiAssetUrl(info.logoUrl) || '';
       }
       return norm;
     });
@@ -104,7 +112,7 @@ export async function fetchLeagueMatches(league) {
     data: records.map((m) => {
       const norm = normalizeMatch(m);
       norm.league = found.shortName || found.name || norm.league;
-      norm.leagueIcon = found.logoUrl || '';
+      norm.leagueIcon = resolveApiAssetUrl(found.logoUrl) || '';
       return norm;
     }),
   };
@@ -122,7 +130,7 @@ export async function fetchMatchDetail(id) {
     const info = leagueMap[res.data.leagueId];
     if (info) {
       res.data.league = info.shortName || info.name || res.data.league;
-      if (!res.data.leagueIcon) res.data.leagueIcon = info.logoUrl || '';
+      if (!res.data.leagueIcon) res.data.leagueIcon = resolveApiAssetUrl(info.logoUrl) || '';
     }
   }
   return res;
@@ -201,11 +209,11 @@ function normalizeMatch(m) {
     id: m.id || m.matchId,
     league: m.leagueShortName || m.leagueName || '',
     leagueId: m.leagueId,
-    leagueIcon: m.leagueLogoUrl || m.leagueIcon || '',
+    leagueIcon: resolveApiAssetUrl(m.leagueLogoUrl || m.leagueIcon) || '',
     homeTeam: m.homeTeamShortName || m.homeTeamName || '',
     awayTeam: m.awayTeamShortName || m.awayTeamName || '',
-    homeTeamLogo: m.homeTeamLogoUrl || m.homeTeamLogo || '',
-    awayTeamLogo: m.awayTeamLogoUrl || m.awayTeamLogo || '',
+    homeTeamLogo: resolveApiAssetUrl(m.homeTeamLogoUrl || m.homeTeamLogo) || '',
+    awayTeamLogo: resolveApiAssetUrl(m.awayTeamLogoUrl || m.awayTeamLogo) || '',
     homeScore: m.ftHomeScore ?? 0,
     awayScore: m.ftAwayScore ?? 0,
     htHomeScore: m.htHomeScore ?? 0,
@@ -243,6 +251,13 @@ export function normalizeHomeMarkets(hotMarkets) {
     }
   }
   return Array.from(matchMap.values()).map((m) => normalizeMatch(m));
+}
+
+function normalizeBanners(banners) {
+  return banners.map((banner) => ({
+    ...banner,
+    imageUrl: resolveApiAssetUrl(banner.imageUrl) || banner.imageUrl,
+  }));
 }
 
 function computeCountdown(kickoffAt) {

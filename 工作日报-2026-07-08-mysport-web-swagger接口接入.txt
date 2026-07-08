@@ -1,0 +1,15 @@
+工作日报
+报告日期：2026-07-08
+报告人：王远
+
+项目：mysport-web
+1 Swagger 客户端接口接入与请求层修正
+  - 接入并核对客户端 Swagger 文档，确认 C 端公开接口、登录鉴权、赛事盘口、订单、财务、个人中心等核心接口覆盖情况。
+  - 统一业务请求 API 根地址拼接逻辑，新增可复用的 buildApiUrl 方法，避免登录、刷新 token、上传等模块各自硬编码 /api。
+  - 将站点 apiBaseUrl 调整为支持 VITE_API_BASE_URL 配置，默认继续走本地 /api 代理，兼容开发环境和生产环境反代部署。
+  - 按 Swagger 鉴权契约修正 X-Customer-Token 请求头，去掉 Bearer 前缀，改为直接传 satoken。
+  - 登录 BOOTSTRAP 加密请求、token 刷新、文件上传和文件下载统一使用新的 API 地址拼接方式。
+  - 新增接口资源路径归一化处理，兼容后端返回的 /api/asset/logo 等相对地址，避免切换完整 API 域名后队徽、联赛图标和 Banner 图片断链。
+  - 对首页 Banner、热门赛事、联赛列表、赛事详情等接口返回图片字段做统一处理，提升真实接口数据展示稳定性。
+  - 验证本地 Vite /api 代理可正常访问 Swagger 对应后端，/api/home 返回成功并获取热门盘口数据，/api/auth/pubkey 可正常获取 RSA 公钥。
+  - 运行 npm run build 和 git diff --check 完成自测，构建通过，仅保留已有动态导入分包提示。

@@ -1,4 +1,4 @@
-import { get, post, put, del, request } from './request';
+import { buildApiUrl, get, post, put, del, request } from './request';
 import { bootstrapEncrypt, decryptResponse, saveSession } from './encrypt';
 import { resolveErrorMessage } from './errorCodes';
 
@@ -32,14 +32,14 @@ async function bootstrapRequest(url, payload, extraHeaders = {}) {
   }
 
   const { encryptedBody, headers, aesKey } = await bootstrapEncrypt(payload);
-  const fullUrl = `/api${url}`;
+  const fullUrl = buildApiUrl(url);
   const mergedHeaders = {
     ...headers,
     ...extraHeaders,
     'Content-Type': 'application/json',
   };
   const token = localStorage.getItem('mysport:token');
-  if (token) mergedHeaders['X-Customer-Token'] = `Bearer ${token}`;
+  if (token) mergedHeaders['X-Customer-Token'] = token;
 
   try {
     const res = await fetch(fullUrl, {

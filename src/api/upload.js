@@ -1,7 +1,5 @@
-import { get, post } from './request';
+import { buildApiUrl, get, post } from './request';
 import { resolveErrorMessage } from './errorCodes';
-
-const API_BASE = '/api';
 
 /**
  * 签名直传文件（multipart）
@@ -41,10 +39,10 @@ export async function uploadFile(file, purpose = 'generic') {
     'X-File-Sha256': sha256,
     'X-File-Purpose': purpose,
   };
-  if (token) headers['X-Customer-Token'] = `Bearer ${token}`;
+  if (token) headers['X-Customer-Token'] = token;
   if (sessionId) headers['X-Sid'] = sessionId;
 
-  const res = await fetch(`${API_BASE}/upload/file`, {
+  const res = await fetch(buildApiUrl('/upload/file'), {
     method: 'POST',
     headers,
     body: formData,
@@ -70,7 +68,7 @@ export async function uploadFile(file, purpose = 'generic') {
 
 /** 获取文件下载 URL */
 export function getFileUrl(fileId) {
-  return `${API_BASE}/file/${fileId}`;
+  return buildApiUrl(`/file/${fileId}`);
 }
 
 /** 加密上传图片（信封加密，base64 字节，≤2MB） */

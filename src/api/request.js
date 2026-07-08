@@ -1,6 +1,20 @@
 import { resolveErrorMessage } from './errorCodes';
+import { SITE_CONFIG } from '@/config/site';
 
-const API_BASE = '/api';
+const API_BASE = SITE_CONFIG.apiBaseUrl || '/api';
+
+const isAbsoluteUrl = (value) => /^https?:\/\//i.test(value);
+
+export function buildApiUrl(path) {
+  if (isAbsoluteUrl(path)) return path;
+  return `${String(API_BASE).replace(/\/+$/, '')}/${String(path).replace(/^\/+/, '')}`;
+}
+
+export function resolveApiAssetUrl(value) {
+  if (!value || isAbsoluteUrl(value) || /^data:|^blob:/i.test(value)) return value;
+  if (value.startsWith('/api/')) return buildApiUrl(value.slice(4));
+  return value;
+}
 
 // ─── 调试日志（开发环境） ───
 
@@ -113,9 +127,9 @@ async function tryRefreshToken() {
         'X-Refresh-Token': rt,
       };
       const token = getToken();
-      if (token) headers['X-Customer-Token'] = `Bearer ${token}`;
+      if (token) headers['X-Customer-Token'] = token;
 
-      const res = await fetch(`${API_BASE}/auth/refresh`, {
+      const res = await fetch(buildApiUrl('/auth/refresh'), {
         method: 'POST',
         headers,
       });
@@ -185,7 +199,7 @@ async function handleResponse(res, encrypted = false) {
 function buildHeaders(extraHeaders = {}, method = 'GET') {
   const headers = { ...extraHeaders };
   const token = getToken();
-  if (token) headers['X-Customer-Token'] = `Bearer ${token}`;
+  if (token) headers['X-Customer-Token'] = token;
   if (method !== 'GET' && method !== 'HEAD' && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
   }
@@ -212,7 +226,7 @@ export async function request(url, options = {}, _retried = false) {
     ...rest
   } = options;
 
-  let fullUrl = `${API_BASE}${url}`;
+  let fullUrl = buildApiUrl(url);
   if (params) {
     const qs = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => {
