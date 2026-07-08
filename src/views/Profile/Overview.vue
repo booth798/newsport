@@ -30,6 +30,7 @@ import profileCardBg from '@/assets/images/profile/profile-card.svg?url';
 import profileVipTrack from '@/assets/images/profile/profile_vip_track.svg?url';
 import profileCardH5Bg from '@/assets/images/profile/profile_card_h5.png?url';
 import profileVipTrackH5 from '@/assets/images/profile/profile_vip_track_h5.png?url';
+import iconBalanceRefresh from '@/assets/images/profile/icon_balance_refresh.svg?url';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -248,7 +249,9 @@ onMounted(loadOverview);
               :aria-label="t('刷新余额')"
               :disabled="refreshing"
               @click="refreshBalance"
-            />
+            >
+              <img :src="iconBalanceRefresh" width="24" height="24" alt="" aria-hidden="true" />
+            </button>
           </div>
           <div class="profile-h5-balance__amount">
             <strong>{{ mobileBalance }}</strong>
@@ -336,7 +339,9 @@ onMounted(loadOverview);
               :aria-label="t('刷新余额')"
               :disabled="refreshing"
               @click="refreshBalance"
-            />
+            >
+              <img :src="iconBalanceRefresh" width="24" height="24" alt="" aria-hidden="true" />
+            </button>
           </div>
 
           <div class="profile-home__vip">
@@ -607,39 +612,30 @@ onMounted(loadOverview);
 }
 
 .profile-h5-balance__refresh {
-  position: relative;
-  width: 26px;
-  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  width: 24px;
+  height: 24px;
   padding: 0;
   border: none;
-  border-radius: 50%;
-  background: #e6f1ff;
+  background: transparent;
   cursor: pointer;
 
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 6px;
-    border: 2px solid #1c7bff;
-    border-right-color: transparent;
-    border-radius: 50%;
+  img {
+    display: block;
+    width: 24px;
+    height: 24px;
   }
 
-  &::after {
-    content: '';
-    position: absolute;
-    right: 6px;
-    top: 7px;
-    width: 6px;
-    height: 6px;
-    border-top: 2px solid #1c7bff;
-    border-right: 2px solid #1c7bff;
-    transform: rotate(20deg);
-  }
-
-  &--spinning {
+  &--spinning img {
     animation: profile-home-spin 0.8s linear infinite;
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: default;
   }
 }
 
@@ -975,15 +971,24 @@ onMounted(loadOverview);
   }
 
   &__refresh {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     padding: 0;
     border: none;
-    background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 22 22' fill='none'%3E%3Cpath d='M18.7 11a7.7 7.7 0 1 1-2.2-5.4' stroke='%23FFFFFF' stroke-width='1.5' stroke-linecap='round'/%3E%3Cpath d='M18.7 4.4V11h-6.6' stroke='%23FFFFFF' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background: transparent;
     cursor: pointer;
 
-    &--spinning {
+    img {
+      display: block;
+      width: 24px;
+      height: 24px;
+    }
+
+    &--spinning img {
       animation: profile-home-spin 0.8s linear infinite;
     }
 
