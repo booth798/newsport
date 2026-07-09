@@ -1,11 +1,12 @@
 <script setup>
-import { onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
 import { useAppStore } from '@/store/modules/app';
 import { fetchMatchDetail, fetchScoreMarket } from '@/api/match';
+import { useMarketWs } from '@/hooks/useMarketWs';
 import MarketDetailScoreSection from '@/views/Market/Detail/components/MarketDetailScoreSection.vue';
 import MarketBuySheet from '@/views/Market/Detail/components/MarketBuySheet.vue';
 import HomeMatchCard from '@/views/Home/components/HomeMatchCard.vue';
@@ -43,6 +44,29 @@ const scoreRowsLoading = ref(false);
 
 const scoreRows = ref([]);
 
+const ftMarketId = ref(null);
+const htMarketId = ref(null);
+const activeMarketId = computed(() =>
+  activeTab.value === 'halftime' ? htMarketId.value : ftMarketId.value,
+);
+
+const { yields: wsYields } = useMarketWs(activeMarketId);
+
+watch(wsYields, (newYields) => {
+  if (!newYields || !Object.keys(newYields).length) return;
+  const rows = activeTab.value === 'halftime' ? scoreRowsHalftime : scoreRowsFulltime;
+  rows.value = rows.value.map((row) => {
+    const newVal = newYields[row.scoreRaw];
+    if (newVal == null) return row;
+    return {
+      ...row,
+      yieldPct: newVal,
+      probability: `${Number(newVal).toFixed(2)}%`,
+    };
+  });
+  scoreRows.value = rows.value;
+}, { deep: true });
+
 function scoreRowsForTab(tab) {
   return tab === 'halftime' ? scoreRowsHalftime.value : scoreRowsFulltime.value;
 }
@@ -68,6 +92,8 @@ async function loadMatchData(id) {
     scoreRowsFulltime.value = fulltimeRes.data;
     scoreRowsHalftime.value = halftimeRes.data;
     scoreRows.value = fulltimeRes.data;
+    ftMarketId.value = fulltimeRes.data?.[0]?._marketId || null;
+    htMarketId.value = halftimeRes.data?.[0]?._marketId || null;
   } catch {
     error.value = true;
   } finally {

@@ -184,8 +184,14 @@ async function confirmBuy() {
     successProfit.value = order.estimatedPayout ?? order.payout ?? (amt * Number(profitPercent.value) / 100).toFixed(2);
     successOrderNo.value = order.orderNo || order.id || '';
     phase.value = 'success';
-  } catch {
-    toast.error(t('提交失败，请重试'));
+  } catch (e) {
+    const errCode = e?.code || e?.response?.data?.code;
+    const errMsg = e?.message || '';
+    if (errCode === 'YIELD_CHANGED' || errMsg.includes('YIELD_CHANGED')) {
+      toast.error(t('赔率已变化，请确认最新赔率后重新提交'));
+    } else {
+      toast.error(errMsg || t('提交失败，请重试'));
+    }
   } finally {
     submitting.value = false;
   }

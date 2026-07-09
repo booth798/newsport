@@ -324,25 +324,31 @@ const topPools = computed(() => {
       </div>
     </div>
 
-    <!-- PC: 桌面端布局 -->
+    <!-- PC: 桌面端布局（与移动端结构一致） -->
     <div v-else class="match-card__inner match-card__inner--w">
-      <div class="match-card__w-top">
-        <div class="match-card__w-league-row">
+      <div class="match-card__m-top">
+        <div class="match-card__m-league-row">
           <div class="match-card__league">
             <img
               class="match-card__league-icon"
               :src="leagueIconUrl"
               alt=""
-              width="28"
-              height="28"
+              width="24"
+              height="24"
               draggable="false"
             />
             <span class="match-card__league-name">{{ match.league }}</span>
           </div>
+          <span v-if="!detailMode" class="match-card__enter-pill">
+            <span class="match-card__enter-pill-text">{{ t('进入比赛') }}</span>
+            <svg class="match-card__enter-pill-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4.5 2.5L8 6L4.5 9.5" stroke="#1C7BFF" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
         </div>
         <div class="match-card__divider" aria-hidden="true" />
-        <div class="match-card__w-time-row">
-          <span class="match-card__date match-card__date--w">{{ match.date }}</span>
+        <div class="match-card__m-time-row">
+          <span class="match-card__date">{{ match.date }}</span>
           <div
             class="match-card__pill match-card__pill--w"
             :class="{ 'match-card__pill--detail-w': detailMode }"
@@ -363,14 +369,10 @@ const topPools = computed(() => {
 
       <div class="match-card__body">
         <div class="match-card__surface match-card__surface--w">
-          <div class="match-card__vol-plain">
-            <span class="match-card__vol-label">{{ t('总成交量') }}:</span>
-            <span class="match-card__vol-val">{{ match.volume }}</span>
-          </div>
           <div class="match-card__arena-grid">
             <img
               class="match-card__arena-bg"
-              :src="bgScoreUrl"
+              :src="bgGridPatternUrl"
               alt=""
               width="760"
               height="340"
@@ -438,15 +440,15 @@ const topPools = computed(() => {
 
                 <div class="match-card__mg-score-slot match-card__mg-score-slot--home">
                   <span
-                    class="match-card__score match-card__score--w"
+                    class="match-card__score match-card__score--m"
                     :class="{ 'match-card__score--leading': match.homeScore > match.awayScore }"
                   >
                     <img
                       class="match-card__score-bg"
                       :src="homeScoreBg"
                       alt=""
-                      width="50"
-                      height="36"
+                      width="32"
+                      height="26"
                       draggable="false"
                     />
                     <span class="match-card__score-txt">{{ match.homeScore }}</span>
@@ -454,19 +456,34 @@ const topPools = computed(() => {
                 </div>
                 <div class="match-card__mg-score-slot match-card__mg-score-slot--away">
                   <span
-                    class="match-card__score match-card__score--w"
+                    class="match-card__score match-card__score--m"
                     :class="{ 'match-card__score--leading': match.awayScore > match.homeScore }"
                   >
                     <img
                       class="match-card__score-bg"
                       :src="awayScoreBg"
                       alt=""
-                      width="50"
-                      height="36"
+                      width="32"
+                      height="26"
                       draggable="false"
                     />
                     <span class="match-card__score-txt">{{ match.awayScore }}</span>
                   </span>
+                </div>
+              </div>
+
+              <div v-if="!detailMode" class="match-card__odds-pills">
+                <div
+                  v-for="pool in topPools"
+                  :key="pool.score"
+                  class="match-card__odds-pill"
+                  role="button"
+                  tabindex="0"
+                  @click="onOddsPillClick(pool, $event)"
+                  @keydown.enter.prevent="onOddsPillClick(pool, $event)"
+                >
+                  <span class="match-card__odds-pill-score">{{ pool.score }}</span>
+                  <span class="match-card__odds-pill-prob">{{ pool.probability }}</span>
                 </div>
               </div>
             </div>
@@ -474,15 +491,14 @@ const topPools = computed(() => {
         </div>
       </div>
 
-      <div class="match-card__foot">
+      <div v-if="detailMode" class="match-card__foot">
         <button
-          v-if="detailMode"
           type="button"
           class="btn btn--primary match-card__btn"
           @click="$emit('enter-market')"
         >
-          {{ t('进入市场') }}</button>
-        <span v-else class="btn btn--primary match-card__btn">{{ t('进入市场') }}</span>
+          {{ t('进入市场') }}
+        </button>
       </div>
     </div>
   </component>
@@ -509,11 +525,16 @@ const topPools = computed(() => {
   }
 
   @include web-only {
-    padding: 20px;
+    padding: 16px;
     min-height: 0;
+    border-radius: 16px;
+    background: #fff;
+    border: 1.5px solid #fff;
+    box-shadow: 0 4px 16px rgba(21, 58, 118, 0.1);
 
     &:hover {
-      transform: translateY(-10px);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(21, 58, 118, 0.16);
     }
   }
 
@@ -755,37 +776,46 @@ const topPools = computed(() => {
   }
 
   &__enter-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 0.5px solid #1c7bff;
+    border-radius: 16px;
+    background: transparent;
+    gap: 0;
+    box-sizing: border-box;
+
     @include mobile-only {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
       width: 70px;
       height: 24px;
-      border: 0.5px solid #1c7bff;
-      border-radius: 16px;
-      background: transparent;
-      gap: 0;
-      box-sizing: border-box;
+    }
+
+    @include web-only {
+      width: 80px;
+      height: 26px;
     }
   }
 
   &__enter-pill-text {
+    font-family: $font-family-base;
+    font-weight: 400;
+    line-height: 1;
+    color: #1c7bff;
+
     @include mobile-only {
-      font-family: $font-family-base;
       font-size: 10px;
-      font-weight: 400;
-      line-height: 1;
-      color: #1c7bff;
+    }
+
+    @include web-only {
+      font-size: 12px;
     }
   }
 
   &__enter-pill-arrow {
-    @include mobile-only {
-      width: 12px;
-      height: 12px;
-      flex-shrink: 0;
-    }
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
   }
 
   &__home-tag {
@@ -872,8 +902,8 @@ const topPools = computed(() => {
     }
 
     @include web-only {
-      margin-left: -20px;
-      margin-right: -20px;
+      margin-left: -16px;
+      margin-right: -16px;
     }
   }
 
@@ -907,8 +937,10 @@ const topPools = computed(() => {
     }
 
     @include web-only {
-      width: 28px;
-      height: 28px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 0.43px solid #e1e9f3;
     }
   }
 
@@ -925,8 +957,8 @@ const topPools = computed(() => {
     }
 
     @include web-only {
-      font-size: $font-size-lg;
-      font-weight: 600;
+      font-size: $font-size-md;
+      font-weight: 500;
     }
   }
 
@@ -972,7 +1004,15 @@ const topPools = computed(() => {
     }
 
     &--w {
-      min-height: 38px;
+      width: 140px;
+      height: 26px;
+      min-height: 26px;
+      padding: 0 10px;
+      gap: 6px;
+      border-radius: 6px;
+      background: rgba(31, 124, 255, 0.15);
+      justify-content: center;
+      overflow: hidden;
     }
   }
 
@@ -997,6 +1037,27 @@ const topPools = computed(() => {
     color: #1f7cff;
   }
 
+  &__pill--w &__pill-lab {
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1;
+    color: #1f7cff;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__pill--w &__pill-time {
+    flex-shrink: 0;
+    font-family: $font-family-num;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1;
+    color: #1f7cff;
+  }
+
   &__pill-lab {
     font-family: $font-family-base;
     font-size: 12px;
@@ -1015,28 +1076,6 @@ const topPools = computed(() => {
     color: #1f7cff;
   }
 
-  &__w-top {
-    margin-bottom: 0;
-  }
-
-  &__w-league-row {
-    padding-bottom: 10px;
-  }
-
-  &__w-time-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    width: 100%;
-    padding-top: 14px;
-    box-sizing: border-box;
-  }
-
-  &__date--w {
-    font-size: 18px;
-  }
-
   &__body {
     flex: 1;
     min-height: 0;
@@ -1046,7 +1085,7 @@ const topPools = computed(() => {
     }
 
     @include web-only {
-      margin-top: 14px;
+      margin-top: 6px;
     }
   }
 
@@ -1064,41 +1103,13 @@ const topPools = computed(() => {
     }
 
     &--w {
-      border-radius: 24px;
-      border: 1px solid rgb(228, 240, 254);
+      border-radius: 16px;
+      border: 0.8px solid #fff;
     }
   }
 
   &__surface--m &__arena-grid-inner {
     padding: 12px 8px 8px;
-  }
-
-  &__vol-plain {
-    display: flex;
-    align-items: baseline;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 4px;
-    padding: 11px 12px;
-    text-align: center;
-    background: transparent;
-    box-sizing: border-box;
-  }
-
-  &__vol-label {
-    font-family: $font-family-base;
-    font-size: 14px;
-    font-weight: 400;
-    line-height: 1;
-    color: rgba(11, 52, 98, 0.5);
-  }
-
-  &__vol-val {
-    font-family: $font-family-base;
-    font-size: 22px;
-    font-weight: 700;
-    line-height: 1;
-    color: #1c7bff;
   }
 
   &__arena-grid {
@@ -1112,7 +1123,7 @@ const topPools = computed(() => {
     }
 
     @include web-only {
-      background: linear-gradient(180deg, #f3f8ff 0%, #e8f2ff 100%);
+      background: #fff;
     }
   }
 
@@ -1136,7 +1147,7 @@ const topPools = computed(() => {
     padding: 20px 12px 16px;
 
     @include web-only {
-      padding: 20px 16px 20px;
+      padding: 16px 12px 12px;
     }
   }
 
@@ -1157,8 +1168,8 @@ const topPools = computed(() => {
     }
 
     &--w {
-      column-gap: 12px;
-      row-gap: 14px;
+      column-gap: 8px;
+      row-gap: 10px;
     }
   }
 
@@ -1200,8 +1211,8 @@ const topPools = computed(() => {
     box-sizing: border-box;
 
     @include web-only {
-      width: 44px;
-      height: 44px;
+      width: 40px;
+      height: 40px;
     }
   }
 
@@ -1236,7 +1247,7 @@ const topPools = computed(() => {
     white-space: nowrap;
 
     @include web-only {
-      font-size: $font-size-base;
+      font-size: $font-size-md;
     }
 
     &--home {
@@ -1261,7 +1272,7 @@ const topPools = computed(() => {
     transform: translateY(-100%);
 
     @include web-only {
-      font-size: 24px;
+      font-size: $font-size-lg;
     }
   }
 
@@ -1289,14 +1300,6 @@ const topPools = computed(() => {
       }
     }
 
-    &--w {
-      width: 50px;
-      height: 36px;
-
-      .match-card__score-txt {
-        font-size: 26px;
-      }
-    }
   }
 
   &__score-bg {
@@ -1336,13 +1339,20 @@ const topPools = computed(() => {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    max-width: 95px;
     height: 36px;
     border-radius: 8px;
     background: #e4f0fe;
     gap: 2px;
     cursor: pointer;
     transition: background 0.15s ease;
+
+    @include mobile-only {
+      max-width: 95px;
+    }
+
+    &:hover {
+      background: rgba(28, 123, 255, 0.14);
+    }
 
     &:active {
       background: rgba(28, 123, 255, 0.18);
@@ -1368,10 +1378,6 @@ const topPools = computed(() => {
 
   &__foot {
     margin-top: 10px;
-
-    @include web-only {
-      margin-top: 20px;
-    }
   }
 
   &__btn {
@@ -1386,8 +1392,8 @@ const topPools = computed(() => {
     font-family: inherit;
 
     @include web-only {
-      height: 48px;
-      font-size: $font-size-lg;
+      height: 40px;
+      font-size: $font-size-md;
     }
 
     @include mobile-only {

@@ -220,12 +220,7 @@ function normalizeMatch(m) {
       : m.totalPool != null ? formatVolume(m.totalPool) : '',
     countdown: cd.text,
     countdownMinutes: cd.minutes,
-    topPools: Array.isArray(m.topPools)
-      ? m.topPools.slice(0, 3).map((p) => ({
-          score: (p.score || '0:0').replace(':', '-'),
-          probability: p.yieldPct != null ? `${Number(p.yieldPct).toFixed(2)}%` : '0.00%',
-        }))
-      : [],
+    topPools: buildTopPools(m),
   };
 }
 
@@ -236,19 +231,41 @@ export function normalizeHomeMarkets(hotMarkets) {
   for (const mk of hotMarkets) {
     const mid = mk.matchId;
     if (!mid) continue;
-    const existing = matchMap.get(mid);
-    if (!existing) {
-      matchMap.set(mid, { ...mk });
-    } else {
-      const pool = Number(mk.displayPool || mk.totalPool || 0);
-      const existPool = Number(existing.displayPool || existing.totalPool || 0);
-      if (pool > existPool) {
-        existing.displayPool = mk.displayPool;
-        existing.totalPool = mk.totalPool;
-      }
+    if (!matchMap.has(mid)) {
+      matchMap.set(mid, { markets: [], base: mk });
     }
+    matchMap.get(mid).markets.push(mk);
   }
-  return Array.from(matchMap.values()).map((m) => normalizeMatch(m));
+
+  return Array.from(matchMap.values()).map(({ markets, base }) => {
+    const ftMarket = markets.find((m) => m.period === 'FT') || base;
+    const totalPool = markets.reduce(
+      (sum, m) => sum + Number(m.displayPool || m.totalPool || 0),
+      0,
+    );
+
+    const merged = {
+      ...base,
+      id: base.matchId,
+      displayPool: String(totalPool.toFixed(2)),
+      scores: ftMarket.scores || base.scores,
+      topPools: ftMarket.scores || base.scores,
+    };
+    return normalizeMatch(merged);
+  });
+}
+
+function buildTopPools(m) {
+  const raw = m.topPools || m.scores;
+  if (!Array.isArray(raw) || !raw.length) return [];
+  const filtered = raw.filter((p) => p.score !== 'OTHER');
+  const sorted = [...filtered].sort(
+    (a, b) => Number(b.yieldPct || 0) - Number(a.yieldPct || 0),
+  );
+  return sorted.slice(0, 3).map((p) => ({
+    score: (p.score || '0:0').replace(':', '-'),
+    probability: p.yieldPct != null ? `${Number(p.yieldPct).toFixed(2)}%` : '0.00%',
+  }));
 }
 
 function computeCountdown(kickoffAt) {

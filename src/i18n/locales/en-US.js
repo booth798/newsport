@@ -426,4 +426,6 @@ export default {
   系统通知: 'System Notice',
   交易提醒: 'Trade Alert',
   赛事预告: 'Match Preview',
+  '派奖到账': 'Payout received {amount}',
+  '赔率已变化，请确认最新赔率后重新提交': 'Odds changed, please confirm and resubmit',
 };

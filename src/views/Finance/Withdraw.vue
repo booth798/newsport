@@ -133,8 +133,6 @@ async function handleSubmit() {
         <input v-model="withdrawPassword" class="finance-field__input" type="password" />
       </label>
 
-      <a class="withdraw-form__forgot" href="#" @click.prevent>{{ t('忘记密码') }}</a>
-
       <button class="btn btn--primary withdraw-form__submit" type="submit" :disabled="submitting">
         {{ submitting ? t('提交中...') : t('送出提款申请') }}
       </button>
@@ -331,23 +329,6 @@ async function handleSubmit() {
   font-size: 10px;
   font-weight: 800;
   line-height: 1;
-}
-
-.withdraw-form__forgot {
-  display: block;
-  width: fit-content;
-  margin: 0 0 30px auto;
-  color: var(--theme-primary);
-  font-weight: 500;
-  text-decoration: none;
-
-  @include mobile-only {
-    font-size: $font-size-md;
-  }
-
-  @include web-only {
-    font-size: $font-size-sm;
-  }
 }
 
 .withdraw-form__submit {
