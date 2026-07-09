@@ -263,28 +263,8 @@ onUnmounted(() => {
       >
         <img class="header-market-back-btn__img" :src="iconNavBackMarketUrl" width="40" height="40" alt="" />
       </RouterLink>
-      <span v-if="isMobile && isProfileSubPage" class="header-mobile-compact-title">{{ compactTitle }}</span>
+      <span v-if="isMobile && isCompactDetailHeader" class="header-mobile-compact-title">{{ compactTitle }}</span>
       <img v-if="isMobile && !isCompactDetailHeader" class="logo" :src="logoUrl" alt="logo" />
-
-      <div
-        v-if="isMobile && isCompactDetailHeader && !isProfileSubPage && isLoggedIn"
-        class="header-mobile-user-strip"
-        role="group"
-        :aria-label="loggedInUserId"
-      >
-        <img
-          class="header-user-strip__avatar"
-          :src="avatarDefaultUrl"
-          width="32"
-          height="32"
-          alt=""
-        />
-        <span class="header-user-strip__id">{{ loggedInUserId }}</span>
-        <div class="header-user-strip__assets">
-          <span class="header-user-strip__assets-label">{{ t('总资产') }}</span>
-          <span class="header-user-strip__assets-value">{{ loggedInAssetsFormatted }}</span>
-        </div>
-      </div>
 
       <RouterLink
         v-if="!isMobile && isCompactDetailHeader"

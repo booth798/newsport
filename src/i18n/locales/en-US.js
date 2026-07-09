@@ -113,6 +113,7 @@ export default {
   正在加载: 'Loading',
   暂无联赛: 'No leagues found',
   比分市场: 'Score Market',
+  比赛详情: 'Match Details',
   比分: 'Score',
   概率: 'Probability',
   成交量: 'Volume',

@@ -43,7 +43,7 @@ const routes = [
     path: '/market/:id',
     name: 'market-detail',
     component: () => import('@/views/Market/Detail/index.vue'),
-    meta: { titleKey: '比分市场' },
+    meta: { titleKey: '比赛详情' },
   },
   {
     path: '/trade/purchases',
