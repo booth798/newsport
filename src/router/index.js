@@ -22,6 +22,12 @@ const routes = [
     meta: { titleKey: '全部赛事' },
   },
   {
+    path: '/market/search',
+    name: 'market-search',
+    component: () => import('@/views/Market/Search/index.vue'),
+    meta: { titleKey: '搜索', hideMobileTabBar: true },
+  },
+  {
     path: '/market/filter',
     name: 'market-filter',
     component: () => import('@/views/Market/Filter/index.vue'),

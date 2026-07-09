@@ -4,6 +4,8 @@ import FloatingService from '@/components/FloatingService.vue';
 import LoginModal from '@/components/LoginModal.vue';
 import MobileTabBar from '@/components/MobileTabBar.vue';
 import GlobalToast from '@/components/GlobalToast.vue';
+import GlobalLoading from '@/components/GlobalLoading.vue';
+import NetworkBar from '@/components/NetworkBar.vue';
 
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
@@ -86,6 +88,8 @@ provide('toast', {
   <FloatingService v-if="!isBarePage" />
   <LoginModal :visible="appStore.loginModalOpen" @close="appStore.closeLoginModal" />
   <GlobalToast ref="toastRef" />
+  <GlobalLoading />
+  <NetworkBar />
 </template>
 
 <style lang="scss" scoped>

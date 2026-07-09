@@ -84,7 +84,17 @@ async function loadMatchData(id) {
   }
 }
 
-onMounted(() => loadMatchData(route.params.id));
+onMounted(async () => {
+  await loadMatchData(route.params.id);
+  if (route.query.autoBuy === '1') {
+    const targetScore = route.query.score;
+    const rows = scoreRowsFulltime.value;
+    const row = targetScore
+      ? rows.find((r) => r.score === targetScore) ?? rows[0]
+      : rows[0];
+    if (row) openBuySheet(row, 'fulltime');
+  }
+});
 
 watch(activeTab, () => {
   scoreRows.value = activeTab.value === 'halftime' ? scoreRowsHalftime.value : scoreRowsFulltime.value;
@@ -238,11 +248,12 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
     <!-- H5：赛事卡 + 全场/半场 pill tabs + 平铺列表 -->
     <div v-else class="market-detail__layout market-detail__layout--m">
       <div class="market-detail__main market-detail__main--m">
-        <div class="market-detail__hero market-detail__hero--m">
-          <HomeMatchCard :match="match" detail-mode @enter-market="openBuySheetFromHero" />
-        </div>
+        <div class="m-detail-wrap">
+          <div class="m-detail-wrap__hero">
+            <HomeMatchCard :match="match" detail-mode @enter-market="openBuySheetFromHero" />
+          </div>
 
-        <section class="m-score-card">
+          <section class="m-score-card">
           <div class="m-score-card__tab-bar">
             <div class="m-score-card__tabs">
               <button
@@ -303,7 +314,7 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
             </li>
           </ul>
         </section>
-
+        </div>
       </div>
     </div>
 
@@ -631,12 +642,37 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
   }
 }
 
+.m-detail-wrap {
+  @include mobile-only {
+    background: #eaf1f9;
+    border: 0.8px solid #fff;
+    border-radius: 16px;
+    padding: 16px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  &__hero {
+    @include mobile-only {
+      :deep(.match-card--detail-h5) {
+        padding: 0;
+        border-radius: 0;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+      }
+    }
+  }
+}
+
 /* H5 比分市场卡片 — pill tabs + 平铺列表（Figma 355:3541） */
 .m-score-card {
   @include mobile-only {
-    background: #fff;
+    background: #eaf1f9;
     border-radius: 16px;
-    border: 0.8px solid #fff;
+    border: 1px solid #eaf1f9;
     overflow: hidden;
     padding: 12px;
     box-sizing: border-box;
@@ -656,7 +692,7 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
     @include mobile-only {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
   }
 
@@ -746,11 +782,11 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
   &__row {
     @include mobile-only {
       display: grid;
-      grid-template-columns: minmax(0, 0.7fr) minmax(0, 0.8fr) minmax(0, 1.3fr) 16px;
-      gap: 6px;
+      grid-template-columns: 50px 60px 1fr 16px;
+      gap: 0;
       align-items: center;
       height: 40px;
-      padding: 0 12px;
+      padding: 0 14px;
       border-radius: 12px;
       background: #eaf1f9;
       cursor: pointer;

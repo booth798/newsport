@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
@@ -16,13 +16,11 @@ const router = useRouter();
 const appStore = useAppStore();
 const { isMobile } = storeToRefs(appStore);
 
-const searchInputRef = ref(null);
 const leagues = ref([]);
 const matches = ref([]);
 const loading = ref(true);
 const error = ref(false);
 const searchQuery = ref('');
-const isSearchActive = ref(false);
 const activeLeague = ref('全部');
 
 const activeFilter = ref('all');
@@ -47,20 +45,11 @@ async function loadLeagues() {
   }
 }
 
-function onMarketSearchRequest() {
-  if (isMobile.value) openSearch();
-}
-
 onMounted(() => {
   loadLeagues();
   if (isMobile.value) {
     loadMatchCounts();
   }
-  window.addEventListener('mysport:market-search', onMarketSearchRequest);
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener('mysport:market-search', onMarketSearchRequest);
 });
 
 const trimmedQuery = computed(() => searchQuery.value.trim());
@@ -83,27 +72,6 @@ const filteredMatches = computed(() => {
       .includes(q);
   });
 });
-
-const showSearchEmpty = computed(
-  () =>
-    isMobile.value &&
-    isSearchActive.value &&
-    hasQuery.value &&
-    !loading.value &&
-    !error.value &&
-    filteredMatches.value.length === 0,
-);
-
-async function openSearch() {
-  isSearchActive.value = true;
-  await nextTick();
-  searchInputRef.value?.focus();
-}
-
-function cancelSearch() {
-  isSearchActive.value = false;
-  searchQuery.value = '';
-}
 
 function selectLeague(leagueKey) {
   activeLeague.value = leagueKey;
@@ -169,25 +137,6 @@ function goToLeagueFilter() {
 <template>
   <div class="market-leagues">
     <section class="market-leagues__panel" aria-labelledby="market-leagues-title">
-      <!-- H5 搜索展开态 -->
-      <header v-if="isMobile && isSearchActive" class="market-leagues__head">
-        <label class="market-leagues__search market-leagues__search--expanded" :aria-label="t('搜索')">
-          <span class="market-leagues__search-icon" aria-hidden="true" />
-          <input
-            ref="searchInputRef"
-            v-model="searchQuery"
-            type="search"
-            class="market-leagues__search-input"
-            :placeholder="t('搜索')"
-            autocomplete="off"
-            enterkeyhint="search"
-          />
-        </label>
-        <button type="button" class="market-leagues__cancel" @click="cancelSearch">
-          {{ t('取消') }}
-        </button>
-      </header>
-
       <!-- PC 标题 + 搜索 -->
       <header v-if="!isMobile" class="market-leagues__head">
         <div class="market-leagues__title-wrap">
@@ -213,7 +162,7 @@ function goToLeagueFilter() {
         </label>
       </header>
 
-      <div v-if="isMobile && !isSearchActive" class="market-leagues__filter-bar">
+      <div v-if="isMobile" class="market-leagues__filter-bar">
         <button
           type="button"
           class="market-leagues__filter-btn"
@@ -260,12 +209,8 @@ function goToLeagueFilter() {
         <button type="button" class="market-leagues__retry" @click="loadLeagues">{{ t('重试') }}</button>
       </div>
 
-      <div v-else-if="showSearchEmpty" class="market-leagues__state market-leagues__state--empty">
-        <p>{{ t('没有相关内容，请重新尝试') }}</p>
-      </div>
-
       <div
-        v-else-if="filteredMatches.length === 0 && !(isMobile && isSearchActive)"
+        v-else-if="filteredMatches.length === 0"
         class="market-leagues__state market-leagues__state--empty"
       >
         <p>{{ t('暂无相关赛事') }}</p>

@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue';
-import { RouterLink } from 'vue-router';
+import { RouterLink, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 
@@ -40,7 +40,9 @@ const props = defineProps({
   },
 });
 
-defineEmits(['enter-market']);
+const emit = defineEmits(['enter-market']);
+
+const router = useRouter();
 
 const rootComponent = computed(() => (props.detailMode ? 'div' : RouterLink));
 const rootBind = computed(() => {
@@ -51,6 +53,17 @@ const rootBind = computed(() => {
   }
   return { to };
 });
+
+function onOddsPillClick(pool, e) {
+  if (props.detailMode) return;
+  e.preventDefault();
+  e.stopPropagation();
+  router.push({
+    name: 'market-detail',
+    params: { id: String(props.match.id) },
+    query: { autoBuy: '1', score: pool.score },
+  });
+}
 
 const homeScoreBg = computed(() =>
   props.match.homeScore > props.match.awayScore ? bgScoreHighUrl : bgScoreDefaultUrl,
@@ -285,6 +298,10 @@ const topPools = computed(() => {
                   v-for="pool in topPools"
                   :key="pool.score"
                   class="match-card__odds-pill"
+                  role="button"
+                  tabindex="0"
+                  @click="onOddsPillClick(pool, $event)"
+                  @keydown.enter.prevent="onOddsPillClick(pool, $event)"
                 >
                   <span class="match-card__odds-pill-score">{{ pool.score }}</span>
                   <span class="match-card__odds-pill-prob">{{ pool.probability }}</span>
@@ -1323,6 +1340,12 @@ const topPools = computed(() => {
     border-radius: 8px;
     background: #e4f0fe;
     gap: 2px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+
+    &:active {
+      background: rgba(28, 123, 255, 0.18);
+    }
   }
 
   &__odds-pill-score {
