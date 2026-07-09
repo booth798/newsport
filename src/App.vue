@@ -2,6 +2,7 @@
 import Header from '@/components/Header.vue';
 import FloatingService from '@/components/FloatingService.vue';
 import LoginModal from '@/components/LoginModal.vue';
+import AppLogoutConfirm from '@/components/AppLogoutConfirm.vue';
 import MobileTabBar from '@/components/MobileTabBar.vue';
 import GlobalToast from '@/components/GlobalToast.vue';
 import GlobalLoading from '@/components/GlobalLoading.vue';
@@ -138,6 +139,7 @@ useWalletWs({
   <MobileTabBar v-if="isMobile && !isBarePage && !hideMobileTabBar" />
   <FloatingService v-if="!isBarePage" />
   <LoginModal :visible="appStore.loginModalOpen" @close="appStore.closeLoginModal" />
+  <AppLogoutConfirm />
   <GlobalToast ref="toastRef" />
   <GlobalLoading />
   <NetworkBar />

@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
-import { fetchProfileOverview, logoutApi } from '@/api/user';
+import { fetchProfileOverview } from '@/api/user';
 import { useAppStore } from '@/store/modules/app';
 import { useToast } from '@/hooks/useToast';
 import { openCustomerService } from '@/utils/customerService';
@@ -42,7 +42,6 @@ const { isLoggedIn, isMobile, loggedInUserId, loggedInAssetsFormatted } = storeT
 
 const loading = ref(true);
 const refreshing = ref(false);
-const showLogoutConfirm = ref(false);
 const showUserInfoModal = ref(false);
 const avatarDisplayUrl = ref('');
 
@@ -134,7 +133,7 @@ function handleMenuClick(item) {
     return;
   }
   if (item.action === 'logout') {
-    showLogoutConfirm.value = true;
+    appStore.openLogoutConfirm();
     return;
   }
   if (item.action === 'service') {
@@ -180,18 +179,6 @@ function handleMobileMenuClick(item) {
     return;
   }
   handleMenuClick(item);
-}
-
-async function confirmLogout() {
-  showLogoutConfirm.value = false;
-  try { await logoutApi(); } catch { /* 忽略后端错误 */ }
-  appStore.clearWebLogin();
-  toast.success(t('操作成功'));
-  router.push('/');
-}
-
-function cancelLogout() {
-  showLogoutConfirm.value = false;
 }
 
 function openUserInfoModal() {
@@ -244,7 +231,7 @@ onMounted(loadOverview);
             <h2>{{ t('账户余额') }}</h2>
             <button type="button" class="profile-h5-balance__refresh"
               :class="{ 'profile-h5-balance__refresh--spinning': refreshing }" :aria-label="t('刷新余额')"
-              :disabled="refreshing" @click="refreshBalance">
+              :disabled="refreshing" @click="refreshBalance" v-if="isLoggedIn">
               <img :src="iconBalanceRefresh" width="24" height="24" alt="" aria-hidden="true" />
             </button>
           </div>
@@ -323,7 +310,7 @@ onMounted(loadOverview);
               </span>
               <button type="button" class="profile-home__refresh"
                 :class="{ 'profile-home__refresh--spinning': refreshing }" :aria-label="t('刷新余额')"
-                :disabled="refreshing" @click="refreshBalance">
+                :disabled="refreshing" @click="refreshBalance" v-if="isLoggedIn">
                 <img :src="iconBalanceRefreshPc" width="24" height="24" alt="" aria-hidden="true" />
               </button>
             </div>
@@ -367,29 +354,6 @@ onMounted(loadOverview);
 
     <ProfileUserInfoModal v-model="showUserInfoModal" :nickname="displayName"
       :avatar-url="avatarDisplayUrl || avatarDefaultUrl" @saved="handleUserInfoSaved" />
-
-    <Teleport to="body">
-      <Transition name="confirm-fade">
-        <div v-if="showLogoutConfirm" class="profile-home__overlay" @click.self="cancelLogout">
-          <div class="profile-home__dialog" role="alertdialog" aria-modal="true">
-            <button type="button" class="profile-home__dialog-close" :aria-label="t('关闭')" @click="cancelLogout">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <path d="M11 3L3 11M3 3l8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-              </svg>
-            </button>
-            <p class="profile-home__dialog-text">{{ t('确定退出登录吗') }}</p>
-            <div class="profile-home__dialog-actions">
-              <button type="button" class="btn profile-home__dialog-cancel" @click="cancelLogout">
-                {{ t('取消') }}
-              </button>
-              <button type="button" class="btn btn--primary profile-home__dialog-confirm" @click="confirmLogout">
-                {{ t('确定') }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
   </div>
 </template>
 
@@ -461,9 +425,8 @@ onMounted(loadOverview);
   }
 
   span {
-    font-size: 14px;
-    font-weight: 400;
-    line-height: 1.1;
+    font-size: 12px;
+    font-weight: 300;
     opacity: 0.88;
     white-space: nowrap;
   }
@@ -471,14 +434,12 @@ onMounted(loadOverview);
 
 .profile-h5-card__arrow {
   position: absolute;
-  right: 20px;
-  top: 41px;
+  right: 18px;
+  top: 33px;
   z-index: 1;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   padding: 0;
-  border: none;
-  background: transparent;
 }
 
 .profile-h5-card__arrow::before {
@@ -486,8 +447,8 @@ onMounted(loadOverview);
   position: absolute;
   left: 6px;
   top: 4px;
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-top: 2px solid #fff;
   border-right: 2px solid #fff;
   transform: rotate(45deg);
@@ -1071,74 +1032,6 @@ onMounted(loadOverview);
     color: #0b3462;
   }
 
-  .profile-home__overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 1100;
-    background: rgba(11, 52, 98, 0.4);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    backdrop-filter: blur(4px);
-  }
-
-  .profile-home__dialog {
-    position: relative;
-    width: min(360px, calc(100vw - 48px));
-    padding: 32px 24px 24px;
-    border-radius: $radius-lg;
-    background: var(--surface-card);
-    text-align: center;
-    box-shadow: var(--shadow-card);
-  }
-
-  .profile-home__dialog-close {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border: none;
-    border-radius: 50%;
-    background: transparent;
-    color: rgba(11, 52, 98, 0.35);
-    cursor: pointer;
-  }
-
-  .profile-home__dialog-text {
-    font-size: $font-size-base;
-    font-weight: 500;
-    color: var(--theme-text);
-    margin: 0 0 24px;
-  }
-
-  .profile-home__dialog-actions {
-    display: flex;
-    gap: $spacing-md;
-  }
-
-  .profile-home__dialog-cancel,
-  .profile-home__dialog-confirm {
-    flex: 1;
-    height: 44px;
-  }
-
-  .profile-home__dialog-cancel {
-    border: 1.5px solid var(--theme-divider);
-    background: #fff;
-    color: var(--theme-text);
-  }
-}
-
-.confirm-fade-enter-active,
-.confirm-fade-leave-active {
-  transition: opacity 0.2s;
-}
-
-.confirm-fade-enter-from,
-.confirm-fade-leave-to {
-  opacity: 0;
 }
 
 @keyframes profile-home-spin {

@@ -25,6 +25,7 @@ export const useAppStore = defineStore('app', {
       locale: getCurrentLocale(),
       viewportWidth: typeof window === 'undefined' ? 1440 : window.innerWidth,
       loginModalOpen: false,
+      logoutConfirmOpen: false,
       isLoggedIn: hasToken && Boolean(saved),
       loggedInUserId: saved?.nickname || saved?.username || '',
       loggedInAssetsFormatted: saved?.balance || '0.00',
@@ -47,6 +48,12 @@ export const useAppStore = defineStore('app', {
     },
     closeLoginModal() {
       this.loginModalOpen = false;
+    },
+    openLogoutConfirm() {
+      this.logoutConfirmOpen = true;
+    },
+    closeLogoutConfirm() {
+      this.logoutConfirmOpen = false;
     },
     completeWebLogin(loginVO) {
       const { satoken, accessToken, refreshToken, customer } = loginVO;

@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useToast } from '@/hooks/useToast';
-import { changePassword, logoutApi } from '@/api/user';
+import { changePassword } from '@/api/user';
 import { useAppStore } from '@/store/modules/app';
 import bgLoginUrl from '@/assets/images/common/bg_login.svg?url';
 import iconEyeClosedUrl from '@/assets/images/common/icon_eye_closed.svg?url';
@@ -18,7 +18,6 @@ const { isMobile } = storeToRefs(appStore);
 
 const activeSection = ref('');
 const submitting = ref(false);
-const showLogoutConfirm = ref(false);
 const passwordVisibility = ref({
   loginCurrent: false,
   loginNew: false,
@@ -71,19 +70,7 @@ const passwordInputType = (field) => (passwordVisibility.value[field] ? 'text' :
 const passwordIcon = (field) => (passwordVisibility.value[field] ? iconEyeOpenUrl : iconEyeClosedUrl);
 
 function handleLogout() {
-  showLogoutConfirm.value = true;
-}
-
-function cancelLogout() {
-  showLogoutConfirm.value = false;
-}
-
-async function confirmLogout() {
-  showLogoutConfirm.value = false;
-  try { await logoutApi(); } catch { /* 忽略后端错误，本地仍清除 */ }
-  appStore.clearWebLogin();
-  toast.success(t('操作成功'));
-  router.push('/');
+  appStore.openLogoutConfirm();
 }
 
 async function handleSave(section) {
@@ -237,30 +224,6 @@ async function handleSave(section) {
           </div>
         </Transition>
 
-        <Transition name="settings-fade">
-          <div v-if="showLogoutConfirm" class="settings-logout-overlay" @click.self="cancelLogout">
-            <section
-              class="settings-logout-dialog"
-              :style="{ '--settings-panel-bg': `url(${bgLoginUrl})` }"
-              aria-modal="true"
-              role="alertdialog"
-            >
-              <h2>{{ t('提示') }}</h2>
-              <div class="settings-logout-dialog__body">
-                <span class="settings-logout-dialog__info" aria-hidden="true">i</span>
-                <p>{{ t('确定退出登录吗') }}</p>
-              </div>
-              <div class="settings-logout-dialog__actions">
-                <button type="button" class="settings-logout-dialog__cancel" @click="cancelLogout">
-                  {{ t('取消') }}
-                </button>
-                <button type="button" class="settings-logout-dialog__confirm" @click="confirmLogout">
-                  {{ t('确定退出') }}
-                </button>
-              </div>
-            </section>
-          </div>
-        </Transition>
       </Teleport>
     </template>
 
@@ -357,8 +320,7 @@ async function handleSave(section) {
   }
 }
 
-.settings-security-overlay,
-.settings-logout-overlay {
+.settings-security-overlay {
   position: fixed;
   inset: 0;
   z-index: 1200;
@@ -559,83 +521,6 @@ async function handleSave(section) {
 
 .settings-security-close::after {
   transform: rotate(-45deg);
-}
-
-.settings-logout-dialog {
-  width: min(339px, calc(100vw - 34px));
-  padding: 14px 12px 12px;
-  box-sizing: border-box;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 12px;
-  background:
-    var(--settings-panel-bg) center top / cover no-repeat,
-    #2c7fff;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
-
-  h2 {
-    margin: 0 0 12px;
-    color: #fff;
-    font-size: 18px;
-    font-weight: 700;
-    line-height: 1;
-    text-align: center;
-  }
-}
-
-.settings-logout-dialog__body {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  height: 70px;
-  border-radius: 12px;
-  background: #fff;
-  color: #0b3462;
-  font-size: 16px;
-  font-weight: 700;
-
-  p {
-    margin: 0;
-  }
-}
-
-.settings-logout-dialog__info {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border: 1.5px solid #5d7899;
-  border-radius: 50%;
-  color: #5d7899;
-  font-size: 12px;
-  font-weight: 700;
-  font-family: $font-family-num, $font-family-base;
-}
-
-.settings-logout-dialog__actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 10px;
-
-  button {
-    height: 44px;
-    border: none;
-    border-radius: 22px;
-    font-size: 16px;
-    font-weight: 700;
-  }
-}
-
-.settings-logout-dialog__cancel {
-  background: #fff;
-  color: #ff2d2d;
-}
-
-.settings-logout-dialog__confirm {
-  background: #ff3f3f;
-  color: #fff;
 }
 
 .settings-fade-enter-active,
