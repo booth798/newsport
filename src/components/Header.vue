@@ -42,30 +42,20 @@ const i18nCnBtnHover = ref(false);
 const i18nEnBtnHover = ref(false);
 const hoverOpenKey = ref(null);
 const mobileDrawerOpen = ref(false);
-const servicePopupOpen = ref(false);
+const serviceDialogOpen = ref(false);
 
-function toggleServicePopup() {
-  servicePopupOpen.value = !servicePopupOpen.value;
+function openServiceDialog() {
+  serviceDialogOpen.value = true;
 }
 
-function goToServicePage() {
-  servicePopupOpen.value = false;
+function closeServiceDialog() {
+  serviceDialogOpen.value = false;
+}
+
+function confirmGoService() {
+  serviceDialogOpen.value = false;
   router.push('/service');
 }
-
-function closeServicePopup() {
-  servicePopupOpen.value = false;
-}
-
-function onDocClick(e) {
-  if (servicePopupOpen.value) {
-    const wrap = e.target.closest('.header-service-wrap');
-    if (!wrap) servicePopupOpen.value = false;
-  }
-}
-
-onMounted(() => document.addEventListener('click', onDocClick, true));
-onUnmounted(() => document.removeEventListener('click', onDocClick, true));
 
 const cnIconSrc = computed(() => {
   if (locale.value === 'zh-CN') return i18nCnIcon;
@@ -241,7 +231,7 @@ watch(
   () => route.name,
   () => {
     startBeijingTimerIfNeeded();
-    servicePopupOpen.value = false;
+    serviceDialogOpen.value = false;
   },
   { immediate: true },
 );
@@ -353,23 +343,9 @@ onUnmounted(() => {
       <div v-if="isMobile && !isProfileSubPage" class="header-mobile-actions">
         <template v-if="isCompactDetailHeader">
           <template v-if="!isLoggedIn">
-            <div class="header-service-wrap">
-              <button type="button" class="header-mobile-btn" :aria-label="t('在线客服')" @click="toggleServicePopup">
-                <img class="header-mobile-btn__service-img" :src="serviceIconUrl" alt="" />
-              </button>
-              <Transition name="service-popup-fade">
-                <div v-if="servicePopupOpen" class="header-service-popup">
-                  <div class="header-service-popup__arrow" />
-                  <button type="button" class="header-service-popup__item" @click="goToServicePage">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                      <path d="M10 2C5.58 2 2 5.58 2 10c0 1.5.42 2.9 1.14 4.1L2 18l3.9-1.14A7.95 7.95 0 0 0 10 18c4.42 0 8-3.58 8-8s-3.58-8-8-8Z" stroke="#1C7BFF" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                      <path d="M7 9h6M7 12h4" stroke="#1C7BFF" stroke-width="1.2" stroke-linecap="round"/>
-                    </svg>
-                    <span>{{ t('联系客服') }}</span>
-                  </button>
-                </div>
-              </Transition>
-            </div>
+            <button type="button" class="header-mobile-btn" :aria-label="t('在线客服')" @click="openServiceDialog">
+              <img class="header-mobile-btn__service-img" :src="serviceIconUrl" alt="" />
+            </button>
           </template>
           <button type="button" class="header-mobile-btn" :aria-label="t('菜单')" @click="mobileDrawerOpen = true">
             <img class="header-mobile-btn__img" :src="moreIconUrl" alt="" />
@@ -389,45 +365,17 @@ onUnmounted(() => {
           </RouterLink>
         </template>
         <template v-else-if="isLoggedIn">
-          <div class="header-service-wrap">
-            <button type="button" class="header-mobile-btn" :aria-label="t('在线客服')" @click="toggleServicePopup">
-              <img class="header-mobile-btn__service-img" :src="serviceIconUrl" alt="" />
-            </button>
-            <Transition name="service-popup-fade">
-              <div v-if="servicePopupOpen" class="header-service-popup">
-                <div class="header-service-popup__arrow" />
-                <button type="button" class="header-service-popup__item" @click="goToServicePage">
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M10 2C5.58 2 2 5.58 2 10c0 1.5.42 2.9 1.14 4.1L2 18l3.9-1.14A7.95 7.95 0 0 0 10 18c4.42 0 8-3.58 8-8s-3.58-8-8-8Z" stroke="#1C7BFF" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M7 9h6M7 12h4" stroke="#1C7BFF" stroke-width="1.2" stroke-linecap="round"/>
-                  </svg>
-                  <span>{{ t('联系客服') }}</span>
-                </button>
-              </div>
-            </Transition>
-          </div>
+          <button type="button" class="header-mobile-btn" :aria-label="t('在线客服')" @click="openServiceDialog">
+            <img class="header-mobile-btn__service-img" :src="serviceIconUrl" alt="" />
+          </button>
           <button type="button" class="header-mobile-btn" :aria-label="t('菜单')" @click="mobileDrawerOpen = true">
             <img class="header-mobile-btn__img" :src="moreIconUrl" alt="" />
           </button>
         </template>
         <template v-else>
-          <div class="header-service-wrap">
-            <button type="button" class="header-mobile-btn" :aria-label="t('在线客服')" @click="toggleServicePopup">
-              <img class="header-mobile-btn__service-img" :src="serviceIconUrl" alt="" />
-            </button>
-            <Transition name="service-popup-fade">
-              <div v-if="servicePopupOpen" class="header-service-popup">
-                <div class="header-service-popup__arrow" />
-                <button type="button" class="header-service-popup__item" @click="goToServicePage">
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M10 2C5.58 2 2 5.58 2 10c0 1.5.42 2.9 1.14 4.1L2 18l3.9-1.14A7.95 7.95 0 0 0 10 18c4.42 0 8-3.58 8-8s-3.58-8-8-8Z" stroke="#1C7BFF" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M7 9h6M7 12h4" stroke="#1C7BFF" stroke-width="1.2" stroke-linecap="round"/>
-                  </svg>
-                  <span>{{ t('联系客服') }}</span>
-                </button>
-              </div>
-            </Transition>
-          </div>
+          <button type="button" class="header-mobile-btn" :aria-label="t('在线客服')" @click="openServiceDialog">
+            <img class="header-mobile-btn__service-img" :src="serviceIconUrl" alt="" />
+          </button>
           <button type="button" class="header-mobile-btn" :aria-label="t('菜单')" @click="mobileDrawerOpen = true">
             <img class="header-mobile-btn__img" :src="moreIconUrl" alt="" />
           </button>
@@ -523,23 +471,9 @@ onUnmounted(() => {
               <span class="header-user-strip__assets-value">{{ loggedInAssetsFormatted }}</span>
             </div>
           </div>
-          <div class="header-service-wrap header-service-wrap--pc">
-            <button type="button" class="header-round-btn" :aria-label="t('在线客服')" @click="toggleServicePopup">
-              <img class="header-round-btn__img" :src="serviceIconUrl" alt="" />
-            </button>
-            <Transition name="service-popup-fade">
-              <div v-if="servicePopupOpen" class="header-service-popup">
-                <div class="header-service-popup__arrow" />
-                <button type="button" class="header-service-popup__item" @click="goToServicePage">
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M10 2C5.58 2 2 5.58 2 10c0 1.5.42 2.9 1.14 4.1L2 18l3.9-1.14A7.95 7.95 0 0 0 10 18c4.42 0 8-3.58 8-8s-3.58-8-8-8Z" stroke="#1C7BFF" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M7 9h6M7 12h4" stroke="#1C7BFF" stroke-width="1.2" stroke-linecap="round"/>
-                  </svg>
-                  <span>{{ t('联系客服') }}</span>
-                </button>
-              </div>
-            </Transition>
-          </div>
+          <button type="button" class="header-round-btn" :aria-label="t('在线客服')" @click="openServiceDialog">
+            <img class="header-round-btn__img" :src="serviceIconUrl" alt="" />
+          </button>
           <button type="button" class="header-round-btn" :aria-label="t('菜单')">
             <img class="header-round-btn__img" :src="moreIconUrl" alt="" />
           </button>
@@ -548,23 +482,9 @@ onUnmounted(() => {
         <template v-else>
           <a href="#" class="header-forgot" @click.prevent>{{ t('忘记密码') }}</a>
           <div class="header-round-group">
-            <div class="header-service-wrap header-service-wrap--pc">
-              <button type="button" class="header-round-btn" :aria-label="t('在线客服')" @click="toggleServicePopup">
-                <img class="header-round-btn__img" :src="serviceIconUrl" alt="" />
-              </button>
-              <Transition name="service-popup-fade">
-                <div v-if="servicePopupOpen" class="header-service-popup">
-                  <div class="header-service-popup__arrow" />
-                  <button type="button" class="header-service-popup__item" @click="goToServicePage">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                      <path d="M10 2C5.58 2 2 5.58 2 10c0 1.5.42 2.9 1.14 4.1L2 18l3.9-1.14A7.95 7.95 0 0 0 10 18c4.42 0 8-3.58 8-8s-3.58-8-8-8Z" stroke="#1C7BFF" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                      <path d="M7 9h6M7 12h4" stroke="#1C7BFF" stroke-width="1.2" stroke-linecap="round"/>
-                    </svg>
-                    <span>{{ t('联系客服') }}</span>
-                  </button>
-                </div>
-              </Transition>
-            </div>
+            <button type="button" class="header-round-btn" :aria-label="t('在线客服')" @click="openServiceDialog">
+              <img class="header-round-btn__img" :src="serviceIconUrl" alt="" />
+            </button>
             <button type="button" class="header-round-btn" :aria-label="t('登录')" @click="appStore.openLoginModal">
               <img class="header-round-btn__img" :src="loginIconUrl" alt="" />
             </button>
@@ -576,6 +496,28 @@ onUnmounted(() => {
       </div>
     </div>
     <MobileNavDrawer v-if="isMobile" v-model="mobileDrawerOpen" :menus="navMenus" />
+
+    <Teleport to="body">
+      <Transition name="svc-dialog-fade">
+        <div v-if="serviceDialogOpen" class="svc-dialog-mask" @click.self="closeServiceDialog">
+          <div class="svc-dialog">
+            <div class="svc-dialog__title">{{ t('提示') }}</div>
+            <div class="svc-dialog__body">
+              <span class="svc-dialog__icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 1.667A8.333 8.333 0 1 0 18.333 10 8.333 8.333 0 0 0 10 1.667Zm.833 11.666H9.167V9.167h1.666v4.166Zm0-5.833H9.167V5.833h1.666V7.5Z" fill="#1C7BFF"/>
+                </svg>
+              </span>
+              <span>{{ t('是否要联系在线客服') }}</span>
+            </div>
+            <div class="svc-dialog__actions">
+              <button type="button" class="svc-dialog__btn svc-dialog__btn--cancel" @click="closeServiceDialog">{{ t('取消') }}</button>
+              <button type="button" class="svc-dialog__btn svc-dialog__btn--confirm" @click="confirmGoService">{{ t('确定') }}</button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -777,81 +719,6 @@ onUnmounted(() => {
         pointer-events: none;
         border-radius: 50%;
       }
-    }
-
-    .header-service-wrap {
-      position: relative;
-      display: inline-flex;
-      align-items: center;
-    }
-
-    .header-service-popup {
-      position: absolute;
-      top: calc(100% + 10px);
-      right: 0;
-      z-index: 999;
-      min-width: 160px;
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
-      padding: 8px;
-      border: 0.8px solid #eaf1f9;
-
-      &__arrow {
-        position: absolute;
-        top: -6px;
-        right: 14px;
-        width: 12px;
-        height: 12px;
-        background: #fff;
-        border-top: 0.8px solid #eaf1f9;
-        border-left: 0.8px solid #eaf1f9;
-        transform: rotate(45deg);
-        border-radius: 2px 0 0 0;
-      }
-
-      &__item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        width: 100%;
-        padding: 12px 14px;
-        border: 0;
-        background: transparent;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: 500;
-        color: #1a1a2e;
-        white-space: nowrap;
-        transition: background 0.2s;
-
-        &:hover,
-        &:active {
-          background: #eaf1f9;
-        }
-
-        svg {
-          flex-shrink: 0;
-        }
-      }
-    }
-
-    .header-service-wrap--pc {
-      display: inline-flex;
-      .header-service-popup {
-        top: calc(100% + 8px);
-      }
-    }
-
-    .service-popup-fade-enter-active,
-    .service-popup-fade-leave-active {
-      transition: opacity 0.2s ease, transform 0.2s ease;
-    }
-    .service-popup-fade-enter-from,
-    .service-popup-fade-leave-to {
-      opacity: 0;
-      transform: translateY(-6px);
     }
 
     .header-mobile-search {
@@ -1492,6 +1359,100 @@ onUnmounted(() => {
       justify-content: flex-start;
       gap: 0;
     }
+  }
+}
+</style>
+
+<style lang="scss">
+.svc-dialog-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.svc-dialog {
+  width: 300px;
+  background: #eaf1f9;
+  border-radius: 16px;
+  border: 0.8px solid #fff;
+  overflow: hidden;
+
+  &__title {
+    padding: 18px 0 0;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 700;
+    color: #0b3462;
+  }
+
+  &__body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 20px 24px;
+    margin: 12px 16px 0;
+    background: #fff;
+    border-radius: 12px;
+    font-size: 15px;
+    color: #333;
+    line-height: 1.5;
+  }
+
+  &__icon {
+    display: flex;
+    flex-shrink: 0;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  &__btn {
+    flex: 1;
+    height: 44px;
+    border: 0;
+    border-radius: 22px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+
+    &:active {
+      opacity: 0.8;
+    }
+
+    &--cancel {
+      color: #1c7bff;
+      background: #fff;
+      border: 1px solid #1c7bff;
+    }
+
+    &--confirm {
+      color: #fff;
+      background: #1c7bff;
+    }
+  }
+}
+
+.svc-dialog-fade-enter-active,
+.svc-dialog-fade-leave-active {
+  transition: opacity 0.2s ease;
+  .svc-dialog {
+    transition: transform 0.2s ease;
+  }
+}
+.svc-dialog-fade-enter-from,
+.svc-dialog-fade-leave-to {
+  opacity: 0;
+  .svc-dialog {
+    transform: scale(0.9);
   }
 }
 </style>

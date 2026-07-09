@@ -111,6 +111,7 @@ export default {
   '没有相关内容，请重新尝试': 'No relevant content found. Please try again.',
   '网络不稳定，请检查网络连接': 'Unstable network, please check your connection',
   正在加载: 'Loading',
+  是否要联系在线客服: 'Contact customer service?',
   暂无联赛: 'No leagues found',
   比分市场: 'Score Market',
   比赛详情: 'Match Details',
