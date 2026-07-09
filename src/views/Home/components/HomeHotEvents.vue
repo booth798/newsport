@@ -5,17 +5,10 @@ import { useI18n } from 'vue-i18n';
 
 import { useAppStore } from '@/store/modules/app';
 import HomeMatchCard from './HomeMatchCard.vue';
-import { fetchHotMatches } from '@/api/match';
-import { DEFAULT_HOT_MATCHES } from '@/constants/hotMatchCatalog';
+import { fetchHotMatches, fetchLeagueList } from '@/api/match';
 
 import iconEventsUrl from '@/assets/images/events/icon_events.svg?url';
 import iconHotUrl from '@/assets/images/events/icon_hot.svg?url';
-import iconChampionUrl from '@/assets/images/events/icon_champion.svg?url';
-import iconUkUrl from '@/assets/images/events/icon_uk.svg?url';
-import iconItalyUrl from '@/assets/images/events/icon_italy.svg?url';
-import iconSpainUrl from '@/assets/images/events/icon_spain.svg?url';
-import iconGermaryUrl from '@/assets/images/events/icon_germary.svg?url';
-import iconFranceUrl from '@/assets/images/events/icon_france.svg?url';
 import btnMoreUrl from '@/assets/images/events/btn_more.svg?url';
 
 const { t } = useI18n();
@@ -41,34 +34,44 @@ watch(
   { immediate: true },
 );
 
+const dynamicLeagueTabs = ref([]);
+
 onMounted(async () => {
   if (matchList.value.length) {
     loading.value = false;
+    loadLeagueTabs();
     return;
   }
   try {
     loading.value = true;
     error.value = false;
     const res = await fetchHotMatches();
-    const list = res.data || [];
-    matchList.value = list.length ? list : DEFAULT_HOT_MATCHES;
+    matchList.value = res.data || [];
   } catch {
-    matchList.value = DEFAULT_HOT_MATCHES;
-    error.value = false;
+    error.value = true;
   } finally {
     loading.value = false;
   }
+  loadLeagueTabs();
 });
 
-const leagueTabs = [
+async function loadLeagueTabs() {
+  try {
+    const res = await fetchLeagueList();
+    const hotLeagues = (res.data || []).filter(l => l.hot);
+    dynamicLeagueTabs.value = hotLeagues.map(l => ({
+      key: l.shortName || l.name,
+      labelKey: `${l.shortName || l.name}赛事`,
+      shortLabelKey: l.shortName || l.name,
+      icon: l.logoUrl || iconEventsUrl,
+    }));
+  } catch { /* 静默 */ }
+}
+
+const leagueTabs = computed(() => [
   { key: 'hot', labelKey: '热门赛事', shortLabelKey: '热门', icon: iconHotUrl },
-  { key: '欧冠', labelKey: '欧冠赛事', shortLabelKey: '欧冠', icon: iconChampionUrl },
-  { key: '英超', labelKey: '英超赛事', shortLabelKey: '英超', icon: iconUkUrl },
-  { key: '意甲', labelKey: '意甲赛事', shortLabelKey: '意甲', icon: iconItalyUrl },
-  { key: '西甲', labelKey: '西甲赛事', shortLabelKey: '西甲', icon: iconSpainUrl },
-  { key: '德甲', labelKey: '德甲赛事', shortLabelKey: '德甲', icon: iconGermaryUrl },
-  { key: '法甲', labelKey: '法甲赛事', shortLabelKey: '法甲', icon: iconFranceUrl },
-];
+  ...dynamicLeagueTabs.value,
+]);
 
 const tabLabel = (tab) => {
   if (isMobile.value && tab.shortLabelKey) return t(tab.shortLabelKey);
@@ -87,11 +90,9 @@ async function reload() {
     loading.value = true;
     error.value = false;
     const res = await fetchHotMatches();
-    const list = res.data || [];
-    matchList.value = list.length ? list : DEFAULT_HOT_MATCHES;
+    matchList.value = res.data || [];
   } catch {
-    matchList.value = DEFAULT_HOT_MATCHES;
-    error.value = false;
+    error.value = true;
   } finally {
     loading.value = false;
   }

@@ -13,20 +13,6 @@ const error = ref('');
 const levels = ref([]);
 const myVip = ref(null);
 
-const DEFAULT_VIP_LEVELS = [
-  { level: 1, name: 'VIP1', requiredBet: 0, description: '基础会员权益' },
-  { level: 2, name: 'VIP2', requiredBet: 50000, description: '专属活动与更高服务优先级' },
-  { level: 3, name: 'VIP3', requiredBet: 200000, description: '提款加速与专属客服' },
-  { level: 4, name: 'VIP4', requiredBet: 500000, description: '高阶会员福利' },
-  { level: 5, name: 'VIP5', requiredBet: 1000000, description: '顶级会员专属权益' },
-];
-
-const DEFAULT_MY_VIP = {
-  level: 3,
-  totalBet: 3151724,
-  nextLevelBet: 5000000,
-};
-
 const progressPercent = computed(() => {
   if (!myVip.value || !myVip.value.nextLevelBet) return 0;
   const total = Number(myVip.value.nextLevelBet);
@@ -63,12 +49,10 @@ async function loadData() {
       fetchVipLevels(),
       fetchVipMe(),
     ]);
-    levels.value = levelsRes.data?.length ? levelsRes.data : DEFAULT_VIP_LEVELS;
-    myVip.value = meRes.data || DEFAULT_MY_VIP;
+    levels.value = levelsRes.data || [];
+    myVip.value = meRes.data || null;
   } catch {
-    levels.value = DEFAULT_VIP_LEVELS;
-    myVip.value = DEFAULT_MY_VIP;
-    error.value = '';
+    error.value = t('加载失败');
   } finally {
     loading.value = false;
   }

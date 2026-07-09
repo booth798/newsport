@@ -60,8 +60,8 @@ const leagueIconUrl = computed(() => {
   if (props.order.leagueIcon) return props.order.leagueIcon;
   return LEAGUE_ICON_BY_NAME[props.order.league] ?? iconEventsUrl;
 });
-const homeLogoUrl = computed(() => resolveTeamLogoUrl(props.order.homeTeam));
-const awayLogoUrl = computed(() => resolveTeamLogoUrl(props.order.awayTeam));
+const homeLogoUrl = computed(() => resolveTeamLogoUrl(props.order.homeTeam, props.order.homeTeamLogo));
+const awayLogoUrl = computed(() => resolveTeamLogoUrl(props.order.awayTeam, props.order.awayTeamLogo));
 const chevronSrc = computed(() => (props.expanded ? iconChevronUpUrl : iconChevronDownUrl));
 
 const statusClass = computed(() => `purchase-card__status--${props.order.statusTone}`);

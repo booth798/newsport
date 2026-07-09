@@ -201,6 +201,7 @@ export async function fetchProfileOverview() {
       totalBet: data.totalBet,
       winRate: data.winRateFormatted || `${Number(data.winRate || 0).toFixed(1)}%`,
       totalProfit: data.totalProfitFormatted || '¥0.00',
+      _wallet: data._wallet || {},
     },
   };
 }

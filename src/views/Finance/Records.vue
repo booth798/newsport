@@ -29,46 +29,15 @@ const FILTER_TO_TYPES = {
   trade: ['BET', 'PAYOUT', 'FEE'],
 };
 
-const DEFAULT_RECORDS = [
-  {
-    id: 'demo-record-1',
-    type: 'deposit',
-    typeLabel: '充值',
-    time: '2026-07-07 09:41',
-    amount: '+1000.00',
-    statusTone: 'success',
-    descKey: '银行卡充值',
-  },
-  {
-    id: 'demo-record-2',
-    type: 'withdraw',
-    typeLabel: '提现',
-    time: '2026-07-06 18:20',
-    amount: '-500.00',
-    statusTone: 'warning',
-    descKey: '中国银联提款',
-  },
-  {
-    id: 'demo-record-3',
-    type: 'trade',
-    typeLabel: '订单',
-    time: '2026-07-06 12:08',
-    amount: '-100.00',
-    statusTone: 'default',
-    descKey: '比分市场买入',
-  },
-];
-
 async function loadRecords() {
   try {
     loading.value = true;
     error.value = false;
     const typesParam = FILTER_TO_TYPES[selectedFilter.value];
     const res = await fetchRecords({ types: typesParam, pageSize: 50 });
-    records.value = res.data?.length ? res.data : DEFAULT_RECORDS;
+    records.value = res.data || [];
   } catch {
-    records.value = DEFAULT_RECORDS;
-    error.value = false;
+    error.value = true;
   } finally {
     loading.value = false;
   }

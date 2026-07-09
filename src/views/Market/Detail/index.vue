@@ -6,11 +6,6 @@ import { storeToRefs } from 'pinia';
 
 import { useAppStore } from '@/store/modules/app';
 import { fetchMatchDetail, fetchScoreMarket } from '@/api/match';
-import {
-  DEFAULT_SCORE_MARKET_ROWS_FULLTIME,
-  DEFAULT_SCORE_MARKET_ROWS_HALFTIME,
-  getHotMatchById,
-} from '@/constants/hotMatchCatalog';
 import MarketDetailScoreSection from '@/views/Market/Detail/components/MarketDetailScoreSection.vue';
 import MarketBuySheet from '@/views/Market/Detail/components/MarketBuySheet.vue';
 import HomeMatchCard from '@/views/Home/components/HomeMatchCard.vue';
@@ -74,11 +69,7 @@ async function loadMatchData(id) {
     scoreRowsHalftime.value = halftimeRes.data;
     scoreRows.value = fulltimeRes.data;
   } catch {
-    match.value = getHotMatchById(id);
-    scoreRowsFulltime.value = DEFAULT_SCORE_MARKET_ROWS_FULLTIME;
-    scoreRowsHalftime.value = DEFAULT_SCORE_MARKET_ROWS_HALFTIME;
-    scoreRows.value = DEFAULT_SCORE_MARKET_ROWS_FULLTIME;
-    error.value = false;
+    error.value = true;
   } finally {
     loading.value = false;
   }

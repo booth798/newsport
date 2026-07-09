@@ -24,60 +24,6 @@ const CATEGORIES = [
   { value: 'OTHER', label: '其他' },
 ];
 
-const DEMO_TICKETS = [
-  {
-    id: 'demo-1',
-    subjectKey: '充值到账咨询',
-    categoryKey: '充值问题',
-    status: 'OPEN',
-    createdAt: '2026-07-07T09:41:00+08:00',
-  },
-  {
-    id: 'demo-2',
-    subjectKey: '提款资料确认',
-    categoryKey: '提现问题',
-    status: 'RESOLVED',
-    createdAt: '2026-07-06T18:20:00+08:00',
-  },
-];
-
-const DEMO_MESSAGES = {
-  'demo-1': [
-    {
-      id: 'demo-msg-1',
-      sender: 'AGENT',
-      contentKey: '在线客服欢迎语',
-      createdAt: '2026-07-07T21:06:00+08:00',
-    },
-    {
-      id: 'demo-msg-2',
-      sender: 'AGENT',
-      contentKey: '在线客服帮助语',
-      createdAt: '2026-07-07T21:06:00+08:00',
-    },
-    {
-      id: 'demo-msg-3',
-      sender: 'CUSTOMER',
-      contentKey: '我有几个疑问',
-      createdAt: '2026-07-07T21:06:00+08:00',
-    },
-    {
-      id: 'demo-msg-4',
-      sender: 'AGENT',
-      contentKey: '客服继续询问',
-      createdAt: '2026-07-07T21:06:00+08:00',
-    },
-  ],
-  'demo-2': [
-    {
-      id: 'demo-msg-3',
-      sender: 'AGENT',
-      contentKey: '提款资料确认回复',
-      createdAt: '2026-07-06T18:20:00+08:00',
-    },
-  ],
-};
-
 // --- 工单列表 ---
 const tickets = ref([]);
 const listLoading = ref(true);
@@ -102,9 +48,7 @@ const activeTicket = computed(() =>
 );
 
 const activeTitle = computed(() => ticketSubject(activeTicket.value) || t('在线客服'));
-const displayMessages = computed(() => (
-  messages.value.length ? messages.value : DEMO_MESSAGES['demo-1']
-));
+const displayMessages = computed(() => messages.value);
 const canReply = computed(() =>
   !activeTicket.value || activeTicket.value.status === 'OPEN',
 );
@@ -128,13 +72,11 @@ async function loadTickets() {
   listError.value = '';
   try {
     const res = await fetchTickets(50);
-    tickets.value = res.data?.length ? res.data : DEMO_TICKETS;
+    tickets.value = res.data || [];
     activeTicketId.value = tickets.value[0]?.id ?? null;
-    messages.value = DEMO_MESSAGES[activeTicketId.value] || DEMO_MESSAGES['demo-1'];
+    if (activeTicketId.value) await loadMessages(activeTicketId.value);
   } catch {
-    tickets.value = DEMO_TICKETS;
-    activeTicketId.value = DEMO_TICKETS[0]?.id ?? null;
-    messages.value = DEMO_MESSAGES[activeTicketId.value] || [];
+    listError.value = t('加载失败');
   } finally {
     listLoading.value = false;
   }
@@ -155,9 +97,8 @@ async function loadMessages(ticketId) {
     await nextTick();
     scrollToBottom();
   } catch {
-    messages.value = DEMO_MESSAGES[ticketId] || [];
-    await nextTick();
-    scrollToBottom();
+    messages.value = [];
+    msgError.value = t('加载失败');
   } finally {
     msgLoading.value = false;
   }

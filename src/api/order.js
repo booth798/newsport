@@ -97,8 +97,11 @@ function normalizeOrder(o) {
     ...o,
     orderNo: o.orderNo || o.id,
     league: o.leagueShortName || o.leagueName || '',
-    homeTeam: o.homeTeamName || '',
-    awayTeam: o.awayTeamName || '',
+    leagueIcon: o.leagueLogoUrl || '',
+    homeTeam: o.homeTeamShortName || o.homeTeamName || '',
+    awayTeam: o.awayTeamShortName || o.awayTeamName || '',
+    homeTeamLogo: o.homeTeamLogoUrl || '',
+    awayTeamLogo: o.awayTeamLogoUrl || '',
     matchLabel: [o.leagueName, `${o.homeTeamName} vs ${o.awayTeamName}`]
       .filter(Boolean)
       .join(' '),

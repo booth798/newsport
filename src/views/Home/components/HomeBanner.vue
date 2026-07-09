@@ -72,7 +72,8 @@ function stopAutoPlay() {
 
 async function loadBanners() {
   try {
-    const res = await fetchBanners('home', 'h5');
+    const platform = window.innerWidth > 750 ? 'web' : 'h5';
+    const res = await fetchBanners('home', platform);
     const list = res.data || [];
     if (list.length) {
       bannerItems.value = list;

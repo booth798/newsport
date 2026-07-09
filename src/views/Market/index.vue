@@ -5,7 +5,6 @@ import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
 import { fetchLeagueList, fetchMatchList } from '@/api/match';
-import { DEFAULT_HOT_MATCHES } from '@/constants/hotMatchCatalog';
 import { useAppStore } from '@/store/modules/app';
 import HomeMatchCard from '@/views/Home/components/HomeMatchCard.vue';
 
@@ -35,11 +34,11 @@ async function loadLeagues() {
       fetchMatchList({ pageSize: 30 }).catch(() => null),
     ]);
     leagues.value = leagueRes.data || [];
-    matches.value = matchRes?.data?.records?.length ? matchRes.data.records : DEFAULT_HOT_MATCHES;
+    matches.value = matchRes?.data?.records || [];
   } catch {
     leagues.value = [];
-    matches.value = DEFAULT_HOT_MATCHES;
-    error.value = false;
+    matches.value = [];
+    error.value = true;
   } finally {
     loading.value = false;
   }

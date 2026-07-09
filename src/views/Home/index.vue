@@ -12,8 +12,6 @@ const homeMatches = ref([]);
 const homeBanners = ref([]);
 
 onMounted(async () => {
-  const hasToken = Boolean(localStorage.getItem('mysport:token'));
-  if (!hasToken) return;
   try {
     const { fetchHomeData, normalizeHomeMarkets } = await import('@/api/match');
     const res = await fetchHomeData();
@@ -25,7 +23,7 @@ onMounted(async () => {
       homeMatches.value = normalizeHomeMarkets(data.hotMarkets);
     }
     homeBanners.value = data.banners || [];
-  } catch { /* non-critical */ }
+  } catch { /* non-critical — HomeHotEvents 会自行加载 */ }
 });
 
 </script>

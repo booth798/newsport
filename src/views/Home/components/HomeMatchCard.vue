@@ -1,10 +1,11 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, toRef } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 
 import { useAppStore } from '@/store/modules/app';
+import { useCountdown } from '@/hooks/useCountdown';
 
 import bgScoreUrl from '@/assets/images/events/bg_score.svg?url';
 import bgGridPatternUrl from '@/assets/images/events/bg_grid_pattern.svg?url';
@@ -96,12 +97,12 @@ const awayTeamLogoUrl = computed(() =>
 
 const isDetailH5 = computed(() => props.detailMode && isMobile.value);
 
+const kickoffAt = computed(() => props.match.kickoffAt);
+const { text: liveCountdown, minutes: liveCountdownMinutes, isOver: countdownOver } = useCountdown(kickoffAt);
+
 const detailCountdownLabel = computed(() => {
-  const minutes = props.match.countdownMinutes;
-  if (minutes != null && minutes !== '') {
-    return `${minutes}`;
-  }
-  return props.match.countdown ?? '';
+  if (liveCountdown.value) return liveCountdownMinutes.value;
+  return '';
 });
 
 const detailMatchDate = computed(() => {
@@ -183,7 +184,7 @@ const topPools = computed(() => {
           <span class="match-card__date">{{ match.date }}</span>
           <div class="match-card__pill match-card__pill--m">
             <span class="match-card__pill-lab">{{ t('开赛倒数') }}</span>
-            <span class="match-card__pill-time">{{ match.countdown }}</span>
+            <span class="match-card__pill-time">{{ liveCountdown || match.countdown }}</span>
           </div>
         </div>
       </div>
@@ -354,7 +355,7 @@ const topPools = computed(() => {
             </template>
             <template v-else>
               <span class="match-card__pill-lab">{{ t('开赛倒数') }}</span>
-              <span class="match-card__pill-time">{{ match.countdown }}</span>
+              <span class="match-card__pill-time">{{ liveCountdown || match.countdown }}</span>
             </template>
           </div>
         </div>

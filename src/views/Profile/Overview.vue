@@ -49,7 +49,7 @@ const overview = ref({
   memberId: '',
   balance: '',
   currency: 'CNY',
-  vipLevel: 3,
+  vipLevel: 0,
   totalBet: '0.00',
   winRate: '0%',
   totalProfit: '0.00',
@@ -58,7 +58,7 @@ const overview = ref({
 const vipLevels = [1, 2, 3, 4, 5];
 
 const displayName = computed(
-  () => overview.value.nickname || loggedInUserId.value || 'User_888',
+  () => overview.value.nickname || loggedInUserId.value || '—',
 );
 const displayMemberId = computed(() => overview.value.memberId || loggedInUserId.value || '—');
 const displayBalance = computed(
@@ -69,8 +69,8 @@ const mobileDisplayMemberId = computed(() => (isLoggedIn.value ? displayMemberId
 const mobileVipLevel = computed(() => (isLoggedIn.value ? overview.value.vipLevel : 0));
 const mobileVipLevels = computed(() => (isLoggedIn.value ? [1, 2, 3, 4, 5] : [0, 1, 2, 3, 4]));
 const mobileBalance = computed(() => (isLoggedIn.value ? displayBalance.value : '0.00'));
-const mobileMainWallet = computed(() => (isLoggedIn.value ? '1,341,212.35' : '0'));
-const mobileLockedWallet = computed(() => (isLoggedIn.value ? '1,300.00' : '0'));
+const mobileMainWallet = computed(() => (isLoggedIn.value ? displayBalance.value : '0'));
+const mobileLockedWallet = computed(() => (isLoggedIn.value ? (overview.value._wallet?.frozen || '0.00') : '0'));
 
 const menuItems = [
   { label: '个人资料', icon: iconProfileInfo, action: 'userInfo' },
