@@ -25,6 +25,7 @@ const router = useRouter();
 const { locale, isMobile } = storeToRefs(appStore);
 const isBarePage = computed(() => Boolean(route.meta?.bare));
 const hideMobileTabBar = computed(() => Boolean(route.meta?.hideMobileTabBar));
+const hideMobileHeader = computed(() => isMobile.value && Boolean(route.meta?.hideMobileHeader));
 
 const transitionName = ref('page-fade');
 
@@ -103,7 +104,7 @@ provide('toast', {
 </script>
 
 <template>
-  <Header v-if="!isBarePage" />
+  <Header v-if="!isBarePage && !hideMobileHeader" />
   <main class="main-content" :class="{ 'main-content--bare': isBarePage }">
     <RouterView v-slot="{ Component, route: viewRoute }">
       <Transition :name="transitionName" mode="out-in">

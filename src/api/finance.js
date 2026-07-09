@@ -19,6 +19,16 @@ export async function fetchBalance() {
   };
 }
 
+/** 查询锁定钱包分项 */
+export async function fetchLockedWallet() {
+  return get('/wallet/locked');
+}
+
+/** 账务汇总（总收入/总支出/净收益） */
+export async function fetchLedgerSummary() {
+  return get('/ledger/summary');
+}
+
 /** 充值渠道列表 */
 export async function fetchDepositChannels() {
   return get('/finance/deposit/channels');

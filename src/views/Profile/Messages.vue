@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { fetchMessages } from '@/api/user';
+import { fetchMessages, markMessageRead, markAllRead } from '@/api/user';
 
 const { t } = useI18n();
 const messages = ref([]);
@@ -21,12 +21,32 @@ async function loadMessages() {
   }
 }
 
+async function handleRead(msg) {
+  if (msg.read) return;
+  try {
+    await markMessageRead(msg.id);
+    msg.read = true;
+  } catch { /* 静默 */ }
+}
+
+async function handleReadAll() {
+  try {
+    await markAllRead();
+    messages.value.forEach(m => { m.read = true; });
+  } catch { /* 静默 */ }
+}
+
 onMounted(loadMessages);
 </script>
 
 <template>
   <div class="profile-messages">
-    <h3 class="section-title">{{ t('消息中心') }}</h3>
+    <div class="section-header">
+      <h3 class="section-title">{{ t('消息中心') }}</h3>
+      <button v-if="messages.some(m => !m.read)" type="button" class="msg-read-all" @click="handleReadAll">
+        {{ t('全部已读') }}
+      </button>
+    </div>
 
     <div v-if="loading" class="msg-state">
       <div class="msg-spinner" />
@@ -44,7 +64,7 @@ onMounted(loadMessages);
     </div>
 
     <div v-else class="msg-list">
-      <div v-for="msg in messages" :key="msg.id" class="msg-item" :class="{ 'msg-item--unread': !msg.read }">
+      <div v-for="msg in messages" :key="msg.id" class="msg-item" :class="{ 'msg-item--unread': !msg.read }" @click="handleRead(msg)">
         <div class="msg-item__head">
           <span class="msg-item__title">{{ msg.title }}</span>
           <span class="msg-item__time">{{ msg.time }}</span>
@@ -58,11 +78,34 @@ onMounted(loadMessages);
 <style lang="scss" scoped>
 @use '@/styles/tools.scss' as *;
 
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-3xl;
+}
+
 .section-title {
   font-size: $font-size-lg;
   font-weight: 700;
   color: var(--theme-text);
-  margin-bottom: $spacing-3xl;
+  margin: 0;
+}
+
+.msg-read-all {
+  padding: 4px 12px;
+  border: 1px solid var(--theme-primary);
+  border-radius: $radius-pill;
+  background: transparent;
+  color: var(--theme-primary);
+  font-size: $font-size-sm;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: var(--theme-primary);
+    color: #fff;
+  }
 }
 
 .msg-state {

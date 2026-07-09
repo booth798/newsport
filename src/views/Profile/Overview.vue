@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
-import { fetchProfileOverview } from '@/api/user';
+import { fetchProfileOverview, logoutApi } from '@/api/user';
 import { useAppStore } from '@/store/modules/app';
 import { useToast } from '@/hooks/useToast';
 import { openCustomerService } from '@/utils/customerService';
@@ -174,8 +174,9 @@ function handleMobileMenuClick(item) {
   handleMenuClick(item);
 }
 
-function confirmLogout() {
+async function confirmLogout() {
   showLogoutConfirm.value = false;
+  try { await logoutApi(); } catch { /* 忽略后端错误 */ }
   appStore.clearWebLogin();
   toast.success(t('操作成功'));
   router.push('/');

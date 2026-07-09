@@ -261,6 +261,10 @@ onMounted(() => {
   position: relative;
   padding-bottom: 70px;
 
+  @include mobile-only {
+    padding-top: env(safe-area-inset-top, 20px);
+  }
+
   @include web-only {
     @include container;
     @include web-main-column-max;
@@ -272,7 +276,7 @@ onMounted(() => {
     z-index: 10;
 
     @include mobile-only {
-      top: $mobile-header-height;
+      top: 0;
       padding: 8px;
     }
 

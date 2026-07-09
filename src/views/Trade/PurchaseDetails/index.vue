@@ -23,10 +23,10 @@ const orders = ref([]);
 const loading = ref(true);
 const error = ref(false);
 
-const marketId = computed(() => {
-  const raw = route.query.marketId;
+const matchId = computed(() => {
+  const raw = route.query.matchId || route.query.marketId;
   const id = Number(Array.isArray(raw) ? raw[0] : raw);
-  return Number.isFinite(id) && id > 0 ? id : 2;
+  return Number.isFinite(id) && id > 0 ? id : undefined;
 });
 
 const highlightScore = computed(() => {
@@ -49,13 +49,13 @@ async function loadOrders() {
     loading.value = true;
     error.value = false;
     const fetcher = sideTab.value === 'scheduled' ? fetchScheduledList : fetchOrderedList;
-    const res = await fetcher(marketId.value, listOptions.value);
+    const res = await fetcher(matchId.value, listOptions.value);
     orders.value = res.data || [];
     syncExpandedFromQuery();
   } catch {
     orders.value = sideTab.value === 'scheduled'
-      ? getScheduledPurchaseList(marketId.value, listOptions.value)
-      : getOrderedPurchaseList(marketId.value, listOptions.value);
+      ? getScheduledPurchaseList(matchId.value, listOptions.value)
+      : getOrderedPurchaseList(matchId.value, listOptions.value);
     syncExpandedFromQuery();
     error.value = false;
   } finally {

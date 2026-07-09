@@ -1,22 +1,51 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { submitWithdraw } from '@/api/finance';
+import { submitWithdraw, fetchWithdrawMethods } from '@/api/finance';
+import { fetchBindings } from '@/api/user';
 import { useToast } from '@/hooks/useToast';
 
 const { t } = useI18n();
 const toast = useToast();
 
 const submitting = ref(false);
+const loading = ref(true);
 const amount = ref('');
 const withdrawPassword = ref('');
+const methods = ref([]);
+const selectedMethod = ref('BANK');
+const bindings = ref([]);
 
 const bankInfo = ref({
-  bankName: '中国银行',
-  cardNumber: '6213 **** **** 6452',
+  bankName: '',
+  cardNumber: '',
   holderName: '',
   branch: '',
+});
+
+onMounted(async () => {
+  try {
+    const [methodsRes, bindingsRes] = await Promise.all([
+      fetchWithdrawMethods().catch(() => ({ data: [] })),
+      fetchBindings().catch(() => ({ data: [] })),
+    ]);
+    methods.value = methodsRes.data || [];
+    const allBindings = bindingsRes.data || [];
+    bindings.value = allBindings;
+
+    const bankCards = allBindings.filter(b => b.type === 'BANK' || b.type === 'bank-card');
+    if (bankCards.length > 0) {
+      const defaultCard = bankCards.find(c => c.isDefault) || bankCards[0];
+      bankInfo.value = {
+        bankName: defaultCard.bankName || '',
+        cardNumber: defaultCard.cardNumber || defaultCard.accountNo || '',
+        holderName: defaultCard.holderName || defaultCard.realName || '',
+        branch: defaultCard.branch || '',
+      };
+    }
+  } catch { /* 静默 */ }
+  loading.value = false;
 });
 
 async function handleSubmit() {
@@ -39,9 +68,10 @@ async function handleSubmit() {
     await submitWithdraw({
       amount: val,
       withdrawPassword: withdrawPassword.value,
-      method: 'BANK',
+      method: selectedMethod.value,
       bankName: bankInfo.value.bankName,
       cardNumber: bankInfo.value.cardNumber,
+      holderName: bankInfo.value.holderName,
     });
     toast.success(t('操作成功'));
   } catch {

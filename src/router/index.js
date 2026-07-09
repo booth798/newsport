@@ -31,7 +31,7 @@ const routes = [
     path: '/market/filter',
     name: 'market-filter',
     component: () => import('@/views/Market/Filter/index.vue'),
-    meta: { titleKey: '筛选联赛', hideMobileTabBar: true },
+    meta: { titleKey: '筛选联赛', hideMobileTabBar: true, hideMobileHeader: true },
   },
   {
     path: '/market/league/:league',

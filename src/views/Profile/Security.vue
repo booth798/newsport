@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useToast } from '@/hooks/useToast';
-import { changePassword } from '@/api/user';
+import { changePassword, logoutApi } from '@/api/user';
 import { useAppStore } from '@/store/modules/app';
 import bgLoginUrl from '@/assets/images/common/bg_login.svg?url';
 import iconEyeClosedUrl from '@/assets/images/common/icon_eye_closed.svg?url';
@@ -78,8 +78,9 @@ function cancelLogout() {
   showLogoutConfirm.value = false;
 }
 
-function confirmLogout() {
+async function confirmLogout() {
   showLogoutConfirm.value = false;
+  try { await logoutApi(); } catch { /* 忽略后端错误，本地仍清除 */ }
   appStore.clearWebLogin();
   toast.success(t('操作成功'));
   router.push('/');

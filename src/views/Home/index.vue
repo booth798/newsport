@@ -38,14 +38,6 @@ onMounted(async () => {
 
     <div class="home__inner">
       <HomeAnnouncement />
-
-      <div v-if="vipLevel > 0" class="home__quick-actions">
-        <RouterLink to="/vip" class="quick-action">
-          <span class="quick-action__icon quick-action__icon--vip">VIP</span>
-          <span class="quick-action__label">{{ t('VIP中心') }}</span>
-        </RouterLink>
-      </div>
-
       <HomeHotEvents :preloaded-matches="homeMatches" />
     </div>
   </div>

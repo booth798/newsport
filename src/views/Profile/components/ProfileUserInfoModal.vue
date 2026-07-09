@@ -2,7 +2,8 @@
 import { onBeforeUnmount, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { updateProfile } from '@/api/user';
+import { updateNickname, updateAvatar } from '@/api/user';
+import { uploadFile } from '@/api/upload';
 import { useToast } from '@/hooks/useToast';
 
 import iconProfileAvatarAdd from '@/assets/images/profile/icon_profile_avatar_add.svg?url';
@@ -94,10 +95,12 @@ async function handleSave() {
 
   try {
     submitting.value = true;
-    await updateProfile({
-      nickname: trimmedNickname,
-      avatar: pendingAvatar.value,
-    });
+    if (pendingAvatar.value) {
+      const uploadRes = await uploadFile(pendingAvatar.value);
+      const fileRef = uploadRes?.data?.fileId || uploadRes?.data?.url || '';
+      if (fileRef) await updateAvatar(fileRef);
+    }
+    await updateNickname(trimmedNickname);
     emit('saved', {
       nickname: trimmedNickname,
       avatarUrl: previewUrl.value,

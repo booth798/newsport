@@ -6,6 +6,7 @@ import { storeToRefs } from 'pinia';
 
 import { useAppStore } from '@/store/modules/app';
 import { useToast } from '@/hooks/useToast';
+import { logoutApi } from '@/api/user';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -37,8 +38,9 @@ function handleLogout() {
   showLogoutConfirm.value = true;
 }
 
-function confirmLogout() {
+async function confirmLogout() {
   showLogoutConfirm.value = false;
+  try { await logoutApi(); } catch { /* 忽略后端错误 */ }
   appStore.clearWebLogin();
   toast.success(t('操作成功'));
   router.push('/');

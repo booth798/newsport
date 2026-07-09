@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import { useAppStore } from '@/store/modules/app';
 import { useToast } from '@/hooks/useToast';
-import { fetchUserProfile, updateProfile } from '@/api/user';
+import { fetchUserProfile, updateNickname } from '@/api/user';
 
 const { t } = useI18n();
 const toast = useToast();
@@ -36,7 +36,7 @@ async function handleSave() {
   }
   try {
     submitting.value = true;
-    await updateProfile({ nickname: nickname.value });
+    await updateNickname(nickname.value);
     toast.success(t('操作成功'));
   } catch {
     toast.error(t('提交失败，请重试'));

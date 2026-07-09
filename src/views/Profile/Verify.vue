@@ -1,16 +1,33 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/hooks/useToast';
-import { submitVerification } from '@/api/user';
+import { submitVerification, fetchKycStatus } from '@/api/user';
 
 const { t } = useI18n();
 const toast = useToast();
 
-const status = ref('unverified');
+const status = ref('loading');
 const realName = ref('');
 const idNumber = ref('');
 const submitting = ref(false);
+
+onMounted(async () => {
+  try {
+    const res = await fetchKycStatus();
+    const kyc = res.data || {};
+    if (kyc.status === 'APPROVED' || kyc.status === 'approved') {
+      status.value = 'verified';
+      realName.value = kyc.realName || '';
+    } else if (kyc.status === 'PENDING' || kyc.status === 'pending') {
+      status.value = 'pending';
+    } else {
+      status.value = 'unverified';
+    }
+  } catch {
+    status.value = 'unverified';
+  }
+});
 
 const ID_REG = /^[1-9]\d{5}(18|19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[\dXx]$/;
 
@@ -30,7 +47,11 @@ async function handleSubmit() {
 
   try {
     submitting.value = true;
-    await submitVerification(realName.value, idNumber.value);
+    await submitVerification({
+      idType: 'mainland_id',
+      realName: realName.value,
+      idCardNo: idNumber.value,
+    });
     status.value = 'verified';
     toast.success(t('操作成功'));
   } catch {
@@ -45,9 +66,18 @@ async function handleSubmit() {
   <div class="profile-verify">
     <h3 class="section-title">{{ t('实名认证') }}</h3>
 
-    <div v-if="status === 'verified'" class="verify-status verify-status--success">
+    <div v-if="status === 'loading'" class="verify-status">
+      <span>{{ t('正在加载') }}...</span>
+    </div>
+
+    <div v-else-if="status === 'verified'" class="verify-status verify-status--success">
       <span class="verify-status__icon">✓</span>
       <span>{{ t('已通过') }}</span>
+    </div>
+
+    <div v-else-if="status === 'pending'" class="verify-status verify-status--pending">
+      <span class="verify-status__icon verify-status__icon--pending">⏳</span>
+      <span>{{ t('审核中') }}</span>
     </div>
 
     <template v-else>
@@ -101,6 +131,11 @@ async function handleSubmit() {
     color: #16a34a;
   }
 
+  &--pending {
+    background: rgba(245, 158, 11, 0.08);
+    color: #d97706;
+  }
+
   &__icon {
     width: 24px;
     height: 24px;
@@ -111,6 +146,10 @@ async function handleSubmit() {
     align-items: center;
     justify-content: center;
     font-size: $font-size-sm;
+
+    &--pending {
+      background: #d97706;
+    }
   }
 }
 

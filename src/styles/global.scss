@@ -8,6 +8,7 @@ html {
   // 2. 到了 375 及以上时，根字号封顶为 37.5px，不再继续放大
   font-size: min(10vw, 37.5px);
   background: var(--theme-page-base);
+  touch-action: manipulation;
 
   @include web-only {
     // Web 端不再做整站同比缩放，而是固定根字号，主要靠布局断点来切换桌面样式。

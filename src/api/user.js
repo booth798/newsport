@@ -167,7 +167,7 @@ export async function fetchProfileSummary() {
   return {
     code: 200,
     data: {
-      nickname: customer.username || '',
+      nickname: customer.nickname || customer.username || '',
       memberId: customer.customerNo || '',
       balance: formatMoney(wallet.balance),
       currency: wallet.currency || 'CNY',
@@ -210,7 +210,12 @@ export async function updateAvatar(fileRef) {
   return put('/customer/me/avatar', { fileRef });
 }
 
-/** 保存个人资料（联系方式） */
+/** 更改昵称 */
+export async function updateNickname(nickname) {
+  return put('/customer/me/nickname', { nickname });
+}
+
+/** 保存个人资料（联系方式：email / wechat / qq） */
 export async function updateProfile(data) {
   return put('/customer/me/contact', data);
 }

@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/hooks/useToast';
-import { fetchProfileSummary, updateAvatar, updateProfile } from '@/api/user';
+import { fetchProfileSummary, updateAvatar, updateNickname } from '@/api/user';
 import { uploadFile } from '@/api/upload';
 
 const emit = defineEmits(['save']);
@@ -46,7 +46,7 @@ async function handleSave() {
       await updateAvatar(fileRef);
     }
     if (nickname.value.trim()) {
-      await updateProfile({ nickname: nickname.value.trim() }).catch(() => {});
+      await updateNickname(nickname.value.trim()).catch(() => {});
     }
     toast.success(t('操作成功'));
     emit('save');
