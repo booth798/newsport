@@ -125,6 +125,12 @@ const routes = [
         component: () => import('@/views/Profile/Blockchain.vue'),
         meta: { titleKey: '区块链' },
       },
+      {
+        path: 'about',
+        name: 'profile-about',
+        component: () => import('@/views/Profile/About.vue'),
+        meta: { titleKey: '关于我们' },
+      },
     ],
   },
   {
