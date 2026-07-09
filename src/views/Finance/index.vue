@@ -71,6 +71,7 @@ const isFinanceHome = computed(() => route.name === 'finance');
   width: 100%;
   max-width: 100vw;
   min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: hidden;
   background: var(--theme-bg);
 
@@ -80,6 +81,7 @@ const isFinanceHome = computed(() => route.name === 'finance');
 
   @include mobile-only {
     min-height: 100vh;
+    min-height: 100dvh;
     padding: 0 8px calc(#{$mobile-tab-bar-offset} + env(safe-area-inset-bottom, 0px) + #{$spacing-md});
   }
 }
@@ -99,7 +101,7 @@ const isFinanceHome = computed(() => route.name === 'finance');
     display: flex;
     flex-direction: column;
     max-width: 100%;
-    min-height: calc(100vh - 80px - #{$mobile-tab-bar-offset});
+    min-height: calc(100dvh - 80px - #{$mobile-tab-bar-offset});
   }
 }
 
@@ -111,7 +113,7 @@ const isFinanceHome = computed(() => route.name === 'finance');
   @include web-only {
     position: sticky;
     flex: 0 0 175px;
-    min-height: min(690px, calc(100vh - 12px));
+    min-height: min(690px, calc(100dvh - 12px));
     padding: 26px 18px;
     box-sizing: border-box;
     border: 1px solid rgba(255, 255, 255, 0.9);
@@ -199,7 +201,7 @@ const isFinanceHome = computed(() => route.name === 'finance');
   }
 
   @include mobile-only {
-    min-height: calc(100vh - 80px - #{$mobile-tab-bar-offset} - 16px);
+    min-height: calc(100dvh - 80px - #{$mobile-tab-bar-offset} - 16px);
     justify-content: center;
     padding-bottom: 62px;
     box-sizing: border-box;

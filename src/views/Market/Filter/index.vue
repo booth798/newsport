@@ -200,7 +200,15 @@ onMounted(() => {
                 :class="{ 'filter-page__pill--selected': selectedIds.has(league.id) }"
                 @click="toggleLeague(league.id)"
               >
-                {{ league.shortName || league.name }}
+                <img
+                  v-if="league.logoUrl"
+                  class="filter-page__pill-logo"
+                  :src="league.logoUrl"
+                  :alt="league.shortName || league.name"
+                  width="18"
+                  height="18"
+                />
+                <span>{{ league.shortName || league.name }}</span>
               </button>
             </div>
           </section>
@@ -440,6 +448,7 @@ onMounted(() => {
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 4px;
     height: 30px;
     padding: 0 $spacing-sm;
     border: none;
@@ -463,6 +472,14 @@ onMounted(() => {
       background: rgba(31, 124, 255, 0.2);
       color: #1c7bff;
     }
+  }
+
+  &__pill-logo {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    border-radius: 2px;
+    object-fit: contain;
   }
 
   &__sidebar {

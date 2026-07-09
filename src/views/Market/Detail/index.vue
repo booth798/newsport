@@ -424,7 +424,7 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
       position: sticky;
       top: $web-market-detail-sidebar-sticky-top;
       align-self: start;
-      min-height: calc(100vh - #{$web-market-detail-sidebar-sticky-top} - 36px);
+      min-height: calc(100dvh - #{$web-market-detail-sidebar-sticky-top} - 36px);
       overflow-x: hidden;
       overflow-y: auto;
     }

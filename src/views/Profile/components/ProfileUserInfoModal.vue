@@ -251,7 +251,7 @@ async function handleSave() {
     flex-direction: column;
     width: 100%;
     max-width: 420px;
-    max-height: calc(100vh - 56px);
+    max-height: calc(100dvh - 56px);
     flex-shrink: 0;
     overflow: hidden;
 
@@ -315,7 +315,7 @@ async function handleSave() {
     position: relative;
     z-index: 1;
     width: 100%;
-    max-height: calc(100vh - 56px);
+    max-height: calc(100dvh - 56px);
     box-sizing: border-box;
     border-radius: 24px;
     border: 0.8px solid rgba(214, 224, 235, 1);

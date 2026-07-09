@@ -75,7 +75,7 @@ onBeforeUnmount(() => {
     width: 100%;
     max-width: 600px;
     padding: 10px 16px;
-    margin-top: 8px;
+    margin-top: calc(env(safe-area-inset-top, 0px) + 8px);
     background: #fff3e0;
     border: 1px solid #ffcc02;
     border-radius: 10px;

@@ -125,6 +125,7 @@ provide('toast', {
 
 .main-content {
   min-height: calc(100vh - 120px);
+  min-height: calc(100dvh - 120px);
   overflow-x: hidden;
 
   @include mobile-only {
@@ -133,6 +134,7 @@ provide('toast', {
 
   &--bare {
     min-height: 100vh;
+    min-height: 100dvh;
     padding-bottom: 0;
   }
 }

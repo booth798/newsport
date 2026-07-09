@@ -84,13 +84,13 @@ const modalClass = computed(() => (props.type ? `profile-modal--${props.type}` :
 
   @include web-only {
     width: 400px;
-    max-height: min(820px, calc(100vh - 96px));
+    max-height: min(820px, calc(100dvh - 96px));
     border-radius: 28px;
   }
 
   @include mobile-only {
     width: min(100%, 344px);
-    max-height: calc(100vh - 168px);
+    max-height: calc(100dvh - 168px);
     border-radius: $radius-lg;
   }
 }
@@ -140,13 +140,13 @@ const modalClass = computed(() => (props.type ? `profile-modal--${props.type}` :
   overflow-y: auto;
 
   @include web-only {
-    max-height: calc(100vh - 188px);
+    max-height: calc(100dvh - 188px);
   }
 
   @include mobile-only {
     gap: 8px;
     padding: 0 8px 8px;
-    max-height: calc(100vh - 250px);
+    max-height: calc(100dvh - 250px);
   }
 }
 

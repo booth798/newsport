@@ -546,8 +546,7 @@ onUnmounted(() => {
 
   @include mobile-only {
     padding-inline: 8px;
-    padding-top: 20px;
-    /* 与首屏轮播的 8px 间距放在导航区底部，避免内容滚动时与圆角导航条视觉脱节 */
+    padding-top: calc(env(safe-area-inset-top, 20px) + 4px);
     padding-bottom: 8px;
 
     .card-primary.norem {

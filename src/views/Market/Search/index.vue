@@ -223,6 +223,7 @@ onMounted(async () => {
 
 .search-page {
   min-height: 100vh;
+  min-height: 100dvh;
   background: #e3ecfb;
   box-sizing: border-box;
 

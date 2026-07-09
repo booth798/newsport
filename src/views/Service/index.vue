@@ -334,6 +334,7 @@ onBeforeUnmount(() => {
   width: 100%;
   max-width: 100vw;
   min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: hidden;
   background: var(--theme-bg);
   color: #173b61;
@@ -347,6 +348,7 @@ onBeforeUnmount(() => {
     display: flex;
     flex-direction: column;
     height: 100vh;
+    height: 100dvh;
     padding: 0 8px 35px;
   }
 }
@@ -569,7 +571,7 @@ onBeforeUnmount(() => {
     position: sticky;
     top: 10px;
     flex: 0 0 340px;
-    max-height: calc(100vh - 20px);
+    max-height: calc(100dvh - 20px);
     overflow-y: auto;
   }
 
@@ -844,7 +846,7 @@ onBeforeUnmount(() => {
 
   @include web-only {
     width: 800px;
-    height: calc(100vh - 150px);
+    height: calc(100dvh - 150px);
     min-height: 720px;
     border: 1px solid rgba(255, 255, 255, 0.9);
     border-radius: 48px;

@@ -36,9 +36,11 @@ const loading = ref(true);
 const error = ref(false);
 const searchQuery = ref('');
 
-const leagueIconUrl = computed(
-  () => LEAGUE_ICON_BY_NAME[leagueKey.value] ?? iconEventsUrl,
-);
+const leagueIconUrl = computed(() => {
+  const firstMatch = matches.value[0];
+  if (firstMatch?.leagueIcon) return firstMatch.leagueIcon;
+  return LEAGUE_ICON_BY_NAME[leagueKey.value] ?? iconEventsUrl;
+});
 
 const pageTitle = computed(() =>
   t('联赛市场', { league: t(leagueKey.value) }),

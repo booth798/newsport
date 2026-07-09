@@ -226,6 +226,7 @@ onBeforeUnmount(clearCountdown);
 
 .register-page {
   min-height: 100vh;
+  min-height: 100dvh;
   background: #eaf3fd;
   display: flex;
   justify-content: center;
@@ -237,6 +238,7 @@ onBeforeUnmount(clearCountdown);
   width: 100%;
   max-width: 430px;
   min-height: 100vh;
+  min-height: 100dvh;
   padding: 13px 11px 22px;
   box-sizing: border-box;
   background: #eaf3fd;
@@ -354,6 +356,7 @@ onBeforeUnmount(clearCountdown);
 
 .register-card {
   min-height: calc(100vh - 120px);
+  min-height: calc(100dvh - 120px);
   padding: 51px 20px 24px;
   box-sizing: border-box;
   border: 1px solid rgba(255, 255, 255, 0.86);
@@ -517,6 +520,7 @@ onBeforeUnmount(clearCountdown);
   .register-phone {
     max-width: none;
     min-height: 100vh;
+    min-height: 100dvh;
     padding: 12px 0 40px;
   }
 

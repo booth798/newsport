@@ -24,9 +24,7 @@ onMounted(async () => {
     if (data.hotMarkets) {
       homeMatches.value = normalizeHomeMarkets(data.hotMarkets);
     }
-    if (data.banners) {
-      homeBanners.value = data.banners;
-    }
+    homeBanners.value = data.banners || [];
   } catch { /* non-critical */ }
 });
 

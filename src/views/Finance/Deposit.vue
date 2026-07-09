@@ -245,11 +245,11 @@ async function handleSubmit() {
   gap: 16px;
 
   @include web-only {
-    min-height: min(690px, calc(100vh - 12px));
+    min-height: min(690px, calc(100dvh - 12px));
   }
 
   @include mobile-only {
-    min-height: calc(100vh - 60px);
+    min-height: calc(100dvh - 60px);
   }
 }
 

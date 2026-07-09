@@ -56,7 +56,10 @@ const LEAGUE_ICON_BY_NAME = {
   法甲: iconFranceUrl,
 };
 
-const leagueIconUrl = computed(() => LEAGUE_ICON_BY_NAME[props.order.league] ?? iconEventsUrl);
+const leagueIconUrl = computed(() => {
+  if (props.order.leagueIcon) return props.order.leagueIcon;
+  return LEAGUE_ICON_BY_NAME[props.order.league] ?? iconEventsUrl;
+});
 const homeLogoUrl = computed(() => resolveTeamLogoUrl(props.order.homeTeam));
 const awayLogoUrl = computed(() => resolveTeamLogoUrl(props.order.awayTeam));
 const chevronSrc = computed(() => (props.expanded ? iconChevronUpUrl : iconChevronDownUrl));

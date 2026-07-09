@@ -60,7 +60,10 @@ const LEAGUE_ICON_BY_NAME = {
   法甲: iconFranceUrl,
 };
 
-const leagueIconUrl = computed(() => LEAGUE_ICON_BY_NAME[props.match.league] ?? iconEventsUrl);
+const leagueIconUrl = computed(() => {
+  if (props.match.leagueIcon) return props.match.leagueIcon;
+  return LEAGUE_ICON_BY_NAME[props.match.league] ?? iconEventsUrl;
+});
 const homeLogoUrl = computed(() => resolveTeamLogoUrl(props.match.homeTeam, props.match.homeTeamLogo));
 const awayLogoUrl = computed(() => resolveTeamLogoUrl(props.match.awayTeam, props.match.awayTeamLogo));
 
@@ -515,7 +518,7 @@ function onBackdropKeydown(e) {
     flex-direction: column;
     width: 100%;
     max-width: 420px;
-    max-height: calc(100vh - 56px);
+    max-height: calc(100dvh - 56px);
     flex-shrink: 0;
     overflow: hidden;
 
@@ -607,7 +610,7 @@ function onBackdropKeydown(e) {
     position: relative;
     z-index: 1;
     width: 100%;
-    max-height: calc(100vh - 56px);
+    max-height: calc(100dvh - 56px);
     box-sizing: border-box;
     border-radius: 24px;
     border: 0.8px solid rgba(214, 224, 235, 1);

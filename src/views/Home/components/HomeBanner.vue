@@ -6,6 +6,7 @@ import slideLeftIcon from '@/assets/images/common/icon_slide-left.svg';
 import slideLeftHoverIcon from '@/assets/images/common/icon_slide-left_hover.svg';
 import slideRightIcon from '@/assets/images/common/icon_slide-right.svg';
 import slideRightHoverIcon from '@/assets/images/common/icon_slide-right_hover.svg';
+import logoUrl from '@/assets/images/common/logo_nav.svg?url';
 import { fetchBanners, reportBannerClick } from '@/api/match';
 
 const props = defineProps({
@@ -24,6 +25,7 @@ watch(
     }
   },
 );
+const isEmpty = computed(() => bannerItems.value.length === 0);
 const bannerSlides = computed(() =>
   bannerItems.value.length
     ? bannerItems.value.map((b) => b.imageUrl || bannerDefault)
@@ -124,50 +126,57 @@ function onTouchEnd() {
 
 <template>
   <section class="home-banner">
-    <div class="banner">
-      <div
-        class="banner__slide"
-        :style="{ '--banner-count': bannerCount }"
-        @touchstart.passive="onTouchStart"
-        @touchmove.passive="onTouchMove"
-        @touchend="onTouchEnd"
-        @mouseenter="stopAutoPlay"
-        @mouseleave="startAutoPlay"
-      >
-        <div class="banner__track" :style="trackStyle">
-          <div
-            v-for="(src, idx) in bannerSlides"
-            :key="bannerItems[idx]?.id || idx"
-            class="banner__item"
-            @click="handleBannerClick(idx)"
-          >
-            <img class="banner__img" :src="src" alt="" />
+    <div class="banner" :class="{ 'banner--empty': isEmpty }">
+      <template v-if="isEmpty">
+        <div class="banner__placeholder">
+          <img class="banner__placeholder-logo" :src="logoUrl" alt="" />
+        </div>
+      </template>
+      <template v-else>
+        <div
+          class="banner__slide"
+          :style="{ '--banner-count': bannerCount }"
+          @touchstart.passive="onTouchStart"
+          @touchmove.passive="onTouchMove"
+          @touchend="onTouchEnd"
+          @mouseenter="stopAutoPlay"
+          @mouseleave="startAutoPlay"
+        >
+          <div class="banner__track" :style="trackStyle">
+            <div
+              v-for="(src, idx) in bannerSlides"
+              :key="bannerItems[idx]?.id || idx"
+              class="banner__item"
+              @click="handleBannerClick(idx)"
+            >
+              <img class="banner__img" :src="src" alt="" />
+            </div>
           </div>
         </div>
-      </div>
 
-      <button type="button" class="banner__arrow banner__arrow--left" @click="prevBanner">
-        <span class="banner__arrow-stack">
-          <img class="banner__arrow-img" :src="slideLeftIcon" alt="" />
-          <img class="banner__arrow-img banner__arrow-img--hover" :src="slideLeftHoverIcon" alt="" />
-        </span>
-      </button>
-      <button type="button" class="banner__arrow banner__arrow--right" @click="nextBanner">
-        <span class="banner__arrow-stack">
-          <img class="banner__arrow-img" :src="slideRightIcon" alt="" />
-          <img class="banner__arrow-img banner__arrow-img--hover" :src="slideRightHoverIcon" alt="" />
-        </span>
-      </button>
+        <button type="button" class="banner__arrow banner__arrow--left" @click="prevBanner">
+          <span class="banner__arrow-stack">
+            <img class="banner__arrow-img" :src="slideLeftIcon" alt="" />
+            <img class="banner__arrow-img banner__arrow-img--hover" :src="slideLeftHoverIcon" alt="" />
+          </span>
+        </button>
+        <button type="button" class="banner__arrow banner__arrow--right" @click="nextBanner">
+          <span class="banner__arrow-stack">
+            <img class="banner__arrow-img" :src="slideRightIcon" alt="" />
+            <img class="banner__arrow-img banner__arrow-img--hover" :src="slideRightHoverIcon" alt="" />
+          </span>
+        </button>
 
-      <div class="banner__dots">
-        <span
-          v-for="i in bannerCount"
-          :key="i"
-          class="banner__dot"
-          :class="{ active: bannerIndex === i - 1 }"
-          @click="bannerIndex = i - 1"
-        />
-      </div>
+        <div v-if="bannerCount > 1" class="banner__dots">
+          <span
+            v-for="i in bannerCount"
+            :key="i"
+            class="banner__dot"
+            :class="{ active: bannerIndex === i - 1 }"
+            @click="bannerIndex = i - 1"
+          />
+        </div>
+      </template>
     </div>
   </section>
 </template>
@@ -203,6 +212,37 @@ function onTouchEnd() {
   @include mobile-only {
     border-radius: 16px;
     height: 136px;
+  }
+
+  &--empty {
+    border: none;
+    box-shadow: none;
+  }
+
+  &__placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: linear-gradient(135deg, #d6e8ff 0%, #eaf3fd 50%, #d1e3fa 100%);
+    border-radius: inherit;
+  }
+
+  &__placeholder-logo {
+    @include web-only {
+      width: 180px;
+      height: auto;
+    }
+
+    @include mobile-only {
+      width: 100px;
+      height: auto;
+    }
+
+    opacity: 0.6;
   }
 
   &__slide {
