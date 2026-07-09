@@ -10,7 +10,7 @@ import iconEyeClosedUrl from '@/assets/images/login/icon_login_eye_closed.svg?ur
 import iconEyeOpenUrl from '@/assets/images/login/icon_login_eye_open.svg?url';
 import { useAppStore } from '@/store/modules/app';
 import { useToast } from '@/hooks/useToast';
-import { loginApi, registerApi, captchaInit, captchaVerify, sendResetCode, resetPassword, fetchProfileOverview } from '@/api/user';
+import { loginApi, registerApi, captchaInit, captchaVerify, fetchProfileOverview } from '@/api/user';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -30,12 +30,6 @@ const isLogin = ref(true);
 const showPassword = ref(false);
 const rememberPassword = ref(false);
 
-const showResetFlow = ref(false);
-const resetAccount = ref('');
-const resetCode = ref('');
-const resetNewPassword = ref('');
-const resetStep = ref(1); // 1=发验证码, 2=输入验证码+新密码
-const resetSubmitting = ref(false);
 
 const SLIDER_KNOB_W = 52;
 const SLIDER_TRACK_PAD_X = 4;
@@ -65,8 +59,6 @@ watch(isLogin, () => {
   showPassword.value = false;
   rememberPassword.value = false;
   resetSlider();
-  showResetFlow.value = false;
-  resetStep.value = 1;
   initCaptcha();
 });
 
@@ -81,8 +73,6 @@ watch(
     lockScroll(open);
     if (!open) {
       resetSlider();
-      showResetFlow.value = false;
-      resetStep.value = 1;
     } else {
       loadRemembered();
       initCaptcha();
@@ -302,65 +292,6 @@ async function fetchUserProfile() {
   } catch { /* non-critical */ }
 }
 
-function openResetFlow() {
-  showResetFlow.value = true;
-  resetAccount.value = account.value.trim();
-  resetCode.value = '';
-  resetNewPassword.value = '';
-  resetStep.value = 1;
-  resetSubmitting.value = false;
-}
-
-function closeResetFlow() {
-  showResetFlow.value = false;
-  resetStep.value = 1;
-}
-
-async function handleSendResetCode() {
-  if (!resetAccount.value.trim()) {
-    toast.error(t('请输入账号'));
-    return;
-  }
-  if (!sliderVerified.value) {
-    toast.error(t('请完成滑动验证'));
-    return;
-  }
-  try {
-    resetSubmitting.value = true;
-    const token = captchaToken.value || 'ALWAYS_PASS';
-    await sendResetCode(resetAccount.value.trim(), token);
-    toast.success(t('验证码已发送'));
-    resetStep.value = 2;
-  } catch (e) {
-    toast.error(e.message || t('提交失败，请重试'));
-  } finally {
-    resetSubmitting.value = false;
-  }
-}
-
-async function handleResetPassword() {
-  if (!resetCode.value.trim()) {
-    toast.error(t('请输入验证码'));
-    return;
-  }
-  if (!resetNewPassword.value.trim() || resetNewPassword.value.length < 6) {
-    toast.error(t('密码长度至少6位'));
-    return;
-  }
-  try {
-    resetSubmitting.value = true;
-    await resetPassword(resetAccount.value.trim(), resetCode.value.trim(), resetNewPassword.value);
-    toast.success(t('密码重置成功，请重新登录'));
-    closeResetFlow();
-    resetSlider();
-    initCaptcha();
-  } catch (e) {
-    toast.error(e.message || t('提交失败，请重试'));
-  } finally {
-    resetSubmitting.value = false;
-  }
-}
-
 const close = () => emit('close');
 
 function onKeydown(e) {
@@ -479,7 +410,6 @@ const passwordInputType = computed(() => (showPassword.value ? 'text' : 'passwor
                       <input v-model="rememberPassword" type="checkbox" class="login-modal__remember-input" />
                       <span>{{ t('记住密码') }}</span>
                     </label>
-                    <a href="javascript:;" class="login-modal__forgot" @click="openResetFlow">{{ t('忘记密码') }}</a>
                   </div>
                 </template>
 
@@ -614,68 +544,6 @@ const passwordInputType = computed(() => (showPassword.value ? 'text' : 'passwor
                   {{ t('已有账号？') }}
                   <a href="javascript:;" @click="toggleMode">{{ t('立即登入') }}</a>
                 </span>
-              </div>
-            </div>
-
-            <div v-if="showResetFlow && isLogin" class="login-modal__panel login-modal__reset-panel">
-              <h2 class="login-modal__title">{{ t('忘记密码') }}</h2>
-              <div class="login-modal__form">
-                <template v-if="resetStep === 1">
-                  <div class="form-group">
-                    <label class="form-label" for="reset-account">{{ t('账号') }}</label>
-                    <div class="form-input-wrap">
-                      <input
-                        id="reset-account"
-                        v-model="resetAccount"
-                        class="form-input"
-                        :placeholder="t('请输入账号')"
-                      />
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    class="btn btn--primary login-modal__submit"
-                    :disabled="!resetAccount.trim() || !sliderVerified || resetSubmitting"
-                    @click="handleSendResetCode"
-                  >
-                    {{ resetSubmitting ? t('提交中...') : t('发送验证码') }}
-                  </button>
-                </template>
-                <template v-else>
-                  <div class="form-group">
-                    <label class="form-label" for="reset-code">{{ t('验证码') }}</label>
-                    <div class="form-input-wrap">
-                      <input
-                        id="reset-code"
-                        v-model="resetCode"
-                        class="form-input"
-                        :placeholder="t('请输入验证码')"
-                        maxlength="6"
-                      />
-                    </div>
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label" for="reset-new-pwd">{{ t('新密码') }}</label>
-                    <div class="form-input-wrap">
-                      <input
-                        id="reset-new-pwd"
-                        v-model="resetNewPassword"
-                        type="password"
-                        class="form-input"
-                        :placeholder="t('请输入新密码')"
-                      />
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    class="btn btn--primary login-modal__submit"
-                    :disabled="!resetCode.trim() || !resetNewPassword.trim() || resetSubmitting"
-                    @click="handleResetPassword"
-                  >
-                    {{ resetSubmitting ? t('提交中...') : t('确认重置') }}
-                  </button>
-                </template>
-                <a href="javascript:;" class="login-modal__back-login" @click="closeResetFlow">{{ t('返回登录') }}</a>
               </div>
             </div>
 
@@ -976,16 +844,6 @@ $login-input-text: rgba(11, 52, 98, 1);
     justify-content: space-between;
   }
 
-  &__forgot {
-    font-size: $font-size-md;
-    color: $login-cta-blue;
-    text-decoration: none;
-    cursor: pointer;
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
 
   &__remember {
     display: flex;
@@ -1083,23 +941,6 @@ $login-input-text: rgba(11, 52, 98, 1);
         color: #fff;
         font-weight: 600;
       }
-    }
-  }
-
-  &__reset-panel {
-    margin-top: 10px;
-  }
-
-  &__back-login {
-    display: block;
-    text-align: center;
-    font-size: $font-size-md;
-    color: $login-cta-blue;
-    text-decoration: none;
-    margin-top: 4px;
-
-    &:hover {
-      text-decoration: underline;
     }
   }
 

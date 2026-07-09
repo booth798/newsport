@@ -444,7 +444,6 @@ onUnmounted(() => {
         <template v-else-if="isCompactDetailHeader && !isLoggedIn">
           <div class="header-market-detail-stack">
             <div class="header-market-belt-row">
-              <a href="#" class="header-forgot" @click.prevent>{{ t('忘记密码') }}</a>
               <div class="header-round-group">
                 <button type="button" class="header-round-btn" :aria-label="t('登录')" @click="appStore.openLoginModal">
                   <img class="header-round-btn__img" :src="loginIconUrl" alt="" />
@@ -481,7 +480,6 @@ onUnmounted(() => {
         </template>
 
         <template v-else>
-          <a href="#" class="header-forgot" @click.prevent>{{ t('忘记密码') }}</a>
           <div class="header-round-group">
             <button type="button" class="header-round-btn" :aria-label="t('在线客服')" @click="openServiceDialog">
               <img class="header-round-btn__img" :src="serviceIconUrl" alt="" />
@@ -1028,10 +1026,6 @@ onUnmounted(() => {
             max-width: min(360px, 38vw);
           }
 
-          .header-forgot {
-            margin-left: 0;
-            margin-right: 0;
-          }
         }
       }
 
@@ -1157,29 +1151,6 @@ onUnmounted(() => {
         }
       }
 
-      .header-forgot {
-        margin-left: 18px;
-        margin-right: 18px;
-        font-size: 16px;
-        font-weight: 400;
-        line-height: 1;
-        color: rgba(23, 30, 36, 0.5);
-        text-decoration: none;
-        white-space: nowrap;
-        cursor: pointer;
-        transition: color 0.2s ease;
-
-        &:hover,
-        &:focus-visible {
-          color: var(--theme-primary);
-        }
-
-        &:focus-visible {
-          outline: 2px solid var(--theme-primary);
-          outline-offset: 2px;
-          border-radius: 2px;
-        }
-      }
 
       .header-round-group {
         display: flex;
