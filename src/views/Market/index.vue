@@ -1,6 +1,7 @@
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
 import { fetchLeagueList, fetchMatchList } from '@/api/match';
@@ -11,17 +12,19 @@ import HomeMatchCard from '@/views/Home/components/HomeMatchCard.vue';
 import iconEventsUrl from '@/assets/images/events/icon_events.svg?url';
 
 const { t } = useI18n();
+const router = useRouter();
 const appStore = useAppStore();
 const { isMobile } = storeToRefs(appStore);
 
-const searchInputRef = ref(null);
 const leagues = ref([]);
 const matches = ref([]);
 const loading = ref(true);
 const error = ref(false);
 const searchQuery = ref('');
-const isSearchActive = ref(false);
 const activeLeague = ref('全部');
+
+const activeFilter = ref('all');
+const matchCounts = ref({ all: 0, today: 0, tomorrow: 0 });
 
 async function loadLeagues() {
   try {
@@ -42,17 +45,11 @@ async function loadLeagues() {
   }
 }
 
-function onMarketSearchRequest() {
-  if (isMobile.value) openSearch();
-}
-
 onMounted(() => {
   loadLeagues();
-  window.addEventListener('mysport:market-search', onMarketSearchRequest);
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener('mysport:market-search', onMarketSearchRequest);
+  if (isMobile.value) {
+    loadMatchCounts();
+  }
 });
 
 const trimmedQuery = computed(() => searchQuery.value.trim());
@@ -76,89 +73,120 @@ const filteredMatches = computed(() => {
   });
 });
 
-const showSearchEmpty = computed(
-  () =>
-    isMobile.value &&
-    isSearchActive.value &&
-    hasQuery.value &&
-    !loading.value &&
-    !error.value &&
-    filteredMatches.value.length === 0,
-);
-
-async function openSearch() {
-  isSearchActive.value = true;
-  await nextTick();
-  searchInputRef.value?.focus();
-}
-
-function cancelSearch() {
-  isSearchActive.value = false;
-  searchQuery.value = '';
-}
-
 function selectLeague(leagueKey) {
   activeLeague.value = leagueKey;
+}
+
+function getDateString(offset = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+async function loadMatchCounts() {
+  const today = getDateString(0);
+  const tomorrow = getDateString(1);
+  try {
+    const [allRes, todayRes, tomorrowRes] = await Promise.all([
+      fetchMatchList({ pageSize: 1 }).catch(() => null),
+      fetchMatchList({ date: today, pageSize: 1 }).catch(() => null),
+      fetchMatchList({ date: tomorrow, pageSize: 1 }).catch(() => null),
+    ]);
+    matchCounts.value = {
+      all: allRes?.data?.total ?? matches.value.length,
+      today: todayRes?.data?.total ?? 0,
+      tomorrow: tomorrowRes?.data?.total ?? 0,
+    };
+  } catch {
+    matchCounts.value.all = matches.value.length;
+  }
+}
+
+const filterTags = computed(() => [
+  { key: 'all', label: t('全部赛事'), count: matchCounts.value.all },
+  { key: 'today', label: t('今日赛事'), count: matchCounts.value.today },
+  { key: 'tomorrow', label: t('明日赛事'), count: matchCounts.value.tomorrow },
+]);
+
+async function selectFilter(key) {
+  if (activeFilter.value === key) return;
+  activeFilter.value = key;
+  try {
+    loading.value = true;
+    error.value = false;
+    const dateParam = key === 'today' ? getDateString(0)
+      : key === 'tomorrow' ? getDateString(1) : undefined;
+    const res = await fetchMatchList({ pageSize: 30, date: dateParam });
+    matches.value = res?.data?.records?.length ? res.data.records : [];
+  } catch {
+    matches.value = [];
+    error.value = true;
+  } finally {
+    loading.value = false;
+  }
+}
+
+function goToLeagueFilter() {
+  router.push('/market/filter');
 }
 </script>
 
 <template>
   <div class="market-leagues">
     <section class="market-leagues__panel" aria-labelledby="market-leagues-title">
-      <header class="market-leagues__head">
-        <template v-if="isMobile && isSearchActive">
-          <label class="market-leagues__search market-leagues__search--expanded" :aria-label="t('搜索')">
-            <span class="market-leagues__search-icon" aria-hidden="true" />
-            <input
-              ref="searchInputRef"
-              v-model="searchQuery"
-              type="search"
-              class="market-leagues__search-input"
-              :placeholder="t('搜索')"
-              autocomplete="off"
-              enterkeyhint="search"
-            />
-          </label>
-          <button type="button" class="market-leagues__cancel" @click="cancelSearch">
-            {{ t('取消') }}
-          </button>
-        </template>
-        <template v-else>
-          <div class="market-leagues__title-wrap">
-            <img
-              class="market-leagues__title-icon"
-              :src="iconEventsUrl"
-              width="48"
-              height="48"
-              alt=""
-              aria-hidden="true"
-            />
-            <h2 id="market-leagues-title" class="market-leagues__title">{{ t('全部赛事') }}</h2>
-          </div>
-          <label v-if="!isMobile" class="market-leagues__search" :aria-label="t('搜索')">
-            <span class="market-leagues__search-icon" aria-hidden="true" />
-            <input
-              v-model="searchQuery"
-              type="search"
-              class="market-leagues__search-input"
-              :placeholder="t('搜索')"
-              autocomplete="off"
-            />
-          </label>
-          <button
-            v-else
-            type="button"
-            class="market-leagues__search-trigger"
-            :aria-label="t('搜索')"
-            @click="openSearch"
-          >
-            <span class="market-leagues__search-icon" aria-hidden="true" />
-            <span class="market-leagues__search-trigger-text">{{ t('搜索') }}</span>
-          </button>
-        </template>
+      <!-- PC 标题 + 搜索 -->
+      <header v-if="!isMobile" class="market-leagues__head">
+        <div class="market-leagues__title-wrap">
+          <img
+            class="market-leagues__title-icon"
+            :src="iconEventsUrl"
+            width="48"
+            height="48"
+            alt=""
+            aria-hidden="true"
+          />
+          <h2 id="market-leagues-title" class="market-leagues__title">{{ t('全部赛事') }}</h2>
+        </div>
+        <label class="market-leagues__search" :aria-label="t('搜索')">
+          <span class="market-leagues__search-icon" aria-hidden="true" />
+          <input
+            v-model="searchQuery"
+            type="search"
+            class="market-leagues__search-input"
+            :placeholder="t('搜索')"
+            autocomplete="off"
+          />
+        </label>
       </header>
 
-      <div v-if="!isMobile || !isSearchActive" class="market-leagues__tabs">
+      <div v-if="isMobile" class="market-leagues__filter-bar">
+        <button
+          type="button"
+          class="market-leagues__filter-btn"
+          :aria-label="t('联赛筛选')"
+          @click="goToLeagueFilter"
+        >
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="0.4" y="0.4" width="31.2" height="31.2" rx="15.6" stroke="#1C7BFF" stroke-width="0.8"/>
+            <path d="M20.9232 17.2307H24.6155M24.6155 20.923H20.9232M20.9232 24.6153H24.6155M7.38477 7.38452H23.795L17.6412 15.4073V27.0768L12.8549 24.8888V15.4073L7.38477 7.38452Z" stroke="#1C7BFF" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <button
+          v-for="tag in filterTags"
+          :key="tag.key"
+          type="button"
+          class="market-leagues__filter-tag"
+          :class="{ 'market-leagues__filter-tag--active': activeFilter === tag.key }"
+          @click="selectFilter(tag.key)"
+        >
+          {{ tag.label }}({{ tag.count }})
+        </button>
+      </div>
+
+      <div v-if="!isMobile" class="market-leagues__tabs">
         <button
           v-for="tab in leagueTabs"
           :key="tab.key"
@@ -181,12 +209,8 @@ function selectLeague(leagueKey) {
         <button type="button" class="market-leagues__retry" @click="loadLeagues">{{ t('重试') }}</button>
       </div>
 
-      <div v-else-if="showSearchEmpty" class="market-leagues__state market-leagues__state--empty">
-        <p>{{ t('没有相关内容，请重新尝试') }}</p>
-      </div>
-
       <div
-        v-else-if="filteredMatches.length === 0 && !(isMobile && isSearchActive)"
+        v-else-if="filteredMatches.length === 0"
         class="market-leagues__state market-leagues__state--empty"
       >
         <p>{{ t('暂无相关赛事') }}</p>
@@ -239,10 +263,11 @@ function selectLeague(leagueKey) {
     }
 
     @include mobile-only {
-      border-radius: 20px;
-      padding: 15px 12px 16px;
-      background: #EAF1F9;
-      box-shadow: 0 4px 8px 0 rgba(21, 58, 119, 0.18);
+      border-radius: 16px;
+      padding: 16px 12px;
+      background: #eaf1f9;
+      border: 0.8px solid #fff;
+      box-shadow: none;
     }
   }
 
@@ -258,6 +283,56 @@ function selectLeague(leagueKey) {
       align-items: center;
       gap: 10px;
       margin-bottom: 12px;
+    }
+  }
+
+  &__filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    margin-bottom: 12px;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  &__filter-btn {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  &__filter-tag {
+    flex: 0 0 auto;
+    height: 32px;
+    padding: 0 12px;
+    border: 0.8px solid #d6e0eb;
+    border-radius: 48px;
+    background: #fff;
+    color: #0b3462;
+    font-family: $font-family-base;
+    font-size: $font-size-sm;
+    font-weight: 400;
+    white-space: nowrap;
+    cursor: pointer;
+    box-shadow: 0 3px 8px rgba(21, 58, 119, 0.1);
+
+    &--active {
+      border-color: #1c7bff;
+      background: #1c7bff;
+      color: #fff;
+      font-weight: 500;
     }
   }
 

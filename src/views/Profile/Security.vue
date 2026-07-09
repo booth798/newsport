@@ -122,6 +122,10 @@ async function handleSave(section) {
           <span>{{ t('退出登录') }}</span>
           <i aria-hidden="true" />
         </button>
+        <button type="button" class="settings-mobile-row" @click="router.push('/profile/about')">
+          <span>{{ t('关于我们') }}</span>
+          <i aria-hidden="true" />
+        </button>
       </section>
 
       <Teleport to="body">

@@ -1,12 +1,13 @@
 <script setup>
 import { computed } from 'vue';
-import { RouterLink } from 'vue-router';
+import { RouterLink, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 
 import { useAppStore } from '@/store/modules/app';
 
 import bgScoreUrl from '@/assets/images/events/bg_score.svg?url';
+import bgGridPatternUrl from '@/assets/images/events/bg_grid_pattern.svg?url';
 import bgScoreDefaultUrl from '@/assets/images/events/bg_score_default.svg?url';
 import bgScoreHighUrl from '@/assets/images/events/bg_score_high.svg?url';
 import iconChampionUrl from '@/assets/images/events/icon_champion.svg?url';
@@ -39,7 +40,9 @@ const props = defineProps({
   },
 });
 
-defineEmits(['enter-market']);
+const emit = defineEmits(['enter-market']);
+
+const router = useRouter();
 
 const rootComponent = computed(() => (props.detailMode ? 'div' : RouterLink));
 const rootBind = computed(() => {
@@ -50,6 +53,17 @@ const rootBind = computed(() => {
   }
   return { to };
 });
+
+function onOddsPillClick(pool, e) {
+  if (props.detailMode) return;
+  e.preventDefault();
+  e.stopPropagation();
+  router.push({
+    name: 'market-detail',
+    params: { id: String(props.match.id) },
+    query: { autoBuy: '1', score: pool.score },
+  });
+}
 
 const homeScoreBg = computed(() =>
   props.match.homeScore > props.match.awayScore ? bgScoreHighUrl : bgScoreDefaultUrl,
@@ -95,6 +109,18 @@ const detailMatchDate = computed(() => {
   if (/^\d{4}-/.test(raw)) return raw;
   return `2026-${raw}`;
 });
+
+const DEFAULT_POOLS = [
+  { score: '1-0', probability: '--' },
+  { score: '0-1', probability: '--' },
+  { score: '1-1', probability: '--' },
+];
+
+const topPools = computed(() => {
+  const pools = props.match.topPools;
+  if (Array.isArray(pools) && pools.length) return pools.slice(0, 3);
+  return DEFAULT_POOLS;
+});
 </script>
 
 <template>
@@ -108,17 +134,21 @@ const detailMatchDate = computed(() => {
     <div v-if="isMobile" class="match-card__inner match-card__inner--m">
       <div v-if="isDetailH5" class="match-card__m-top match-card__m-top--detail">
         <div class="match-card__m-league-row match-card__m-league-row--detail">
-          <div class="match-card__league">
+          <div class="match-card__league match-card__league--detail">
             <img
-              class="match-card__league-icon"
+              class="match-card__league-icon match-card__league-icon--detail"
               :src="leagueIconUrl"
               alt=""
-              width="22"
-              height="22"
+              width="24"
+              height="24"
               draggable="false"
             />
-            <span class="match-card__league-name">{{ match.league }}</span>
+            <span class="match-card__league-name match-card__league-name--detail">{{ match.league }}</span>
           </div>
+        </div>
+        <div class="match-card__divider match-card__divider--detail" aria-hidden="true" />
+        <div class="match-card__m-time-row match-card__m-time-row--detail">
+          <span class="match-card__date match-card__date--detail">{{ detailMatchDate }}</span>
           <div class="match-card__pill match-card__pill--detail">
             <span class="match-card__pill-lab">
               <span class="match-card__pill-lab-keyword">{{ t('倒计时') }}</span><span class="match-card__pill-lab-sep">:</span>
@@ -126,7 +156,6 @@ const detailMatchDate = computed(() => {
             <span class="match-card__pill-time">{{ detailCountdownLabel }}</span>
           </div>
         </div>
-        <span class="match-card__date match-card__date--detail">{{ detailMatchDate }}</span>
       </div>
 
       <div v-else class="match-card__m-top">
@@ -136,16 +165,18 @@ const detailMatchDate = computed(() => {
               class="match-card__league-icon"
               :src="leagueIconUrl"
               alt=""
-              width="22"
-              height="22"
+              width="24"
+              height="24"
               draggable="false"
             />
             <span class="match-card__league-name">{{ match.league }}</span>
           </div>
-          <div class="match-card__vol-header">
-            <span class="match-card__vol-label">{{ t('总成交量') }}:</span>
-            <span class="match-card__vol-val">{{ match.volume }}</span>
-          </div>
+          <span class="match-card__enter-pill">
+            <span class="match-card__enter-pill-text">{{ t('进入比赛') }}</span>
+            <svg class="match-card__enter-pill-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4.5 2.5L8 6L4.5 9.5" stroke="#1C7BFF" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
         </div>
         <div class="match-card__divider match-card__divider--m" aria-hidden="true" />
         <div class="match-card__m-time-row">
@@ -162,10 +193,10 @@ const detailMatchDate = computed(() => {
           <div class="match-card__arena-grid">
             <img
               class="match-card__arena-bg"
-              :src="bgScoreUrl"
+              :src="isDetailH5 ? bgScoreUrl : bgGridPatternUrl"
               alt=""
-              width="760"
-              height="340"
+              width="311"
+              height="126"
               decoding="async"
               draggable="false"
             />
@@ -261,20 +292,34 @@ const detailMatchDate = computed(() => {
                   </span>
                 </div>
               </div>
+
+              <div v-if="!isDetailH5" class="match-card__odds-pills">
+                <div
+                  v-for="pool in topPools"
+                  :key="pool.score"
+                  class="match-card__odds-pill"
+                  role="button"
+                  tabindex="0"
+                  @click="onOddsPillClick(pool, $event)"
+                  @keydown.enter.prevent="onOddsPillClick(pool, $event)"
+                >
+                  <span class="match-card__odds-pill-score">{{ pool.score }}</span>
+                  <span class="match-card__odds-pill-prob">{{ pool.probability }}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="match-card__foot">
+      <div v-if="isDetailH5" class="match-card__foot">
         <button
-          v-if="detailMode"
           type="button"
           class="btn btn--primary match-card__btn"
           @click="$emit('enter-market')"
         >
-          {{ t('进入市场') }}</button>
-        <span v-else class="btn btn--primary match-card__btn">{{ t('进入市场') }}</span>
+          {{ t('进入市场') }}
+        </button>
       </div>
     </div>
 
@@ -474,9 +519,13 @@ const detailMatchDate = computed(() => {
   @include mobile-only {
     padding: 12px;
     border-radius: 16px;
+    border: 1.5px solid #fff;
+    background: #fff;
+    box-shadow: none;
 
     &:hover {
-      transform: translateY(-4px);
+      transform: none;
+      box-shadow: none;
     }
   }
 
@@ -541,11 +590,13 @@ const detailMatchDate = computed(() => {
     @include mobile-only {
       padding: 14px 12px 12px;
       border-radius: 16px;
-      box-shadow: var(--shadow-card);
+      background: #eaf1f9;
+      border: 0.8px solid #fff;
+      box-shadow: none;
 
       &:hover {
         transform: none;
-        box-shadow: var(--shadow-card);
+        box-shadow: none;
       }
 
       .match-card__foot {
@@ -572,9 +623,26 @@ const detailMatchDate = computed(() => {
       }
 
       .match-card__vs {
-        font-size: 22px;
+        font-size: 24px;
         font-weight: 700;
         color: #1c7bff;
+      }
+
+      .match-card__team-logo {
+        width: 44px;
+        height: 44px;
+        border: 0.43px solid #e1e9f3;
+      }
+
+      .match-card__team-name {
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .match-card__surface--m {
+        border-radius: 16px;
+        border: 0.8px solid #fff;
+        background: #fff;
       }
     }
   }
@@ -583,7 +651,7 @@ const detailMatchDate = computed(() => {
     @include mobile-only {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 0;
       margin-bottom: 10px;
     }
   }
@@ -594,35 +662,82 @@ const detailMatchDate = computed(() => {
     }
   }
 
+  &__league--detail {
+    @include mobile-only {
+      gap: 6px;
+    }
+  }
+
+  &__league-icon--detail {
+    @include mobile-only {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 0.43px solid #e1e9f3;
+    }
+  }
+
+  &__league-name--detail {
+    @include mobile-only {
+      font-size: 16px;
+      font-weight: 500;
+      color: #0b3462;
+    }
+  }
+
+  &__divider--detail {
+    @include mobile-only {
+      height: 0.8px;
+      margin: 10px -12px;
+      background: #fff;
+      border-radius: 10px;
+    }
+  }
+
+  &__m-time-row--detail {
+    @include mobile-only {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-top: 0;
+      padding-bottom: 0;
+    }
+  }
+
   &__pill--detail {
     @include mobile-only {
       flex-shrink: 0;
+      width: 92px;
+      height: 24px;
       min-height: 24px;
       padding: 0 8px;
       gap: 2px;
       border-radius: 6px;
-      background: rgba(228, 240, 254, 0.95);
-
-      .match-card__pill-lab-keyword,
-      .match-card__pill-lab-sep,
-      .match-card__pill-time {
-        font-size: 12px;
-        font-weight: 500;
-        line-height: 1;
-      }
+      background: rgba(31, 124, 255, 0.15);
+      justify-content: center;
+      box-sizing: border-box;
 
       .match-card__pill-lab-keyword {
-        color: rgba(11, 52, 98, 1);
+        font-size: 12px;
+        font-weight: 400;
+        line-height: 1;
+        color: rgba(11, 52, 98, 0.5);
       }
 
-      .match-card__pill-lab-sep,
-      .match-card__pill-time {
-        color: #1f7cff;
+      .match-card__pill-lab-sep {
+        font-size: 12px;
+        font-weight: 400;
+        line-height: 1;
+        color: rgba(11, 52, 98, 0.5);
       }
 
       .match-card__pill-time {
-        font-family: $font-family-num;
+        font-family: $font-family-base;
+        font-size: 16px;
         font-weight: 600;
+        line-height: 1;
+        color: #1c7bff;
       }
     }
   }
@@ -631,10 +746,44 @@ const detailMatchDate = computed(() => {
     @include mobile-only {
       display: block;
       font-family: $font-family-num;
-      font-size: 14px;
-      font-weight: 600;
+      font-size: 16px;
+      font-weight: 700;
       line-height: 1.2;
       color: #0b3462;
+    }
+  }
+
+  &__enter-pill {
+    @include mobile-only {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      width: 70px;
+      height: 24px;
+      border: 0.5px solid #1c7bff;
+      border-radius: 16px;
+      background: transparent;
+      gap: 0;
+      box-sizing: border-box;
+    }
+  }
+
+  &__enter-pill-text {
+    @include mobile-only {
+      font-family: $font-family-base;
+      font-size: 10px;
+      font-weight: 400;
+      line-height: 1;
+      color: #1c7bff;
+    }
+  }
+
+  &__enter-pill-arrow {
+    @include mobile-only {
+      width: 12px;
+      height: 12px;
+      flex-shrink: 0;
     }
   }
 
@@ -644,14 +793,16 @@ const detailMatchDate = computed(() => {
       align-items: center;
       justify-content: center;
       margin-right: 4px;
-      padding: 1px 4px;
-      border-radius: 4px;
-      background: rgba(28, 123, 255, 0.12);
+      padding: 0;
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      background: #1c7bff;
       font-family: $font-family-base;
       font-size: 10px;
       font-weight: 500;
       line-height: 1;
-      color: #1c7bff;
+      color: #fff;
       vertical-align: middle;
     }
   }
@@ -663,6 +814,9 @@ const detailMatchDate = computed(() => {
   }
 
   &__m-top {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
     margin-bottom: 0;
   }
 
@@ -670,8 +824,8 @@ const detailMatchDate = computed(() => {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    padding-bottom: 8px;
+    gap: 8px;
+    padding-bottom: 0;
   }
 
   &__m-league-row &__league {
@@ -709,10 +863,12 @@ const detailMatchDate = computed(() => {
   &__divider {
     display: block;
     height: 1px;
-    margin-left: -12px;
-    margin-right: -12px;
-    background: rgb(228, 240, 254);
+    background: #e4f0fe;
     flex-shrink: 0;
+
+    @include mobile-only {
+      margin: 0;
+    }
 
     @include web-only {
       margin-left: -20px;
@@ -726,7 +882,7 @@ const detailMatchDate = computed(() => {
     justify-content: space-between;
     gap: 12px;
     width: 100%;
-    padding-top: 7px;
+    padding-top: 0;
     box-sizing: border-box;
   }
 
@@ -740,9 +896,14 @@ const detailMatchDate = computed(() => {
   &__league-icon {
     flex-shrink: 0;
     display: block;
-    width: 22px;
-    height: 22px;
     object-fit: contain;
+
+    @include mobile-only {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 0.43px solid #e1e9f3;
+    }
 
     @include web-only {
       width: 28px;
@@ -752,27 +913,38 @@ const detailMatchDate = computed(() => {
 
   &__league-name {
     font-family: $font-family-base;
-    font-size: $font-size-md;
-    font-weight: 600;
+    font-weight: 500;
     color: #0b3462;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 
+    @include mobile-only {
+      font-size: 16px;
+    }
+
     @include web-only {
       font-size: $font-size-lg;
+      font-weight: 600;
     }
   }
 
   &__date {
     font-family: $font-family-num;
-    font-size: $font-size-md;
     font-weight: 700;
     font-style: normal;
     line-height: 1;
     color: #0b3462;
     letter-spacing: 0;
     min-width: 0;
+
+    @include mobile-only {
+      font-size: 16px;
+    }
+
+    @include web-only {
+      font-size: $font-size-md;
+    }
   }
 
   &__pill {
@@ -787,10 +959,10 @@ const detailMatchDate = computed(() => {
     min-height: 38px;
 
     &--m {
-      width: 124px;
+      width: 120px;
       height: 24px;
       min-height: 24px;
-      padding: 0 6px;
+      padding: 0 8px;
       gap: 4px;
       border-radius: 6px;
       background: rgba(31, 124, 255, 0.15);
@@ -865,9 +1037,16 @@ const detailMatchDate = computed(() => {
   }
 
   &__body {
-    margin-top: 14px;
     flex: 1;
     min-height: 0;
+
+    @include mobile-only {
+      margin-top: 6px;
+    }
+
+    @include web-only {
+      margin-top: 14px;
+    }
   }
 
   &__surface {
@@ -875,21 +1054,22 @@ const detailMatchDate = computed(() => {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    border-radius: 12px;
-    border: 1px solid rgb(228, 240, 254);
     box-sizing: border-box;
     background: #fff;
 
+    @include mobile-only {
+      border-radius: 16px;
+      border: 0.8px solid #fff;
+    }
+
     &--w {
       border-radius: 24px;
+      border: 1px solid rgb(228, 240, 254);
     }
   }
 
   &__surface--m &__arena-grid-inner {
-    padding-top: 16px;
-    padding-left: 12px;
-    padding-right: 12px;
-    padding-bottom: 16px;
+    padding: 12px 8px 8px;
   }
 
   &__vol-plain {
@@ -925,7 +1105,14 @@ const detailMatchDate = computed(() => {
     flex: 1;
     min-height: 0;
     overflow: hidden;
-    background: linear-gradient(180deg, #f3f8ff 0%, #e8f2ff 100%);
+
+    @include mobile-only {
+      background: #fff;
+    }
+
+    @include web-only {
+      background: linear-gradient(180deg, #f3f8ff 0%, #e8f2ff 100%);
+    }
   }
 
   &__arena-bg {
@@ -1132,6 +1319,50 @@ const detailMatchDate = computed(() => {
     line-height: 1;
     color: #0b3462;
     letter-spacing: 0;
+  }
+
+  &__odds-pills {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    margin-top: 8px;
+    padding: 0 4px;
+  }
+
+  &__odds-pill {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    max-width: 95px;
+    height: 36px;
+    border-radius: 8px;
+    background: #e4f0fe;
+    gap: 2px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+
+    &:active {
+      background: rgba(28, 123, 255, 0.18);
+    }
+  }
+
+  &__odds-pill-score {
+    font-family: $font-family-num;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    line-height: 1;
+    color: rgba(11, 52, 98, 0.5);
+  }
+
+  &__odds-pill-prob {
+    font-family: $font-family-num;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    color: #0b3462;
   }
 
   &__foot {

@@ -10,9 +10,6 @@ import tabMarket from '@/assets/images/tabs/tab_market@3x.png';
 import tabMarketActive from '@/assets/images/tabs/tab_market_active@3x.png';
 import tabProfile from '@/assets/images/tabs/tab_profile@3x.png';
 import tabProfileActive from '@/assets/images/tabs/tab_profile_active@3x.png';
-import tabService from '@/assets/images/tabs/tab_service@3x.png';
-import tabServiceActive from '@/assets/images/tabs/tab_service_active@3x.png';
-
 const { t } = useI18n();
 const route = useRoute();
 
@@ -32,14 +29,6 @@ const tabs = [
     icon: tabMarket,
     iconActive: tabMarketActive,
     match: (r) => r.name === 'market' || r.name === 'market-league' || r.name === 'market-detail',
-  },
-  {
-    key: 'service',
-    to: '/service',
-    labelKey: '客服',
-    icon: tabService,
-    iconActive: tabServiceActive,
-    match: (r) => r.path.startsWith('/service'),
   },
   {
     key: 'finance',

@@ -228,6 +228,12 @@ function normalizeMatch(m) {
       : m.totalPool != null ? formatVolume(m.totalPool) : '',
     countdown: cd.text,
     countdownMinutes: cd.minutes,
+    topPools: Array.isArray(m.topPools)
+      ? m.topPools.slice(0, 3).map((p) => ({
+          score: (p.score || '0:0').replace(':', '-'),
+          probability: p.yieldPct != null ? `${Number(p.yieldPct).toFixed(2)}%` : '0.00%',
+        }))
+      : [],
   };
 }
 

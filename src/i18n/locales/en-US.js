@@ -23,6 +23,7 @@ export default {
 
   // Home
   进入市场: 'Enter Market',
+  进入比赛: 'Enter Match',
   热门赛事: 'Hot Events',
   更多市场: 'More Markets',
   热门: 'Hot',
@@ -102,9 +103,18 @@ export default {
   联赛市场: '{league} Market',
   搜索: 'Search',
   搜索联赛: 'Search leagues',
+  '搜索赛事、联赛、球队': 'Search matches, leagues, teams',
+  热门搜索: 'Hot Searches',
+  搜索历史: 'Search History',
+  搜索到: 'Found',
+  条相关赛事: 'related matches',
   '没有相关内容，请重新尝试': 'No relevant content found. Please try again.',
+  '网络不稳定，请检查网络连接': 'Unstable network, please check your connection',
+  正在加载: 'Loading',
+  是否要联系在线客服: 'Contact customer service?',
   暂无联赛: 'No leagues found',
   比分市场: 'Score Market',
+  比赛详情: 'Match Details',
   比分: 'Score',
   概率: 'Probability',
   成交量: 'Volume',
@@ -345,6 +355,17 @@ export default {
   您好我想确认充值到账时间: 'Hello, I would like to confirm the deposit arrival time.',
   充值到账时间回复: 'Hello, deposits usually arrive within 1-3 minutes after submission. Please check your account balance.',
   提款资料确认回复: 'Your withdrawal details have been confirmed. You can continue submitting the withdrawal request.',
+
+  今日赛事: "Today's Events",
+  明日赛事: "Tomorrow's Events",
+  联赛筛选: 'League Filter',
+
+  // Filter Leagues
+  筛选联赛: 'Filter Leagues',
+  已选: 'Selected',
+  全选: 'Select All',
+  自选: 'Custom',
+  完成: 'Done',
 
   // Market page
   足球: 'Football',

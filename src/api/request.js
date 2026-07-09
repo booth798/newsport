@@ -215,6 +215,35 @@ function needsEncryption(method, body, url) {
   return true;
 }
 
+// ─── 全局加载 & 网络状态 ───
+
+let _loadingCount = 0;
+
+function emitEvent(name) {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(name));
+  }
+}
+
+function showLoading() {
+  _loadingCount++;
+  if (_loadingCount === 1) emitEvent('mysport:loading-show');
+}
+
+function hideLoading() {
+  _loadingCount = Math.max(0, _loadingCount - 1);
+  if (_loadingCount === 0) emitEvent('mysport:loading-hide');
+}
+
+const SILENT_PATHS = new Set([
+  '/ws/ticket',
+]);
+
+function isSilent(url, options) {
+  if (options.silent) return true;
+  return SILENT_PATHS.has(url);
+}
+
 // ─── 核心 request ───
 
 export async function request(url, options = {}, _retried = false) {
@@ -223,10 +252,13 @@ export async function request(url, options = {}, _retried = false) {
     body,
     params,
     headers: extraHeaders,
+    silent: _silent,
     ...rest
   } = options;
 
-  let fullUrl = buildApiUrl(url);
+  const silent = isSilent(url, options);
+
+  let fullUrl = `${API_BASE}${url}`;
   if (params) {
     const qs = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => {
@@ -284,12 +316,15 @@ export async function request(url, options = {}, _retried = false) {
   const fetchOpts = { method, headers: mergedHeaders };
   if (finalBody !== undefined) fetchOpts.body = finalBody;
 
+  if (!silent) showLoading();
+
   try {
     const res = await fetch(fullUrl, fetchOpts);
     const result = await handleResponse(res, usedEncryption);
 
     if (result === null && !_retried) {
       logResponse(null, { message: '401 → 自动续期重试' });
+      if (!silent) hideLoading();
       return request(url, options, true);
     }
     if (result === null) {
@@ -300,10 +335,16 @@ export async function request(url, options = {}, _retried = false) {
     }
 
     logResponse(result);
+    emitEvent('mysport:network-recover');
     return result;
   } catch (e) {
     logResponse(null, e);
+    if (e instanceof TypeError && e.message?.includes('fetch')) {
+      emitEvent('mysport:network-warn');
+    }
     throw e;
+  } finally {
+    if (!silent) hideLoading();
   }
 }
 

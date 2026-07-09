@@ -22,6 +22,18 @@ const routes = [
     meta: { titleKey: '全部赛事' },
   },
   {
+    path: '/market/search',
+    name: 'market-search',
+    component: () => import('@/views/Market/Search/index.vue'),
+    meta: { titleKey: '搜索', hideMobileTabBar: true },
+  },
+  {
+    path: '/market/filter',
+    name: 'market-filter',
+    component: () => import('@/views/Market/Filter/index.vue'),
+    meta: { titleKey: '筛选联赛', hideMobileTabBar: true },
+  },
+  {
     path: '/market/league/:league',
     name: 'market-league',
     component: () => import('@/views/Market/League/index.vue'),
@@ -31,7 +43,7 @@ const routes = [
     path: '/market/:id',
     name: 'market-detail',
     component: () => import('@/views/Market/Detail/index.vue'),
-    meta: { titleKey: '比分市场' },
+    meta: { titleKey: '比赛详情' },
   },
   {
     path: '/trade/purchases',
@@ -112,6 +124,12 @@ const routes = [
         name: 'profile-blockchain',
         component: () => import('@/views/Profile/Blockchain.vue'),
         meta: { titleKey: '区块链' },
+      },
+      {
+        path: 'about',
+        name: 'profile-about',
+        component: () => import('@/views/Profile/About.vue'),
+        meta: { titleKey: '关于我们' },
       },
     ],
   },
