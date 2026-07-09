@@ -235,28 +235,74 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
       </div>
     </div>
 
-    <!-- H5：赛事卡 + 全场/半场折叠面板 -->
+    <!-- H5：赛事卡 + 全场/半场 pill tabs + 平铺列表 -->
     <div v-else class="market-detail__layout market-detail__layout--m">
       <div class="market-detail__main market-detail__main--m">
         <div class="market-detail__hero market-detail__hero--m">
           <HomeMatchCard :match="match" detail-mode @enter-market="openBuySheetFromHero" />
         </div>
 
-        <div class="market-detail__sections">
-          <MarketDetailScoreSection
-            v-for="sec in mobileSections"
-            :key="sec.tab"
-            :title-key="sec.titleKey"
-            :tab="sec.tab"
-            :rows="scoreRowsForTab(sec.tab)"
-            :expanded="isSectionExpanded(sec.tab)"
-            :active-score="selectedRow?.score"
-            :show-active="showBuySheet && activeTab === sec.tab"
-            @toggle="toggleSection(sec.tab)"
-            @select-row="selectRow($event, sec.tab)"
-            @open-purchase="goToPurchaseDetails($event, sec.tab)"
-          />
-        </div>
+        <section class="m-score-card">
+          <div class="m-score-card__tab-bar">
+            <div class="m-score-card__tabs">
+              <button
+                type="button"
+                class="m-score-card__tab"
+                :class="{ 'm-score-card__tab--active': activeTab === 'fulltime' }"
+                @click="activeTab = 'fulltime'"
+              >
+                {{ t('全场') }}
+              </button>
+              <button
+                type="button"
+                class="m-score-card__tab"
+                :class="{ 'm-score-card__tab--active': activeTab === 'halftime' }"
+                @click="activeTab = 'halftime'"
+              >
+                {{ t('半场') }}
+              </button>
+            </div>
+            <span class="m-score-card__vol-badge">
+              <img
+                class="m-score-card__vol-icon"
+                :src="iconVolumeThumbUpUrl"
+                width="14"
+                height="14"
+                alt=""
+              />
+              <span class="m-score-card__vol-text">{{ t('成交量') }}</span>
+            </span>
+          </div>
+
+          <ul class="m-score-card__list">
+            <li
+              v-for="row in scoreRows"
+              :key="`${activeTab}-${row.score}`"
+              class="m-score-card__row"
+              :class="{
+                'm-score-card__row--active': selectedRow?.score === row.score && showBuySheet,
+                'm-score-card__row--halftime': activeTab === 'halftime',
+              }"
+              role="button"
+              tabindex="0"
+              @click="selectRow(row)"
+              @keydown.enter.prevent="selectRow(row)"
+            >
+              <span class="m-score-card__cell m-score-card__cell--score">{{ formatScoreLabel(row.score) }}</span>
+              <span class="m-score-card__cell m-score-card__cell--prob">{{ row.probability }}</span>
+              <span class="m-score-card__cell m-score-card__cell--vol">{{ row.volumeFormatted }}</span>
+              <img
+                class="m-score-card__arrow"
+                :src="iconArrowRightUrl"
+                width="16"
+                height="16"
+                alt=""
+                aria-hidden="true"
+                @click.stop="goToPurchaseDetails(row)"
+              />
+            </li>
+          </ul>
+        </section>
 
       </div>
     </div>
@@ -582,6 +628,198 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
     display: flex;
     flex-direction: column;
     gap: 12px;
+  }
+}
+
+/* H5 比分市场卡片 — pill tabs + 平铺列表（Figma 355:3541） */
+.m-score-card {
+  @include mobile-only {
+    background: #fff;
+    border-radius: 16px;
+    border: 0.8px solid #fff;
+    overflow: hidden;
+    padding: 12px;
+    box-sizing: border-box;
+  }
+
+  &__tab-bar {
+    @include mobile-only {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+  }
+
+  &__tabs {
+    @include mobile-only {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  }
+
+  &__tab {
+    @include mobile-only {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 69px;
+      height: 28px;
+      padding: 0;
+      border-radius: 48px;
+      border: 0.8px solid #d6e0eb;
+      background: transparent;
+      font-family: $font-family-base;
+      font-size: 12px;
+      font-weight: 350;
+      color: #0b3462;
+      cursor: pointer;
+      transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        border-color 0.2s ease;
+    }
+
+    &--active {
+      @include mobile-only {
+        background: #1c7bff;
+        border-color: #1c7bff;
+        color: #fff;
+        font-weight: 500;
+        box-shadow: 0 3px 8px rgba(21, 58, 119, 0.1);
+      }
+    }
+  }
+
+  &__vol-badge {
+    @include mobile-only {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      width: 70px;
+      height: 28px;
+      border-radius: 35px;
+      border: 0.5px solid #fff;
+      background: #ff2d2d;
+      color: #fff;
+      flex-shrink: 0;
+      box-shadow:
+        inset 6px 6px 12px 0 rgba(255, 255, 255, 0.2),
+        inset 3px 2px 10px 0 rgba(255, 255, 255, 0.2);
+    }
+  }
+
+  &__vol-icon {
+    @include mobile-only {
+      display: block;
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+      pointer-events: none;
+    }
+  }
+
+  &__vol-text {
+    @include mobile-only {
+      font-family: $font-family-base;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1;
+      white-space: nowrap;
+    }
+  }
+
+  &__list {
+    @include mobile-only {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+  }
+
+  &__row {
+    @include mobile-only {
+      display: grid;
+      grid-template-columns: minmax(0, 0.7fr) minmax(0, 0.8fr) minmax(0, 1.3fr) 16px;
+      gap: 6px;
+      align-items: center;
+      height: 40px;
+      padding: 0 12px;
+      border-radius: 12px;
+      background: #eaf1f9;
+      cursor: pointer;
+      box-sizing: border-box;
+      transition:
+        background 0.15s ease,
+        box-shadow 0.15s ease;
+    }
+
+    &:active {
+      @include mobile-only {
+        background: rgba(28, 123, 255, 0.12);
+      }
+    }
+
+    &--active {
+      @include mobile-only {
+        background: rgba(28, 123, 255, 0.12);
+      }
+    }
+  }
+
+  &__cell {
+    @include mobile-only {
+      font-size: 14px;
+      color: #0b3462;
+      min-width: 0;
+    }
+
+    &--score {
+      @include mobile-only {
+        font-family: $font-family-base;
+        font-weight: 700;
+      }
+    }
+
+    &--prob {
+      @include mobile-only {
+        font-family: $font-family-base;
+        font-weight: 700;
+        color: #1c7bff;
+      }
+    }
+
+    &--vol {
+      @include mobile-only {
+        font-family: $font-family-base;
+        font-weight: 400;
+        text-align: right;
+      }
+    }
+  }
+
+  &__row--halftime &__cell--prob {
+    @include mobile-only {
+      color: #fb5c0d;
+    }
+  }
+
+  &__arrow {
+    @include mobile-only {
+      display: block;
+      width: 16px;
+      height: 16px;
+      border-radius: 12px;
+      flex-shrink: 0;
+      justify-self: end;
+      cursor: pointer;
+    }
   }
 }
 

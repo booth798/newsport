@@ -23,6 +23,7 @@ export default {
 
   // Home
   进入市场: 'Enter Market',
+  进入比赛: 'Enter Match',
   热门赛事: 'Hot Events',
   更多市场: 'More Markets',
   热门: 'Hot',
@@ -345,6 +346,17 @@ export default {
   您好我想确认充值到账时间: 'Hello, I would like to confirm the deposit arrival time.',
   充值到账时间回复: 'Hello, deposits usually arrive within 1-3 minutes after submission. Please check your account balance.',
   提款资料确认回复: 'Your withdrawal details have been confirmed. You can continue submitting the withdrawal request.',
+
+  今日赛事: "Today's Events",
+  明日赛事: "Tomorrow's Events",
+  联赛筛选: 'League Filter',
+
+  // Filter Leagues
+  筛选联赛: 'Filter Leagues',
+  已选: 'Selected',
+  全选: 'Select All',
+  自选: 'Custom',
+  完成: 'Done',
 
   // Market page
   足球: 'Football',
