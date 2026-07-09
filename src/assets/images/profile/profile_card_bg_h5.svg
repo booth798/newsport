@@ -1,0 +1,28 @@
+<svg width="275" height="148" viewBox="0 0 275 148" fill="none" xmlns="http://www.w3.org/2000/svg">
+<mask id="mask0_217_9642" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="275" height="227">
+<path d="M0 0H275V227H0V0Z" fill="url(#paint0_radial_217_9642)"/>
+</mask>
+<g mask="url(#mask0_217_9642)">
+<rect x="-35" y="-48" width="67" height="68" rx="26" fill="white" fill-opacity="0.1"/>
+<rect x="34" y="-48" width="67" height="68" rx="26" fill="white" fill-opacity="0.1"/>
+<rect x="103" y="-48" width="67" height="68" rx="26" fill="white" fill-opacity="0.1"/>
+<rect x="172" y="-48" width="67" height="68" rx="26" fill="white" fill-opacity="0.1"/>
+<rect x="241" y="-48" width="67" height="68" rx="26" fill="white" fill-opacity="0.1"/>
+<rect x="-35" y="22" width="67" height="68" rx="26" fill="white" fill-opacity="0.1"/>
+<rect x="34" y="22" width="67" height="68" rx="26" fill="white" fill-opacity="0.1"/>
+<rect x="103" y="22" width="67" height="68" rx="26" fill="white" fill-opacity="0.2"/>
+<rect x="172" y="22" width="67" height="68" rx="26" fill="white" fill-opacity="0.1"/>
+<rect x="241" y="22" width="67" height="68" rx="26" fill="white" fill-opacity="0.1"/>
+<rect x="-35" y="92" width="67" height="68" rx="26" fill="white" fill-opacity="0.1"/>
+<rect x="34" y="92" width="67" height="68" rx="26" fill="white" fill-opacity="0.3"/>
+<rect x="103" y="92" width="67" height="68" rx="26" fill="white" fill-opacity="0.1"/>
+<rect x="172" y="92" width="67" height="68" rx="26" fill="white" fill-opacity="0.1"/>
+<rect x="241" y="92" width="67" height="68" rx="26" fill="white" fill-opacity="0.1"/>
+</g>
+<defs>
+<radialGradient id="paint0_radial_217_9642" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="rotate(33.7861) scale(330.879 283.601)">
+<stop stop-color="white"/>
+<stop offset="0.909161" stop-color="white" stop-opacity="0"/>
+</radialGradient>
+</defs>
+</svg>

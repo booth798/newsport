@@ -20,8 +20,8 @@ const showLogoutConfirm = ref(false);
 const isProfileHome = computed(() => route.name === 'profile-home');
 const hideSidebarOnHome = computed(() => isProfileHome.value || isMobile.value);
 
-const displayName = computed(() => loggedInUserId.value || 'User_888');
-const displayId = computed(() => loggedInUserId.value ? `ID: ${loggedInUserId.value}` : 'ID: 10086');
+const displayName = computed(() => loggedInUserId.value);
+const displayId = computed(() => `ID: ${loggedInUserId.value}`);
 const displayInitial = computed(() => (displayName.value.charAt(0) || 'U').toUpperCase());
 
 const menuItems = [

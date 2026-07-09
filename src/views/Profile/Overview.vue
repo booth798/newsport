@@ -10,27 +10,29 @@ import { useToast } from '@/hooks/useToast';
 import { openCustomerService } from '@/utils/customerService';
 
 import ProfileUserInfoModal from '@/views/Profile/components/ProfileUserInfoModal.vue';
-
+import profileCardBgH5 from '@/assets/images/profile/profile_card_bg_h5.svg?url';
+import profileCardBg from '@/assets/images/profile/profile_card_bg.svg?url';
+import sunshineBg from '@/assets/images/profile/sunshine_bg.svg?url';
 import avatarDefaultUrl from '@/assets/images/common/avatar_default.png?url';
 import iconProfileDeposit from '@/assets/images/profile/icon_profile_deposit.svg?url';
+import iconProfileDepositPc from '@/assets/images/profile/pc_icon_profile_deposit.svg?url';
 import iconProfileWithdraw from '@/assets/images/profile/icon_profile_withdraw.svg?url';
 import iconProfileInfo from '@/assets/images/common/icon_profile_info.svg?url';
-import iconProfileRecords from '@/assets/images/common/icon_profile_records.svg?url';
-import iconProfileOrders from '@/assets/images/common/icon_profile_orders.svg?url';
-import iconProfileFavorites from '@/assets/images/common/icon_profile_favorites.svg?url';
+// import iconProfileRecords from '@/assets/images/common/icon_profile_records.svg?url';
+// import iconProfileOrders from '@/assets/images/common/icon_profile_orders.svg?url';
+// import iconProfileFavorites from '@/assets/images/common/icon_profile_favorites.svg?url';
 import iconProfileMessages from '@/assets/images/common/icon_profile_messages.svg?url';
-import iconProfileMarket from '@/assets/images/common/icon_profile_market.svg?url';
-import iconProfileVerify from '@/assets/images/common/icon_profile_verify.svg?url';
+// import iconProfileMarket from '@/assets/images/common/icon_profile_market.svg?url';
+// import iconProfileVerify from '@/assets/images/common/icon_profile_verify.svg?url';
 import iconProfileSecurity from '@/assets/images/common/icon_profile_security.svg?url';
 import iconProfileBindinfo from '@/assets/images/common/icon_profile_bindinfo.svg?url';
 import iconProfileService from '@/assets/images/common/icon_profile_service.svg?url';
 import iconProfileLogout from '@/assets/images/common/icon_profile_logout.svg?url';
 import iconVipRules from '@/assets/images/common/icon_vip_rules.svg?url';
-import profileCardBg from '@/assets/images/profile/profile-card.svg?url';
 import profileVipTrack from '@/assets/images/profile/profile_vip_track.svg?url';
-import profileCardH5Bg from '@/assets/images/profile/profile_card_h5.png?url';
 import profileVipTrackH5 from '@/assets/images/profile/profile_vip_track_h5.png?url';
 import iconBalanceRefresh from '@/assets/images/profile/icon_balance_refresh.svg?url';
+import iconBalanceRefreshPc from '@/assets/images/profile/pc_icon_balance_refresh.svg?url';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -72,26 +74,22 @@ const mobileBalance = computed(() => (isLoggedIn.value ? displayBalance.value : 
 const mobileMainWallet = computed(() => (isLoggedIn.value ? displayBalance.value : '0'));
 const mobileLockedWallet = computed(() => (isLoggedIn.value ? (overview.value._wallet?.frozen || '0.00') : '0'));
 
-const menuItems = [
-  { label: '个人资料', icon: iconProfileInfo, action: 'userInfo' },
-  { label: '交易记录', icon: iconProfileRecords, to: '/finance/records' },
-  { label: '下单明细', icon: iconProfileOrders, to: '/trade/purchases' },
-  { label: '收藏', icon: iconProfileFavorites, action: 'favorites' },
-  { label: '消息中心', icon: iconProfileMessages, to: '/profile/messages' },
-  { label: '市场列表', icon: iconProfileMarket, to: '/market' },
-  { label: '实名认证', icon: iconProfileVerify, to: '/profile/verify' },
-  { label: '安全设置', icon: iconProfileSecurity, to: '/profile/security' },
-  { label: '绑定信息', icon: iconProfileBindinfo, to: '/profile/bank-card' },
-  { label: '联系客服', icon: iconProfileService, action: 'service' },
-  { label: '退出登录', icon: iconProfileLogout, action: 'logout' },
-];
+const menuItems = computed(() => {
+  const profile = { label: '个人资料', icon: iconProfileInfo, action: 'userInfo' };
+  const messages = { label: '消息中心', icon: iconProfileMessages, to: '/profile/messages' };
+  const bankCard = { label: '绑定信息', icon: iconProfileBindinfo, to: '/profile/bank-card' };
+  const service = { label: '联系客服', icon: iconProfileService, action: 'service' };
+  const security = { label: '安全设置', icon: iconProfileSecurity, to: '/profile/security' };
+  const logout = { label: '退出登录', icon: iconProfileLogout, action: 'logout' };
+  return isLoggedIn.value ? [profile, messages, bankCard, service, security, logout] : [service];
+});
 
 const mobileMenuItems = computed(() => {
   const service = { label: '联系客服', icon: iconProfileService, action: 'service' };
   const profile = { label: '个人资料', icon: iconProfileInfo, action: 'userInfo' };
   const vip = { label: 'VIP权益', icon: iconVipRules, action: 'vip' };
   const bind = { label: '绑定信息', icon: iconProfileBindinfo, to: '/profile/bank-card' };
-  return isLoggedIn.value ? [service, profile, vip, bind] : [service, vip, profile, bind];
+  return isLoggedIn.value ? [service, vip, profile, bind] : [service, vip];
 });
 
 async function loadOverview() {
@@ -152,7 +150,7 @@ function handleMenuClick(item) {
   }
 }
 
-function handleMobileHeroClick() {
+function handleHeroClick() {
   if (isLoggedIn.value) {
     openUserInfoModal();
     return;
@@ -160,7 +158,7 @@ function handleMobileHeroClick() {
   appStore.openLoginModal();
 }
 
-function handleMobileAction(path) {
+function handleRouteAction(path) {
   if (!isLoggedIn.value) {
     appStore.openLoginModal();
     return;
@@ -220,27 +218,18 @@ onMounted(loadOverview);
     <template v-else>
       <template v-if="isMobile">
         <section class="profile-h5-card" aria-label="profile-summary">
-          <img class="profile-h5-card__bg" :src="profileCardH5Bg" alt="" aria-hidden="true" />
-          <button type="button" class="profile-h5-card__user" @click="handleMobileHeroClick">
-            <img
-              class="profile-h5-card__avatar"
-              :src="avatarDisplayUrl || avatarDefaultUrl"
-              width="58"
-              height="58"
-              alt=""
-            />
+          <img class="profile-h5-card__bg" :src="profileCardBgH5" alt="" aria-hidden="true" />
+          <img class="profile-card__sunshine" :src="sunshineBg" alt="" aria-hidden="true" />
+          <button type="button" class="profile-h5-card__user" @click="handleHeroClick">
+            <img class="profile-h5-card__avatar" :src="avatarDisplayUrl || avatarDefaultUrl" width="58" height="58"
+              alt="" />
             <span class="profile-h5-card__meta">
               <strong>{{ mobileDisplayName }}</strong>
               <span v-if="mobileDisplayMemberId">ID： {{ mobileDisplayMemberId }}</span>
             </span>
           </button>
-          <button
-            v-if="isLoggedIn"
-            type="button"
-            class="profile-h5-card__arrow"
-            :aria-label="t('个人资料')"
-            @click="openUserInfoModal"
-          />
+          <button v-if="isLoggedIn" type="button" class="profile-h5-card__arrow" :aria-label="t('个人资料')"
+            @click="openUserInfoModal" />
           <div class="profile-h5-card__vip">
             <span class="profile-h5-card__vip-title">{{ t('会员等级') }}</span>
             <img class="profile-h5-card__vip-track" :src="profileVipTrackH5" width="336" height="33" alt="" />
@@ -253,14 +242,9 @@ onMounted(loadOverview);
         <section class="profile-h5-balance" aria-label="account-balance">
           <div class="profile-h5-balance__head">
             <h2>{{ t('账户余额') }}</h2>
-            <button
-              type="button"
-              class="profile-h5-balance__refresh"
-              :class="{ 'profile-h5-balance__refresh--spinning': refreshing }"
-              :aria-label="t('刷新余额')"
-              :disabled="refreshing"
-              @click="refreshBalance"
-            >
+            <button type="button" class="profile-h5-balance__refresh"
+              :class="{ 'profile-h5-balance__refresh--spinning': refreshing }" :aria-label="t('刷新余额')"
+              :disabled="refreshing" @click="refreshBalance">
               <img :src="iconBalanceRefresh" width="24" height="24" alt="" aria-hidden="true" />
             </button>
           </div>
@@ -279,11 +263,12 @@ onMounted(loadOverview);
             </div>
           </div>
           <div class="profile-h5-balance__actions">
-            <button type="button" class="profile-h5-balance__btn profile-h5-balance__btn--primary" @click="handleMobileAction('/finance/deposit')">
+            <button type="button" class="profile-h5-balance__btn profile-h5-balance__btn--primary"
+              @click="handleRouteAction('/finance/deposit')">
               <img :src="iconProfileDeposit" width="28" height="28" alt="" aria-hidden="true" />
               <span>{{ t('充值') }}</span>
             </button>
-            <button type="button" class="profile-h5-balance__btn" @click="handleMobileAction('/finance/withdraw')">
+            <button type="button" class="profile-h5-balance__btn" @click="handleRouteAction('/finance/withdraw')">
               <img :src="iconProfileWithdraw" width="28" height="28" alt="" aria-hidden="true" />
               <span>{{ t('提现') }}</span>
             </button>
@@ -291,13 +276,8 @@ onMounted(loadOverview);
         </section>
 
         <section class="profile-h5-menu" aria-label="profile-menu">
-          <button
-            v-for="item in mobileMenuItems"
-            :key="item.label"
-            type="button"
-            class="profile-h5-menu__row"
-            @click="handleMobileMenuClick(item)"
-          >
+          <button v-for="item in mobileMenuItems" :key="item.label" type="button" class="profile-h5-menu__row"
+            @click="handleMobileMenuClick(item)">
             <img class="profile-h5-menu__icon" :src="item.icon" width="22" height="22" alt="" />
             <span>{{ t(item.label) }}</span>
             <i aria-hidden="true" />
@@ -306,130 +286,93 @@ onMounted(loadOverview);
       </template>
 
       <template v-else>
-      <section class="profile-home__hero" aria-label="profile-summary">
-        <div class="profile-home__hero-bg" aria-hidden="true">
-          <img class="profile-home__hero-bg-img" :src="profileCardBg" alt="" />
-        </div>
+        <section class="profile-home__hero" aria-label="profile-summary">
+          <div class="profile-home__hero-bg" aria-hidden="true">
+            <img class="profile-home__hero-bg-img" :src="profileCardBg" alt="" />
+            <img class="profile-card__sunshine" :src="sunshineBg" alt="" />
+          </div>
 
-        <div class="profile-home__hero-main">
-          <div class="profile-home__hero-top">
-            <button type="button" class="profile-home__user" @click="openUserInfoModal">
-              <img
-                class="profile-home__avatar"
-                :src="avatarDisplayUrl || avatarDefaultUrl"
-                width="52"
-                height="52"
-                alt=""
-              />
-              <div class="profile-home__user-meta">
-                <p class="profile-home__name">{{ displayName }}</p>
-                <p class="profile-home__member-id">ID：{{ displayMemberId }}</p>
+          <div class="profile-home__hero-main">
+            <div class="profile-home__hero-top">
+              <button type="button" class="profile-home__user" @click="handleHeroClick">
+                <img class="profile-home__avatar" :src="avatarDisplayUrl || avatarDefaultUrl"/>
+                <div v-if="!isLoggedIn" class="profile-home__user-meta">登录</div>
+                <div v-else class="profile-home__user-meta">
+                  <p class="profile-home__name">{{ displayName }}</p>
+                  <p class="profile-home__member-id">ID：{{ displayMemberId }}</p>
+                </div>
+ 
+              </button>
+              <div class="profile-home__actions">
+                <div @click="handleRouteAction('/finance/deposit')" class="profile-home__action-btn">
+                  <img :src="iconProfileDepositPc" width="28" height="28" alt="" aria-hidden="true" />
+                  <span>{{ t('充值') }}</span>
+                </div>
+                <div @click="handleRouteAction('/finance/withdraw')" class="profile-home__action-btn">
+                  <img :src="iconProfileWithdraw" width="28" height="28" alt="" aria-hidden="true" />
+                  <span>{{ t('提现') }}</span>
+                </div>
               </div>
-            </button>
-            <div class="profile-home__actions">
-              <RouterLink to="/finance/deposit" class="profile-home__action-btn">
-                <img :src="iconProfileDeposit" width="28" height="28" alt="" aria-hidden="true" />
-                <span>{{ t('充值') }}</span>
-              </RouterLink>
-              <RouterLink to="/finance/withdraw" class="profile-home__action-btn">
-                <img :src="iconProfileWithdraw" width="28" height="28" alt="" aria-hidden="true" />
-                <span>{{ t('提现') }}</span>
-              </RouterLink>
             </div>
-          </div>
 
-          <div class="profile-home__balance-row">
-            <span class="profile-home__balance-label">{{ t('账户余额') }}：</span>
-            <span class="profile-home__balance-value">
-              {{ overview.currency }} {{ displayBalance }}
-            </span>
-            <button
-              type="button"
-              class="profile-home__refresh"
-              :class="{ 'profile-home__refresh--spinning': refreshing }"
-              :aria-label="t('刷新余额')"
-              :disabled="refreshing"
-              @click="refreshBalance"
-            >
-              <img :src="iconBalanceRefresh" width="24" height="24" alt="" aria-hidden="true" />
-            </button>
-          </div>
+            <div class="profile-home__balance-row">
+              <span class="profile-home__balance-label">{{ t('账户余额') }}：</span>
+              <span class="profile-home__balance-value">
+                {{ overview.currency }} <span class="profile-home__balance-value-number">{{ displayBalance }}</span>
 
-          <div class="profile-home__vip">
-            <p class="profile-home__vip-title">{{ t('会员等级') }}</p>
-            <img
-              class="profile-home__vip-track"
-              :src="profileVipTrack"
-              width="752"
-              height="54"
-              alt=""
-              aria-hidden="true"
-            />
-            <div class="profile-home__vip-labels">
-              <span
-                v-for="level in vipLevels"
-                :key="`label-${level}`"
-                class="profile-home__vip-label"
-                :class="{ 'profile-home__vip-label--active': level === overview.vipLevel }"
-              >
-                V{{ level }}
               </span>
+              <button type="button" class="profile-home__refresh"
+                :class="{ 'profile-home__refresh--spinning': refreshing }" :aria-label="t('刷新余额')"
+                :disabled="refreshing" @click="refreshBalance">
+                <img :src="iconBalanceRefreshPc" width="24" height="24" alt="" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div class="profile-home__vip">
+              <p class="profile-home__vip-title">{{ t('会员等级') }}</p>
+              <img class="profile-home__vip-track" :src="profileVipTrack" width="752" height="54" alt=""
+                aria-hidden="true" />
+              <div class="profile-home__vip-labels">
+                <span v-for="level in vipLevels" :key="`label-${level}`" class="profile-home__vip-label"
+                  :class="{ 'profile-home__vip-label--active': level === overview.vipLevel }">
+                  V{{ level }}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="profile-home__hero-stats">
-          <div class="profile-home__stat">
-            <span class="profile-home__stat-label">{{ t('总投注') }}</span>
-            <span class="profile-home__stat-value">¥ {{ overview.totalBet }}</span>
+          <div class="profile-home__hero-stats">
+            <div class="profile-home__stat">
+              <span class="profile-home__stat-label">{{ t('主钱包') }}</span>
+              <span class="profile-home__stat-value">{{ mobileMainWallet }}</span>
+            </div>
+            <div class="profile-home__stat">
+              <span class="profile-home__stat-label">{{ t('锁定钱包') }}</span>
+              <span class="profile-home__stat-value">{{ mobileLockedWallet }}</span>
+            </div>
           </div>
-          <div class="profile-home__stat">
-            <span class="profile-home__stat-label">{{ t('胜率') }}</span>
-            <span class="profile-home__stat-value">{{ overview.winRate }}</span>
-          </div>
-          <div class="profile-home__stat">
-            <span class="profile-home__stat-label">{{ t('总盈利') }}</span>
-            <span class="profile-home__stat-value profile-home__stat-value--profit">
-              {{ overview.totalProfit }}
-            </span>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      <section class="profile-home__menu-panel" aria-label="profile-menu">
-        <div class="profile-home__menu-grid">
-          <button
-            v-for="item in menuItems"
-            :key="item.label"
-            type="button"
-            class="profile-home__menu-item"
-            @click="handleMenuClick(item)"
-          >
-            <img class="profile-home__menu-icon" :src="item.icon" width="54" height="54" alt="" />
-            <span class="profile-home__menu-label">{{ t(item.label) }}</span>
-          </button>
-        </div>
-      </section>
+        <section class="profile-home__menu-panel" aria-label="profile-menu">
+          <div class="profile-home__menu-grid">
+            <button v-for="item in menuItems" :key="item.label" type="button" class="profile-home__menu-item"
+              @click="handleMenuClick(item)">
+              <img class="profile-home__menu-icon" :src="item.icon" width="54" height="54" alt="" />
+              <span class="profile-home__menu-label">{{ t(item.label) }}</span>
+            </button>
+          </div>
+        </section>
       </template>
     </template>
 
-    <ProfileUserInfoModal
-      v-model="showUserInfoModal"
-      :nickname="displayName"
-      :avatar-url="avatarDisplayUrl || avatarDefaultUrl"
-      @saved="handleUserInfoSaved"
-    />
+    <ProfileUserInfoModal v-model="showUserInfoModal" :nickname="displayName"
+      :avatar-url="avatarDisplayUrl || avatarDefaultUrl" @saved="handleUserInfoSaved" />
 
     <Teleport to="body">
       <Transition name="confirm-fade">
         <div v-if="showLogoutConfirm" class="profile-home__overlay" @click.self="cancelLogout">
           <div class="profile-home__dialog" role="alertdialog" aria-modal="true">
-            <button
-              type="button"
-              class="profile-home__dialog-close"
-              :aria-label="t('关闭')"
-              @click="cancelLogout"
-            >
+            <button type="button" class="profile-home__dialog-close" :aria-label="t('关闭')" @click="cancelLogout">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
                 <path d="M11 3L3 11M3 3l8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
               </svg>
@@ -455,29 +398,34 @@ onMounted(loadOverview);
 
 .profile-h5-card {
   position: relative;
-  box-sizing: border-box;
   width: 100%;
-  height: 158px;
+  height: 148px;
   overflow: hidden;
-  border: 1px solid #fff;
+  background: radial-gradient(100% 100% at 50% 100%, #68B3FD 0%, #0D6CFB 100%);
   border-radius: 16px;
-  background: #1c7bff;
+  border: 1px solid #FFFFFF;
 }
 
 .profile-h5-card__bg {
   position: absolute;
-  inset: 0;
-  width: 100%;
+  width: auto;
   height: 100%;
-  object-fit: cover;
   pointer-events: none;
   user-select: none;
 }
 
+.profile-card__sunshine {
+  width: 275px;
+  height: 275px;
+  position: absolute;
+  top: -34px;
+  left: 0px;
+}
+
 .profile-h5-card__user {
   position: absolute;
-  left: 20px;
-  top: 20px;
+  left: 18px;
+  top: 18px;
   z-index: 1;
   display: flex;
   align-items: center;
@@ -491,8 +439,8 @@ onMounted(loadOverview);
 
 .profile-h5-card__avatar {
   display: block;
-  width: 58px;
-  height: 58px;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.88);
@@ -504,13 +452,12 @@ onMounted(loadOverview);
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 5px;
+  gap: 8px;
   color: #fff;
 
   strong {
-    font-size: 24px;
+    font-size: 18px;
     font-weight: 500;
-    line-height: 1.1;
   }
 
   span {
@@ -601,8 +548,8 @@ onMounted(loadOverview);
 }
 
 .profile-h5-balance {
-  margin-top: 10px;
-  padding: 18px 20px 18px;
+  margin-top: 8px;
+  padding: 16px;
   border-radius: 18px;
   background: #fff;
 }
@@ -616,8 +563,8 @@ onMounted(loadOverview);
   h2 {
     margin: 0;
     color: #0b3462;
-    font-size: 18px;
-    font-weight: 700;
+    font-size: 16px;
+    font-weight: 500;
     line-height: 1.1;
   }
 }
@@ -655,15 +602,13 @@ onMounted(loadOverview);
   align-items: baseline;
   justify-content: center;
   gap: 8px;
-  margin: 24px 0 16px;
+  margin: 18px 0 10px;
   color: #1c7bff;
 
   strong {
     font-family: $font-family-num, $font-family-base;
-    font-size: 36px;
+    font-size: 30px;
     font-weight: 700;
-    line-height: 1;
-    letter-spacing: 0;
   }
 
   span {
@@ -675,56 +620,52 @@ onMounted(loadOverview);
 .profile-h5-balance__wallets {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 18px;
+  gap: 11px;
+  margin-bottom: 16px;
 
   div {
     display: flex;
-    height: 44px;
+    height: 40px;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 3px;
+    gap: 2px;
     border-radius: 6px;
     background: #e3eefb;
     color: #0b3462;
   }
 
   span {
-    color: rgba(11, 52, 98, 0.42);
-    font-size: 14px;
+    color: #0B346280;
+    font-size: 12px;
     font-weight: 500;
-    line-height: 1;
   }
 
   strong {
     font-family: $font-family-num, $font-family-base;
     font-size: 14px;
-    font-weight: 700;
-    line-height: 1;
+    font-weight: 600;
   }
 }
 
 .profile-h5-balance__actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 11px;
 }
 
 .profile-h5-balance__btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-width: 0;
-  height: 46px;
+  gap: 4px;
+  height: 44px;
   border: 1px solid #1c7bff;
-  border-radius: 24px;
+  border-radius: 32px;
   background: transparent;
   color: #1c7bff;
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 400;
-  line-height: 1;
 
   img {
     width: 28px;
@@ -737,12 +678,16 @@ onMounted(loadOverview);
     color: #fff;
     box-shadow: 0 3px 8px rgba(21, 58, 119, 0.1);
   }
+
+  &:nth-child(2) {
+    background: #EAF1F9;
+  }
 }
 
 .profile-h5-menu {
-  margin-top: 14px;
-  padding: 26px 24px;
-  border-radius: 18px;
+  margin-top: 8px;
+  padding: 12px 16px;
+  border-radius: 16px;
   background: #fff;
 }
 
@@ -750,16 +695,16 @@ onMounted(loadOverview);
   display: grid;
   grid-template-columns: 26px minmax(0, 1fr) 18px;
   align-items: center;
-  gap: 12px;
+  gap: 4px;
   width: 100%;
-  height: 52px;
+  height: 44px;
   padding: 0;
   border: none;
-  border-bottom: 1px solid #e1ecf8;
+  border-bottom: 1px solid #E4F0FE;
   background: transparent;
   color: #0b3462;
-  font-size: 17px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 400;
   text-align: left;
 
   &:last-child {
@@ -767,20 +712,19 @@ onMounted(loadOverview);
   }
 
   i {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     justify-self: end;
-    border-top: 2px solid rgba(11, 52, 98, 0.42);
-    border-right: 2px solid rgba(11, 52, 98, 0.42);
+    border-top: 2px solid #0B346280;
+    border-right: 2px solid #0B346280;
     transform: rotate(45deg);
   }
 }
 
 .profile-h5-menu__icon {
   display: block;
-  width: 22px;
-  height: 22px;
-  object-fit: contain;
+  width: 24px;
+  height: 24px;
 }
 
 .profile-home {
@@ -788,7 +732,7 @@ onMounted(loadOverview);
   min-width: 0;
   box-sizing: border-box;
 
-  &__state {
+  .profile-home__state {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -799,7 +743,7 @@ onMounted(loadOverview);
     font-size: $font-size-md;
   }
 
-  &__spinner {
+  .profile-home__spinner {
     width: 28px;
     height: 28px;
     border: 3px solid var(--theme-divider);
@@ -808,85 +752,76 @@ onMounted(loadOverview);
     animation: profile-home-spin 0.8s linear infinite;
   }
 
-  &__hero {
+  .profile-home__hero {
     position: relative;
     display: flex;
     flex-direction: column;
     width: 100%;
     max-width: 800px;
     margin: 0 auto;
-    aspect-ratio: 800 / 360;
     overflow: hidden;
-    border-radius: 24px;
+    height: 360px;
+    box-shadow: 0px 6px 20px 0px #153A772E;
 
     @include web-only {
       border-radius: 32px;
     }
   }
 
-  &__hero-bg {
+  .profile-home__hero-bg {
     position: absolute;
     inset: 0;
     z-index: 0;
     overflow: hidden;
     pointer-events: none;
+    border-radius: 32px;
+    border: 1px solid #FFFFFF;
+    z-index: 2;
+
+    .profile-card__sunshine {
+      top: -24px;
+    }
   }
 
-  &__hero-bg-img {
+  .profile-home__hero-bg-img {
     position: absolute;
     display: block;
     max-width: none;
-    width: calc(100% * 840 / 800);
-    height: calc(100% * 400 / 360);
-    left: calc(-100% * 20 / 800);
-    top: calc(-100% * 14 / 360);
-    object-fit: fill;
+    width: 100%;
+    height: 100%;
     user-select: none;
   }
 
-  &__hero-main {
+  .profile-home__hero-main {
     position: relative;
     z-index: 1;
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
-    min-height: 0;
-    padding: 0 14px;
-
-    @include web-only {
-      padding: 0 24px;
-    }
+    background: radial-gradient(100% 100% at 50% 100%, #68B3FD 0%, #0D6CFB 100%);
+    padding: 24px;
   }
 
-  &__hero-top {
+  .profile-home__hero-top {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 10px;
-    padding: 16px 0 12px;
-
-    @include web-only {
-      padding: 24px 0 16px;
-    }
   }
 
-  &__hero-stats {
+  .profile-home__hero-stats {
     position: relative;
     z-index: 1;
     display: grid;
-    flex: 0 0 100px;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    height: 100px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: center;
-    gap: 0;
-    padding: 0 14px;
+    padding: 0 24px;
     box-sizing: border-box;
-
-    @include web-only {
-      padding: 0 24px;
-    }
+    background: #EAF1F9;
   }
 
-  &__user {
+  .profile-home__user {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -896,23 +831,28 @@ onMounted(loadOverview);
     background: none;
     cursor: pointer;
     text-align: left;
+    .profile-home__user-meta {
+      font-size: 22px;
+      font-weight: 500;
+      color: #FFFFFF;
+    }
   }
 
-  &__avatar {
+  .profile-home__avatar {
     flex-shrink: 0;
     width: 52px;
     height: 52px;
     border-radius: 50%;
     object-fit: cover;
-    border: 1px solid rgba(255, 255, 255, 0.85);
+    border: 1px solid #FFFFFF;
     background: #fff;
   }
 
-  &__user-meta {
+  .profile-home__user-meta {
     min-width: 0;
   }
 
-  &__name {
+  .profile-home__name {
     margin: 0 0 2px;
     font-size: 18px;
     font-weight: 700;
@@ -920,33 +860,35 @@ onMounted(loadOverview);
     color: #fff;
   }
 
-  &__member-id {
+  .profile-home__member-id {
     margin: 0;
     font-size: 14px;
     line-height: 1.3;
     color: rgba(255, 255, 255, 0.88);
   }
 
-  &__actions {
+  .profile-home__actions {
     display: flex;
     flex-shrink: 0;
     gap: 8px;
   }
 
-  &__action-btn {
+  .profile-home__action-btn {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    min-width: 88px;
+    gap: 4px;
+    min-width: 128px;
     height: 44px;
-    padding: 0 12px;
+    padding: 0 30px;
     border-radius: 32px;
     background: #fff;
     color: var(--theme-primary);
     font-size: $font-size-base;
-    font-weight: 500;
+    font-weight: 400;
     text-decoration: none;
     box-sizing: border-box;
+    font-size: 18px;
+    cursor: pointer;
 
     img {
       flex-shrink: 0;
@@ -956,7 +898,7 @@ onMounted(loadOverview);
     }
   }
 
-  &__balance-row {
+  .profile-home__balance-row {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
@@ -965,31 +907,33 @@ onMounted(loadOverview);
     color: #fff;
   }
 
-  &__balance-label {
-    font-size: 14px;
+  .profile-home__balance-label {
+    font-size: 18px;
     color: rgba(255, 255, 255, 0.88);
   }
 
-  &__balance-value {
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: 0.02em;
+  .profile-home__balance-value {
+    font-size: 20px;
+    font-weight: 400;
     color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 5px;
 
-    @include web-only {
-      font-size: 22px;
+    .profile-home__balance-value-number {
+      font-family: $font-family-num, $font-family-base;
+      font-size: 30px;
+      font-weight: 700;
     }
   }
 
-  &__refresh {
-    display: inline-flex;
+  .profile-home__refresh {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
     width: 24px;
     height: 24px;
     padding: 0;
-    border: none;
     background: transparent;
     cursor: pointer;
 
@@ -1009,7 +953,7 @@ onMounted(loadOverview);
     }
   }
 
-  &__vip {
+  .profile-home__vip {
     margin-top: auto;
     margin-bottom: 0;
     padding-bottom: 8px;
@@ -1017,14 +961,14 @@ onMounted(loadOverview);
     color: #fff;
   }
 
-  &__vip-title {
+  .profile-home__vip-title {
     margin: 0 0 8px;
     font-size: 14px;
     font-weight: 500;
     color: rgba(255, 255, 255, 0.88);
   }
 
-  &__vip-track {
+  .profile-home__vip-track {
     display: block;
     width: 100%;
     max-width: none;
@@ -1032,7 +976,7 @@ onMounted(loadOverview);
     margin: 0 auto 6px;
   }
 
-  &__vip-labels {
+  .profile-home__vip-labels {
     display: flex;
     justify-content: space-between;
     max-width: 752px;
@@ -1040,7 +984,7 @@ onMounted(loadOverview);
     padding: 0 2px;
   }
 
-  &__vip-label {
+  .profile-home__vip-label {
     font-size: 14px;
     font-weight: 500;
     color: rgba(255, 255, 255, 0.55);
@@ -1052,52 +996,42 @@ onMounted(loadOverview);
     }
   }
 
-  &__stat {
+  .profile-home__stat {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    gap: 10px;
+    height: 54px;
     min-width: 0;
-    padding: 0 8px;
     text-align: center;
 
     &:not(:last-child) {
-      border-right: 1px solid rgba(11, 52, 98, 0.12);
+      border-right: 1.5px solid #0B346280;
     }
   }
 
-  &__stat-label {
+  .profile-home__stat-label {
     font-size: 14px;
-    color: rgba(11, 52, 98, 0.55);
+    color: #0B3462;
   }
 
-  &__stat-value {
-    font-size: 16px;
+  .profile-home__stat-value {
+    font-family: $font-family-num, $font-family-base;
+    font-size: 24px;
     font-weight: 700;
     color: var(--theme-primary);
-    word-break: break-all;
-
-    &--profit {
-      color: var(--theme-primary);
-    }
   }
 
-  &__menu-panel {
-    margin-top: 12px;
-    padding: 14px 10px 16px;
-    border-radius: 20px;
+  .profile-home__menu-panel {
+    margin-top: 20px;
+    padding: 22px 24px;
+    border-radius: 32px;
     background: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.9);
-    box-shadow: 0 6px 20px rgba(21, 58, 119, 0.18);
-
-    @include web-only {
-      margin-top: 16px;
-      padding: 20px 16px 24px;
-      border-radius: 32px;
-    }
+    box-shadow: 0px 6px 20px 0px #153A772E;
+    height: 474px;
   }
 
-  &__menu-grid {
+  .profile-home__menu-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 10px;
@@ -1107,57 +1041,37 @@ onMounted(loadOverview);
     }
   }
 
-  &__menu-item {
+  .profile-home__menu-item {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 8px;
-    min-height: 96px;
-    padding: 10px 4px;
-    border: none;
-    border-radius: 16px;
+    border-radius: 24px;
     background: #eaf1f9;
     cursor: pointer;
     text-align: center;
     transition: transform 0.1s ease, opacity 0.2s ease;
-
-    @include web-only {
-      min-height: 124px;
-      padding: 18px 8px;
-      border-radius: 24px;
-
-      &:hover {
-        opacity: 0.88;
-      }
-    }
-
-    &:active {
-      transform: scale(0.97);
+    height: 124px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    &:hover {
+      opacity: 0.88;
     }
   }
 
-  &__menu-icon {
-    width: 44px;
-    height: 44px;
+  .profile-home__menu-icon {
+    width: 54px;
+    height: 54px;
     object-fit: contain;
-
-    @include web-only {
-      width: 54px;
-      height: 54px;
-    }
   }
 
-  &__menu-label {
-    font-size: 13px;
-    line-height: 1.25;
+  .profile-home__menu-label {
+    font-size: 18px;
     color: #0b3462;
-
-    @include web-only {
-      font-size: 18px;
-    }
   }
 
-  &__overlay {
+  .profile-home__overlay {
     position: fixed;
     inset: 0;
     z-index: 1100;
@@ -1168,7 +1082,7 @@ onMounted(loadOverview);
     backdrop-filter: blur(4px);
   }
 
-  &__dialog {
+  .profile-home__dialog {
     position: relative;
     width: min(360px, calc(100vw - 48px));
     padding: 32px 24px 24px;
@@ -1178,7 +1092,7 @@ onMounted(loadOverview);
     box-shadow: var(--shadow-card);
   }
 
-  &__dialog-close {
+  .profile-home__dialog-close {
     position: absolute;
     top: 10px;
     right: 10px;
@@ -1192,25 +1106,25 @@ onMounted(loadOverview);
     cursor: pointer;
   }
 
-  &__dialog-text {
+  .profile-home__dialog-text {
     font-size: $font-size-base;
     font-weight: 500;
     color: var(--theme-text);
     margin: 0 0 24px;
   }
 
-  &__dialog-actions {
+  .profile-home__dialog-actions {
     display: flex;
     gap: $spacing-md;
   }
 
-  &__dialog-cancel,
-  &__dialog-confirm {
+  .profile-home__dialog-cancel,
+  .profile-home__dialog-confirm {
     flex: 1;
     height: 44px;
   }
 
-  &__dialog-cancel {
+  .profile-home__dialog-cancel {
     border: 1.5px solid var(--theme-divider);
     background: #fff;
     color: var(--theme-text);
