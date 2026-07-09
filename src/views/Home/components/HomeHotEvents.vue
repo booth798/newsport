@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 
@@ -79,6 +79,25 @@ const tabLabel = (tab) => {
 };
 
 const activeLeague = ref('hot');
+const tabsRef = ref(null);
+
+function scrollTabToCenter(key) {
+  nextTick(() => {
+    const container = tabsRef.value;
+    if (!container) return;
+    const btn = container.querySelector(`[data-tab-key="${key}"]`);
+    if (!btn) return;
+    const containerRect = container.getBoundingClientRect();
+    const btnRect = btn.getBoundingClientRect();
+    const offset = btnRect.left - containerRect.left + btnRect.width / 2 - containerRect.width / 2;
+    container.scrollBy({ left: offset, behavior: 'smooth' });
+  });
+}
+
+function selectTab(key) {
+  activeLeague.value = key;
+  scrollTabToCenter(key);
+}
 
 const filteredMatches = computed(() => {
   if (activeLeague.value === 'hot') return matchList.value;
@@ -107,7 +126,7 @@ async function reload() {
         <h2 class="hot-events__title">{{ t('热门赛事') }}</h2>
       </div>
 
-      <div class="hot-events__tabs" role="tablist" :aria-label="t('热门赛事')">
+      <div ref="tabsRef" class="hot-events__tabs" role="tablist" :aria-label="t('热门赛事')">
         <button
           v-for="tab in leagueTabs"
           :key="tab.key"
@@ -116,7 +135,8 @@ async function reload() {
           class="hot-events__tab"
           :class="{ 'hot-events__tab--active': activeLeague === tab.key }"
           :aria-selected="activeLeague === tab.key"
-          @click="activeLeague = tab.key"
+          :data-tab-key="tab.key"
+          @click="selectTab(tab.key)"
         >
           <img class="hot-events__tab-icon" :src="tab.icon" alt="" />
           <span class="hot-events__tab-label">{{ tabLabel(tab) }}</span>
