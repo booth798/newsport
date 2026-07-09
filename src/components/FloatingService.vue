@@ -1,5 +1,4 @@
 <script setup>
-import { onBeforeUnmount, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import iconDownloadAppActive from '@/assets/images/float/icon-download-app-active.svg';
@@ -9,26 +8,18 @@ import iconServiceActive from '@/assets/images/float/icon-service-active.svg';
 import iconServiceDefault from '@/assets/images/float/icon-service-default.svg';
 import iconServiceHover from '@/assets/images/float/icon-service-hover.svg';
 import toolbarBg from '@/assets/images/float/toolbar-bg.svg';
-import router from '@/router';
-import { registerCustomerServiceOpener } from '@/utils/customerService';
+import { useAppStore } from '@/store/modules/app';
 
 const { t } = useI18n();
+const appStore = useAppStore();
 
 function handleServiceOpen() {
-  router.push('/service');
+  appStore.openCustomerServiceConfirm();
 }
 
 function handleDownloadApp() {
   // TODO: 替换为实际 App 下载页或应用商店链接
 }
-
-onMounted(() => {
-  registerCustomerServiceOpener(handleServiceOpen);
-});
-
-onBeforeUnmount(() => {
-  registerCustomerServiceOpener(null);
-});
 </script>
 
 <template>
@@ -121,7 +112,6 @@ onBeforeUnmount(() => {
     display: block;
     width: 100%;
     height: auto;
-    vertical-align: top;
     pointer-events: none;
     user-select: none;
   }

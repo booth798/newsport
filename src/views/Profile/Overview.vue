@@ -7,7 +7,6 @@ import { storeToRefs } from 'pinia';
 import { fetchProfileOverview } from '@/api/user';
 import { useAppStore } from '@/store/modules/app';
 import { useToast } from '@/hooks/useToast';
-import { openCustomerService } from '@/utils/customerService';
 
 import ProfileUserInfoModal from '@/views/Profile/components/ProfileUserInfoModal.vue';
 import profileCardBgH5 from '@/assets/images/profile/profile_card_bg_h5.svg?url';
@@ -137,7 +136,7 @@ function handleMenuClick(item) {
     return;
   }
   if (item.action === 'service') {
-    openCustomerService();
+    appStore.openCustomerServiceConfirm();
     return;
   }
   if (item.action === 'favorites') {
@@ -167,7 +166,7 @@ function handleRouteAction(path) {
 
 function handleMobileMenuClick(item) {
   if (item.action === 'service') {
-    openCustomerService();
+    appStore.openCustomerServiceConfirm();
     return;
   }
   if (item.action === 'vip') {

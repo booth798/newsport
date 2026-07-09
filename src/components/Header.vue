@@ -17,7 +17,6 @@ import navbarHomeIcon from '@/assets/images/common/navbar_home.svg';
 import navbarHomeMutedIcon from '@/assets/images/common/navbar_home_muted.svg';
 import loginIconUrl from '@/assets/images/common/icon_login.svg?url';
 import serviceIconUrl from '@/assets/images/common/icon_header_service.svg?url';
-import bgLoginUrl from '@/assets/images/common/bg_login.svg?url';
 import moreIconUrl from '@/assets/images/common/icon_more.svg?url';
 import avatarDefaultUrl from '@/assets/images/common/avatar_default.png?url';
 import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.svg?url';
@@ -43,20 +42,6 @@ const i18nCnBtnHover = ref(false);
 const i18nEnBtnHover = ref(false);
 const hoverOpenKey = ref(null);
 const mobileDrawerOpen = ref(false);
-const serviceDialogOpen = ref(false);
-
-function openServiceDialog() {
-  serviceDialogOpen.value = true;
-}
-
-function closeServiceDialog() {
-  serviceDialogOpen.value = false;
-}
-
-function confirmGoService() {
-  serviceDialogOpen.value = false;
-  router.push('/service');
-}
 
 const cnIconSrc = computed(() => {
   if (locale.value === 'zh-CN') return i18nCnIcon;
@@ -232,7 +217,7 @@ watch(
   () => route.name,
   () => {
     startBeijingTimerIfNeeded();
-    serviceDialogOpen.value = false;
+    appStore.closeCustomerServiceConfirm();
   },
   { immediate: true },
 );
@@ -344,7 +329,7 @@ onUnmounted(() => {
       <div v-if="isMobile && !isProfileSubPage" class="header-mobile-actions">
         <template v-if="isCompactDetailHeader">
           <template v-if="!isLoggedIn">
-            <button type="button" class="header-mobile-btn" :aria-label="t('在线客服')" @click="openServiceDialog">
+            <button type="button" class="header-mobile-btn" :aria-label="t('在线客服')" @click="appStore.openCustomerServiceConfirm">
               <img class="header-mobile-btn__service-img" :src="serviceIconUrl" alt="" />
             </button>
           </template>
@@ -366,7 +351,7 @@ onUnmounted(() => {
           </RouterLink>
         </template>
         <template v-else-if="isLoggedIn">
-          <button type="button" class="header-mobile-btn" :aria-label="t('在线客服')" @click="openServiceDialog">
+          <button type="button" class="header-mobile-btn" :aria-label="t('在线客服')" @click="appStore.openCustomerServiceConfirm">
             <img class="header-mobile-btn__service-img" :src="serviceIconUrl" alt="" />
           </button>
           <button type="button" class="header-mobile-btn" :aria-label="t('菜单')" @click="mobileDrawerOpen = true">
@@ -374,7 +359,7 @@ onUnmounted(() => {
           </button>
         </template>
         <template v-else>
-          <button type="button" class="header-mobile-btn" :aria-label="t('在线客服')" @click="openServiceDialog">
+          <button type="button" class="header-mobile-btn" :aria-label="t('在线客服')" @click="appStore.openCustomerServiceConfirm">
             <img class="header-mobile-btn__service-img" :src="serviceIconUrl" alt="" />
           </button>
           <button type="button" class="header-mobile-btn" :aria-label="t('菜单')" @click="mobileDrawerOpen = true">
@@ -471,7 +456,7 @@ onUnmounted(() => {
               <span class="header-user-strip__assets-value">{{ loggedInAssetsFormatted }}</span>
             </div>
           </div>
-          <button type="button" class="header-round-btn" :aria-label="t('在线客服')" @click="openServiceDialog">
+          <button type="button" class="header-round-btn" :aria-label="t('在线客服')" @click="appStore.openCustomerServiceConfirm">
             <img class="header-round-btn__img" :src="serviceIconUrl" alt="" />
           </button>
           <button type="button" class="header-round-btn" :aria-label="t('菜单')">
@@ -481,7 +466,7 @@ onUnmounted(() => {
 
         <template v-else>
           <div class="header-round-group">
-            <button type="button" class="header-round-btn" :aria-label="t('在线客服')" @click="openServiceDialog">
+            <button type="button" class="header-round-btn" :aria-label="t('在线客服')" @click="appStore.openCustomerServiceConfirm">
               <img class="header-round-btn__img" :src="serviceIconUrl" alt="" />
             </button>
             <button type="button" class="header-round-btn" :aria-label="t('登录')" @click="appStore.openLoginModal">
@@ -495,29 +480,6 @@ onUnmounted(() => {
       </div>
     </div>
     <MobileNavDrawer v-if="isMobile" v-model="mobileDrawerOpen" :menus="navMenus" />
-
-    <Teleport to="body">
-      <Transition name="svc-dialog-fade">
-        <div v-if="serviceDialogOpen" class="svc-dialog-mask" @click.self="closeServiceDialog">
-          <section
-            class="svc-dialog"
-            :style="{ '--svc-dialog-bg': `url(${bgLoginUrl})` }"
-            aria-modal="true"
-            role="alertdialog"
-          >
-            <h2 class="svc-dialog__title">{{ t('提示') }}</h2>
-            <div class="svc-dialog__body">
-              <span class="svc-dialog__info" aria-hidden="true">i</span>
-              <p>{{ t('是否要联系在线客服') }}</p>
-            </div>
-            <div class="svc-dialog__actions">
-              <button type="button" class="svc-dialog__btn--cancel" @click="closeServiceDialog">{{ t('取消') }}</button>
-              <button type="button" class="svc-dialog__btn--confirm" @click="confirmGoService">{{ t('确定') }}</button>
-            </div>
-          </section>
-        </div>
-      </Transition>
-    </Teleport>
   </div>
 </template>
 
@@ -1335,103 +1297,3 @@ onUnmounted(() => {
 }
 </style>
 
-<style lang="scss">
-@use '@/styles/tools.scss' as *;
-
-.svc-dialog-mask {
-  position: fixed;
-  inset: 0;
-  z-index: 10001;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.58);
-}
-
-.svc-dialog {
-  width: min(339px, calc(100vw - 34px));
-  padding: 14px 12px 12px;
-  box-sizing: border-box;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 12px;
-  background:
-    var(--svc-dialog-bg) center top / cover no-repeat,
-    #2c7fff;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
-
-  &__title {
-    margin: 0 0 12px;
-    color: #fff;
-    font-size: 18px;
-    font-weight: 700;
-    line-height: 1;
-    text-align: center;
-  }
-
-  &__body {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    height: 70px;
-    border-radius: 12px;
-    background: #fff;
-    color: #0b3462;
-    font-size: 16px;
-    font-weight: 700;
-
-    p {
-      margin: 0;
-    }
-  }
-
-  &__info {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 18px;
-    height: 18px;
-    border: 1.5px solid #5d7899;
-    border-radius: 50%;
-    color: #5d7899;
-    font-size: 12px;
-    font-weight: 700;
-    font-family: $font-family-num, $font-family-base;
-  }
-
-  &__actions {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-    margin-top: 10px;
-
-    button {
-      height: 44px;
-      border: none;
-      border-radius: 22px;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-  }
-
-  &__btn--cancel {
-    background: #fff;
-    color: #1c7bff;
-  }
-
-  &__btn--confirm {
-    background: rgba(255, 255, 255, 0.25);
-    color: #fff;
-  }
-}
-
-.svc-dialog-fade-enter-active,
-.svc-dialog-fade-leave-active {
-  transition: opacity 0.18s ease;
-}
-.svc-dialog-fade-enter-from,
-.svc-dialog-fade-leave-to {
-  opacity: 0;
-}
-</style>
