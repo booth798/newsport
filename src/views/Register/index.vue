@@ -1,8 +1,7 @@
 <script setup>
-import { computed, onBeforeUnmount, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
-import { storeToRefs } from 'pinia';
 
 import logoUrl from '@/assets/images/common/logo_nav.svg?url';
 import iconLoginUserUrl from '@/assets/images/login/icon_login_user.svg?url';
@@ -17,86 +16,28 @@ const { t } = useI18n();
 const router = useRouter();
 const toast = useToast();
 const appStore = useAppStore();
-const { isMobile } = storeToRefs(appStore);
 
-const phone = ref('');
-const code = ref('');
+const username = ref('');
 const password = ref('');
 const showPassword = ref(false);
-const countdown = ref(0);
 const submitting = ref(false);
-const codeError = ref(false);
 const successOpen = ref(false);
 
-let countdownTimer = null;
-
 const passwordType = computed(() => (showPassword.value ? 'text' : 'password'));
-const isPhoneValid = computed(() => /^1\d{10}$/.test(phone.value.trim()));
-const isAccountValid = computed(() => (isMobile.value ? isPhoneValid.value : phone.value.trim().length > 0));
+const isAccountValid = computed(() => username.value.trim().length > 0);
 const isPasswordValid = computed(() => /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,16}$/.test(password.value));
-const canSendCode = computed(() => isPhoneValid.value && countdown.value === 0);
-const canSubmit = computed(
-  () =>
-    isAccountValid.value &&
-    (!isMobile.value || code.value.trim().length > 0) &&
-    isPasswordValid.value &&
-    !submitting.value,
-);
-const codeButtonText = computed(() => {
-  if (countdown.value > 0) return t('{seconds}s 重发', { seconds: countdown.value });
-  return code.value.trim() ? t('重新发送') : t('验证码');
-});
-
-function startCountdown() {
-  countdown.value = 59;
-  clearCountdown();
-  countdownTimer = window.setInterval(() => {
-    countdown.value -= 1;
-    if (countdown.value <= 0) clearCountdown();
-  }, 1000);
-}
-
-function clearCountdown() {
-  if (countdownTimer != null) {
-    window.clearInterval(countdownTimer);
-    countdownTimer = null;
-  }
-}
-
-function sendCode() {
-  if (!isPhoneValid.value) {
-    toast.error(t('请输入手机号'));
-    return;
-  }
-  if (!canSendCode.value) return;
-  startCountdown();
-}
+const canSubmit = computed(() => isAccountValid.value && isPasswordValid.value && !submitting.value);
 
 async function submitRegister() {
   if (!canSubmit.value) return;
-  codeError.value = false;
-  if (isMobile.value && code.value.trim() === '234515') {
-    codeError.value = true;
-    toast.error(t('验证码错误'));
-    return;
-  }
   if (!isPasswordValid.value) {
     toast.error(t('请设置8-16位字母+数字密码'));
     return;
   }
 
-  if (import.meta.env.DEV && code.value.trim() === '123456') {
-    successOpen.value = true;
-    return;
-  }
-
   try {
     submitting.value = true;
-    const res = await registerApi(phone.value.trim(), password.value, 'ALWAYS_PASS', {
-      phone: phone.value.trim(),
-      smsCode: code.value.trim(),
-      verificationCode: code.value.trim(),
-    });
+    const res = await registerApi(username.value.trim(), password.value, 'ALWAYS_PASS');
     appStore.completeWebLogin(res.data || {});
     successOpen.value = true;
   } catch (e) {
@@ -110,22 +51,11 @@ function finishRegister() {
   successOpen.value = false;
   router.replace('/');
 }
-
-onBeforeUnmount(clearCountdown);
 </script>
 
 <template>
   <div class="register-page">
     <div class="register-phone">
-      <div class="register-status" aria-hidden="true">
-        <span class="register-status__time">9:41</span>
-        <span class="register-status__icons">
-          <span class="register-status__signal"></span>
-          <span class="register-status__wifi"></span>
-          <span class="register-status__battery"></span>
-        </span>
-      </div>
-
       <header class="register-title">
         <img class="register-title__logo" :src="logoUrl" alt="UNIBET" />
         <h1>{{ t('注册会员') }}</h1>
@@ -136,41 +66,13 @@ onBeforeUnmount(clearCountdown);
           <div class="register-field">
             <img class="register-field__icon" :src="iconLoginUserUrl" alt="" width="28" height="28" />
             <input
-              v-model.trim="phone"
+              v-model.trim="username"
               class="register-field__input"
-              type="tel"
-              :inputmode="isMobile ? 'numeric' : 'text'"
-              :maxlength="isMobile ? 11 : 32"
-              :placeholder="isMobile ? t('请输入手机号') : t('请输入账号')"
-              autocomplete="tel"
+              type="text"
+              maxlength="32"
+              :placeholder="t('请输入账号')"
+              autocomplete="username"
             />
-          </div>
-
-          <div v-if="isMobile" class="register-field register-field--code" :class="{ 'register-field--error': codeError }">
-            <span class="register-field__shield" aria-hidden="true">
-              <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                <path d="M14 3.7L23 7.4V13.3C23 19.1 19.2 23.2 14 25C8.8 23.2 5 19.1 5 13.3V7.4L14 3.7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
-                <path d="M10.5 14L13 16.5L18 11.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-            </span>
-            <input
-              v-model.trim="code"
-              class="register-field__input register-field__input--code"
-              :class="{ 'register-field__input--error': codeError }"
-              type="tel"
-              inputmode="numeric"
-              maxlength="6"
-              :placeholder="t('请输入手机验证码')"
-              autocomplete="one-time-code"
-            />
-            <button
-              type="button"
-              class="register-code-btn"
-              :disabled="!canSendCode"
-              @click="sendCode"
-            >
-              {{ codeButtonText }}
-            </button>
           </div>
 
           <div class="register-field">
@@ -244,88 +146,6 @@ onBeforeUnmount(clearCountdown);
   background: #eaf3fd;
 }
 
-.register-status {
-  height: 31px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 26px 0 27px;
-  color: #111827;
-  font-family: $font-family-num, $font-family-base;
-}
-
-.register-status__time {
-  font-size: 17px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.register-status__icons {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.register-status__signal {
-  width: 19px;
-  height: 13px;
-  background:
-    linear-gradient(to top, #111827 0 35%, transparent 35%) 0 6px / 3px 7px no-repeat,
-    linear-gradient(to top, #111827 0 55%, transparent 55%) 5px 3px / 3px 10px no-repeat,
-    linear-gradient(to top, #111827 0 75%, transparent 75%) 10px 1px / 3px 12px no-repeat,
-    linear-gradient(to top, #111827 0 100%, transparent 100%) 15px 0 / 3px 13px no-repeat;
-}
-
-.register-status__wifi {
-  width: 17px;
-  height: 13px;
-  border: 3px solid #111827;
-  border-bottom: 0;
-  border-left-color: transparent;
-  border-right-color: transparent;
-  border-radius: 16px 16px 0 0;
-  position: relative;
-
-  &::after {
-    content: '';
-    position: absolute;
-    left: 50%;
-    bottom: -5px;
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: #111827;
-    transform: translateX(-50%);
-  }
-}
-
-.register-status__battery {
-  position: relative;
-  width: 23px;
-  height: 12px;
-  border: 2px solid #111827;
-  border-radius: 4px;
-
-  &::before {
-    content: '';
-    position: absolute;
-    right: -5px;
-    top: 3px;
-    width: 3px;
-    height: 6px;
-    border-radius: 0 2px 2px 0;
-    background: #111827;
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    inset: 2px;
-    border-radius: 2px;
-    background: #111827;
-  }
-}
-
 .register-title {
   position: relative;
   height: 60px;
@@ -375,18 +195,15 @@ onBeforeUnmount(clearCountdown);
 
 .register-field {
   position: relative;
+  display: flex;
+  align-items: center;
   height: 52px;
   border-radius: 16px;
   background: #fff;
   box-shadow: 0 2px 10px rgba(72, 115, 166, 0.03);
 }
 
-.register-field--error {
-  box-shadow: 0 0 0 1px rgba(231, 67, 67, 0.3), 0 2px 10px rgba(72, 115, 166, 0.03);
-}
-
-.register-field__icon,
-.register-field__shield {
+.register-field__icon {
   position: absolute;
   left: 14px;
   top: 50%;
@@ -412,22 +229,18 @@ onBeforeUnmount(clearCountdown);
   color: #173b61;
   font-family: $font-family-base;
   font-size: 17px;
-  font-weight: 600;
-  line-height: 52px;
+  font-weight: 400;
+  line-height: normal;
   letter-spacing: 0;
 
   &::placeholder {
     color: rgba(23, 59, 97, 0.36);
-    font-weight: 600;
+    font-weight: 400;
   }
 
   @include mobile-only {
     font-size: 14px;
   }
-}
-
-.register-field__input--code {
-  padding-right: 116px;
 }
 
 .register-field__input--password {
@@ -438,33 +251,6 @@ onBeforeUnmount(clearCountdown);
   font-size: 22px;
   letter-spacing: 0.16em;
   font-family: $font-family-num, $font-family-base;
-}
-
-.register-field__input--error {
-  color: #e74343;
-}
-
-.register-code-btn {
-  position: absolute;
-  right: 11px;
-  top: 50%;
-  transform: translateY(-50%);
-  min-width: 88px;
-  height: 38px;
-  padding: 0 14px;
-  border: 2px solid #72aef3;
-  border-radius: 11px;
-  background: #fff;
-  color: #5c9ce8;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1;
-  cursor: pointer;
-
-  &:disabled {
-    opacity: 0.72;
-    cursor: not-allowed;
-  }
 }
 
 .register-eye {
@@ -524,10 +310,6 @@ onBeforeUnmount(clearCountdown);
     padding: 12px 0 40px;
   }
 
-  .register-status {
-    display: none;
-  }
-
   .register-title {
     width: min(100%, 1320px);
     height: 80px;
@@ -571,8 +353,7 @@ onBeforeUnmount(clearCountdown);
     border-radius: 14px;
   }
 
-  .register-field__icon,
-  .register-field__shield {
+  .register-field__icon {
     left: 14px;
     width: 24px;
     height: 24px;
@@ -581,21 +362,6 @@ onBeforeUnmount(clearCountdown);
   .register-field__input {
     padding-left: 48px;
     font-size: 16px;
-    line-height: 50px;
-  }
-
-  .register-field__input--code {
-    padding-right: 94px;
-  }
-
-  .register-code-btn {
-    right: 7px;
-    min-width: 72px;
-    height: 28px;
-    padding: 0 10px;
-    border-width: 1px;
-    border-radius: 7px;
-    font-size: 12px;
   }
 
   .register-eye {

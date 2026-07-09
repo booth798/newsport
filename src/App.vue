@@ -14,6 +14,7 @@ import { storeToRefs } from 'pinia';
 import { SITE_CONFIG } from '@/config/site';
 import i18n from '@/i18n';
 import { useAppStore } from '@/store/modules/app';
+import { useWalletWs } from '@/hooks/useWalletWs';
 
 function getRouteDepth(path) {
   return path.replace(/\/$/, '').split('/').filter(Boolean).length;
@@ -112,6 +113,16 @@ provide('toast', {
   success: (msg) => toastRef.value?.show(msg, { type: 'success' }),
   error: (msg) => toastRef.value?.show(msg, { type: 'error' }),
   info: (msg) => toastRef.value?.show(msg, { type: 'info' }),
+});
+
+useWalletWs({
+  onPayout(msg) {
+    const amount = msg.amount ? `¥${msg.amount}` : '';
+    toastRef.value?.show(
+      i18n.global.t('派奖到账', { amount }) || `派奖到账 ${amount}`,
+      { type: 'success' },
+    );
+  },
 });
 </script>
 
