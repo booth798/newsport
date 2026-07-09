@@ -390,7 +390,7 @@ onMounted(loadOverview);
           <div class="profile-home__stat">
             <span class="profile-home__stat-label">{{ t('总盈利') }}</span>
             <span class="profile-home__stat-value profile-home__stat-value--profit">
-              + ¥ {{ overview.totalProfit }}
+              {{ overview.totalProfit }}
             </span>
           </div>
         </div>
