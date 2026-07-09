@@ -17,6 +17,7 @@ import navbarHomeIcon from '@/assets/images/common/navbar_home.svg';
 import navbarHomeMutedIcon from '@/assets/images/common/navbar_home_muted.svg';
 import loginIconUrl from '@/assets/images/common/icon_login.svg?url';
 import serviceIconUrl from '@/assets/images/common/icon_header_service.svg?url';
+import bgLoginUrl from '@/assets/images/common/bg_login.svg?url';
 import moreIconUrl from '@/assets/images/common/icon_more.svg?url';
 import avatarDefaultUrl from '@/assets/images/common/avatar_default.png?url';
 import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.svg?url';
@@ -500,21 +501,22 @@ onUnmounted(() => {
     <Teleport to="body">
       <Transition name="svc-dialog-fade">
         <div v-if="serviceDialogOpen" class="svc-dialog-mask" @click.self="closeServiceDialog">
-          <div class="svc-dialog">
-            <div class="svc-dialog__title">{{ t('提示') }}</div>
+          <section
+            class="svc-dialog"
+            :style="{ '--svc-dialog-bg': `url(${bgLoginUrl})` }"
+            aria-modal="true"
+            role="alertdialog"
+          >
+            <h2 class="svc-dialog__title">{{ t('提示') }}</h2>
             <div class="svc-dialog__body">
-              <span class="svc-dialog__icon" aria-hidden="true">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 1.667A8.333 8.333 0 1 0 18.333 10 8.333 8.333 0 0 0 10 1.667Zm.833 11.666H9.167V9.167h1.666v4.166Zm0-5.833H9.167V5.833h1.666V7.5Z" fill="#1C7BFF"/>
-                </svg>
-              </span>
-              <span>{{ t('是否要联系在线客服') }}</span>
+              <span class="svc-dialog__info" aria-hidden="true">i</span>
+              <p>{{ t('是否要联系在线客服') }}</p>
             </div>
             <div class="svc-dialog__actions">
-              <button type="button" class="svc-dialog__btn svc-dialog__btn--cancel" @click="closeServiceDialog">{{ t('取消') }}</button>
-              <button type="button" class="svc-dialog__btn svc-dialog__btn--confirm" @click="confirmGoService">{{ t('确定') }}</button>
+              <button type="button" class="svc-dialog__btn--cancel" @click="closeServiceDialog">{{ t('取消') }}</button>
+              <button type="button" class="svc-dialog__btn--confirm" @click="confirmGoService">{{ t('确定') }}</button>
             </div>
-          </div>
+          </section>
         </div>
       </Transition>
     </Teleport>
@@ -1364,6 +1366,8 @@ onUnmounted(() => {
 </style>
 
 <style lang="scss">
+@use '@/styles/tools.scss' as *;
+
 .svc-dialog-mask {
   position: fixed;
   inset: 0;
@@ -1371,88 +1375,93 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.58);
 }
 
 .svc-dialog {
-  width: 300px;
-  background: #eaf1f9;
-  border-radius: 16px;
-  border: 0.8px solid #fff;
-  overflow: hidden;
+  width: min(339px, calc(100vw - 34px));
+  padding: 14px 12px 12px;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 12px;
+  background:
+    var(--svc-dialog-bg) center top / cover no-repeat,
+    #2c7fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
 
   &__title {
-    padding: 18px 0 0;
-    text-align: center;
-    font-size: 16px;
+    margin: 0 0 12px;
+    color: #fff;
+    font-size: 18px;
     font-weight: 700;
-    color: #0b3462;
+    line-height: 1;
+    text-align: center;
   }
 
   &__body {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    padding: 20px 24px;
-    margin: 12px 16px 0;
-    background: #fff;
+    gap: 8px;
+    height: 70px;
     border-radius: 12px;
-    font-size: 15px;
-    color: #333;
-    line-height: 1.5;
+    background: #fff;
+    color: #0b3462;
+    font-size: 16px;
+    font-weight: 700;
+
+    p {
+      margin: 0;
+    }
   }
 
-  &__icon {
-    display: flex;
-    flex-shrink: 0;
+  &__info {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid #5d7899;
+    border-radius: 50%;
+    color: #5d7899;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: $font-family-num, $font-family-base;
   }
 
   &__actions {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
-    padding: 16px;
+    margin-top: 10px;
+
+    button {
+      height: 44px;
+      border: none;
+      border-radius: 22px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
   }
 
-  &__btn {
-    flex: 1;
-    height: 44px;
-    border: 0;
-    border-radius: 22px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.15s;
+  &__btn--cancel {
+    background: #fff;
+    color: #1c7bff;
+  }
 
-    &:active {
-      opacity: 0.8;
-    }
-
-    &--cancel {
-      color: #1c7bff;
-      background: #fff;
-      border: 1px solid #1c7bff;
-    }
-
-    &--confirm {
-      color: #fff;
-      background: #1c7bff;
-    }
+  &__btn--confirm {
+    background: rgba(255, 255, 255, 0.25);
+    color: #fff;
   }
 }
 
 .svc-dialog-fade-enter-active,
 .svc-dialog-fade-leave-active {
-  transition: opacity 0.2s ease;
-  .svc-dialog {
-    transition: transform 0.2s ease;
-  }
+  transition: opacity 0.18s ease;
 }
 .svc-dialog-fade-enter-from,
 .svc-dialog-fade-leave-to {
   opacity: 0;
-  .svc-dialog {
-    transform: scale(0.9);
-  }
 }
 </style>
