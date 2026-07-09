@@ -26,8 +26,8 @@ export const useAppStore = defineStore('app', {
       viewportWidth: typeof window === 'undefined' ? 1440 : window.innerWidth,
       loginModalOpen: false,
       isLoggedIn: hasToken && Boolean(saved),
-      loggedInUserId: saved?.username || '',
-      loggedInAssetsFormatted: '0.00',
+      loggedInUserId: saved?.nickname || saved?.username || '',
+      loggedInAssetsFormatted: saved?.balance || '0.00',
       customer: saved,
     };
   },
@@ -66,7 +66,7 @@ export const useAppStore = defineStore('app', {
       }
       setToken(finalToken, refreshToken);
       this.customer = customer;
-      this.loggedInUserId = customer?.username || customer?.customerNo || '';
+      this.loggedInUserId = customer?.nickname || customer?.username || customer?.customerNo || '';
       this.isLoggedIn = true;
       this.loginModalOpen = false;
       if (customer) {
@@ -75,9 +75,25 @@ export const useAppStore = defineStore('app', {
     },
     updateCustomer(customerVO) {
       this.customer = customerVO;
-      this.loggedInUserId = customerVO?.username || customerVO?.customerNo || '';
+      this.loggedInUserId = customerVO?.nickname || customerVO?.username || customerVO?.customerNo || '';
       if (customerVO) {
         localStorage.setItem('mysport:customer', JSON.stringify(customerVO));
+      }
+    },
+    updateProfile({ nickname, balance } = {}) {
+      if (nickname != null) {
+        this.loggedInUserId = nickname;
+        if (this.customer) {
+          this.customer = { ...this.customer, nickname };
+          localStorage.setItem('mysport:customer', JSON.stringify(this.customer));
+        }
+      }
+      if (balance != null) {
+        this.loggedInAssetsFormatted = balance;
+        if (this.customer) {
+          this.customer = { ...this.customer, balance };
+          localStorage.setItem('mysport:customer', JSON.stringify(this.customer));
+        }
       }
     },
     clearWebLogin() {

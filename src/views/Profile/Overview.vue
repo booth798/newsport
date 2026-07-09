@@ -98,7 +98,12 @@ async function loadOverview() {
   try {
     loading.value = true;
     const res = await fetchProfileOverview();
-    overview.value = { ...overview.value, ...(res.data || {}) };
+    const data = res.data || {};
+    overview.value = { ...overview.value, ...data };
+    appStore.updateProfile({
+      nickname: data.nickname || undefined,
+      balance: data.balance || undefined,
+    });
   } catch {
     /* keep defaults / store values */
   } finally {
@@ -111,7 +116,12 @@ async function refreshBalance() {
   try {
     refreshing.value = true;
     const res = await fetchProfileOverview();
-    overview.value = { ...overview.value, ...(res.data || {}) };
+    const data = res.data || {};
+    overview.value = { ...overview.value, ...data };
+    appStore.updateProfile({
+      nickname: data.nickname || undefined,
+      balance: data.balance || undefined,
+    });
     toast.success(t('操作成功'));
   } catch {
     toast.error(t('加载失败'));

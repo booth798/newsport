@@ -10,7 +10,7 @@ import iconEyeClosedUrl from '@/assets/images/login/icon_login_eye_closed.svg?ur
 import iconEyeOpenUrl from '@/assets/images/login/icon_login_eye_open.svg?url';
 import { useAppStore } from '@/store/modules/app';
 import { useToast } from '@/hooks/useToast';
-import { loginApi, registerApi, captchaInit, captchaVerify, sendResetCode, resetPassword } from '@/api/user';
+import { loginApi, registerApi, captchaInit, captchaVerify, sendResetCode, resetPassword, fetchProfileOverview } from '@/api/user';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -232,6 +232,7 @@ async function submitWebLogin() {
     captchaToken.value = '';
     captchaId.value = '';
     resetSlider();
+    fetchUserProfile();
   } catch (e) {
     toast.error(e.message || t('提交失败，请重试'));
     resetSlider();
@@ -280,6 +281,7 @@ async function submitRegister() {
     captchaToken.value = '';
     captchaId.value = '';
     resetSlider();
+    fetchUserProfile();
   } catch (e) {
     toast.error(e.message || t('提交失败，请重试'));
     resetSlider();
@@ -287,6 +289,17 @@ async function submitRegister() {
   } finally {
     loginSubmitting.value = false;
   }
+}
+
+async function fetchUserProfile() {
+  try {
+    const res = await fetchProfileOverview();
+    const data = res.data || {};
+    appStore.updateProfile({
+      nickname: data.nickname || undefined,
+      balance: data.balance || undefined,
+    });
+  } catch { /* non-critical */ }
 }
 
 function openResetFlow() {

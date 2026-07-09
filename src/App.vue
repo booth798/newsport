@@ -84,10 +84,22 @@ function onSessionExpired() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   syncViewport();
   window.addEventListener('resize', syncViewport, { passive: true });
   window.addEventListener('mysport:session-expired', onSessionExpired);
+
+  if (appStore.isLoggedIn) {
+    try {
+      const { fetchProfileOverview } = await import('@/api/user');
+      const res = await fetchProfileOverview();
+      const data = res.data || {};
+      appStore.updateProfile({
+        nickname: data.nickname || undefined,
+        balance: data.balance || undefined,
+      });
+    } catch { /* non-critical */ }
+  }
 });
 
 onBeforeUnmount(() => {
