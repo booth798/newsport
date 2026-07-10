@@ -17,17 +17,14 @@ import iconProfileDeposit from '@/assets/images/profile/icon_profile_deposit.svg
 import iconProfileDepositPc from '@/assets/images/profile/pc_icon_profile_deposit.svg?url';
 import iconProfileWithdraw from '@/assets/images/profile/icon_profile_withdraw.svg?url';
 import iconProfileInfo from '@/assets/images/common/icon_profile_info.svg?url';
-// import iconProfileRecords from '@/assets/images/common/icon_profile_records.svg?url';
-// import iconProfileOrders from '@/assets/images/common/icon_profile_orders.svg?url';
-// import iconProfileFavorites from '@/assets/images/common/icon_profile_favorites.svg?url';
+import iconVipBenefits from '@/assets/images/profile/vip_benefits_icon.svg?url';
+import iconVipTransfer from '@/assets/images/profile/vip_transfer_icon.svg?url';
+import iconLanguageSetting from '@/assets/images/profile/language_setting_icon.svg?url';
 import iconProfileMessages from '@/assets/images/common/icon_profile_messages.svg?url';
-// import iconProfileMarket from '@/assets/images/common/icon_profile_market.svg?url';
-// import iconProfileVerify from '@/assets/images/common/icon_profile_verify.svg?url';
 import iconProfileSecurity from '@/assets/images/common/icon_profile_security.svg?url';
 import iconProfileBindinfo from '@/assets/images/common/icon_profile_bindinfo.svg?url';
 import iconProfileService from '@/assets/images/common/icon_profile_service.svg?url';
 import iconProfileLogout from '@/assets/images/common/icon_profile_logout.svg?url';
-import iconVipRules from '@/assets/images/common/icon_vip_rules.svg?url';
 import profileVipTrack from '@/assets/images/profile/profile_vip_track.svg?url';
 import profileVipTrackH5 from '@/assets/images/profile/profile_vip_track_h5.png?url';
 import iconBalanceRefresh from '@/assets/images/profile/icon_balance_refresh.svg?url';
@@ -39,7 +36,7 @@ const toast = useToast();
 const appStore = useAppStore();
 const { isLoggedIn, isMobile, loggedInUserId, loggedInAssetsFormatted } = storeToRefs(appStore);
 
-const loading = ref(true);
+const loading = ref(false);
 const refreshing = ref(false);
 const showUserInfoModal = ref(false);
 const avatarDisplayUrl = ref('');
@@ -78,19 +75,24 @@ const menuItems = computed(() => {
   const bankCard = { label: '绑定信息', icon: iconProfileBindinfo, to: '/profile/bank-card' };
   const service = { label: '联系客服', icon: iconProfileService, action: 'service' };
   const security = { label: '安全设置', icon: iconProfileSecurity, to: '/profile/security' };
+  const vipBenefits = { label: 'VIP权益', icon: iconVipBenefits, action: 'vipBenefits' };
+  const vipTransfer = { label: 'VIP互转', icon: iconVipTransfer, action: 'vipTransfer' };
+  const languageSetting = { label: '语言设置', icon: iconLanguageSetting, action: 'languageSetting' };
   const logout = { label: '退出登录', icon: iconProfileLogout, action: 'logout' };
-  return isLoggedIn.value ? [profile, messages, bankCard, service, security, logout] : [service];
+  return isLoggedIn.value ? [service, messages, vipBenefits, vipTransfer, profile, security, languageSetting, bankCard, logout] : [service];
 });
 
 const mobileMenuItems = computed(() => {
   const service = { label: '联系客服', icon: iconProfileService, action: 'service' };
   const profile = { label: '个人资料', icon: iconProfileInfo, action: 'userInfo' };
-  const vip = { label: 'VIP权益', icon: iconVipRules, action: 'vip' };
   const bind = { label: '绑定信息', icon: iconProfileBindinfo, to: '/profile/bank-card' };
-  return isLoggedIn.value ? [service, vip, profile, bind] : [service, vip];
+  const vipBenefits = { label: 'VIP权益', icon: iconVipBenefits, action: 'vipBenefits' };
+  const vipTransfer = { label: 'VIP互转', icon: iconVipTransfer, action: 'vipTransfer' };
+  return isLoggedIn.value ? [service, vipBenefits, vipTransfer, profile, bind] : [service, vipBenefits];
 });
 
 async function loadOverview() {
+  if (!isLoggedIn.value) return;
   try {
     loading.value = true;
     const res = await fetchProfileOverview();
