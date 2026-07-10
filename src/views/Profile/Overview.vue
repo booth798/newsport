@@ -8,6 +8,7 @@ import { fetchProfileOverview } from '@/api/user';
 import { useAppStore } from '@/store/modules/app';
 import { useUserStore } from '@/store/modules/user';
 import { useToast } from '@/hooks/useToast';
+import { getImageUrl } from '@/utils/common';
 
 import ProfileUserInfoModal from '@/views/Profile/components/ProfileUserInfoModal.vue';
 import profileCardBgH5 from '@/assets/images/profile/profile_card_bg_h5.svg?url';
@@ -26,12 +27,6 @@ import iconProfileSecurity from '@/assets/images/common/icon_profile_security.sv
 import iconProfileBindinfo from '@/assets/images/common/icon_profile_bindinfo.svg?url';
 import iconProfileService from '@/assets/images/common/icon_profile_service.svg?url';
 import iconProfileLogout from '@/assets/images/common/icon_profile_logout.svg?url';
-import profileVipTrack from '@/assets/images/profile/profile_vip_track.svg?url';
-import vipLevel0H5 from '@/assets/images/profile/vip_level_0_h5.svg?url';
-import vipLevel1H5 from '@/assets/images/profile/vip_level_1_h5.svg?url';
-import vipLevel2H5 from '@/assets/images/profile/vip_level_2_h5.svg?url';
-import vipLevel3H5 from '@/assets/images/profile/vip_level_3_h5.svg?url';
-import vipLevel4H5 from '@/assets/images/profile/vip_level_4_h5.svg?url';
 import iconBalanceRefresh from '@/assets/images/profile/icon_balance_refresh.svg?url';
 import iconBalanceRefreshPc from '@/assets/images/profile/pc_icon_balance_refresh.svg?url';
 
@@ -76,7 +71,13 @@ const mobileBalance = computed(() => (isLoggedIn.value ? displayBalance.value : 
 const mobileMainWallet = computed(() => (isLoggedIn.value ? displayBalance.value : '0'));
 const mobileLockedWallet = computed(() => (isLoggedIn.value ? (overview.value._wallet?.frozen || '0.00') : '0'));
 // 5 张轨道图分别对应：当前等级在第 1/2/3/4/5 个点位。
-const mobileVipTrackList = [vipLevel0H5, vipLevel1H5, vipLevel2H5, vipLevel3H5, vipLevel4H5];
+const vipTrackPointCount = 5;
+function getProfileVipLevelImage(pointIndex, platform = 'h5') {
+  // 页面只负责拼会员等级轨道图名称，实际图片路径交给公共方法解析。
+  const safePointIndex = Math.min(Math.max(Math.trunc(Number(pointIndex)) || 0, 0), vipTrackPointCount - 1);
+  const safePlatform = platform === 'pc' ? 'pc' : 'h5';
+  return getImageUrl(`profile/vip_level_${safePointIndex}_${safePlatform}.svg`);
+}
 const availableVipLevels = computed(() => {
   // 后端等级列表可能从 V1 开始，也可能从 V0 开始，这里统一转成数字后参与位置计算。
   const levels = vipLevelList.value.length > 0 ? vipLevelList.value : fallbackVipLevels;
@@ -85,8 +86,7 @@ const availableVipLevels = computed(() => {
     level: Number(item.level),
   }));
 });
-const desktopVipLevels = computed(() => availableVipLevels.value.map((item) => item.level));
-const normalizedMobileVipLevel = computed(() => {
+const normalizedVipLevel = computed(() => {
   const level = Number(mobileVipLevel.value);
   if (!Number.isFinite(level)) return 0;
   return Math.trunc(level);
@@ -96,15 +96,15 @@ const currentVipLevelIndex = computed(() => {
   if (levels.length === 0) return 0;
 
   // 优先按真实 level 精确匹配，确保接口等级不是从 0 开始时也能找到正确位置。
-  const matchedIndex = levels.findIndex((item) => item.level === normalizedMobileVipLevel.value);
+  const matchedIndex = levels.findIndex((item) => item.level === normalizedVipLevel.value);
   if (matchedIndex >= 0) return matchedIndex;
 
-  return Math.min(Math.max(normalizedMobileVipLevel.value, 0), levels.length - 1);
+  return Math.min(Math.max(normalizedVipLevel.value, 0), levels.length - 1);
 });
-const mobileVipVisibleLevels = computed(() => {
+const vipVisibleLevels = computed(() => {
   const levels = availableVipLevels.value;
   const currentIndex = currentVipLevelIndex.value;
-  // H5 只展示当前等级及前后各 2 个等级；首尾不足时不向另一侧补满。
+  // 只展示当前等级及前后各 2 个等级；首尾不足时不向另一侧补满。
   const startIndex = Math.max(0, currentIndex - 2);
   const endIndex = Math.min(levels.length - 1, currentIndex + 2);
 
@@ -114,7 +114,7 @@ const mobileVipVisibleLevels = computed(() => {
     className: `level_babel_${startIndex + index - currentIndex + 3}`,
   }));
 });
-const mobileVipTrackIndex = computed(() => {
+const vipTrackIndex = computed(() => {
   const levels = availableVipLevels.value;
   const currentIndex = currentVipLevelIndex.value;
   // 根据当前等级左右两侧实际存在的等级数量，选择对应点位的背景图。
@@ -122,10 +122,11 @@ const mobileVipTrackIndex = computed(() => {
   const rightCount = Math.min(2, levels.length - 1 - currentIndex);
 
   if (leftCount < 2) return leftCount;
-  if (rightCount < 2) return mobileVipTrackList.length - 1 - rightCount;
+  if (rightCount < 2) return vipTrackPointCount - 1 - rightCount;
   return 2;
 });
-const mobileVipTrackH5 = computed(() => mobileVipTrackList[mobileVipTrackIndex.value]);
+const mobileVipTrackH5 = computed(() => getProfileVipLevelImage(vipTrackIndex.value, 'h5'));
+const desktopVipTrack = computed(() => getProfileVipLevelImage(vipTrackIndex.value, 'pc'));
 
 const menuItems = computed(() => {
   const profile = { label: '个人资料', icon: iconProfileInfo, action: 'userInfo' };
@@ -285,8 +286,8 @@ onMounted(() => {
               <img class="profile-h5-card__vip-track" :src="mobileVipTrackH5" alt="" aria-hidden="true" />
             </div>
             <div class="level_babel_wrapper">
-              <div v-for="item in mobileVipVisibleLevels" :key="item.level" :class="item.className">
-                V{{ item.level }}
+              <div v-for="item in vipVisibleLevels" :key="item.level" :class="item.className">
+                {{ item.name }}
               </div>
             </div>
           </div>
@@ -382,13 +383,14 @@ onMounted(() => {
             </div>
 
             <div class="profile-home__vip">
-              <p class="profile-home__vip-title">{{ t('会员等级') }}</p>
-              <img class="profile-home__vip-track" :src="profileVipTrack" width="752" height="54" alt=""
-                aria-hidden="true" />
-              <div class="profile-home__vip-labels">
-                <span v-for="level in desktopVipLevels" :key="`label-${level}`" class="profile-home__vip-label"
-                  :class="{ 'profile-home__vip-label--active': level === Number(overview.vipLevel) }">
-                  V{{ level }}
+              <div class="pc_vip_level_wrapper">
+                <p class="profile-home__vip-title">{{ t('会员等级') }}</p>
+                <img class="profile-home__vip-track" :src="desktopVipTrack" width="752" height="54" alt=""
+                  aria-hidden="true" />
+              </div>
+              <div class="pc_level_babel_wrapper">
+                <span v-for="item in vipVisibleLevels" :key="`label-${item.level}`" :class="[item.className]">
+                  {{ item.name }}
                 </span>
               </div>
             </div>
@@ -563,6 +565,7 @@ onMounted(() => {
       &.level_babel_1, &.level_babel_5 {
         top: 50%;
         transform: translateY(-50%) scale(0.666667); // 8px
+        opacity: 0.5;
       }
       &.level_babel_1 {
         left: 43px;
@@ -573,6 +576,7 @@ onMounted(() => {
       &.level_babel_2, &.level_babel_4 {
         transform: scale(0.833333); // 10px
         top: 28px;
+        opacity: 0.8;
       }
       &.level_babel_2 {
         left: 109px;
@@ -999,45 +1003,82 @@ onMounted(() => {
   }
 
   .profile-home__vip {
+    position: relative;
     margin-top: auto;
     margin-bottom: 0;
-    padding-bottom: 8px;
     text-align: center;
     color: #fff;
+    margin-top: 32px;
   }
 
-  .profile-home__vip-title {
-    margin: 0 0 8px;
-    font-size: 14px;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.88);
-  }
-
-  .profile-home__vip-track {
-    display: block;
+  .pc_vip_level_wrapper {
+    position: relative;
     width: 100%;
-    max-width: none;
-    height: auto;
-    margin: 0 auto 6px;
+    height: 54px;
+    overflow: hidden;
+    .profile-home__vip-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: #FFFFFF;
+      margin-top: 10px;
+    }
+    .profile-home__vip-track {
+      position: absolute;
+      top: 0;
+      width: 100%;
+    }
   }
 
-  .profile-home__vip-labels {
-    display: flex;
-    justify-content: space-between;
-    max-width: 752px;
+
+
+  .pc_level_babel_wrapper {
+    position: absolute;
+    left: 50%;
+    top: 30px;
+    width: 752px;
+    max-width: 100%;
+    height: 54px;
     margin: 0 auto;
-    padding: 0 2px;
-  }
+    padding: 0;
+    transform: translateX(-50%);
 
-  .profile-home__vip-label {
-    font-size: 14px;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.55);
+    [class^="level_babel"] {
+      position: absolute;
+      color: #FFFFFF;
+      font-size: 14px;
+      font-family: $font-family-vip-level, $font-family-base;
+      font-weight: 500;
+      &.level_babel_1, &.level_babel_5 {
+        top: 3px;
+        font-size: 12px;
+        opacity: 0.5;
 
-    &--active {
-      color: #fff;
-      font-size: 16px;
-      font-weight: 700;
+      }
+      &.level_babel_1 {
+        left: 97px;
+      }
+      &.level_babel_5 {
+        right: 97px;
+      }
+
+      &.level_babel_2, &.level_babel_4 {
+        font-size: 14px;
+        top: 20px;
+        opacity: 0.8;
+      }
+      &.level_babel_2 {
+        left: 226px;
+      }
+      &.level_babel_4 {
+        right: 226px;
+      }
+
+      &.level_babel_3 {
+        top: 27px;
+        font-size: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+      }
     }
   }
 
