@@ -197,8 +197,9 @@ function confirm() { emit('confirm'); }
     z-index: 1;
     width: 100%;
     flex-shrink: 0;
-    margin-top: 8px;
     font-size: 18px;
+    margin-top: 10px;
+
     @include mobile-only {
       height: 44px;
     }

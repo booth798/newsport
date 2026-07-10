@@ -445,7 +445,7 @@ onMounted(() => {
     </template>
 
     <ProfileUserInfoModal v-model="showUserInfoModal" :nickname="displayName"
-      :avatar-url="avatarDisplayUrl || avatarDefaultUrl" @saved="handleUserInfoSaved" />
+      :avatar-url="avatarDisplayUrl" @saved="handleUserInfoSaved" />
   </div>
 </template>
 
