@@ -1,7 +1,7 @@
 // Figma 设计规范指定字体：思源黑体（Source Han Sans SC）+ DIN Pro
 $font-family-base: 'Source Han Sans SC', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
 $font-family-num: 'DIN Pro', 'DIN Alternate', 'Helvetica Neue', Arial, sans-serif;
-
+$font-family-vip-level: 'Square721 DMI Italic', $font-family-num;
 // 设计稿基准：
 // 1. 移动端以 375 稿为准
 // 2. Web 端以 1440 稿为准，最大 1920

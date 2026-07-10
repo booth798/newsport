@@ -33,3 +33,11 @@ body {
   min-height: 100vh;
   min-height: 100dvh;
 }
+
+@font-face {
+  font-family: 'Square721 DMI Italic';
+  src: url('@/assets/fonts/square721dmitalic.ttf') format('truetype');
+  font-display: swap;
+  font-style: italic;
+  font-weight: 400;
+}

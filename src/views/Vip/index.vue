@@ -2,15 +2,19 @@
 import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
+import { storeToRefs } from 'pinia';
 
-import { fetchVipLevels, fetchVipMe } from '@/api/user';
+import { fetchVipMe } from '@/api/user';
+import { useUserStore } from '@/store/modules/user';
 
 const { t } = useI18n();
 const router = useRouter();
+const userStore = useUserStore();
+// VIP 等级列表由全局 user store 维护，个人页和 VIP 中心复用同一份数据。
+const { vipLevelList: levels } = storeToRefs(userStore);
 
 const loading = ref(true);
 const error = ref('');
-const levels = ref([]);
 const myVip = ref(null);
 
 const progressPercent = computed(() => {
@@ -45,11 +49,11 @@ async function loadData() {
   loading.value = true;
   error.value = '';
   try {
-    const [levelsRes, meRes] = await Promise.all([
-      fetchVipLevels(),
+    // 等级列表走全局缓存，我的 VIP 信息仍按页面进入时实时请求。
+    const [, meRes] = await Promise.all([
+      userStore.loadVipLevels(),
       fetchVipMe(),
     ]);
-    levels.value = levelsRes.data || [];
     myVip.value = meRes.data || null;
   } catch {
     error.value = t('加载失败');
