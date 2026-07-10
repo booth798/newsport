@@ -1,5 +1,6 @@
 const imageModules = import.meta.glob('../assets/images/**/*', {
   eager: true,
+  query: '?url',
   import: 'default',
 });
 

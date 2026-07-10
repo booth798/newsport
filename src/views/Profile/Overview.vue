@@ -11,24 +11,6 @@ import { useToast } from '@/hooks/useToast';
 import { getImageUrl } from '@/utils/common';
 
 import ProfileUserInfoModal from '@/views/Profile/components/ProfileUserInfoModal.vue';
-import profileCardBgH5 from '@/assets/images/profile/profile_card_bg_h5.svg?url';
-import profileCardBg from '@/assets/images/profile/profile_card_bg.svg?url';
-import sunshineBg from '@/assets/images/profile/sunshine_bg.svg?url';
-import avatarDefaultUrl from '@/assets/images/common/avatar_default.png?url';
-import iconProfileDeposit from '@/assets/images/profile/icon_profile_deposit.svg?url';
-import iconProfileDepositPc from '@/assets/images/profile/pc_icon_profile_deposit.svg?url';
-import iconProfileWithdraw from '@/assets/images/profile/icon_profile_withdraw.svg?url';
-import iconProfileInfo from '@/assets/images/common/icon_profile_info.svg?url';
-import iconVipBenefits from '@/assets/images/profile/vip_benefits_icon.svg?url';
-import iconVipTransfer from '@/assets/images/profile/vip_transfer_icon.svg?url';
-import iconLanguageSetting from '@/assets/images/profile/language_setting_icon.svg?url';
-import iconProfileMessages from '@/assets/images/common/icon_profile_messages.svg?url';
-import iconProfileSecurity from '@/assets/images/common/icon_profile_security.svg?url';
-import iconProfileBindinfo from '@/assets/images/common/icon_profile_bindinfo.svg?url';
-import iconProfileService from '@/assets/images/common/icon_profile_service.svg?url';
-import iconProfileLogout from '@/assets/images/common/icon_profile_logout.svg?url';
-import iconBalanceRefresh from '@/assets/images/profile/icon_balance_refresh.svg?url';
-import iconBalanceRefreshPc from '@/assets/images/profile/pc_icon_balance_refresh.svg?url';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -38,11 +20,36 @@ const userStore = useUserStore();
 const { isLoggedIn, isMobile, loggedInUserId, loggedInAssetsFormatted } = storeToRefs(appStore);
 const { vipLevelList } = storeToRefs(userStore);
 
+// 页面状态
 const loading = ref(false);
 const refreshing = ref(false);
 const showUserInfoModal = ref(false);
 const avatarDisplayUrl = ref('');
 
+// 图片资源统一通过 getImageUrl 获取，页面只维护业务侧文件名。
+const profileImage = (name) => getImageUrl(`profile/${name}`);
+const commonImage = (name) => getImageUrl(`common/${name}`);
+
+const profileCardBgH5 = profileImage('profile_card_bg_h5.svg');
+const profileCardBg = profileImage('profile_card_bg.svg');
+const sunshineBg = profileImage('sunshine_bg.svg');
+const avatarDefaultUrl = commonImage('avatar_default.png');
+const iconProfileDeposit = profileImage('icon_profile_deposit.svg');
+const iconProfileDepositPc = profileImage('pc_icon_profile_deposit.svg');
+const iconProfileWithdraw = profileImage('icon_profile_withdraw.svg');
+const iconProfileInfo = commonImage('icon_profile_info.svg');
+const iconVipBenefits = profileImage('vip_benefits_icon.svg');
+const iconVipTransfer = profileImage('vip_transfer_icon.svg');
+const iconLanguageSetting = profileImage('language_setting_icon.svg');
+const iconProfileMessages = commonImage('icon_profile_messages.svg');
+const iconProfileSecurity = commonImage('icon_profile_security.svg');
+const iconProfileBindinfo = commonImage('icon_profile_bindinfo.svg');
+const iconProfileService = commonImage('icon_profile_service.svg');
+const iconProfileLogout = commonImage('icon_profile_logout.svg');
+const iconBalanceRefresh = profileImage('icon_balance_refresh.svg');
+const iconBalanceRefreshPc = profileImage('pc_icon_balance_refresh.svg');
+
+// 概览接口数据
 const overview = ref({
   nickname: '',
   memberId: '',
@@ -70,6 +77,8 @@ const mobileVipLevel = computed(() => (isLoggedIn.value ? overview.value.vipLeve
 const mobileBalance = computed(() => (isLoggedIn.value ? displayBalance.value : '0.00'));
 const mobileMainWallet = computed(() => (isLoggedIn.value ? displayBalance.value : '0'));
 const mobileLockedWallet = computed(() => (isLoggedIn.value ? (overview.value._wallet?.frozen || '0.00') : '0'));
+
+// VIP 等级轨道：H5 / PC 共用同一套等级窗口和当前点位计算。
 // 5 张轨道图分别对应：当前等级在第 1/2/3/4/5 个点位。
 const vipTrackPointCount = 5;
 function getProfileVipLevelImage(pointIndex, platform = 'h5') {
@@ -128,28 +137,40 @@ const vipTrackIndex = computed(() => {
 const mobileVipTrackH5 = computed(() => getProfileVipLevelImage(vipTrackIndex.value, 'h5'));
 const desktopVipTrack = computed(() => getProfileVipLevelImage(vipTrackIndex.value, 'pc'));
 
+const profileMenuItem = { label: '个人资料', icon: iconProfileInfo, action: 'userInfo' };
+const messagesMenuItem = { label: '消息中心', icon: iconProfileMessages, to: '/profile/messages' };
+const bankCardMenuItem = { label: '绑定信息', icon: iconProfileBindinfo, to: '/profile/bank-card' };
+const serviceMenuItem = { label: '联系客服', icon: iconProfileService, action: 'service' };
+const securityMenuItem = { label: '安全设置', icon: iconProfileSecurity, to: '/profile/security' };
+const vipBenefitsMenuItem = { label: 'VIP权益', icon: iconVipBenefits, action: 'vipBenefits' };
+const vipTransferMenuItem = { label: 'VIP互转', icon: iconVipTransfer, action: 'vipTransfer' };
+const languageSettingMenuItem = { label: '语言设置', icon: iconLanguageSetting, action: 'languageSetting' };
+const logoutMenuItem = { label: '退出登录', icon: iconProfileLogout, action: 'logout' };
+
+// PC 菜单和 H5 菜单入口不同，统一复用上面的基础菜单项。
 const menuItems = computed(() => {
-  const profile = { label: '个人资料', icon: iconProfileInfo, action: 'userInfo' };
-  const messages = { label: '消息中心', icon: iconProfileMessages, to: '/profile/messages' };
-  const bankCard = { label: '绑定信息', icon: iconProfileBindinfo, to: '/profile/bank-card' };
-  const service = { label: '联系客服', icon: iconProfileService, action: 'service' };
-  const security = { label: '安全设置', icon: iconProfileSecurity, to: '/profile/security' };
-  const vipBenefits = { label: 'VIP权益', icon: iconVipBenefits, action: 'vipBenefits' };
-  const vipTransfer = { label: 'VIP互转', icon: iconVipTransfer, action: 'vipTransfer' };
-  const languageSetting = { label: '语言设置', icon: iconLanguageSetting, action: 'languageSetting' };
-  const logout = { label: '退出登录', icon: iconProfileLogout, action: 'logout' };
-  return isLoggedIn.value ? [service, messages, vipBenefits, vipTransfer, profile, security, languageSetting, bankCard, logout] : [service];
+  return isLoggedIn.value
+    ? [
+        serviceMenuItem,
+        messagesMenuItem,
+        vipBenefitsMenuItem,
+        vipTransferMenuItem,
+        profileMenuItem,
+        securityMenuItem,
+        languageSettingMenuItem,
+        bankCardMenuItem,
+        logoutMenuItem,
+      ]
+    : [serviceMenuItem];
 });
 
 const mobileMenuItems = computed(() => {
-  const service = { label: '联系客服', icon: iconProfileService, action: 'service' };
-  const profile = { label: '个人资料', icon: iconProfileInfo, action: 'userInfo' };
-  const bind = { label: '绑定信息', icon: iconProfileBindinfo, to: '/profile/bank-card' };
-  const vipBenefits = { label: 'VIP权益', icon: iconVipBenefits, action: 'vipBenefits' };
-  const vipTransfer = { label: 'VIP互转', icon: iconVipTransfer, action: 'vipTransfer' };
-  return isLoggedIn.value ? [service, vipBenefits, vipTransfer, profile, bind] : [service, vipBenefits];
+  return isLoggedIn.value
+    ? [serviceMenuItem, vipBenefitsMenuItem, vipTransferMenuItem, profileMenuItem, bankCardMenuItem]
+    : [serviceMenuItem, vipBenefitsMenuItem];
 });
 
+// 数据请求
 async function loadOverview() {
   if (!isLoggedIn.value) return;
   try {
@@ -187,6 +208,7 @@ async function refreshBalance() {
   }
 }
 
+// 交互事件
 function handleMenuClick(item) {
   if (item.action === 'userInfo') {
     showUserInfoModal.value = true;
@@ -266,6 +288,7 @@ onMounted(() => {
     </div>
 
     <template v-else>
+      <!-- H5 布局：顶部卡片 + 余额卡片 + 菜单列表 -->
       <template v-if="isMobile">
         <section class="profile-h5-card" aria-label="profile-summary">
           <img class="profile-h5-card__bg" :src="profileCardBgH5" alt="" aria-hidden="true" />
@@ -339,6 +362,7 @@ onMounted(() => {
         </section>
       </template>
 
+      <!-- PC 布局：顶部大卡片 + 菜单宫格 -->
       <template v-else>
         <section class="profile-home__hero" aria-label="profile-summary">
           <div class="profile-home__hero-bg" aria-hidden="true">
