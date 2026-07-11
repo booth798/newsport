@@ -16,6 +16,7 @@ import { storeToRefs } from 'pinia';
 import { SITE_CONFIG } from '@/config/site';
 import i18n from '@/i18n';
 import { useAppStore } from '@/store/modules/app';
+import { useUserStore } from '@/store/modules/user';
 import { useWalletWs } from '@/hooks/useWalletWs';
 
 function getRouteDepth(path) {
@@ -23,6 +24,7 @@ function getRouteDepth(path) {
 }
 
 const appStore = useAppStore();
+const userStore = useUserStore();
 const route = useRoute();
 const router = useRouter();
 const { locale, isMobile } = storeToRefs(appStore);
@@ -94,9 +96,7 @@ onMounted(async () => {
 
   if (appStore.isLoggedIn) {
     try {
-      const { fetchProfileOverview } = await import('@/api/user');
-      const res = await fetchProfileOverview();
-      const data = res.data || {};
+      const data = await userStore.loadUserProfile();
       appStore.updateProfile({
         nickname: data.nickname || undefined,
         balance: data.balance || undefined,

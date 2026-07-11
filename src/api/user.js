@@ -169,6 +169,8 @@ export async function fetchProfileSummary() {
     data: {
       nickname: customer.nickname || customer.username || '',
       memberId: customer.customerNo || '',
+      // 保留安全设置状态，供全局用户资料和提现密码弹窗复用。
+      withdrawPasswordSet: customer.withdrawPasswordSet === true,
       balance: formatMoney(wallet.balance),
       currency: wallet.currency || 'CNY',
       vipLevel: customer.vipLevel || 1,
@@ -239,10 +241,10 @@ export async function changePassword(type, currentPwd, newPwd) {
       newPassword: newPwd,
     });
   }
-  return put('/security/withdraw-password', {
-    oldPassword: currentPwd,
-    newPassword: newPwd,
-  });
+  const payload = { newPassword: newPwd };
+  // 首次设置提现密码时，接口不需要也不应提交旧密码字段。
+  if (currentPwd) payload.oldPassword = currentPwd;
+  return put('/security/withdraw-password', payload);
 }
 
 /** 获取消息列表（解包分页结构，返回 { data: MessageVO[], total }） */

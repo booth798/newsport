@@ -9,12 +9,14 @@ import iconLoginLockUrl from '@/assets/images/login/icon_login_lock.svg?url';
 import iconEyeClosedUrl from '@/assets/images/login/icon_login_eye_closed.svg?url';
 import iconEyeOpenUrl from '@/assets/images/login/icon_login_eye_open.svg?url';
 import { useAppStore } from '@/store/modules/app';
+import { useUserStore } from '@/store/modules/user';
 import { useToast } from '@/hooks/useToast';
-import { loginApi, registerApi, captchaInit, captchaVerify, fetchProfileOverview } from '@/api/user';
+import { loginApi, registerApi, captchaInit, captchaVerify } from '@/api/user';
 
 const { t } = useI18n();
 const router = useRouter();
 const appStore = useAppStore();
+const userStore = useUserStore();
 const toast = useToast();
 
 const props = defineProps({
@@ -283,8 +285,7 @@ async function submitRegister() {
 
 async function fetchUserProfile() {
   try {
-    const res = await fetchProfileOverview();
-    const data = res.data || {};
+    const data = await userStore.loadUserProfile({ force: true });
     appStore.updateProfile({
       nickname: data.nickname || undefined,
       balance: data.balance || undefined,
