@@ -1,6 +1,8 @@
 <script setup>
 import { useI18n } from 'vue-i18n';
 import { getImageUrl } from '@/utils/common'
+import { useAppStore } from '@/store/modules/app';
+import { storeToRefs } from 'pinia';
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -10,10 +12,15 @@ const props = defineProps({
   buttonText: { type: String, default: '' }, // 按钮文本 不传则不显示按钮
   actionDisabled: { type: Boolean, default: false }, // 按钮是否禁用
   showClose: { type: Boolean, default: true }, // 是否显示关闭图标
+  clickMaskToClose: { type: Boolean, default: false }, // 点击遮罩层是否关闭
 });
 
 const emit = defineEmits(['update:modelValue', 'confirm']);
 const { t } = useI18n();
+
+const appStore = useAppStore();
+const { isMobile } = storeToRefs(appStore);
+
 
 function close() { emit('update:modelValue', false); }
 function confirm() { emit('confirm'); }
@@ -24,7 +31,7 @@ function confirm() { emit('confirm'); }
     <Transition name="base-modal-fade">
       <div v-if="props.modelValue" class="base-modal" role="dialog" aria-modal="true" :aria-label="props.title">
         <!-- 遮罩层 -->
-        <div class="base-modal__backdrop" aria-hidden="true" @click="close" />
+        <div class="base-modal__backdrop" aria-hidden="true" @click="clickMaskToClose ? close() : null" />
         <div class="base-modal__panel-wrap">
           <img v-if="props.showClose" class="base-modal__close-icon" :src="getImageUrl('common/modal_close_icon.svg')" :aria-label="t('关闭')" @click="close" >
           <div class="base-modal__frame">
@@ -34,7 +41,7 @@ function confirm() { emit('confirm'); }
                 <slot name="header" />
               </template>
               <template v-else>
-                <header v-if="props.title || props.description" class="base-modal__head">
+                <header v-if="props.title || props.description" class="base-modal__head" :class="{ 'mobile-only-title-head': isMobile && props.title && !props.description }">
                   <h2 v-if="props.title" class="base-modal__title">{{ props.title }}</h2>
                   <p v-if="props.description" class="base-modal__subtitle">{{ props.description }}</p>
                 </header>
@@ -160,6 +167,10 @@ function confirm() { emit('confirm'); }
     align-items: center;
     justify-content: center;
     height: 80px;
+  }
+
+  .mobile-only-title-head {
+    height: 50px;
   }
 
   &__title {
