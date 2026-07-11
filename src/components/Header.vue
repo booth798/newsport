@@ -21,6 +21,7 @@ import moreIconUrl from '@/assets/images/common/icon_more.svg?url';
 import avatarDefaultUrl from '@/assets/images/common/avatar_default.png?url';
 import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.svg?url';
 import MobileNavDrawer from '@/components/MobileNavDrawer.vue';
+import MessageCenterModal from '@/components/MessageCenterModal.vue';
 import { useAppStore } from '@/store/modules/app';
 
 
@@ -42,6 +43,7 @@ const i18nCnBtnHover = ref(false);
 const i18nEnBtnHover = ref(false);
 const hoverOpenKey = ref(null);
 const mobileDrawerOpen = ref(false);
+const messageCenterOpen = ref(false);
 
 const cnIconSrc = computed(() => {
   if (locale.value === 'zh-CN') return i18nCnIcon;
@@ -343,9 +345,9 @@ onUnmounted(() => {
           </button>
         </template>
         <template v-else-if="isMobileProfileHomeHeader">
-          <RouterLink to="/profile/messages" class="header-mobile-circle-btn" :aria-label="t('消息中心')">
+          <button type="button" class="header-mobile-circle-btn" :aria-label="t('消息中心')" @click="messageCenterOpen = true">
             <span class="header-mobile-circle-btn__msg" aria-hidden="true"></span>
-          </RouterLink>
+          </button>
           <RouterLink to="/profile/security" class="header-mobile-circle-btn" :aria-label="t('安全设置')">
             <span class="header-mobile-circle-btn__gear" aria-hidden="true"></span>
           </RouterLink>
@@ -480,6 +482,7 @@ onUnmounted(() => {
       </div>
     </div>
     <MobileNavDrawer v-if="isMobile" v-model="mobileDrawerOpen" :menus="navMenus" />
+    <MessageCenterModal v-model="messageCenterOpen" />
   </div>
 </template>
 
@@ -710,9 +713,11 @@ onUnmounted(() => {
       flex-shrink: 0;
       width: 36px;
       height: 36px;
+      border: 0;
       border-radius: 50%;
       background: linear-gradient(180deg, #3ba0ff 0%, #0d6cfb 100%);
       box-shadow: 0 4px 8px rgba(21, 58, 119, 0.12);
+      cursor: pointer;
       text-decoration: none;
 
       span {

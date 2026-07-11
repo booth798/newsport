@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/useToast';
 import { getImageUrl } from '@/utils/common';
 
 import ProfileUserInfoModal from '@/views/Profile/components/ProfileUserInfoModal.vue';
+import MessageCenterModal from '@/components/MessageCenterModal.vue';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -24,6 +25,7 @@ const { vipLevelList } = storeToRefs(userStore);
 const loading = ref(false);
 const refreshing = ref(false);
 const showUserInfoModal = ref(false);
+const showMessageCenterModal = ref(false);
 const avatarDisplayUrl = ref('');
 
 // 图片资源统一通过 getImageUrl 获取，页面只维护业务侧文件名。
@@ -138,7 +140,7 @@ const mobileVipTrackH5 = computed(() => getProfileVipLevelImage(vipTrackIndex.va
 const desktopVipTrack = computed(() => getProfileVipLevelImage(vipTrackIndex.value, 'pc'));
 
 const profileMenuItem = { label: '个人资料', icon: iconProfileInfo, action: 'userInfo' };
-const messagesMenuItem = { label: '消息中心', icon: iconProfileMessages, to: '/profile/messages' };
+const messagesMenuItem = { label: '消息中心', icon: iconProfileMessages, action: 'messages' };
 const bankCardMenuItem = { label: '绑定信息', icon: iconProfileBindinfo, to: '/profile/bank-card' };
 const serviceMenuItem = { label: '联系客服', icon: iconProfileService, action: 'service' };
 const securityMenuItem = { label: '安全设置', icon: iconProfileSecurity, to: '/profile/security' };
@@ -212,6 +214,10 @@ async function refreshBalance() {
 function handleMenuClick(item) {
   if (item.action === 'userInfo') {
     showUserInfoModal.value = true;
+    return;
+  }
+  if (item.action === 'messages') {
+    showMessageCenterModal.value = true;
     return;
   }
   if (item.action === 'logout') {
@@ -446,6 +452,7 @@ onMounted(() => {
 
     <ProfileUserInfoModal v-model="showUserInfoModal" :nickname="displayName"
       :avatar-url="avatarDisplayUrl" @saved="handleUserInfoSaved" />
+    <MessageCenterModal v-model="showMessageCenterModal" />
   </div>
 </template>
 

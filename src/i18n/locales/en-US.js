@@ -57,6 +57,11 @@ export default {
   暂无数据: 'No Data',
   暂无记录: 'No records',
   加载中: 'Loading...',
+  加载失败: 'Failed to load',
+  重试: 'Retry',
+  消息中心: 'Message Center',
+  查看您的系统消息: 'View your system messages',
+  系统消息: 'System Message',
 
   // Banner
   立即参与: 'Join Now',

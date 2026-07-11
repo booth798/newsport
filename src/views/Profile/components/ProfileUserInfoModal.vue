@@ -98,7 +98,7 @@ async function handleSave() {
   try {
     submitting.value = true;
     if (pendingAvatar.value) {
-      const uploadRes = await uploadFile(pendingAvatar.value);
+      const uploadRes = await uploadFile(pendingAvatar.value, 'avatar');
       const fileRef = uploadRes?.data?.fileId || uploadRes?.data?.url || '';
       if (fileRef) await updateAvatar(fileRef);
     }
