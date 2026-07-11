@@ -6,12 +6,14 @@ import { storeToRefs } from 'pinia';
 
 import { useAppStore } from '@/store/modules/app';
 import ProfileSecurityModal from '@/views/Profile/components/ProfileSecurityModal.vue';
+import LanguageSettingModal from '@/views/Profile/components/LanguageSettingModal.vue';
 
 const { t } = useI18n();
 const router = useRouter();
 const appStore = useAppStore();
-const { isMobile } = storeToRefs(appStore);
+const { isMobile, locale } = storeToRefs(appStore);
 const showSecurityModal = ref(false);
+const showLanguageSettingModal = ref(false);
 
 function handleLogout() {
   appStore.openLogoutConfirm();
@@ -25,17 +27,23 @@ function handleLogout() {
         <span>{{ t('安全设置') }}</span>
         <i aria-hidden="true" />
       </button>
-      <button type="button" class="settings-mobile-row" @click="handleLogout">
-        <span>{{ t('退出登录') }}</span>
+      <button type="button" class="settings-mobile-row" @click="showLanguageSettingModal = true">
+        <span>{{ t('语言设置') }}</span>
+        <span class="settings-mobile-row__value">{{ locale === 'zh-CN' ? t('中文') : t('英文') }}</span>
         <i aria-hidden="true" />
       </button>
       <button type="button" class="settings-mobile-row" @click="router.push('/profile/about')">
         <span>{{ t('关于我们') }}</span>
         <i aria-hidden="true" />
       </button>
+      <button type="button" class="settings-mobile-row" @click="handleLogout">
+        <span>{{ t('退出登录') }}</span>
+        <i aria-hidden="true" />
+      </button>
     </section>
 
     <ProfileSecurityModal v-model="showSecurityModal" />
+    <LanguageSettingModal v-model="showLanguageSettingModal" />
   </div>
 </template>
 
@@ -72,5 +80,11 @@ function handleLogout() {
     border-right: 1.5px solid rgba(11, 52, 98, 0.42);
     transform: rotate(45deg);
   }
+}
+
+.settings-mobile-row__value {
+  margin-left: auto;
+  margin-right: 16px;
+  color: #0b3462;
 }
 </style>

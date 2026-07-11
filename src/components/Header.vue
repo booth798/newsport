@@ -6,12 +6,6 @@ import { storeToRefs } from 'pinia';
 
 import navCollapsedIcon from '@/assets/images/common/icon_nav_collapsed.svg';
 import navExpandedIcon from '@/assets/images/common/icon_nav_expanded.svg';
-import i18nCnIcon from '@/assets/images/common/i18n_cn.svg';
-import i18nCnUnselected from '@/assets/images/common/i18n_cn_unselected.svg';
-import i18nCnHover from '@/assets/images/common/icon_cn_hover.svg';
-import i18nEnIcon from '@/assets/images/common/i18n_en.svg';
-import i18nEnUnselected from '@/assets/images/common/i18n_en_unselected.svg';
-import i18nEnHover from '@/assets/images/common/icon_en_hover.svg';
 import logoUrl from '@/assets/images/common/logo_nav.svg';
 import navbarHomeIcon from '@/assets/images/common/navbar_home.svg';
 import navbarHomeMutedIcon from '@/assets/images/common/navbar_home_muted.svg';
@@ -39,25 +33,12 @@ const appStore = useAppStore();
 const userStore = useUserStore();
 const route = useRoute();
 const router = useRouter();
-const { isMobile, locale } = storeToRefs(appStore);
+const { isMobile } = storeToRefs(appStore);
 const { isLoggedIn, loggedInUserId, loggedInAssetsFormatted } = storeToRefs(userStore);
 
-const i18nCnBtnHover = ref(false);
-const i18nEnBtnHover = ref(false);
 const hoverOpenKey = ref(null);
 const mobileDrawerOpen = ref(false);
 const messageCenterOpen = ref(false);
-
-const cnIconSrc = computed(() => {
-  if (locale.value === 'zh-CN') return i18nCnIcon;
-  if (i18nCnBtnHover.value) return i18nCnHover;
-  return i18nCnUnselected;
-});
-const enIconSrc = computed(() => {
-  if (locale.value === 'en-US') return i18nEnIcon;
-  if (i18nEnBtnHover.value) return i18nEnHover;
-  return i18nEnUnselected;
-});
 
 const navMenus = {
   market: [
@@ -380,33 +361,6 @@ onUnmounted(() => {
           'header-toolbar--market-detail': isCompactDetailHeader,
         }"
       >
-        <div v-if="!isCompactDetailHeader" class="i18n-select">
-          <button
-            type="button"
-            class="i18n-select__btn"
-            :aria-pressed="locale === 'zh-CN'"
-            @mouseenter="i18nCnBtnHover = true"
-            @mouseleave="i18nCnBtnHover = false"
-            @focus="i18nCnBtnHover = true"
-            @blur="i18nCnBtnHover = false"
-            @click="appStore.setLocale('zh-CN')"
-          >
-            <img class="i18n-icon" :src="cnIconSrc" alt="中文" />
-          </button>
-          <button
-            type="button"
-            class="i18n-select__btn"
-            :aria-pressed="locale === 'en-US'"
-            @mouseenter="i18nEnBtnHover = true"
-            @mouseleave="i18nEnBtnHover = false"
-            @focus="i18nEnBtnHover = true"
-            @blur="i18nEnBtnHover = false"
-            @click="appStore.setLocale('en-US')"
-          >
-            <img class="i18n-icon" :src="enIconSrc" alt="English" />
-          </button>
-        </div>
-
         <template v-if="isCompactDetailHeader && isLoggedIn">
           <div class="header-market-detail-stack">
             <div class="header-market-belt-row">
@@ -1063,64 +1017,6 @@ onUnmounted(() => {
         letter-spacing: 0.02em;
         white-space: nowrap;
       }
-
-      .i18n-select {
-        display: flex;
-        align-items: center;
-        flex-shrink: 0;
-        gap: 4px;
-        width: 92px;
-        height: 48px;
-        padding: 4px;
-        box-sizing: border-box;
-        background: var(--surface-tint);
-        border: 1px solid var(--border-light);
-        border-radius: 38px;
-        transition:
-          box-shadow 0.2s ease,
-          border-color 0.2s ease;
-
-        &:hover,
-        &:focus-within {
-          box-shadow: 0 2px 14px rgba(28, 123, 255, 0.14);
-          border-color: rgba(214, 224, 235, 0.9);
-        }
-
-        &__btn {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0;
-          border: none;
-          background: transparent;
-          cursor: pointer;
-          border-radius: 50%;
-          flex: 1;
-          min-width: 0;
-          transition: background-color 0.2s ease;
-
-          &[aria-pressed='false']:hover {
-            background: #e6f0ff;
-          }
-
-          &:focus-visible {
-            outline: 2px solid var(--theme-primary);
-            outline-offset: 2px;
-          }
-
-          &[aria-pressed='false']:focus-visible {
-            background: #e6f0ff;
-          }
-        }
-
-        .i18n-icon {
-          width: 40px;
-          height: 40px;
-          display: block;
-          pointer-events: none;
-        }
-      }
-
 
       .header-round-group {
         display: flex;

@@ -12,6 +12,7 @@ import { getImageUrl } from '@/utils/common';
 
 import ProfileUserInfoModal from '@/views/Profile/components/ProfileUserInfoModal.vue';
 import ProfileSecurityModal from '@/views/Profile/components/ProfileSecurityModal.vue';
+import LanguageSettingModal from '@/views/Profile/components/LanguageSettingModal.vue';
 import MessageCenterModal from '@/components/MessageCenterModal.vue';
 
 const { t } = useI18n();
@@ -27,6 +28,7 @@ const loading = ref(false);
 const refreshing = ref(false);
 const showUserInfoModal = ref(false);
 const showSecurityModal = ref(false);
+const showLanguageSettingModal = ref(false);
 const showMessageCenterModal = ref(false);
 const avatarDisplayUrl = ref('');
 
@@ -221,6 +223,10 @@ function handleMenuClick(item) {
   }
   if (item.action === 'security') {
     showSecurityModal.value = true;
+    return;
+  }
+  if (item.action === 'languageSetting') {
+    showLanguageSettingModal.value = true;
     return;
   }
   if (item.action === 'logout') {
@@ -469,6 +475,7 @@ onMounted(() => {
       :avatar-url="avatarDisplayUrl" @saved="handleUserInfoSaved" />
     <MessageCenterModal v-model="showMessageCenterModal" />
     <ProfileSecurityModal v-model="showSecurityModal" />
+    <LanguageSettingModal v-model="showLanguageSettingModal" />
   </div>
 </template>
 
