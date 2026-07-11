@@ -1,17 +1,51 @@
 import { defineStore } from 'pinia';
 
+import { clearSession } from '@/api/encrypt';
+import { clearToken, setToken } from '@/api/request';
 import { fetchProfileSummary, fetchVipLevels } from '@/api/user';
 
-// 复用进行中的 VIP 等级请求，避免多个页面同时挂载时重复请求接口。
+const CUSTOMER_STORAGE_KEY = 'mysport:customer';
 let vipLevelsRequest = null;
 let userProfileRequest = null;
 
+function loadCachedCustomer() {
+  try {
+    const raw = localStorage.getItem(CUSTOMER_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function persistCustomer(customer) {
+  if (customer) {
+    localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify(customer));
+  } else {
+    localStorage.removeItem(CUSTOMER_STORAGE_KEY);
+  }
+}
+
 export const useUserStore = defineStore('user', {
   state: () => ({
-    userProfile: {},
+    // localStorage 本身不具备响应式，登录态必须由 store state 承载。
+    isLoggedIn: Boolean(localStorage.getItem('mysport:token')),
+    customer: loadCachedCustomer(),
+    userProfile: null,
     vipLevels: [],
   }),
   getters: {
+    loggedInUserId: (state) =>
+      state.userProfile?.nickname
+      || state.customer?.nickname
+      || state.customer?.username
+      || state.customer?.customerNo
+      || '',
+    loggedInAssetsFormatted: (state) =>
+      state.userProfile?.balance ?? state.customer?.balance ?? '0.00',
+    customerId: (state) => {
+      const customer = state.userProfile || state.customer;
+      return customer?.id || customer?.customerId || customer?.customerNo || null;
+    },
     // 对外统一提供按等级升序排列后的列表，调用处不需要重复处理接口顺序。
     vipLevelList: (state) =>
       [...state.vipLevels]
@@ -19,6 +53,18 @@ export const useUserStore = defineStore('user', {
         .sort((a, b) => Number(a.level) - Number(b.level)),
   },
   actions: {
+    completeWebLogin(loginVO = {}) {
+      const { satoken, accessToken, refreshToken, customer } = loginVO;
+      const finalToken = satoken || accessToken;
+      if (!finalToken) throw new Error('登录凭证缺失');
+
+      // 新账号登录时原子替换身份资料，避免继承上一账号的缓存。
+      setToken(finalToken, refreshToken);
+      this.isLoggedIn = true;
+      this.customer = customer || null;
+      this.userProfile = null;
+      persistCustomer(this.customer);
+    },
     async loadUserProfile({ force = false } = {}) {
       // 用户资料跨页面复用，已获取时直接读取 store，避免重复请求个人中心接口。
       if (this.userProfile && !force) return this.userProfile;
@@ -33,6 +79,8 @@ export const useUserStore = defineStore('user', {
             balance: summary.balance,
             withdrawPasswordSet: summary.withdrawPasswordSet === true,
           };
+          this.customer = { ...(this.customer || {}), ...this.userProfile };
+          persistCustomer(this.customer);
           return this.userProfile;
         })
         .finally(() => {
@@ -41,12 +89,31 @@ export const useUserStore = defineStore('user', {
 
       return userProfileRequest;
     },
-    updateUserProfile(profile) {
-      // 局部资料变更后合并缓存，避免下一次使用仍读取旧的安全设置状态。
-      this.userProfile = { ...(this.userProfile || {}), ...profile };
+    updateUserProfile(profile = {}) {
+      // 用户资料及本地缓存由同一个入口更新，避免不同页面维护多份状态。
+      this.userProfile = { ...(this.userProfile || this.customer || {}), ...profile };
+      this.customer = { ...(this.customer || {}), ...profile };
+      persistCustomer(this.customer);
+    },
+    async refreshUserBalance() {
+      // 余额刷新统一复用用户资料接口，并同步内存状态与本地缓存。
+      const profile = await this.loadUserProfile({ force: true });
+      const balance = profile.balance ?? '0.00';
+      this.updateUserProfile({ balance });
+      return balance;
+    },
+    clearWebLogin() {
+      const hasToken = Boolean(localStorage.getItem('mysport:token'));
+      this.isLoggedIn = false;
+      this.customer = null;
+      this.userProfile = null;
+      userProfileRequest = null;
+      // 请求层可能已清除 token 并派发失效事件，避免重复派发造成递归清理。
+      if (hasToken) clearToken();
+      clearSession();
+      persistCustomer(null);
     },
     async loadVipLevels({ force = false } = {}) {
-      // 已加载过时直接复用 store 数据；需要刷新时可传 force。
       if (this.vipLevels.length > 0 && !force) return this.vipLevels;
       if (vipLevelsRequest && !force) return vipLevelsRequest;
 

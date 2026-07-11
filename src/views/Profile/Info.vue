@@ -2,14 +2,14 @@
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
-import { useAppStore } from '@/store/modules/app';
+import { useUserStore } from '@/store/modules/user';
 import { useToast } from '@/hooks/useToast';
 import { fetchUserProfile, updateNickname } from '@/api/user';
 
 const { t } = useI18n();
 const toast = useToast();
-const appStore = useAppStore();
-const { loggedInUserId } = storeToRefs(appStore);
+const userStore = useUserStore();
+const { loggedInUserId } = storeToRefs(userStore);
 
 const nickname = ref(loggedInUserId.value || 'User_888');
 const phone = ref('138****8888');
@@ -37,6 +37,7 @@ async function handleSave() {
   try {
     submitting.value = true;
     await updateNickname(nickname.value);
+    userStore.updateUserProfile({ nickname: nickname.value });
     toast.success(t('操作成功'));
   } catch {
     toast.error(t('提交失败，请重试'));

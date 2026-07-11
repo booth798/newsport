@@ -215,7 +215,8 @@ async function submitWebLogin() {
       remember: rememberPassword.value,
     });
     const loginData = res.data || {};
-    appStore.completeWebLogin(loginData);
+    userStore.completeWebLogin(loginData);
+    appStore.closeLoginModal();
     toast.success(t('登录成功'));
     account.value = '';
     password.value = '';
@@ -264,7 +265,8 @@ async function submitRegister() {
       inviteCode: inviteCode.value.trim() || undefined,
     });
     const loginData = res.data || {};
-    appStore.completeWebLogin(loginData);
+    userStore.completeWebLogin(loginData);
+    appStore.closeLoginModal();
     toast.success(t('注册成功'));
     account.value = '';
     password.value = '';
@@ -286,9 +288,9 @@ async function submitRegister() {
 async function fetchUserProfile() {
   try {
     const data = await userStore.loadUserProfile({ force: true });
-    appStore.updateProfile({
+    userStore.updateUserProfile({
       nickname: data.nickname || undefined,
-      balance: data.balance || undefined,
+      balance: data.balance ?? undefined,
     });
   } catch { /* non-critical */ }
 }

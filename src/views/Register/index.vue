@@ -10,12 +10,12 @@ import iconEyeClosedUrl from '@/assets/images/login/icon_login_eye_closed.svg?ur
 import iconEyeOpenUrl from '@/assets/images/login/icon_login_eye_open.svg?url';
 import { useToast } from '@/hooks/useToast';
 import { registerApi } from '@/api/user';
-import { useAppStore } from '@/store/modules/app';
+import { useUserStore } from '@/store/modules/user';
 
 const { t } = useI18n();
 const router = useRouter();
 const toast = useToast();
-const appStore = useAppStore();
+const userStore = useUserStore();
 
 const username = ref('');
 const password = ref('');
@@ -38,7 +38,8 @@ async function submitRegister() {
   try {
     submitting.value = true;
     const res = await registerApi(username.value.trim(), password.value, 'ALWAYS_PASS');
-    appStore.completeWebLogin(res.data || {});
+    userStore.completeWebLogin(res.data || {});
+    userStore.loadUserProfile({ force: true }).catch(() => {});
     successOpen.value = true;
   } catch (e) {
     toast.error(e.message || t('提交失败，请重试'));

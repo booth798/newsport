@@ -16,6 +16,7 @@ import iconSpainUrl from '@/assets/images/events/icon_spain.svg?url';
 import iconUkUrl from '@/assets/images/events/icon_uk.svg?url';
 import iconTradeSuccessUrl from '@/assets/images/common/icon_trade_success.svg?url';
 import { useAppStore } from '@/store/modules/app';
+import { useUserStore } from '@/store/modules/user';
 import { resolveTeamLogoUrl } from '@/constants/teamLogos';
 
 const props = defineProps({
@@ -42,8 +43,10 @@ const emit = defineEmits(['close']);
 const { t } = useI18n();
 const router = useRouter();
 const appStore = useAppStore();
+const userStore = useUserStore();
 const toast = useToast();
-const { loggedInUserId, loggedInAssetsFormatted, isMobile } = storeToRefs(appStore);
+const { isMobile } = storeToRefs(appStore);
+const { loggedInUserId, loggedInAssetsFormatted } = storeToRefs(userStore);
 
 const buyType = ref('standard');
 const buyAmount = ref('');

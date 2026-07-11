@@ -23,6 +23,7 @@ import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.sv
 import MobileNavDrawer from '@/components/MobileNavDrawer.vue';
 import MessageCenterModal from '@/components/MessageCenterModal.vue';
 import { useAppStore } from '@/store/modules/app';
+import { useUserStore } from '@/store/modules/user';
 
 
 import iconMarketList from '@/assets/images/menu/icon_market_list.svg';
@@ -35,9 +36,11 @@ import iconTransactionRecords from '@/assets/images/menu/icon_transaction_record
 const { t } = useI18n();
 
 const appStore = useAppStore();
+const userStore = useUserStore();
 const route = useRoute();
 const router = useRouter();
-const { isMobile, locale, isLoggedIn, loggedInUserId, loggedInAssetsFormatted } = storeToRefs(appStore);
+const { isMobile, locale } = storeToRefs(appStore);
+const { isLoggedIn, loggedInUserId, loggedInAssetsFormatted } = storeToRefs(userStore);
 
 const i18nCnBtnHover = ref(false);
 const i18nEnBtnHover = ref(false);

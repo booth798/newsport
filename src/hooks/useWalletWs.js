@@ -1,6 +1,6 @@
 import { ref, watch, onBeforeUnmount } from 'vue';
 import { storeToRefs } from 'pinia';
-import { useAppStore } from '@/store/modules/app';
+import { useUserStore } from '@/store/modules/user';
 import { useWebSocket } from './useWebSocket';
 import { fetchWsTicket, buildWsUrl } from '@/api/ws';
 
@@ -15,18 +15,13 @@ import { fetchWsTicket, buildWsUrl } from '@/api/ws';
 export function useWalletWs(opts = {}) {
   const { onPayout } = opts;
 
-  const appStore = useAppStore();
-  const { isLoggedIn } = storeToRefs(appStore);
+  const userStore = useUserStore();
+  const { isLoggedIn, customerId } = storeToRefs(userStore);
 
   const wsStatus = ref('disconnected');
   const lastPayout = ref(null);
 
   let wsControls = null;
-
-  function getCustomerId() {
-    const c = appStore.customer;
-    return c?.id || c?.customerId || c?.customerNo || null;
-  }
 
   function handleMessage(msg) {
     if (msg.type === 'payout') {
@@ -38,27 +33,22 @@ export function useWalletWs(opts = {}) {
 
   async function refreshBalance() {
     try {
-      const { fetchProfileOverview } = await import('@/api/user');
-      const res = await fetchProfileOverview();
-      const data = res.data || {};
-      appStore.updateProfile({
-        balance: data.balance || undefined,
-      });
+      await userStore.refreshUserBalance();
     } catch { /* non-critical */ }
   }
 
   async function connect() {
     disconnect();
 
-    const customerId = getCustomerId();
-    if (!customerId) return;
+    const currentCustomerId = customerId.value;
+    if (!currentCustomerId) return;
 
     let ticket = null;
     try {
       ticket = await fetchWsTicket();
     } catch { /* 降级到 token */ }
 
-    const urlFactory = () => buildWsUrl(`/ws/wallet/${customerId}`, ticket);
+    const urlFactory = () => buildWsUrl(`/ws/wallet/${currentCustomerId}`, ticket);
 
     wsControls = useWebSocket(urlFactory, {
       onMessage: handleMessage,
@@ -82,9 +72,9 @@ export function useWalletWs(opts = {}) {
   }
 
   watch(
-    () => isLoggedIn.value,
-    (loggedIn) => {
-      if (loggedIn) {
+    () => [isLoggedIn.value, customerId.value],
+    ([loggedIn, currentCustomerId]) => {
+      if (loggedIn && currentCustomerId) {
         connect();
       } else {
         disconnect();

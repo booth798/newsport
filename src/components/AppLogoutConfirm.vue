@@ -6,12 +6,14 @@ import { storeToRefs } from 'pinia';
 import { logoutApi } from '@/api/user';
 import { useToast } from '@/hooks/useToast';
 import { useAppStore } from '@/store/modules/app';
+import { useUserStore } from '@/store/modules/user';
 import bgLoginUrl from '@/assets/images/common/bg_login.svg?url';
 
 const { t } = useI18n();
 const router = useRouter();
 const toast = useToast();
 const appStore = useAppStore();
+const userStore = useUserStore();
 const { logoutConfirmOpen } = storeToRefs(appStore);
 const submitting = ref(false);
 
@@ -29,7 +31,7 @@ async function confirmLogout() {
     } catch {
       // 后端登出失败时仍清理本地登录态，避免用户停留在失效会话。
     }
-    appStore.clearWebLogin();
+    userStore.clearWebLogin();
     toast.success(t('操作成功'));
     appStore.closeLogoutConfirm();
     router.push('/');

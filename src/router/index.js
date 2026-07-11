@@ -167,8 +167,9 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   if (to.matched.some((r) => r.meta.requiresAuth)) {
     if (to.matched.some((r) => r.meta.guestPreview)) return true;
-    const hasToken = Boolean(localStorage.getItem('mysport:token'));
-    if (!hasToken) {
+    const { useUserStore } = await import('@/store/modules/user');
+    const userStore = useUserStore();
+    if (!userStore.isLoggedIn) {
       const { useAppStore } = await import('@/store/modules/app');
       const appStore = useAppStore();
       appStore.openLoginModal();

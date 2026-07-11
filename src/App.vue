@@ -28,6 +28,7 @@ const userStore = useUserStore();
 const route = useRoute();
 const router = useRouter();
 const { locale, isMobile } = storeToRefs(appStore);
+const { isLoggedIn } = storeToRefs(userStore);
 const isBarePage = computed(() => Boolean(route.meta?.bare));
 const hideMobileTabBar = computed(() => Boolean(route.meta?.hideMobileTabBar));
 const hideMobileHeader = computed(() => isMobile.value && Boolean(route.meta?.hideMobileHeader));
@@ -83,10 +84,9 @@ watch(
 watch(() => route.fullPath, syncDocumentTitle);
 
 function onSessionExpired() {
-  if (appStore.isLoggedIn) {
-    appStore.clearWebLogin();
-    appStore.openLoginModal();
-  }
+  const wasLoggedIn = isLoggedIn.value;
+  userStore.clearWebLogin();
+  if (wasLoggedIn) appStore.openLoginModal();
 }
 
 onMounted(async () => {
@@ -94,13 +94,9 @@ onMounted(async () => {
   window.addEventListener('resize', syncViewport, { passive: true });
   window.addEventListener('mysport:session-expired', onSessionExpired);
 
-  if (appStore.isLoggedIn) {
+  if (isLoggedIn.value) {
     try {
-      const data = await userStore.loadUserProfile();
-      appStore.updateProfile({
-        nickname: data.nickname || undefined,
-        balance: data.balance || undefined,
-      });
+      await userStore.loadUserProfile();
     } catch { /* non-critical */ }
   }
 });

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
@@ -19,8 +19,8 @@ const router = useRouter();
 const toast = useToast();
 const appStore = useAppStore();
 const userStore = useUserStore();
-const { isLoggedIn, isMobile, loggedInUserId, loggedInAssetsFormatted } = storeToRefs(appStore);
-const { vipLevelList } = storeToRefs(userStore);
+const { isMobile } = storeToRefs(appStore);
+const { isLoggedIn, loggedInUserId, loggedInAssetsFormatted, vipLevelList } = storeToRefs(userStore);
 
 // 页面状态
 const loading = ref(false);
@@ -54,7 +54,7 @@ const iconBalanceRefresh = profileImage('icon_balance_refresh.svg');
 const iconBalanceRefreshPc = profileImage('pc_icon_balance_refresh.svg');
 
 // 概览接口数据
-const overview = ref({
+const defaultOverview = () => ({
   nickname: '',
   memberId: '',
   balance: '',
@@ -64,6 +64,7 @@ const overview = ref({
   winRate: '0%',
   totalProfit: '0.00',
 });
+const overview = ref(defaultOverview());
 
 // VIP 等级接口未返回前保留默认点位，避免 H5 卡片出现空白。
 const fallbackVipLevels = [0, 1, 2, 3, 4].map((level) => ({ level }));
@@ -183,9 +184,9 @@ async function loadOverview() {
     const data = res.data || {};
     userStore.loadUserProfile().catch(() => {});
     overview.value = { ...overview.value, ...data };
-    appStore.updateProfile({
+    userStore.updateUserProfile({
       nickname: data.nickname || undefined,
-      balance: data.balance || undefined,
+      balance: data.balance ?? undefined,
     });
   } catch {
     /* keep defaults / store values */
@@ -198,13 +199,8 @@ async function refreshBalance() {
   if (refreshing.value) return;
   try {
     refreshing.value = true;
-    const res = await fetchProfileOverview();
-    const data = res.data || {};
-    overview.value = { ...overview.value, ...data };
-    appStore.updateProfile({
-      nickname: data.nickname || undefined,
-      balance: data.balance || undefined,
-    });
+    const balance = await userStore.refreshUserBalance();
+    overview.value.balance = balance;
     toast.success(t('操作成功'));
   } catch {
     toast.error(t('加载失败'));
@@ -286,6 +282,18 @@ function handleUserInfoSaved(payload) {
     avatarDisplayUrl.value = payload.avatarUrl;
   }
 }
+
+// 页面保持挂载时，登录成功后主动加载数据；退出后立即清空上一账号概览。
+watch(isLoggedIn, (loggedIn, wasLoggedIn) => {
+  if (loggedIn && !wasLoggedIn) {
+    loadOverview();
+    return;
+  }
+  if (!loggedIn) {
+    overview.value = defaultOverview();
+    avatarDisplayUrl.value = '';
+  }
+});
 
 onMounted(() => {
   loadOverview();
