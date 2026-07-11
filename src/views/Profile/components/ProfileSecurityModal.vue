@@ -1,6 +1,8 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+
+import { useAppStore } from '@/store/modules/app';
 import { storeToRefs } from 'pinia';
 
 import { changePassword } from '@/api/user';
@@ -18,6 +20,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue']);
 const { t } = useI18n();
 const toast = useToast();
+const appStore = useAppStore();
 const userStore = useUserStore();
 const { userProfile } = storeToRefs(userStore);
 const withdrawPasswordSet = computed(() => userProfile.value?.withdrawPasswordSet === true);
@@ -90,12 +93,13 @@ async function handleSave() {
     toast.success(t('操作成功'));
     resetForm();
     close();
-    if(activeSection.value === 'login') {
-      router.push('/profile');
-      router.reload();
+    if (activeSection.value === 'login') {
+      // 登录密码变更后当前凭证失效，清理会话并要求使用新密码重新登录。
+      userStore.clearWebLogin();
+      appStore.openLoginModal();
     }
-  } catch {
-    toast.error(t('提交失败，请重试'));
+  } catch (e){
+    toast.error(e.message);
   } finally {
     submitting.value = false;
   }
