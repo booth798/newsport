@@ -9,6 +9,7 @@ const props = defineProps({
   description: { type: String, default: '' }, // 描述 不传则不显示描述
   buttonText: { type: String, default: '' }, // 按钮文本 不传则不显示按钮
   actionDisabled: { type: Boolean, default: false }, // 按钮是否禁用
+  showClose: { type: Boolean, default: true }, // 是否显示关闭图标
 });
 
 const emit = defineEmits(['update:modelValue', 'confirm']);
@@ -25,7 +26,7 @@ function confirm() { emit('confirm'); }
         <!-- 遮罩层 -->
         <div class="base-modal__backdrop" aria-hidden="true" @click="close" />
         <div class="base-modal__panel-wrap">
-          <img class="base-modal__close-icon" :src="getImageUrl('common/modal_close_icon.svg')" :aria-label="t('关闭')" @click="close" >
+          <img v-if="props.showClose" class="base-modal__close-icon" :src="getImageUrl('common/modal_close_icon.svg')" :aria-label="t('关闭')" @click="close" >
           <div class="base-modal__frame">
             <img class="base-modal__opacity-logo" :src="getImageUrl('common/modal_opacity_logo.svg')" alt="">
             <div class="base-modal__body">
