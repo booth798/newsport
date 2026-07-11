@@ -92,7 +92,7 @@ function handleBlur(event) {
     min-height: 52px;
     padding: 0 20px;
     border-radius: 16px;
-}
+  }
 }
 
 .base-input--focused {
@@ -123,6 +123,12 @@ function handleBlur(event) {
 .base-input__control::placeholder {
   color: #0B346280;
   font-weight: 400;
+  @include mobile-only {
+    font-size: 14px;
+  }
+  @include web-only {
+    font-size: 16px;
+  }
 }
 
 .base-input__control:disabled {

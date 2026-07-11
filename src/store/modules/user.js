@@ -8,7 +8,7 @@ let userProfileRequest = null;
 
 export const useUserStore = defineStore('user', {
   state: () => ({
-    userProfile: null,
+    userProfile: {},
     vipLevels: [],
   }),
   getters: {

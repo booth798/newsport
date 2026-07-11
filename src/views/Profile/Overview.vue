@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/useToast';
 import { getImageUrl } from '@/utils/common';
 
 import ProfileUserInfoModal from '@/views/Profile/components/ProfileUserInfoModal.vue';
+import ProfileSecurityModal from '@/views/Profile/components/ProfileSecurityModal.vue';
 import MessageCenterModal from '@/components/MessageCenterModal.vue';
 
 const { t } = useI18n();
@@ -25,6 +26,7 @@ const { vipLevelList } = storeToRefs(userStore);
 const loading = ref(false);
 const refreshing = ref(false);
 const showUserInfoModal = ref(false);
+const showSecurityModal = ref(false);
 const showMessageCenterModal = ref(false);
 const avatarDisplayUrl = ref('');
 
@@ -143,7 +145,7 @@ const profileMenuItem = { label: '个人资料', icon: iconProfileInfo, action: 
 const messagesMenuItem = { label: '消息中心', icon: iconProfileMessages, action: 'messages' };
 const bankCardMenuItem = { label: '绑定信息', icon: iconProfileBindinfo, to: '/profile/bank-card' };
 const serviceMenuItem = { label: '联系客服', icon: iconProfileService, action: 'service' };
-const securityMenuItem = { label: '安全设置', icon: iconProfileSecurity, to: '/profile/security' };
+const securityMenuItem = { label: '安全设置', icon: iconProfileSecurity, action: 'security' };
 const vipBenefitsMenuItem = { label: 'VIP权益', icon: iconVipBenefits, action: 'vipBenefits' };
 const vipTransferMenuItem = { label: 'VIP互转', icon: iconVipTransfer, action: 'vipTransfer' };
 const languageSettingMenuItem = { label: '语言设置', icon: iconLanguageSetting, action: 'languageSetting' };
@@ -179,6 +181,7 @@ async function loadOverview() {
     loading.value = true;
     const res = await fetchProfileOverview();
     const data = res.data || {};
+    userStore.loadUserProfile().catch(() => {});
     overview.value = { ...overview.value, ...data };
     appStore.updateProfile({
       nickname: data.nickname || undefined,
@@ -218,6 +221,10 @@ function handleMenuClick(item) {
   }
   if (item.action === 'messages') {
     showMessageCenterModal.value = true;
+    return;
+  }
+  if (item.action === 'security') {
+    showSecurityModal.value = true;
     return;
   }
   if (item.action === 'logout') {
@@ -453,6 +460,7 @@ onMounted(() => {
     <ProfileUserInfoModal v-model="showUserInfoModal" :nickname="displayName"
       :avatar-url="avatarDisplayUrl" @saved="handleUserInfoSaved" />
     <MessageCenterModal v-model="showMessageCenterModal" />
+    <ProfileSecurityModal v-model="showSecurityModal" />
   </div>
 </template>
 
