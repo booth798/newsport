@@ -114,18 +114,6 @@ const routes = [
         meta: { titleKey: '设置', hideMobileTabBar: true },
       },
       {
-        path: 'bank-card',
-        name: 'profile-bank-card',
-        component: () => import('@/views/Profile/BankCard.vue'),
-        meta: { titleKey: '银行卡' },
-      },
-      {
-        path: 'blockchain',
-        name: 'profile-blockchain',
-        component: () => import('@/views/Profile/Blockchain.vue'),
-        meta: { titleKey: '区块链' },
-      },
-      {
         path: 'about',
         name: 'profile-about',
         component: () => import('@/views/Profile/About.vue'),

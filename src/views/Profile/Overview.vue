@@ -12,6 +12,7 @@ import { getImageUrl } from '@/utils/common';
 
 import ProfileUserInfoModal from '@/views/Profile/components/ProfileUserInfoModal.vue';
 import ProfileSecurityModal from '@/views/Profile/components/ProfileSecurityModal.vue';
+import ProfileBindingModal from '@/views/Profile/components/ProfileBindingModal.vue';
 import LanguageSettingModal from '@/views/Profile/components/LanguageSettingModal.vue';
 import MessageCenterModal from '@/components/MessageCenterModal.vue';
 
@@ -28,6 +29,7 @@ const loading = ref(false);
 const refreshing = ref(false);
 const showUserInfoModal = ref(false);
 const showSecurityModal = ref(false);
+const showBindingModal = ref(false);
 const showLanguageSettingModal = ref(false);
 const showMessageCenterModal = ref(false);
 const avatarDisplayUrl = ref('');
@@ -146,7 +148,7 @@ const desktopVipTrack = computed(() => getProfileVipLevelImage(vipTrackIndex.val
 
 const profileMenuItem = { label: '个人资料', icon: iconProfileInfo, action: 'userInfo' };
 const messagesMenuItem = { label: '消息中心', icon: iconProfileMessages, action: 'messages' };
-const bankCardMenuItem = { label: '绑定信息', icon: iconProfileBindinfo, to: '/profile/bank-card' };
+const bankCardMenuItem = { label: '绑定信息', icon: iconProfileBindinfo, action: 'binding' };
 const serviceMenuItem = { label: '联系客服', icon: iconProfileService, action: 'service' };
 const securityMenuItem = { label: '安全设置', icon: iconProfileSecurity, action: 'security' };
 const vipBenefitsMenuItem = { label: 'VIP权益', icon: iconVipBenefits, action: 'vipBenefits' };
@@ -227,6 +229,10 @@ function handleMenuClick(item) {
   }
   if (item.action === 'languageSetting') {
     showLanguageSettingModal.value = true;
+    return;
+  }
+  if (item.action === 'binding') {
+    showBindingModal.value = true;
     return;
   }
   if (item.action === 'logout') {
@@ -476,6 +482,7 @@ onMounted(() => {
     <MessageCenterModal v-model="showMessageCenterModal" />
     <ProfileSecurityModal v-model="showSecurityModal" />
     <LanguageSettingModal v-model="showLanguageSettingModal" />
+    <ProfileBindingModal v-model="showBindingModal" />
   </div>
 </template>
 
