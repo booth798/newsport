@@ -1,6 +1,7 @@
 import { get, post, put, del, request } from './request';
 import { bootstrapEncrypt, decryptResponse, saveSession } from './encrypt';
 import { resolveErrorMessage } from './errorCodes';
+import { resolveAvatarUrl } from './upload';
 
 /** 滑动验证码初始化 */
 export async function captchaInit() {
@@ -65,7 +66,10 @@ async function bootstrapRequest(url, payload, extraHeaders = {}) {
         throw new Error(resolveErrorMessage(decrypted.msg) || `API Error ${decrypted.code}`);
       }
       if (decrypted.data?.sessionId) {
+        if (__DEV__) console.log('%c[AUTH] 已保存加密会话 sid=%s', 'color:#1b5e20;font-weight:bold', decrypted.data.sessionId);
         await saveSession(decrypted.data.sessionId, aesKey);
+      } else if (__DEV__) {
+        console.warn('%c[AUTH] 响应中无 sessionId，加密会话未建立', 'color:#e65100;font-weight:bold', Object.keys(decrypted.data || {}));
       }
       return decrypted;
     }
@@ -81,7 +85,10 @@ async function bootstrapRequest(url, payload, extraHeaders = {}) {
     }
 
     if (json.data?.sessionId) {
+      if (__DEV__) console.log('%c[AUTH] 已保存加密会话(明文) sid=%s', 'color:#1b5e20;font-weight:bold', json.data.sessionId);
       await saveSession(json.data.sessionId, aesKey);
+    } else if (__DEV__) {
+      console.warn('%c[AUTH] 明文响应中无 sessionId，加密会话未建立', 'color:#e65100;font-weight:bold', Object.keys(json.data || {}));
     }
     return json;
   } catch (e) {
@@ -169,7 +176,7 @@ export async function fetchProfileSummary() {
     data: {
       nickname: customer.nickname || customer.username || '',
       memberId: customer.customerNo || '',
-      // 保留安全设置状态，供全局用户资料和提现密码弹窗复用。
+      avatarUrl: resolveAvatarUrl(customer.avatar),
       withdrawPasswordSet: customer.withdrawPasswordSet === true,
       balance: formatMoney(wallet.balance),
       currency: wallet.currency || 'CNY',
@@ -197,6 +204,7 @@ export async function fetchProfileOverview() {
     data: {
       nickname: data.nickname || '',
       memberId: data.memberId || '',
+      avatarUrl: data.avatarUrl || '',
       balance: data.balance,
       currency: data.currency || 'CNY',
       vipLevel: data.vipLevel || 1,

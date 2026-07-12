@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/hooks/useToast';
 import { fetchProfileSummary, updateAvatar, updateNickname } from '@/api/user';
-import { uploadFile } from '@/api/upload';
+import { uploadFile, resolveAvatarUrl } from '@/api/upload';
 
 const emit = defineEmits(['save']);
 const { t } = useI18n();
@@ -11,7 +11,7 @@ const toast = useToast();
 
 const nickname = ref('');
 const previewUrl = ref('');
-const selectedFile = ref(null);
+const uploading = ref(false);
 const submitting = ref(false);
 
 const MAX_SIZE = 5 * 1024 * 1024;
@@ -21,32 +21,45 @@ onMounted(async () => {
   try {
     const res = await fetchProfileSummary();
     if (res.data?.nickname) nickname.value = res.data.nickname;
-    if (res.data?.avatarUrl) previewUrl.value = res.data.avatarUrl;
+    const avatarSrc = res.data?.avatarUrl || resolveAvatarUrl(res.data?._customer?.avatar);
+    if (avatarSrc) previewUrl.value = avatarSrc;
   } catch { /* use defaults */ }
 });
 
-function handleAvatarFileChange(event) {
+async function handleAvatarFileChange(event) {
   const file = event.target.files?.[0];
+  event.target.value = '';
   if (!file) return;
+  if (!ACCEPTED.split(',').includes(file.type)) {
+    toast.error(t('头像格式不支持'));
+    return;
+  }
   if (file.size > MAX_SIZE) {
     toast.error(t('文件大小不能超过5MB'));
     return;
   }
-  selectedFile.value = file;
-  previewUrl.value = URL.createObjectURL(file);
+
+  try {
+    uploading.value = true;
+    const uploadRes = await uploadFile(file, 'avatar');
+    const fileRef = uploadRes?.data?.ref;
+    const fileId = uploadRes?.data?.fileId;
+    if (!fileRef) throw new Error(t('上传失败'));
+    await updateAvatar(fileRef);
+    previewUrl.value = `/api/file/${fileId}`;
+    toast.success(t('头像上传成功'));
+  } catch (e) {
+    toast.error(e.message || t('头像上传失败'));
+  } finally {
+    uploading.value = false;
+  }
 }
 
 async function handleSave() {
   try {
     submitting.value = true;
-    if (selectedFile.value) {
-      const uploadRes = await uploadFile(selectedFile.value, 'avatar');
-      const fileRef = uploadRes.data?.ref;
-      if (!fileRef) throw new Error('上传失败，未获取到文件引用');
-      await updateAvatar(fileRef);
-    }
     if (nickname.value.trim()) {
-      await updateNickname(nickname.value.trim()).catch(() => {});
+      await updateNickname(nickname.value.trim());
     }
     toast.success(t('操作成功'));
     emit('save');
@@ -61,11 +74,12 @@ async function handleSave() {
 <template>
   <div class="avatar-card">
     <span class="avatar-card__label">{{ t('头像') }}</span>
-    <label class="avatar-upload">
+    <label class="avatar-upload" :class="{ 'avatar-upload--disabled': uploading }">
       <input
         type="file"
         class="avatar-upload__input"
         :accept="ACCEPTED"
+        :disabled="uploading"
         @change="handleAvatarFileChange"
       />
       <span v-if="previewUrl" class="avatar-upload__circle avatar-upload__circle--has-img">
@@ -76,7 +90,7 @@ async function handleSave() {
           <path d="M20 8v24M8 20h24" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
         </svg>
       </span>
-      <span class="avatar-upload__text">{{ t('点击头像上传图片') }}</span>
+      <span class="avatar-upload__text">{{ uploading ? t('上传中...') : t('点击头像上传图片') }}</span>
       <span class="avatar-upload__hint">{{ t('支持 JPG、PNG、GIF、WebP格式，最大5MB') }}</span>
     </label>
   </div>
@@ -153,6 +167,11 @@ async function handleSave() {
   flex-direction: column;
   align-items: center;
   cursor: pointer;
+
+  &--disabled {
+    opacity: 0.6;
+    pointer-events: none;
+  }
 }
 
 .avatar-upload__input {

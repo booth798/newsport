@@ -4,30 +4,74 @@ import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import { useUserStore } from '@/store/modules/user';
 import { useToast } from '@/hooks/useToast';
-import { fetchUserProfile, updateNickname } from '@/api/user';
+import { fetchUserProfile, updateNickname, updateAvatar } from '@/api/user';
+import { uploadFile, resolveAvatarUrl } from '@/api/upload';
 
 const { t } = useI18n();
 const toast = useToast();
 const userStore = useUserStore();
 const { loggedInUserId } = storeToRefs(userStore);
 
-const nickname = ref(loggedInUserId.value || 'User_888');
-const phone = ref('138****8888');
+const AVATAR_MAX_SIZE = 5 * 1024 * 1024;
+const AVATAR_ACCEPT = 'image/jpeg,image/png,image/gif,image/webp';
+
+const nickname = ref(loggedInUserId.value || '');
+const phone = ref('');
+const avatarUrl = ref('');
+const uploading = ref(false);
 const submitting = ref(false);
 const loading = ref(true);
+const fileInputRef = ref(null);
+
 const displayInitial = computed(() => (nickname.value.charAt(0) || 'U').toUpperCase());
 
 onMounted(async () => {
   try {
     const res = await fetchUserProfile();
-    nickname.value = res.data.nickname || loggedInUserId.value || 'User_888';
-    phone.value = res.data.phone || '138****8888';
+    const d = res.data || {};
+    nickname.value = d.nickname || d.username || loggedInUserId.value || '';
+    phone.value = d.phone || '';
+    const resolved = resolveAvatarUrl(d.avatar);
+    if (resolved) avatarUrl.value = resolved;
   } catch {
     /* keep defaults */
   } finally {
     loading.value = false;
   }
 });
+
+function openFilePicker() {
+  fileInputRef.value?.click();
+}
+
+async function handleFileChange(event) {
+  const file = event.target.files?.[0];
+  event.target.value = '';
+  if (!file) return;
+  if (!AVATAR_ACCEPT.split(',').includes(file.type)) {
+    toast.error(t('头像格式不支持'));
+    return;
+  }
+  if (file.size > AVATAR_MAX_SIZE) {
+    toast.error(t('文件大小不能超过5MB'));
+    return;
+  }
+
+  try {
+    uploading.value = true;
+    const uploadRes = await uploadFile(file, 'avatar');
+    const fileRef = uploadRes?.data?.ref;
+    const fileId = uploadRes?.data?.fileId;
+    if (!fileRef) throw new Error(t('上传失败'));
+    await updateAvatar(fileRef);
+    avatarUrl.value = `/api/file/${fileId}`;
+    toast.success(t('头像上传成功'));
+  } catch (e) {
+    toast.error(e.message || t('头像上传失败'));
+  } finally {
+    uploading.value = false;
+  }
+}
 
 async function handleSave() {
   if (!nickname.value.trim()) {
@@ -36,11 +80,11 @@ async function handleSave() {
   }
   try {
     submitting.value = true;
-    await updateNickname(nickname.value);
-    userStore.updateUserProfile({ nickname: nickname.value });
+    await updateNickname(nickname.value.trim());
+    userStore.updateUserProfile({ nickname: nickname.value.trim() });
     toast.success(t('操作成功'));
-  } catch {
-    toast.error(t('提交失败，请重试'));
+  } catch (e) {
+    toast.error(e.message || t('提交失败，请重试'));
   } finally {
     submitting.value = false;
   }
@@ -54,17 +98,26 @@ async function handleSave() {
     <div class="info-form">
       <div class="info-row">
         <span class="info-label">{{ t('头像') }}</span>
-        <div class="info-avatar">
-          <div class="info-avatar__placeholder">{{ displayInitial }}</div>
-        </div>
+        <button type="button" class="info-avatar" :disabled="uploading" @click="openFilePicker">
+          <img v-if="avatarUrl" class="info-avatar__img" :src="avatarUrl" alt="" />
+          <div v-else class="info-avatar__placeholder">{{ displayInitial }}</div>
+          <span class="info-avatar__edit">{{ uploading ? t('上传中...') : t('修改') }}</span>
+        </button>
+        <input
+          ref="fileInputRef"
+          type="file"
+          class="info-avatar__file-input"
+          :accept="AVATAR_ACCEPT"
+          @change="handleFileChange"
+        />
       </div>
 
       <div class="info-row">
         <span class="info-label">{{ t('昵称') }}</span>
-        <input v-model="nickname" class="info-input" />
+        <input v-model="nickname" class="info-input" maxlength="32" :placeholder="t('请输入昵称')" />
       </div>
 
-      <div class="info-row">
+      <div v-if="phone" class="info-row">
         <span class="info-label">{{ t('手机号') }}</span>
         <span class="info-value">{{ phone }}</span>
       </div>
@@ -123,11 +176,24 @@ async function handleSave() {
 }
 
 .info-avatar {
+  position: relative;
   width: 64px;
   height: 64px;
   border-radius: 50%;
   overflow: hidden;
   cursor: pointer;
+  border: none;
+  padding: 0;
+  background: transparent;
+  flex-shrink: 0;
+
+  &__img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+  }
 
   &__placeholder {
     width: 100%;
@@ -139,6 +205,22 @@ async function handleSave() {
     justify-content: center;
     font-size: $font-size-xl;
     font-weight: 700;
+  }
+
+  &__edit {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
+    font-size: 10px;
+    text-align: center;
+    line-height: 18px;
+  }
+
+  &__file-input {
+    display: none;
   }
 }
 

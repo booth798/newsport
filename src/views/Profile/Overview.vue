@@ -188,6 +188,7 @@ async function loadOverview() {
     const data = res.data || {};
     userStore.loadUserProfile().catch(() => {});
     overview.value = { ...overview.value, ...data };
+    if (data.avatarUrl) avatarDisplayUrl.value = data.avatarUrl;
     userStore.updateUserProfile({
       nickname: data.nickname || undefined,
       balance: data.balance ?? undefined,
