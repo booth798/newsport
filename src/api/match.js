@@ -188,6 +188,16 @@ export async function fetchPoolYields(marketId) {
   return get(`/pools/${marketId}/yields`);
 }
 
+/** 比赛场次统计 */
+export async function fetchMatchCounts(params = {}) {
+  return get('/matches/counts', params);
+}
+
+/** 市场分页列表统计 */
+export async function fetchMarketListCounts(params = {}) {
+  return get('/markets/list/counts', params);
+}
+
 /** 系统公开配置 */
 export async function fetchPublicConfig() {
   return get('/system/public-config');

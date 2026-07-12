@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
-import { fetchProfileOverview } from '@/api/user';
+import { fetchProfileOverview, fetchUnreadCount } from '@/api/user';
 import { useAppStore } from '@/store/modules/app';
 import { useUserStore } from '@/store/modules/user';
 import { useToast } from '@/hooks/useToast';
@@ -33,6 +33,7 @@ const showBindingModal = ref(false);
 const showLanguageSettingModal = ref(false);
 const showMessageCenterModal = ref(false);
 const avatarDisplayUrl = ref('');
+const unreadCount = ref(0);
 
 // 图片资源统一通过 getImageUrl 获取，页面只维护业务侧文件名。
 const profileImage = (name) => getImageUrl(`profile/${name}`);
@@ -184,10 +185,14 @@ async function loadOverview() {
   if (!isLoggedIn.value) return;
   try {
     loading.value = true;
-    const res = await fetchProfileOverview();
+    const [res] = await Promise.all([
+      fetchProfileOverview(),
+      loadUnreadCount(),
+    ]);
     const data = res.data || {};
     userStore.loadUserProfile().catch(() => {});
     overview.value = { ...overview.value, ...data };
+    if (data.avatarUrl) avatarDisplayUrl.value = data.avatarUrl;
     userStore.updateUserProfile({
       nickname: data.nickname || undefined,
       balance: data.balance ?? undefined,
@@ -196,6 +201,15 @@ async function loadOverview() {
     /* keep defaults / store values */
   } finally {
     loading.value = false;
+  }
+}
+
+async function loadUnreadCount() {
+  try {
+    const res = await fetchUnreadCount();
+    unreadCount.value = Number(res.data) || 0;
+  } catch {
+    unreadCount.value = 0;
   }
 }
 
@@ -394,7 +408,8 @@ onMounted(() => {
           <button v-for="item in mobileMenuItems" :key="item.label" type="button" class="profile-h5-menu__row"
             @click="handleMobileMenuClick(item)">
             <img class="profile-h5-menu__icon" :src="item.icon" width="22" height="22" alt="" />
-            <span>{{ t(item.label) }}</span>
+            <span class="profile-h5-menu__label">{{ t(item.label) }}</span>
+            <span v-if="item.action === 'service' && unreadCount > 0" class="profile-h5-menu__badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
             <i aria-hidden="true" />
           </button>
         </section>
@@ -474,7 +489,10 @@ onMounted(() => {
           <div class="profile-home__menu-grid">
             <button v-for="item in menuItems" :key="item.label" type="button" class="profile-home__menu-item"
               @click="handleMenuClick(item)">
-              <img class="profile-home__menu-icon" :src="item.icon" width="54" height="54" alt="" />
+              <span class="profile-home__menu-icon-wrap">
+                <img class="profile-home__menu-icon" :src="item.icon" width="54" height="54" alt="" />
+                <span v-if="item.action === 'service' && unreadCount > 0" class="profile-home__menu-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+              </span>
               <span class="profile-home__menu-label">{{ t(item.label) }}</span>
             </button>
           </div>
@@ -806,8 +824,7 @@ onMounted(() => {
 }
 
 .profile-h5-menu__row {
-  display: grid;
-  grid-template-columns: 26px minmax(0, 1fr) 18px;
+  display: flex;
   align-items: center;
   gap: 4px;
   width: 100%;
@@ -828,7 +845,7 @@ onMounted(() => {
   i {
     width: 8px;
     height: 8px;
-    justify-self: end;
+    flex-shrink: 0;
     border-top: 2px solid #0B346280;
     border-right: 2px solid #0B346280;
     transform: rotate(45deg);
@@ -839,6 +856,28 @@ onMounted(() => {
   display: block;
   width: 24px;
   height: 24px;
+  flex-shrink: 0;
+}
+
+.profile-h5-menu__label {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-h5-menu__badge {
+  margin-right: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #f44336;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
 }
 
 .profile-home {
@@ -1213,10 +1252,33 @@ onMounted(() => {
     }
   }
 
+  .profile-home__menu-icon-wrap {
+    position: relative;
+    display: inline-block;
+  }
+
   .profile-home__menu-icon {
     width: 54px;
     height: 54px;
     object-fit: contain;
+  }
+
+  .profile-home__menu-badge {
+    position: absolute;
+    top: -4px;
+    right: -8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: #f44336;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
   }
 
   .profile-home__menu-label {

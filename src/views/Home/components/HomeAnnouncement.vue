@@ -1,15 +1,46 @@
 <script setup>
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import noticeIconUrl from '@/assets/images/common/notice.svg?url';
 
 const { t } = useI18n();
 
-defineProps({
-  text: {
-    type: String,
-    default: '',
-  },
+const props = defineProps({
+  text: { type: String, default: '' },
 });
+
+const displayText = computed(() => props.text || t('默认公告'));
+
+const textRef = ref(null);
+const trackRef = ref(null);
+const needScroll = ref(false);
+const animDuration = ref(10);
+
+function measure() {
+  const text = textRef.value;
+  const track = trackRef.value;
+  if (!text || !track) return;
+  const textW = text.scrollWidth;
+  const trackW = track.clientWidth;
+  needScroll.value = textW > trackW;
+  if (needScroll.value) {
+    const speed = 50;
+    animDuration.value = Math.max(8, (textW + trackW) / speed);
+  }
+}
+
+watch(displayText, () => requestAnimationFrame(measure));
+
+onMounted(() => requestAnimationFrame(measure));
+
+let resizeObs = null;
+onMounted(() => {
+  if (trackRef.value && typeof ResizeObserver !== 'undefined') {
+    resizeObs = new ResizeObserver(measure);
+    resizeObs.observe(trackRef.value);
+  }
+});
+onBeforeUnmount(() => resizeObs?.disconnect());
 </script>
 
 <template>
@@ -18,7 +49,16 @@ defineProps({
       <div class="announcement__icon">
         <img class="announcement__icon-img" :src="noticeIconUrl" alt="" />
       </div>
-      <p class="announcement__text">{{ text || t('默认公告') }}</p>
+      <div ref="trackRef" class="announcement__track">
+        <p
+          ref="textRef"
+          class="announcement__text"
+          :class="{ 'announcement__text--scroll': needScroll }"
+          :style="needScroll ? { animationDuration: animDuration + 's' } : {}"
+        >
+          {{ displayText }}
+        </p>
+      </div>
     </div>
   </section>
 </template>
@@ -40,13 +80,11 @@ defineProps({
   @include web-only {
     gap: 10px;
     border-radius: 40px;
-    /* PC 稿图 1：左 20、上下 10，图标 36，总高约 56 */
     padding: 10px 24px 10px 20px;
     min-height: 56px;
     box-sizing: border-box;
   }
 
-  /* H5 稿图 4/5/6：胶囊条、30 图标、左 10 / 上下 7、图文间距 6、阴影与 14px 主色字 */
   @include mobile-only {
     gap: 6px;
     border-radius: $radius-pill;
@@ -88,6 +126,15 @@ defineProps({
     }
   }
 
+  &__track {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    height: 100%;
+  }
+
   &__text {
     margin: 0;
     color: var(--theme-primary);
@@ -99,7 +146,7 @@ defineProps({
       font-family: $font-family-base;
       font-size: $font-size-base;
       font-weight: 400;
-      line-height: 1;
+      line-height: normal;
       letter-spacing: 0;
       color: var(--announcement-text-pc);
     }
@@ -108,10 +155,30 @@ defineProps({
       font-family: $font-family-base;
       font-size: $font-size-md;
       font-weight: 400;
-      line-height: 1;
+      line-height: normal;
       letter-spacing: 0;
+    }
+
+    &--scroll {
+      display: inline-block;
+      overflow: visible;
+      text-overflow: clip;
+      animation: marquee-scroll linear infinite;
+      will-change: transform;
+
+      &:hover {
+        animation-play-state: paused;
+      }
     }
   }
 }
-</style>
 
+@keyframes marquee-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+</style>

@@ -127,6 +127,16 @@ export async function transfer(payload) {
   });
 }
 
+/** 划转记录 */
+export async function fetchTransferRecords(params = {}) {
+  return get('/wallet/transfer/records', {
+    type: params.type,
+    month: params.month,
+    pageNum: params.pageNum || 1,
+    pageSize: params.pageSize || 20,
+  });
+}
+
 function mapLedgerType(type) {
   const map = {
     DEPOSIT: 'deposit',

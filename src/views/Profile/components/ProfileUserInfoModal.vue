@@ -1,5 +1,5 @@
 <script setup>
-import { onBeforeUnmount, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { updateNickname, updateAvatar } from '@/api/user';
@@ -35,10 +35,9 @@ const toast = useToast();
 
 const formNickname = ref('');
 const previewUrl = ref('');
-const pendingAvatar = ref(null);
+const uploading = ref(false);
 const submitting = ref(false);
 const fileInputRef = ref(null);
-let blobPreviewUrl = '';
 
 watch(
   () => props.modelValue,
@@ -46,18 +45,8 @@ watch(
     if (!open) return;
     formNickname.value = props.nickname;
     previewUrl.value = props.avatarUrl;
-    pendingAvatar.value = null;
   },
 );
-
-function revokeBlobPreview() {
-  if (blobPreviewUrl) {
-    URL.revokeObjectURL(blobPreviewUrl);
-    blobPreviewUrl = '';
-  }
-}
-
-onBeforeUnmount(revokeBlobPreview);
 
 function close() {
   emit('update:modelValue', false);
@@ -67,7 +56,7 @@ function openFilePicker() {
   fileInputRef.value?.click();
 }
 
-function handleFileChange(event) {
+async function handleFileChange(event) {
   const file = event.target.files?.[0];
   event.target.value = '';
   if (!file) return;
@@ -82,10 +71,20 @@ function handleFileChange(event) {
     return;
   }
 
-  revokeBlobPreview();
-  blobPreviewUrl = URL.createObjectURL(file);
-  previewUrl.value = blobPreviewUrl;
-  pendingAvatar.value = file;
+  try {
+    uploading.value = true;
+    const uploadRes = await uploadFile(file, 'avatar');
+    const fileRef = uploadRes?.data?.ref;
+    const fileId = uploadRes?.data?.fileId;
+    if (!fileRef) throw new Error(t('上传失败'));
+    await updateAvatar(fileRef);
+    previewUrl.value = `/api/file/${fileId}`;
+    toast.success(t('头像上传成功'));
+  } catch (e) {
+    toast.error(e.message || t('头像上传失败'));
+  } finally {
+    uploading.value = false;
+  }
 }
 
 async function handleSave() {
@@ -97,11 +96,6 @@ async function handleSave() {
 
   try {
     submitting.value = true;
-    if (pendingAvatar.value) {
-      const uploadRes = await uploadFile(pendingAvatar.value, 'avatar');
-      const fileRef = uploadRes?.data?.fileId || uploadRes?.data?.url || '';
-      if (fileRef) await updateAvatar(fileRef);
-    }
     await updateNickname(trimmedNickname);
     emit('saved', {
       nickname: trimmedNickname,
@@ -119,19 +113,19 @@ async function handleSave() {
 
 <template>
   <BaseModal :model-value="modelValue" :title="t('个人资料')" :description="t('头像和昵称设置')"
-    :button-text="submitting ? t('加载中') : t('保存')" :action-disabled="submitting"
+    :button-text="submitting ? t('加载中') : t('保存')" :action-disabled="submitting || uploading"
     @update:model-value="emit('update:modelValue', $event)" @confirm="handleSave">
     <div class="profile-user-info-sheet__body">
       <div class="profile-user-info-sheet__panel card-default">
         <div class="profile-user-info-sheet__panel-head">
           <span class="profile-user-info-sheet__panel-title">{{ t('头像') }}</span>
         </div>
-        <button type="button" class="profile-user-info-sheet__upload" @click="openFilePicker">
+        <button type="button" class="profile-user-info-sheet__upload" :disabled="uploading" @click="openFilePicker">
           <img v-if="previewUrl" class="profile-user-info-sheet__preview" :src="previewUrl" alt="" />
           <img v-else class="profile-user-info-sheet__avatar-add" :src="iconProfileAvatarAdd" width="80" height="80"
             alt="" aria-hidden="true" />
         </button>
-        <p class="profile-user-info-sheet__upload-tip">{{ t('点击头像上传图片') }}</p>
+        <p class="profile-user-info-sheet__upload-tip">{{ uploading ? t('上传中...') : t('点击头像上传图片') }}</p>
         <p class="profile-user-info-sheet__upload-hint">{{ t('头像上传格式说明') }}</p>
         <input ref="fileInputRef" class="profile-user-info-sheet__file" type="file" :accept="AVATAR_ACCEPT"
           @change="handleFileChange" />

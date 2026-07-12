@@ -18,6 +18,7 @@ import MobileNavDrawer from '@/components/MobileNavDrawer.vue';
 import MessageCenterModal from '@/components/MessageCenterModal.vue';
 import { useAppStore } from '@/store/modules/app';
 import { useUserStore } from '@/store/modules/user';
+import { fetchUnreadCount } from '@/api/user';
 
 
 import iconMarketList from '@/assets/images/menu/icon_market_list.svg';
@@ -39,6 +40,26 @@ const { isLoggedIn, loggedInUserId, loggedInAssetsFormatted } = storeToRefs(user
 const hoverOpenKey = ref(null);
 const mobileDrawerOpen = ref(false);
 const messageCenterOpen = ref(false);
+const unreadCount = ref(0);
+let unreadTimer = null;
+
+async function loadUnreadCount() {
+  if (!isLoggedIn.value) { unreadCount.value = 0; return; }
+  try {
+    const res = await fetchUnreadCount();
+    unreadCount.value = Number(res.data) || 0;
+  } catch { unreadCount.value = 0; }
+}
+
+function startUnreadPolling() {
+  stopUnreadPolling();
+  if (!isLoggedIn.value) return;
+  unreadTimer = setInterval(loadUnreadCount, 30_000);
+}
+
+function stopUnreadPolling() {
+  if (unreadTimer) { clearInterval(unreadTimer); unreadTimer = null; }
+}
 
 const navMenus = {
   market: [
@@ -208,8 +229,21 @@ watch(
   { immediate: true },
 );
 
+onMounted(() => {
+  loadUnreadCount();
+});
+
 onUnmounted(() => {
   clearBeijingTimer();
+});
+
+watch(messageCenterOpen, (open) => {
+  if (!open) loadUnreadCount();
+});
+
+watch(isLoggedIn, (loggedIn) => {
+  if (loggedIn) loadUnreadCount();
+  else unreadCount.value = 0;
 });
 </script>
 
@@ -331,6 +365,7 @@ onUnmounted(() => {
         <template v-else-if="isMobileProfileHomeHeader">
           <button type="button" class="header-mobile-circle-btn" :aria-label="t('消息中心')" @click="messageCenterOpen = true">
             <span class="header-mobile-circle-btn__msg" aria-hidden="true"></span>
+            <span v-if="unreadCount > 0" class="header-mobile-circle-btn__badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
           </button>
           <RouterLink to="/profile/security" class="header-mobile-circle-btn" :aria-label="t('安全设置')">
             <span class="header-mobile-circle-btn__gear" aria-hidden="true"></span>
@@ -664,6 +699,7 @@ onUnmounted(() => {
     }
 
     .header-mobile-circle-btn {
+      position: relative;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -677,7 +713,7 @@ onUnmounted(() => {
       cursor: pointer;
       text-decoration: none;
 
-      span {
+      span:not(.header-mobile-circle-btn__badge) {
         position: relative;
         width: 20px;
         height: 20px;
@@ -713,6 +749,24 @@ onUnmounted(() => {
         background: #fff;
         box-shadow: 0 5px 0 #fff;
       }
+    }
+
+    .header-mobile-circle-btn__badge {
+      position: absolute;
+      top: -4px;
+      right: -6px;
+      min-width: 16px;
+      height: 16px;
+      padding: 0 4px;
+      border-radius: 8px;
+      background: #e74c3c;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 600;
+      line-height: 16px;
+      text-align: center;
+      pointer-events: none;
+      z-index: 1;
     }
 
     .header-mobile-circle-btn__gear {
