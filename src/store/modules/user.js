@@ -30,7 +30,7 @@ export const useUserStore = defineStore('user', {
     // localStorage 本身不具备响应式，登录态必须由 store state 承载。
     isLoggedIn: Boolean(localStorage.getItem('mysport:token')),
     customer: loadCachedCustomer(),
-    userProfile: null,
+    userProfile: {},
     vipLevels: [],
   }),
   getters: {

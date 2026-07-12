@@ -119,19 +119,25 @@ const routes = [
         component: () => import('@/views/Profile/About.vue'),
         meta: { titleKey: '关于我们' },
       },
-    ],
+      {
+        path: 'vipBenefits',
+        name: 'vip-benefits',
+        component: () => import('@/views/Profile/VipBenefits.vue'),
+        // H5 使用 VIP 页面自身的返回栏和内容布局，不复用全局头部与底部 Tab。
+        meta: {
+          titleKey: 'VIP详情',
+          requiresAuth: true,
+          guestPreview: true,
+          hideMobileHeader: true,
+        },
+      },
+    ]
   },
   {
     path: '/service',
     name: 'service',
     component: () => import('@/views/Service/index.vue'),
     meta: { titleKey: '在线客服', requiresAuth: true, guestPreview: true, bare: true },
-  },
-  {
-    path: '/vip',
-    name: 'vip',
-    component: () => import('@/views/Vip/index.vue'),
-    meta: { titleKey: 'VIP中心', requiresAuth: true, guestPreview: true },
   },
   {
     path: '/:pathMatch(.*)*',

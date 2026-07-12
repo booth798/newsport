@@ -20,7 +20,7 @@ const hideSidebarOnHome = computed(() => isProfileHome.value || isMobile.value);
       <main
         class="profile-content"
         :class="{
-          'card-default': !hideSidebarOnHome,
+          // 'card-default': !hideSidebarOnHome,
           'profile-content--home': hideSidebarOnHome,
         }"
       >

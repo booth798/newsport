@@ -243,6 +243,11 @@ function handleMenuClick(item) {
     appStore.openCustomerServiceConfirm();
     return;
   }
+  if (item.action === 'vipBenefits') {
+    // VIP 权益为独立页面，PC 与 H5 均通过同一路由进入。
+    router.push({ name: 'vip-benefits' });
+    return;
+  }
   if (item.action === 'favorites') {
     toast.info(t('暂无数据'));
     return;
