@@ -3,38 +3,26 @@ import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { computed } from 'vue';
 
-import logoUrl from '@/assets/images/common/logo_nav.svg';
+import AppSideNav from '@/components/AppSideNav.vue';
 
 const { t } = useI18n();
 const route = useRoute();
 
 const tabs = [
-  { label: '充值', to: '/finance/deposit' },
-  { label: '提领', to: '/finance/withdraw' },
-  { label: '交易记录', to: '/finance/records' },
+  { key: '/finance/deposit', label: '充值', to: '/finance/deposit' },
+  { key: '/finance/withdraw', label: '提领', to: '/finance/withdraw' },
+  { key: '/finance/records', label: '交易记录', to: '/finance/records' },
 ];
 
 const activeTab = computed(() => route.path);
 const isFinanceHome = computed(() => route.name === 'finance');
+const sidebarTabs = computed(() => tabs.map((tab) => ({ ...tab, label: t(tab.label) })));
 </script>
 
 <template>
   <div class="finance-layout">
     <div class="finance-layout__inner">
-      <aside class="finance-sidebar" aria-label="finance">
-        <img class="finance-sidebar__logo" :src="logoUrl" alt="UNIBET" width="100" height="36" />
-        <nav class="finance-side-nav">
-          <RouterLink
-            v-for="tab in tabs"
-            :key="tab.to"
-            :to="tab.to"
-            class="finance-side-nav__item"
-            :class="{ active: activeTab === tab.to }"
-          >
-            {{ t(tab.label) }}
-          </RouterLink>
-        </nav>
-      </aside>
+      <AppSideNav :items="sidebarTabs" :active-key="activeTab" aria-label="finance" />
 
       <nav v-if="!isFinanceHome" class="finance-tabs" aria-label="finance">
         <RouterLink
@@ -103,76 +91,6 @@ const isFinanceHome = computed(() => route.name === 'finance');
     max-width: 100%;
     min-height: calc(100dvh - 80px - #{$mobile-tab-bar-offset});
   }
-}
-
-.finance-sidebar {
-  @include mobile-only {
-    display: none;
-  }
-
-  @include web-only {
-    position: sticky;
-    flex: 0 0 175px;
-    min-height: min(690px, calc(100dvh - 12px));
-    padding: 26px 18px;
-    box-sizing: border-box;
-    border: 1px solid rgba(255, 255, 255, 0.9);
-    border-radius: 25px;
-    background: var(--auxiliary-1);
-    box-shadow: var(--shadow-card);
-  }
-}
-
-.finance-sidebar__logo {
-  display: block;
-  width: 100px;
-  height: 36px;
-  margin: 0 auto 34px;
-  object-fit: contain;
-}
-
-.finance-side-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.finance-side-nav__item {
-  position: relative;
-  display: flex;
-  align-items: center;
-  height: 52px;
-  padding: 0 18px;
-  border-radius: 10px;
-  color: var(--theme-text);
-  font-size: 15px;
-  font-weight: 500;
-  line-height: 1;
-  text-decoration: none;
-  transition:
-    background 0.18s ease,
-    color 0.18s ease;
-}
-
-.finance-side-nav__item::before {
-  content: '';
-  position: absolute;
-  left: -1px;
-  top: 10px;
-  bottom: 10px;
-  width: 4px;
-  border-radius: 0 4px 4px 0;
-  background: transparent;
-}
-
-.finance-side-nav__item:hover,
-.finance-side-nav__item.active {
-  background: #e8f2ff;
-  color: var(--theme-primary);
-}
-
-.finance-side-nav__item.active::before {
-  background: var(--theme-primary);
 }
 
 .finance-tabs {
