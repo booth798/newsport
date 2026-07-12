@@ -406,7 +406,7 @@ export default {
   返回首页: 'Back to Home',
 
   // Announcement
-  默认公告: 'Customer service hours for Greater China: 09:00-21:00. Please handle business during this time for a better experience. Thank you for your cooperation.',
+  默认公告: '',
 
   // Toast
   复制成功: 'Copied',

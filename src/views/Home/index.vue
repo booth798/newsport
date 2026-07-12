@@ -10,22 +10,37 @@ const { t } = useI18n();
 const vipLevel = ref(0);
 const homeMatches = ref([]);
 const homeBanners = ref([]);
+const announcementText = ref('');
 
 onMounted(async () => {
   try {
-    const { fetchHomeData, normalizeHomeMarkets } = await import('@/api/match');
-    const res = await fetchHomeData();
-    const data = res.data || {};
-    if (data.vip) {
-      vipLevel.value = data.vip.level || 0;
-    }
-    if (data.hotMarkets) {
-      homeMatches.value = normalizeHomeMarkets(data.hotMarkets);
-    }
-    homeBanners.value = data.banners || [];
-  } catch { /* non-critical — HomeHotEvents 会自行加载 */ }
-});
+    const { fetchHomeData, normalizeHomeMarkets, fetchPublicConfig } = await import('@/api/match');
 
+    const [homeRes, configRes] = await Promise.allSettled([
+      fetchHomeData(),
+      fetchPublicConfig(),
+    ]);
+
+    if (homeRes.status === 'fulfilled') {
+      const data = homeRes.value.data || {};
+      if (data.vip) vipLevel.value = data.vip.level || 0;
+      if (data.hotMarkets) homeMatches.value = normalizeHomeMarkets(data.hotMarkets);
+      homeBanners.value = data.banners || [];
+    }
+
+    if (configRes.status === 'fulfilled') {
+      const raw = configRes.value.data || configRes.value;
+      let hours = '';
+      if (Array.isArray(raw)) {
+        const item = raw.find(c => c.key === 'customer-service.hours' || c.configKey === 'customer-service.hours');
+        hours = item?.value || item?.configValue || '';
+      } else if (raw && typeof raw === 'object') {
+        hours = raw['customer-service.hours'] || raw['customer-service-hours'] || raw.customerServiceHours || '';
+      }
+      if (hours) announcementText.value = hours;
+    }
+  } catch { /* non-critical */ }
+});
 </script>
 
 <template>
@@ -33,7 +48,7 @@ onMounted(async () => {
     <HomeBanner :banners="homeBanners" />
 
     <div class="home__inner">
-      <HomeAnnouncement />
+      <HomeAnnouncement :text="announcementText" />
       <HomeHotEvents :preloaded-matches="homeMatches" />
     </div>
   </div>

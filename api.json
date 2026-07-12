@@ -74,6 +74,10 @@
             "description": "客户端钱包余额查询"
         },
         {
+            "name": "C端-元数据",
+            "description": "错误码等客户端元数据字典（无需登录）"
+        },
+        {
             "name": "C端-文件下载",
             "description": "客户端按文件ID鉴权下载文件"
         },
@@ -213,6 +217,53 @@
                             "*/*": {
                                 "schema": {
                                     "$ref": "#/components/schemas/RVoid"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "X-Customer-Token": []
+                    }
+                ]
+            }
+        },
+        "/api/customer/me/nickname": {
+            "put": {
+                "tags": [
+                    "C端-个人中心"
+                ],
+                "summary": "更改昵称（展示名，不影响登录 username）。",
+                "description": "更改昵称（展示名，不影响登录 username）。<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+                "operationId": "updateNickname",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/NicknameUpdateReq"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RCustomerVO"
                                 }
                             }
                         }
@@ -1723,6 +1774,116 @@
                 ]
             }
         },
+        "/api/wallet/transfer/records": {
+            "get": {
+                "tags": [
+                    "C端-划转"
+                ],
+                "summary": "会员互转记录列表",
+                "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+                "operationId": "records",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "month",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "pageNum",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32"
+                        }
+                    },
+                    {
+                        "name": "pageSize",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32"
+                        }
+                    }
+                ],
+                "responses": {
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RTransferRecordsVO"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "X-Customer-Token": []
+                    }
+                ]
+            }
+        },
+        "/api/wallet/locked": {
+            "get": {
+                "tags": [
+                    "C端-钱包"
+                ],
+                "summary": "查询锁定钱包分项",
+                "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+                "operationId": "locked",
+                "responses": {
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RLockedWalletVO"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "X-Customer-Token": []
+                    }
+                ]
+            }
+        },
         "/api/vip/me": {
             "get": {
                 "tags": [
@@ -1784,7 +1945,7 @@
                         "content": {
                             "*/*": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/RListVipLevelConfig"
+                                    "$ref": "#/components/schemas/RListVipLevelPublicVO"
                                 }
                             }
                         }
@@ -2125,6 +2286,38 @@
                 ]
             }
         },
+        "/api/meta/error-codes": {
+            "get": {
+                "tags": [
+                    "C端-元数据"
+                ],
+                "summary": "业务错误码字典",
+                "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+                "operationId": "errorCodes",
+                "responses": {
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RListErrorCodeVO"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/messages": {
             "get": {
                 "tags": [
@@ -2242,8 +2435,8 @@
                 "tags": [
                     "C端-比赛"
                 ],
-                "summary": "比赛列表（league / date 过滤 + 分页）。",
-                "description": "比赛列表（league / date 过滤 + 分页）。<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+                "summary": "比赛列表（league / date / phase 过滤 + 分页）。",
+                "description": "比赛列表（league / date / phase 过滤 + 分页）。<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
                 "operationId": "matches",
                 "parameters": [
                     {
@@ -2347,6 +2540,48 @@
                             "*/*": {
                                 "schema": {
                                     "$ref": "#/components/schemas/RListMatchVO"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/matches/counts": {
+            "get": {
+                "tags": [
+                    "C端-比赛"
+                ],
+                "summary": "赛事阶段各 tab 数量（全部/进行中/未开赛/已结束）。",
+                "description": "赛事阶段各 tab 数量（全部/进行中/未开赛/已结束）。<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+                "operationId": "counts",
+                "parameters": [
+                    {
+                        "name": "req",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/MatchListReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RMatchPhaseCountsVO"
                                 }
                             }
                         }
@@ -2524,6 +2759,48 @@
                 }
             }
         },
+        "/api/markets/list/counts": {
+            "get": {
+                "tags": [
+                    "C端-赛事市场"
+                ],
+                "summary": "赛事日 tab 角标数量（全部 / 今日 / 明日），尊重 league / teamName 过滤，一次查齐。",
+                "description": "赛事日 tab 角标数量（全部 / 今日 / 明日），尊重 league / teamName 过滤，一次查齐。<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+                "operationId": "listCounts",
+                "parameters": [
+                    {
+                        "name": "query",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/MarketListQuery"
+                        }
+                    }
+                ],
+                "responses": {
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RMarketDayCountsVO"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/ledger": {
             "get": {
                 "tags": [
@@ -2559,6 +2836,43 @@
                             "*/*": {
                                 "schema": {
                                     "$ref": "#/components/schemas/RIPageLedgerVO"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "X-Customer-Token": []
+                    }
+                ]
+            }
+        },
+        "/api/ledger/summary": {
+            "get": {
+                "tags": [
+                    "C端-资金流水"
+                ],
+                "summary": "账务汇总（总收入/总支出/净收益）",
+                "description": "<br><h3>访问权限</h3><br>> **权限策略**：需要登录<br><br>",
+                "operationId": "summary",
+                "responses": {
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RLedgerSummaryVO"
                                 }
                             }
                         }
@@ -3288,6 +3602,47 @@
                 }
             }
         },
+        "/api/asset/upload": {
+            "get": {
+                "tags": [
+                    "C端-公开静态资源"
+                ],
+                "summary": "后台上传素材（banner 等）的匿名直载。\n\n ",
+                "description": "后台上传素材（banner 等）的匿名直载。\n\n <p>{@link org.dromara.mysport.upload.controller.admin.AdminLocalUploadController org.dromara.mysport.upload.controller.admin.AdminLocalUploadController} 落盘 key 形如\n <code>admin/{yyyy-MM-dd</code>/{hex}.{ext}}，上传后返回 <code>/api/asset/upload?k={key</code>} 作为 imageUrl。\n 走 /api 前缀是因为 C 端 app 只代理 /api（不代理 /admin），banner 图要在 app 首页直载。\n key 里的随机 16 字节 hex 足够 unguessable；仍做前缀 + \"..\" 防穿越校验。<br><h3>访问权限</h3><br>> **权限策略**：忽略权限检查<br>",
+                "operationId": "upload_1",
+                "parameters": [
+                    {
+                        "name": "k",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "图片字节流（按扩展推断 Content-Type，带 nosniff + 1 天缓存）"
+                    },
+                    "400": {
+                        "description": "k 为空 / 含 \"..\" / 不以 admin/ 开头"
+                    },
+                    "404": {
+                        "description": "对应存储 key 不存在"
+                    }
+                }
+            }
+        },
         "/api/asset/logo/{name}": {
             "get": {
                 "tags": [
@@ -3325,6 +3680,47 @@
                     },
                     "404": {
                         "description": "对应存储 key 的图标不存在"
+                    }
+                }
+            }
+        },
+        "/api/asset/avatar/{name}": {
+            "get": {
+                "tags": [
+                    "C端-公开静态资源"
+                ],
+                "summary": "默认头像匿名直载。文件由运维手工放置于 <code>{upload.local-root</code>/avatar/}（如 avatar1.png ~ avatar10.png），\n 注册时随机落库 <code>/api/asset/avatar/avatar{n</code>.png}，C 端 img 相对路径直载。",
+                "description": "默认头像匿名直载。文件由运维手工放置于 <code>{upload.local-root</code>/avatar/}（如 avatar1.png ~ avatar10.png），\n 注册时随机落库 <code>/api/asset/avatar/avatar{n</code>.png}，C 端 img 相对路径直载。<br><h3>访问权限</h3><br>> **权限策略**：忽略权限检查<br>",
+                "operationId": "avatar",
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "图片字节流（按扩展推断 Content-Type，带 nosniff + 7 天缓存）"
+                    },
+                    "400": {
+                        "description": "name 不匹配 [a-zA-Z0-9_-]{1,64}.<ext> 格式"
+                    },
+                    "404": {
+                        "description": "对应存储 key 的头像不存在"
                     }
                 }
             }
@@ -3498,26 +3894,21 @@
                     "oldPassword"
                 ]
             },
-            "ContactUpdateReq": {
+            "NicknameUpdateReq": {
                 "type": "object",
-                "description": "联系方式绑定（直接输入：微信 / QQ / 邮箱）。\n\n <p>三字段均可选；只更新非 null 字段（传 \"\" 视为清空解绑）。",
+                "description": "更改昵称（展示名）。独立于登录 username，不影响登录 / 唯一约束。",
                 "properties": {
-                    "email": {
+                    "nickname": {
                         "type": "string",
-                        "format": "email",
-                        "maxLength": 128,
-                        "minLength": 0
-                    },
-                    "wechat": {
-                        "type": "string",
-                        "maxLength": 64,
-                        "minLength": 0
-                    },
-                    "qq": {
-                        "type": "string",
-                        "pattern": "^$|^[0-9]{5,15}$"
+                        "description": "昵称（1-20 字符）",
+                        "example": "小爱",
+                        "maxLength": 20,
+                        "minLength": 1
                     }
-                }
+                },
+                "required": [
+                    "nickname"
+                ]
             },
             "CustomerVO": {
                 "type": "object",
@@ -3534,8 +3925,13 @@
                     },
                     "username": {
                         "type": "string",
-                        "description": "用户名",
+                        "description": "用户名（登录标识，不可改）",
                         "example": "alice"
+                    },
+                    "nickname": {
+                        "type": "string",
+                        "description": "昵称（展示名，可改；空则前端回退 username）",
+                        "example": "小爱"
                     },
                     "email": {
                         "type": "string",
@@ -3598,6 +3994,27 @@
                     },
                     "data": {
                         "$ref": "#/components/schemas/CustomerVO"
+                    }
+                }
+            },
+            "ContactUpdateReq": {
+                "type": "object",
+                "description": "联系方式绑定（直接输入：微信 / QQ / 邮箱）。\n\n <p>三字段均可选；只更新非 null 字段（传 \"\" 视为清空解绑）。",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "maxLength": 128,
+                        "minLength": 0
+                    },
+                    "wechat": {
+                        "type": "string",
+                        "maxLength": 64,
+                        "minLength": 0
+                    },
+                    "qq": {
+                        "type": "string",
+                        "pattern": "^$|^[0-9]{5,15}$"
                     }
                 }
             },
@@ -3872,6 +4289,10 @@
                         "type": "string",
                         "format": "date-time",
                         "description": "比赛开赛时间（订单列表「对阵」下展示，让后台看出是哪天的比赛）。"
+                    },
+                    "matchScore": {
+                        "type": "string",
+                        "description": "比赛比分（按 period 取 FT/HT 终分「h:a」；未出结果为 null）。账务/买入明细展示用。"
                     },
                     "period": {
                         "type": "string"
@@ -4991,6 +5412,141 @@
                     }
                 }
             },
+            "RTransferRecordsVO": {
+                "type": "object",
+                "description": "响应信息主体",
+                "properties": {
+                    "code": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "msg": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "$ref": "#/components/schemas/TransferRecordsVO"
+                    }
+                }
+            },
+            "TransferRecordVO": {
+                "type": "object",
+                "description": "会员互转记录",
+                "properties": {
+                    "transferId": {
+                        "type": "string",
+                        "description": "划转流水 ID（雪花号，字符串）",
+                        "example": "1234567890123456789"
+                    },
+                    "direction": {
+                        "type": "string",
+                        "description": "方向：out=会员转出 / in=会员转入",
+                        "example": "out"
+                    },
+                    "typeLabel": {
+                        "type": "string",
+                        "description": "方向中文标签",
+                        "example": "会员转出"
+                    },
+                    "amount": {
+                        "type": "number",
+                        "description": "金额（正数展示）",
+                        "example": 1000.0
+                    },
+                    "counterpartyNo": {
+                        "type": "string",
+                        "description": "对方账户号（转出=收款方，转入=付款方）",
+                        "example": "U100023"
+                    },
+                    "balanceAfter": {
+                        "type": "number",
+                        "description": "变动后余额",
+                        "example": 9000.0
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "发生时间"
+                    }
+                }
+            },
+            "TransferRecordsVO": {
+                "type": "object",
+                "description": "会员互转记录列表 + 合计",
+                "properties": {
+                    "records": {
+                        "type": "array",
+                        "description": "当前页记录",
+                        "items": {
+                            "$ref": "#/components/schemas/TransferRecordVO"
+                        }
+                    },
+                    "total": {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "总条数",
+                        "example": 42
+                    },
+                    "pageNum": {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "当前页码",
+                        "example": 1
+                    },
+                    "pageSize": {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "每页条数",
+                        "example": 20
+                    },
+                    "totalAmount": {
+                        "type": "number",
+                        "description": "合计金额（当前筛选下全部记录金额之和，绝对值求和）",
+                        "example": 1.3764059E7
+                    }
+                }
+            },
+            "LockedWalletVO": {
+                "type": "object",
+                "description": "锁定钱包分项视图（设计见 2026-07-07-locked-wallet-design.md）。\n\n <p><code>total</code> = 钱包 frozen（锁定总额）。三分项之和应等于 total（对账不变式）。",
+                "properties": {
+                    "total": {
+                        "type": "number",
+                        "description": "锁定总额（= 钱包 frozen）",
+                        "example": 300.0
+                    },
+                    "betPending": {
+                        "type": "number",
+                        "description": "待成交下注（预约单未撮合）",
+                        "example": 100.0
+                    },
+                    "betInWindow": {
+                        "type": "number",
+                        "description": "未结算下注（即时成交单本金锁到结算；其中 5 分钟内的可撤）",
+                        "example": 150.0
+                    },
+                    "withdraw": {
+                        "type": "number",
+                        "description": "处理中提现（审核/已批/打款中）",
+                        "example": 50.0
+                    }
+                }
+            },
+            "RLockedWalletVO": {
+                "type": "object",
+                "description": "响应信息主体",
+                "properties": {
+                    "code": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "msg": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "$ref": "#/components/schemas/LockedWalletVO"
+                    }
+                }
+            },
             "RVipMeVO": {
                 "type": "object",
                 "description": "响应信息主体",
@@ -5037,10 +5593,21 @@
                         "format": "int32",
                         "description": "下一等级（已是最高等级时为 null）",
                         "example": 2
+                    },
+                    "freeWithdrawCount": {
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "当前等级：每月免手续费提现次数（VIP特权-提现优惠；无配置时 null）",
+                        "example": 5
+                    },
+                    "singleWithdrawLimit": {
+                        "type": "number",
+                        "description": "当前等级：单笔提现限额（VIP特权-提现限额；无配置时 null）",
+                        "example": 500000.0
                     }
                 }
             },
-            "RListVipLevelConfig": {
+            "RListVipLevelPublicVO": {
                 "type": "object",
                 "description": "响应信息主体",
                 "properties": {
@@ -5054,59 +5621,46 @@
                     "data": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/VipLevelConfig"
+                            "$ref": "#/components/schemas/VipLevelPublicVO"
                         }
                     }
                 }
             },
-            "VipLevelConfig": {
+            "VipLevelPublicVO": {
                 "type": "object",
-                "description": "VIP 等级配置（M12.A）。level 1..5。",
+                "description": "C 端 VIP 等级公开信息",
                 "properties": {
                     "level": {
                         "type": "integer",
-                        "format": "int32"
+                        "format": "int32",
+                        "description": "VIP 等级",
+                        "example": 8
                     },
                     "name": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "等级名称",
+                        "example": "VIP8"
                     },
                     "minTotalDeposit": {
-                        "type": "number"
-                    },
-                    "minTotalBet": {
-                        "type": "number"
-                    },
-                    "minWithdraw": {
-                        "type": "number"
+                        "type": "number",
+                        "description": "总额度门槛（持有额=余额+冻结 达此值即达该级）",
+                        "example": 1000000.0
                     },
                     "maxWithdraw": {
-                        "type": "number"
-                    },
-                    "dailyWithdrawCount": {
-                        "type": "integer",
-                        "format": "int32"
-                    },
-                    "withdrawFeeRate": {
-                        "type": "number"
-                    },
-                    "maxOrderAmount": {
-                        "type": "number"
-                    },
-                    "maxPerMatch": {
-                        "type": "number"
-                    },
-                    "maxPerDay": {
-                        "type": "number"
-                    },
-                    "rebateRate": {
-                        "type": "number"
-                    },
-                    "minPosition": {
                         "type": "number",
-                        "description": "Feature #6：仓位定级阈值（余额+未结算注单额 ≥ 此值即达该级）；NULL=该级不参与仓位定级。"
+                        "description": "单笔提现限额",
+                        "example": 500000.0
+                    },
+                    "freeWithdrawCount": {
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "每月免手续费提现次数（按月计，不累计）",
+                        "example": 5
                     },
                     "iconUrl": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "等级图标 URL",
+                        "example": "/api/asset/upload?k=admin/2026-07-10/xxx.png"
                     }
                 }
             },
@@ -5157,10 +5711,20 @@
                         "description": "比分（字符串，主:客）",
                         "example": "1:0"
                     },
+                    "betMode": {
+                        "type": "string",
+                        "description": "投注模式: correct_score=正波胆(押中该比分赢) / reverse=反波胆(押该比分不出现赢)",
+                        "example": "reverse"
+                    },
                     "yieldPct": {
                         "type": "number",
-                        "description": "当前收益率 yield（百分比）",
+                        "description": "当前收益率 yield（百分比）。反波胆下为「预估收益率」(结算按实际结果定)",
                         "example": 12.5
+                    },
+                    "hitRate": {
+                        "type": "number",
+                        "description": "反波胆命中率%（=1−该比分概率；仅 reverse 下发）",
+                        "example": 97.3
                     },
                     "initialProb": {
                         "type": "number",
@@ -5375,6 +5939,46 @@
                     }
                 }
             },
+            "ErrorCodeVO": {
+                "type": "object",
+                "description": "业务错误码字典项",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "description": "稳定错误码（出现在响应体 msg 字段）",
+                        "example": "ACCOUNT_OR_PASSWORD_WRONG"
+                    },
+                    "zhCN": {
+                        "type": "string",
+                        "description": "简体中文文案",
+                        "example": "账号或密码错误"
+                    },
+                    "enUS": {
+                        "type": "string",
+                        "description": "英文文案",
+                        "example": "Incorrect account or password"
+                    }
+                }
+            },
+            "RListErrorCodeVO": {
+                "type": "object",
+                "description": "响应信息主体",
+                "properties": {
+                    "code": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "msg": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ErrorCodeVO"
+                        }
+                    }
+                }
+            },
             "MessagePageResp": {
                 "type": "object",
                 "properties": {
@@ -5486,6 +6090,17 @@
                     },
                     "status": {
                         "type": "string"
+                    },
+                    "phase": {
+                        "type": "string",
+                        "description": "赛事阶段：all/live/upcoming/finished（优先于 status）",
+                        "enum": [
+                            "all",
+                            "live",
+                            "upcoming",
+                            "finished"
+                        ],
+                        "example": "live"
                     },
                     "hot": {
                         "type": "boolean"
@@ -5699,6 +6314,52 @@
                     }
                 }
             },
+            "MatchPhaseCountsVO": {
+                "type": "object",
+                "description": "赛事阶段各 tab 的数量",
+                "properties": {
+                    "all": {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "全部",
+                        "example": 139
+                    },
+                    "live": {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "进行中",
+                        "example": 12
+                    },
+                    "upcoming": {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "未开赛",
+                        "example": 93
+                    },
+                    "finished": {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "已结束",
+                        "example": 34
+                    }
+                }
+            },
+            "RMatchPhaseCountsVO": {
+                "type": "object",
+                "description": "响应信息主体",
+                "properties": {
+                    "code": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "msg": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "$ref": "#/components/schemas/MatchPhaseCountsVO"
+                    }
+                }
+            },
             "MarketSummaryVO": {
                 "type": "object",
                 "description": "客户端市场摘要 (列表 + 详情头部用)。\n\n <p>对齐 design doc §3 UI 字段：联赛 / 主队 / 客队 / 开赛时间 / 倒计时 / 总成交量。\n <p>由 MarketSummaryMapper 通过 t_market + t_match + t_league + t_team 多 join 一次返回，\n    避免客户端 N+1 查询。",
@@ -5712,6 +6373,10 @@
                     },
                     "status": {
                         "type": "string"
+                    },
+                    "betMode": {
+                        "type": "string",
+                        "description": "投注模式：correct_score 正波胆 / reverse 反波胆固定赔率。前端据此渲染比分赔率。"
                     },
                     "feeRate": {
                         "type": "number"
@@ -5779,6 +6444,11 @@
                         "type": "integer",
                         "format": "int32"
                     },
+                    "elapsedMinute": {
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "进行中已进行分钟数（matchStatus=inplay/ht 时有值，随赛果 ~30s 刷新）。"
+                    },
                     "leagueId": {
                         "type": "string",
                         "description": "联赛 ID（雪花 ID，字符串）"
@@ -5820,6 +6490,13 @@
                     },
                     "awayTeamLogoUrl": {
                         "type": "string"
+                    },
+                    "scores": {
+                        "type": "array",
+                        "description": "该市场全部比分的赔率行（按 score 排序）；前端自选前 3 默认展示",
+                        "items": {
+                            "$ref": "#/components/schemas/ScoreLine"
+                        }
                     }
                 }
             },
@@ -5839,6 +6516,26 @@
                         "items": {
                             "$ref": "#/components/schemas/MarketSummaryVO"
                         }
+                    }
+                }
+            },
+            "ScoreLine": {
+                "type": "object",
+                "description": "单档比分赔率行（轻量）：score + 收益率 + 反波胆命中率。",
+                "properties": {
+                    "score": {
+                        "type": "string"
+                    },
+                    "yieldPct": {
+                        "type": "number",
+                        "description": "收益率%（currentYield）：正波胆=池式收益，反波胆=固定赔率收益。"
+                    },
+                    "hitRate": {
+                        "type": "number",
+                        "description": "反波胆命中率%（=1−真实概率×100）；正波胆为 null。"
+                    },
+                    "suspended": {
+                        "type": "boolean"
                     }
                 }
             },
@@ -5895,9 +6592,24 @@
                         "type": "string",
                         "description": "联赛过滤（可选）：匹配 t_league.name / short_name，模糊。"
                     },
+                    "teamName": {
+                        "type": "string",
+                        "description": "球队名搜索（主/客队模糊匹配）",
+                        "example": "曼城"
+                    },
                     "date": {
                         "type": "string",
-                        "description": "开赛日期过滤（可选）：格式 yyyy-MM-dd，按 kickoff_at 当日（含）筛选。"
+                        "description": "开赛日期过滤（可选）：格式 yyyy-MM-dd，按 kickoff_at 当日（含）筛选（平台时区）。"
+                    },
+                    "day": {
+                        "type": "string",
+                        "description": "赛事日：all=全部 / today=今日 / tomorrow=明日（平台时区计算）",
+                        "enum": [
+                            "all",
+                            "today",
+                            "tomorrow"
+                        ],
+                        "example": "today"
                     },
                     "size": {
                         "type": "integer",
@@ -5952,6 +6664,46 @@
                     },
                     "data": {
                         "$ref": "#/components/schemas/IPageMarketSummaryVO"
+                    }
+                }
+            },
+            "MarketDayCountsVO": {
+                "type": "object",
+                "description": "赛事日筛选各 tab 的开盘市场数量",
+                "properties": {
+                    "all": {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "全部赛事数量",
+                        "example": 139
+                    },
+                    "today": {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "今日赛事数量",
+                        "example": 34
+                    },
+                    "tomorrow": {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "明日赛事数量",
+                        "example": 105
+                    }
+                }
+            },
+            "RMarketDayCountsVO": {
+                "type": "object",
+                "description": "响应信息主体",
+                "properties": {
+                    "code": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "msg": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "$ref": "#/components/schemas/MarketDayCountsVO"
                     }
                 }
             },
@@ -6086,6 +6838,18 @@
                         "type": "string",
                         "format": "date-time",
                         "description": "关联赛事开赛时间（refType=order 时富化）。"
+                    },
+                    "platform": {
+                        "type": "string",
+                        "description": "平台名/渠道：deposit→充值渠道(channel)，withdraw→提现方式(bindingType)；其余 null。"
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "底层单据状态：order→订单状态(placed/settled_won/...)，deposit/withdraw→其单据状态；其余 null。"
+                    },
+                    "matchScore": {
+                        "type": "string",
+                        "description": "比赛比分（refType=order 富化，按 period 取 FT/HT 终分「h:a」）；未出结果则 null。"
                     }
                 }
             },
@@ -6102,6 +6866,43 @@
                     },
                     "data": {
                         "$ref": "#/components/schemas/IPageLedgerVO"
+                    }
+                }
+            },
+            "LedgerSummaryVO": {
+                "type": "object",
+                "description": "账务汇总（现金流口径，账务页头部三数）。\n\n <p>总收入 = 累计充值 + 累计派彩；总支出 = 累计提现 + 累计投注；净收益 = 收入 − 支出。\n 取钱包累计字段（totalDeposit/totalPayout/totalWithdraw/totalBet），无需聚合 ledger。",
+                "properties": {
+                    "totalIncome": {
+                        "type": "number",
+                        "description": "总收入（累计充值+累计派彩）",
+                        "example": 5000.0
+                    },
+                    "totalExpense": {
+                        "type": "number",
+                        "description": "总支出（累计提现+累计投注）",
+                        "example": 3000.0
+                    },
+                    "netProfit": {
+                        "type": "number",
+                        "description": "净收益（总收入−总支出）",
+                        "example": 2000.0
+                    }
+                }
+            },
+            "RLedgerSummaryVO": {
+                "type": "object",
+                "description": "响应信息主体",
+                "properties": {
+                    "code": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "msg": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "$ref": "#/components/schemas/LedgerSummaryVO"
                     }
                 }
             },
@@ -6264,6 +7065,11 @@
                     },
                     "status": {
                         "type": "string"
+                    },
+                    "month": {
+                        "type": "string",
+                        "description": "按月筛选 yyyy-MM（空=全部）",
+                        "example": "2026-07"
                     },
                     "size": {
                         "type": "integer",
