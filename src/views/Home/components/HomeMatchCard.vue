@@ -101,7 +101,7 @@ const kickoffAt = computed(() => props.match.kickoffAt);
 const { text: liveCountdown, minutes: liveCountdownMinutes, isOver: countdownOver } = useCountdown(kickoffAt);
 
 const detailCountdownLabel = computed(() => {
-  if (liveCountdown.value) return liveCountdownMinutes.value;
+  if (liveCountdown.value) return liveCountdown.value;
   return '';
 });
 
@@ -730,7 +730,7 @@ const topPools = computed(() => {
   &__pill--detail {
     @include mobile-only {
       flex-shrink: 0;
-      width: 92px;
+      width: auto;
       height: 24px;
       min-height: 24px;
       padding: 0 8px;
@@ -992,7 +992,7 @@ const topPools = computed(() => {
     min-height: 38px;
 
     &--m {
-      width: 120px;
+      width: auto;
       height: 24px;
       min-height: 24px;
       padding: 0 8px;
@@ -1000,11 +1000,11 @@ const topPools = computed(() => {
       border-radius: 6px;
       background: rgba(31, 124, 255, 0.15);
       justify-content: center;
-      overflow: hidden;
+      white-space: nowrap;
     }
 
     &--w {
-      width: 140px;
+      width: auto;
       height: 26px;
       min-height: 26px;
       padding: 0 10px;
@@ -1012,7 +1012,7 @@ const topPools = computed(() => {
       border-radius: 6px;
       background: rgba(31, 124, 255, 0.15);
       justify-content: center;
-      overflow: hidden;
+      white-space: nowrap;
     }
   }
 
