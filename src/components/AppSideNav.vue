@@ -20,6 +20,7 @@ function selectItem(item) {
   // 路由项由 RouterLink 处理跳转；非路由项通过事件交给页面切换内容。
   if (!item.to) emit('select', item.key);
 }
+
 </script>
 
 <template>

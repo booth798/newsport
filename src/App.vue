@@ -23,6 +23,11 @@ function getRouteDepth(path) {
   return path.replace(/\/$/, '').split('/').filter(Boolean).length;
 }
 
+function getRootRouteKey(viewRoute) {
+  // 顶层视图只按最外层路由记录复用，避免子路由切换时重建父布局与侧栏。
+  return viewRoute.matched[0]?.path || viewRoute.path;
+}
+
 const appStore = useAppStore();
 const userStore = useUserStore();
 const route = useRoute();
@@ -131,7 +136,7 @@ useWalletWs({
   <main class="main-content" :class="{ 'main-content--bare': isBarePage }">
     <RouterView v-slot="{ Component, route: viewRoute }">
       <Transition :name="transitionName" mode="out-in">
-        <component :is="Component" :key="viewRoute.path" />
+        <component :is="Component" :key="getRootRouteKey(viewRoute)" />
       </Transition>
     </RouterView>
   </main>
