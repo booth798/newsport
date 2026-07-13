@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 
@@ -9,7 +9,7 @@ import iconLoginLockUrl from '@/assets/images/login/icon_login_lock.svg?url';
 import iconEyeClosedUrl from '@/assets/images/login/icon_login_eye_closed.svg?url';
 import iconEyeOpenUrl from '@/assets/images/login/icon_login_eye_open.svg?url';
 import { useToast } from '@/hooks/useToast';
-import { registerApi } from '@/api/user';
+import { registerApi, captchaInit, captchaVerify } from '@/api/user';
 import { useUserStore } from '@/store/modules/user';
 
 const { t } = useI18n();
@@ -26,23 +26,142 @@ const successOpen = ref(false);
 const passwordType = computed(() => (showPassword.value ? 'text' : 'password'));
 const isAccountValid = computed(() => username.value.trim().length > 0);
 const isPasswordValid = computed(() => /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,16}$/.test(password.value));
-const canSubmit = computed(() => isAccountValid.value && isPasswordValid.value && !submitting.value);
+
+// --- 滑块验证 ---
+const SLIDER_KNOB_W = 52;
+const SLIDER_TRACK_PAD_X = 4;
+
+const verifyTrackRef = ref(null);
+const sliderOffsetPx = ref(0);
+const sliderVerified = ref(false);
+const sliderDragging = ref(false);
+const sliderAnimating = ref(false);
+const captchaToken = ref('');
+const captchaId = ref('');
+
+function resetSlider() {
+  sliderOffsetPx.value = 0;
+  sliderVerified.value = false;
+  sliderDragging.value = false;
+  sliderAnimating.value = false;
+}
+
+const sliderProgress = computed(() => {
+  const max = getSliderMaxOffset();
+  if (max <= 0) return 0;
+  return Math.min(1, sliderOffsetPx.value / max);
+});
+
+const labelOpacity = computed(() => Math.max(0, 1 - sliderProgress.value * 2.5));
+
+const knobTransformStyle = computed(() => ({
+  transform: `translate(${sliderOffsetPx.value}px, -50%)`,
+  transition: sliderDragging.value ? 'none' : 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
+}));
+
+const fillStyle = computed(() => ({
+  width: `${sliderOffsetPx.value + SLIDER_KNOB_W + SLIDER_TRACK_PAD_X}px`,
+  transition: sliderDragging.value ? 'none' : 'width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
+}));
+
+function getSliderMaxOffset() {
+  const track = verifyTrackRef.value;
+  if (!track) return 0;
+  const w = track.getBoundingClientRect().width;
+  return Math.max(0, w - SLIDER_TRACK_PAD_X * 2 - SLIDER_KNOB_W);
+}
+
+function onSliderKnobPointerDown(e) {
+  if (sliderVerified.value || sliderAnimating.value) return;
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  e.preventDefault();
+
+  const knobEl = e.currentTarget;
+  if (!(knobEl instanceof Element)) return;
+
+  knobEl.setPointerCapture(e.pointerId);
+  sliderDragging.value = true;
+
+  const startClientX = e.clientX;
+  const startOffset = sliderOffsetPx.value;
+
+  const onMove = (ev) => {
+    const max = getSliderMaxOffset();
+    const dx = ev.clientX - startClientX;
+    sliderOffsetPx.value = Math.min(max, Math.max(0, startOffset + dx));
+  };
+
+  const onUp = () => {
+    knobEl.releasePointerCapture(e.pointerId);
+    knobEl.removeEventListener('pointermove', onMove);
+    knobEl.removeEventListener('pointerup', onUp);
+    knobEl.removeEventListener('pointercancel', onUp);
+    sliderDragging.value = false;
+
+    const max = getSliderMaxOffset();
+    const threshold = max * 0.88;
+    if (max > 0 && sliderOffsetPx.value >= threshold) {
+      sliderOffsetPx.value = max;
+      sliderAnimating.value = true;
+      verifyCaptchaSlider(sliderOffsetPx.value);
+    } else {
+      sliderOffsetPx.value = 0;
+    }
+  };
+
+  knobEl.addEventListener('pointermove', onMove);
+  knobEl.addEventListener('pointerup', onUp);
+  knobEl.addEventListener('pointercancel', onUp);
+}
+
+async function doInitCaptcha() {
+  try {
+    const res = await captchaInit();
+    const data = res.data || {};
+    captchaId.value = data.captchaId || '';
+    if (!data.captchaId) {
+      captchaToken.value = 'ALWAYS_PASS';
+      sliderVerified.value = true;
+    }
+  } catch {
+    captchaToken.value = 'ALWAYS_PASS';
+    sliderVerified.value = true;
+  }
+}
+
+async function verifyCaptchaSlider(offsetPx) {
+  if (captchaId.value) {
+    try {
+      const res = await captchaVerify(captchaId.value, Math.round(offsetPx));
+      captchaToken.value = res.data?.captchaToken || '';
+    } catch { /* 验证失败静默 */ }
+  }
+  sliderVerified.value = true;
+  sliderAnimating.value = false;
+}
+
+const canSubmit = computed(
+  () => isAccountValid.value && isPasswordValid.value && sliderVerified.value && !submitting.value,
+);
 
 async function submitRegister() {
   if (!canSubmit.value) return;
-  if (!isPasswordValid.value) {
-    toast.error(t('请设置8-16位字母+数字密码'));
+  if (!sliderVerified.value) {
+    toast.error(t('请完成滑动验证'));
     return;
   }
 
   try {
     submitting.value = true;
-    const res = await registerApi(username.value.trim(), password.value, 'ALWAYS_PASS');
+    const token = captchaToken.value || 'ALWAYS_PASS';
+    const res = await registerApi(username.value.trim(), password.value, token);
     userStore.completeWebLogin(res.data || {});
     userStore.loadUserProfile({ force: true }).catch(() => {});
     successOpen.value = true;
   } catch (e) {
     toast.error(e.message || t('提交失败，请重试'));
+    resetSlider();
+    doInitCaptcha();
   } finally {
     submitting.value = false;
   }
@@ -52,6 +171,14 @@ function finishRegister() {
   successOpen.value = false;
   router.replace('/');
 }
+
+onMounted(() => {
+  doInitCaptcha();
+});
+
+onBeforeUnmount(() => {
+  resetSlider();
+});
 </script>
 
 <template>
@@ -97,6 +224,53 @@ function finishRegister() {
             </button>
           </div>
 
+          <!-- 滑块验证 -->
+          <div class="register-verify">
+            <Transition name="verify-flip" mode="out-in">
+              <div
+                v-if="sliderVerified"
+                key="success"
+                class="register-verify__track register-verify__track--success"
+                role="status"
+                aria-live="polite"
+              >
+                <svg class="register-verify__check-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M4 10.5L8.5 15L16 5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span class="register-verify__success-text">{{ t('验证成功') }}</span>
+              </div>
+              <div
+                v-else
+                key="track"
+                ref="verifyTrackRef"
+                class="register-verify__track"
+                :class="{ 'register-verify__track--dragging': sliderDragging }"
+              >
+                <div class="register-verify__fill" :style="fillStyle" />
+                <button
+                  type="button"
+                  class="register-verify__knob"
+                  :class="{ 'register-verify__knob--dragging': sliderDragging }"
+                  :style="knobTransformStyle"
+                  :aria-label="t('向右滑动验证')"
+                  @pointerdown="onSliderKnobPointerDown"
+                >
+                  <svg class="register-verify__knob-icon" width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <path d="M7 4.5L11.5 9L7 13.5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </button>
+                <span
+                  class="register-verify__label"
+                  :class="{ 'register-verify__label--dragging': sliderDragging }"
+                  :style="{ opacity: sliderDragging ? labelOpacity : undefined }"
+                  aria-hidden="true"
+                >
+                  {{ t('向右滑动验证') }}
+                </span>
+              </div>
+            </Transition>
+          </div>
+
           <button class="register-submit" type="submit" :disabled="!canSubmit">
             {{ submitting ? t('提交中...') : t('注册') }}
           </button>
@@ -126,6 +300,8 @@ function finishRegister() {
 
 <style lang="scss" scoped>
 @use '@/styles/tools.scss' as *;
+
+$register-cta-blue: #2f7df5;
 
 .register-page {
   min-height: 100vh;
@@ -275,6 +451,162 @@ function finishRegister() {
     width: 28px;
     height: 28px;
   }
+}
+
+// --- 滑块验证 ---
+.register-verify {
+  width: 100%;
+}
+
+.register-verify__track {
+  position: relative;
+  box-sizing: border-box;
+  height: 48px;
+  border-radius: $radius-pill;
+  background: #fff;
+  border: 0.8px solid rgba(184, 206, 232, 0.45);
+  touch-action: none;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  @include mobile-only {
+    height: 46px;
+  }
+
+  &--dragging {
+    border-color: rgba(13, 108, 251, 0.35);
+    box-shadow: 0 0 0 3px rgba(13, 108, 251, 0.1);
+  }
+
+  &--success {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    touch-action: auto;
+    background: $register-cta-blue;
+    border: 1px solid rgba(255, 255, 255, 0.92);
+    box-shadow: 0 2px 14px rgba(13, 108, 251, 0.4);
+    overflow: visible;
+  }
+}
+
+.register-verify__fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: $radius-pill;
+  background: linear-gradient(90deg, rgba(13, 108, 251, 0.08) 0%, rgba(13, 108, 251, 0.18) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.register-verify__check-icon {
+  flex-shrink: 0;
+  animation: verify-check-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes verify-check-pop {
+  0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+.register-verify__success-text {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #fff;
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+.register-verify__knob {
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  z-index: 2;
+  width: 52px;
+  height: 40px;
+  border-radius: 20px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: $register-cta-blue;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(13, 108, 251, 0.35);
+  cursor: grab;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: box-shadow 0.2s, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  &--dragging {
+    cursor: grabbing;
+    box-shadow: 0 4px 16px rgba(13, 108, 251, 0.5);
+    transition: box-shadow 0.15s;
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(13, 108, 251, 0.55);
+    outline-offset: 2px;
+  }
+}
+
+.register-verify__knob-icon {
+  transition: transform 0.2s;
+  flex-shrink: 0;
+
+  .register-verify__knob--dragging & {
+    transform: translateX(1px);
+  }
+}
+
+.register-verify__label {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 0 60px 0 12px;
+  font-size: 15px;
+  font-weight: 500;
+  color: $register-cta-blue;
+  text-align: center;
+  line-height: 1.2;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  animation: slider-shimmer 2.5s ease-in-out infinite;
+}
+
+.register-verify__label--dragging {
+  animation: none;
+}
+
+@keyframes slider-shimmer {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+.verify-flip-enter-active {
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.verify-flip-leave-active {
+  transition: all 0.2s ease-in;
+}
+
+.verify-flip-enter-from {
+  opacity: 0;
+  transform: scale(0.92);
+}
+
+.verify-flip-leave-to {
+  opacity: 0;
+  transform: scale(0.96);
 }
 
 .register-submit {

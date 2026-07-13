@@ -61,10 +61,12 @@ async function handleFileChange(event) {
     uploading.value = true;
     const uploadRes = await uploadFile(file, 'avatar');
     const fileRef = uploadRes?.data?.ref;
-    const fileId = uploadRes?.data?.fileId;
     if (!fileRef) throw new Error(t('上传失败'));
-    await updateAvatar(fileRef);
-    avatarUrl.value = `/api/file/${fileId}`;
+    const avatarRes = await updateAvatar(fileRef);
+    avatarUrl.value = avatarRes?.data?.avatar || '';
+    if (avatarUrl.value) {
+      userStore.updateUserProfile({ avatar: avatarUrl.value });
+    }
     toast.success(t('头像上传成功'));
   } catch (e) {
     toast.error(e.message || t('头像上传失败'));

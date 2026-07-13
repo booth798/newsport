@@ -478,4 +478,8 @@ export default {
   赛事预告: 'Match Preview',
   '派奖到账': 'Payout received {amount}',
   '赔率已变化，请确认最新赔率后重新提交': 'Odds changed, please confirm and resubmit',
+  账务汇总: 'Summary',
+  总收入: 'Income',
+  总支出: 'Expense',
+  净收益: 'Net Profit',
 };

@@ -26,11 +26,14 @@ function toHex(buf) {
 }
 
 /**
- * 签名直传文件（multipart）
- * HMAC-SHA256 签名，key = 会话 AES 密钥原始字节
- * 签名串：ts\nnonce\nsha256\npurpose
+ * 签名直传文件（multipart, HMAC-SHA256）
+ *
+ * 签名串模板（换行分隔）：
+ *   POST\n/api/upload/file\n{sha256}\n{purpose}\n{ts}\n{nonce}\n{sid}
+ *
+ * key = X-Sid 对应会话的 aesKey 原始字节
  */
-export async function uploadFile(file, purpose = 'generic') {
+export async function uploadFile(file, purpose = 'avatar') {
   const arrayBuf = await file.arrayBuffer();
   const hashBuf = await crypto.subtle.digest('SHA-256', arrayBuf);
   const sha256 = toHex(hashBuf);
@@ -40,9 +43,17 @@ export async function uploadFile(file, purpose = 'generic') {
   const sid = getSessionId();
   const token = localStorage.getItem('mysport:token') || '';
 
-  const sigPayload = `${ts}\n${nonce}\n${sha256}\n${purpose}`;
-  const encoder = new TextEncoder();
+  const sigPayload = [
+    'POST',
+    '/api/upload/file',
+    sha256,
+    purpose,
+    ts,
+    nonce,
+    sid,
+  ].join('\n');
 
+  const encoder = new TextEncoder();
   const aesKeyBytes = await getSessionKeyBytes();
 
   if (__DEV__) {
@@ -53,9 +64,9 @@ export async function uploadFile(file, purpose = 'generic') {
         sid: sid || '(无)',
         hasAesKey: Boolean(aesKeyBytes),
         aesKeyLen: aesKeyBytes?.length,
-        token: token ? `${token.slice(0, 16)}…` : '(无)',
         purpose,
         ts,
+        nonce,
         sha256: `${sha256.slice(0, 16)}…`,
         sigPayload,
       },
@@ -65,18 +76,17 @@ export async function uploadFile(file, purpose = 'generic') {
   if (!aesKeyBytes) {
     if (__DEV__) {
       console.warn(
-        '%c[UPLOAD] 无会话 AES 密钥，检查 localStorage 中 mysport:sid=%s, mysport:aesKey=%s',
+        '%c[UPLOAD] 无会话 AES 密钥，无法签名。sid=%s, aesKey=%s',
         'color:#c62828;font-weight:bold',
         localStorage.getItem('mysport:sid') || '(空)',
         localStorage.getItem('mysport:aesKey') ? '(有值)' : '(空)',
       );
     }
+    throw new Error('SESSION_INVALID');
   }
 
-  const keyData = aesKeyBytes || encoder.encode(sid || token || 'upload');
-
   const hmacKey = await crypto.subtle.importKey(
-    'raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
+    'raw', aesKeyBytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
   );
   const sigBuf = await crypto.subtle.sign('HMAC', hmacKey, encoder.encode(sigPayload));
   const sig = toHex(sigBuf);
@@ -85,7 +95,7 @@ export async function uploadFile(file, purpose = 'generic') {
     console.log(
       '%c[UPLOAD] 签名结果',
       'background:#1b5e20;color:#fff;padding:2px 6px;border-radius:3px',
-      { sig: `${sig.slice(0, 32)}…`, keySource: aesKeyBytes ? 'AES_SESSION' : 'FALLBACK' },
+      { sig },
     );
   }
 
@@ -98,9 +108,9 @@ export async function uploadFile(file, purpose = 'generic') {
     'X-Upload-Nonce': nonce,
     'X-File-Sha256': sha256,
     'X-File-Purpose': purpose,
+    'X-Sid': sid,
   };
   if (token) headers['X-Customer-Token'] = `Bearer ${token}`;
-  if (sid) headers['X-Sid'] = sid;
 
   const res = await fetch(`${API_BASE}/upload/file`, {
     method: 'POST',
@@ -145,6 +155,7 @@ export function resolveAvatarUrl(avatar) {
   if (avatar.startsWith('http://') || avatar.startsWith('https://')) return avatar;
   if (avatar.startsWith('/api/')) return avatar;
   if (avatar.startsWith('upload://')) return getFileUrl(avatar);
+  if (/^\d+$/.test(avatar)) return `${API_BASE}/file/${avatar}`;
   return avatar;
 }
 

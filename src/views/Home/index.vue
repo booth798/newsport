@@ -1,44 +1,29 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { storeToRefs } from 'pinia';
 import HomeBanner from './components/HomeBanner.vue';
 import HomeAnnouncement from './components/HomeAnnouncement.vue';
 import HomeHotEvents from './components/HomeHotEvents.vue';
+import { useAppStore } from '@/store/modules/app';
 
 const { t } = useI18n();
+const appStore = useAppStore();
+const { csHours } = storeToRefs(appStore);
 
 const vipLevel = ref(0);
 const homeMatches = ref([]);
 const homeBanners = ref([]);
-const announcementText = ref('');
+const announcementText = computed(() => csHours.value || '');
 
 onMounted(async () => {
   try {
-    const { fetchHomeData, normalizeHomeMarkets, fetchPublicConfig } = await import('@/api/match');
-
-    const [homeRes, configRes] = await Promise.allSettled([
-      fetchHomeData(),
-      fetchPublicConfig(),
-    ]);
-
-    if (homeRes.status === 'fulfilled') {
-      const data = homeRes.value.data || {};
-      if (data.vip) vipLevel.value = data.vip.level || 0;
-      if (data.hotMarkets) homeMatches.value = normalizeHomeMarkets(data.hotMarkets);
-      homeBanners.value = data.banners || [];
-    }
-
-    if (configRes.status === 'fulfilled') {
-      const raw = configRes.value.data || configRes.value;
-      let hours = '';
-      if (Array.isArray(raw)) {
-        const item = raw.find(c => c.key === 'customer-service.hours' || c.configKey === 'customer-service.hours');
-        hours = item?.value || item?.configValue || '';
-      } else if (raw && typeof raw === 'object') {
-        hours = raw['customer-service.hours'] || raw['customer-service-hours'] || raw.customerServiceHours || '';
-      }
-      if (hours) announcementText.value = hours;
-    }
+    const { fetchHomeData, normalizeHomeMarkets } = await import('@/api/match');
+    const homeRes = await fetchHomeData();
+    const data = homeRes.data || {};
+    if (data.vip) vipLevel.value = data.vip.level || 0;
+    if (data.hotMarkets) homeMatches.value = normalizeHomeMarkets(data.hotMarkets);
+    homeBanners.value = data.banners || [];
   } catch { /* non-critical */ }
 });
 </script>

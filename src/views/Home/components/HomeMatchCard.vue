@@ -101,7 +101,7 @@ const kickoffAt = computed(() => props.match.kickoffAt);
 const { text: liveCountdown, minutes: liveCountdownMinutes, isOver: countdownOver } = useCountdown(kickoffAt);
 
 const detailCountdownLabel = computed(() => {
-  if (liveCountdown.value) return liveCountdownMinutes.value;
+  if (liveCountdown.value) return liveCountdown.value;
   return '';
 });
 
@@ -260,38 +260,40 @@ const topPools = computed(() => {
                 <span class="match-card__vs">VS</span>
                 <span class="match-card__team-name match-card__team-name--away">{{ match.awayTeam }}</span>
 
-                <div class="match-card__mg-score-slot match-card__mg-score-slot--home">
-                  <span
-                    class="match-card__score match-card__score--m"
-                    :class="{ 'match-card__score--leading': match.homeScore > match.awayScore }"
-                  >
-                    <img
-                      class="match-card__score-bg"
-                      :src="homeScoreBg"
-                      alt=""
-                      width="32"
-                      height="26"
-                      draggable="false"
-                    />
-                    <span class="match-card__score-txt">{{ match.homeScore }}</span>
-                  </span>
-                </div>
-                <div class="match-card__mg-score-slot match-card__mg-score-slot--away">
-                  <span
-                    class="match-card__score match-card__score--m"
-                    :class="{ 'match-card__score--leading': match.awayScore > match.homeScore }"
-                  >
-                    <img
-                      class="match-card__score-bg"
-                      :src="awayScoreBg"
-                      alt=""
-                      width="32"
-                      height="26"
-                      draggable="false"
-                    />
-                    <span class="match-card__score-txt">{{ match.awayScore }}</span>
-                  </span>
-                </div>
+                <template v-if="detailMode">
+                  <div class="match-card__mg-score-slot match-card__mg-score-slot--home">
+                    <span
+                      class="match-card__score match-card__score--m"
+                      :class="{ 'match-card__score--leading': match.homeScore > match.awayScore }"
+                    >
+                      <img
+                        class="match-card__score-bg"
+                        :src="homeScoreBg"
+                        alt=""
+                        width="32"
+                        height="26"
+                        draggable="false"
+                      />
+                      <span class="match-card__score-txt">{{ match.homeScore }}</span>
+                    </span>
+                  </div>
+                  <div class="match-card__mg-score-slot match-card__mg-score-slot--away">
+                    <span
+                      class="match-card__score match-card__score--m"
+                      :class="{ 'match-card__score--leading': match.awayScore > match.homeScore }"
+                    >
+                      <img
+                        class="match-card__score-bg"
+                        :src="awayScoreBg"
+                        alt=""
+                        width="32"
+                        height="26"
+                        draggable="false"
+                      />
+                      <span class="match-card__score-txt">{{ match.awayScore }}</span>
+                    </span>
+                  </div>
+                </template>
               </div>
 
               <div v-if="!isDetailH5" class="match-card__odds-pills">
@@ -438,38 +440,40 @@ const topPools = computed(() => {
                 <span class="match-card__vs">VS</span>
                 <span class="match-card__team-name match-card__team-name--away">{{ match.awayTeam }}</span>
 
-                <div class="match-card__mg-score-slot match-card__mg-score-slot--home">
-                  <span
-                    class="match-card__score match-card__score--m"
-                    :class="{ 'match-card__score--leading': match.homeScore > match.awayScore }"
-                  >
-                    <img
-                      class="match-card__score-bg"
-                      :src="homeScoreBg"
-                      alt=""
-                      width="32"
-                      height="26"
-                      draggable="false"
-                    />
-                    <span class="match-card__score-txt">{{ match.homeScore }}</span>
-                  </span>
-                </div>
-                <div class="match-card__mg-score-slot match-card__mg-score-slot--away">
-                  <span
-                    class="match-card__score match-card__score--m"
-                    :class="{ 'match-card__score--leading': match.awayScore > match.homeScore }"
-                  >
-                    <img
-                      class="match-card__score-bg"
-                      :src="awayScoreBg"
-                      alt=""
-                      width="32"
-                      height="26"
-                      draggable="false"
-                    />
-                    <span class="match-card__score-txt">{{ match.awayScore }}</span>
-                  </span>
-                </div>
+                <template v-if="detailMode">
+                  <div class="match-card__mg-score-slot match-card__mg-score-slot--home">
+                    <span
+                      class="match-card__score match-card__score--m"
+                      :class="{ 'match-card__score--leading': match.homeScore > match.awayScore }"
+                    >
+                      <img
+                        class="match-card__score-bg"
+                        :src="homeScoreBg"
+                        alt=""
+                        width="32"
+                        height="26"
+                        draggable="false"
+                      />
+                      <span class="match-card__score-txt">{{ match.homeScore }}</span>
+                    </span>
+                  </div>
+                  <div class="match-card__mg-score-slot match-card__mg-score-slot--away">
+                    <span
+                      class="match-card__score match-card__score--m"
+                      :class="{ 'match-card__score--leading': match.awayScore > match.homeScore }"
+                    >
+                      <img
+                        class="match-card__score-bg"
+                        :src="awayScoreBg"
+                        alt=""
+                        width="32"
+                        height="26"
+                        draggable="false"
+                      />
+                      <span class="match-card__score-txt">{{ match.awayScore }}</span>
+                    </span>
+                  </div>
+                </template>
               </div>
 
               <div v-if="!detailMode" class="match-card__odds-pills">
@@ -730,7 +734,7 @@ const topPools = computed(() => {
   &__pill--detail {
     @include mobile-only {
       flex-shrink: 0;
-      width: 92px;
+      width: auto;
       height: 24px;
       min-height: 24px;
       padding: 0 8px;
@@ -992,7 +996,7 @@ const topPools = computed(() => {
     min-height: 38px;
 
     &--m {
-      width: 120px;
+      width: auto;
       height: 24px;
       min-height: 24px;
       padding: 0 8px;
@@ -1000,11 +1004,11 @@ const topPools = computed(() => {
       border-radius: 6px;
       background: rgba(31, 124, 255, 0.15);
       justify-content: center;
-      overflow: hidden;
+      white-space: nowrap;
     }
 
     &--w {
-      width: 140px;
+      width: auto;
       height: 26px;
       min-height: 26px;
       padding: 0 10px;
@@ -1012,7 +1016,7 @@ const topPools = computed(() => {
       border-radius: 6px;
       background: rgba(31, 124, 255, 0.15);
       justify-content: center;
-      overflow: hidden;
+      white-space: nowrap;
     }
   }
 

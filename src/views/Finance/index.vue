@@ -26,7 +26,7 @@ const sidebarTabs = computed(() => tabs.map((tab) => ({ ...tab, label: t(tab.lab
     <div class="finance-layout__inner">
       <AppSideNav :items="sidebarTabs" :active-key="activeTab" aria-label="finance" />
 
-      <nav v-if="!isFinanceHome" class="finance-tabs" aria-label="finance">
+      <nav class="finance-tabs" aria-label="finance">
         <RouterLink
           v-for="tab in tabs"
           :key="tab.to"
@@ -39,16 +39,7 @@ const sidebarTabs = computed(() => tabs.map((tab) => ({ ...tab, label: t(tab.lab
       </nav>
 
       <div class="finance-content">
-        <div v-if="isFinanceHome" class="finance-empty">
-          <div class="finance-empty__illustration" aria-hidden="true">
-            <span></span>
-          </div>
-          <p>{{ t('暂无记录') }}</p>
-          <RouterLink to="/market" class="btn btn--primary finance-empty__btn">
-            {{ t('前往比赛') }}
-          </RouterLink>
-        </div>
-        <RouterView v-else />
+        <RouterView />
       </div>
     </div>
   </div>
@@ -114,80 +105,6 @@ const sidebarTabs = computed(() => tabs.map((tab) => ({ ...tab, label: t(tab.lab
   @include mobile-only {
     display: none;
   }
-}
-
-.finance-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  color: rgba(23, 59, 97, 0.48);
-
-  @include web-only {
-    min-height: 520px;
-    justify-content: center;
-  }
-
-  @include mobile-only {
-    min-height: calc(100dvh - 80px - #{$mobile-tab-bar-offset} - 16px);
-    justify-content: center;
-    padding-bottom: 62px;
-    box-sizing: border-box;
-  }
-}
-
-.finance-empty__illustration {
-  position: relative;
-  width: 118px;
-  height: 118px;
-  margin-bottom: 10px;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 86% 20%, #8dbdff 0 3px, transparent 4px),
-    radial-gradient(circle at 21% 62%, #8dbdff 0 3px, transparent 4px),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(116, 174, 252, 0.24));
-
-  span {
-    position: absolute;
-    left: 32px;
-    top: 25px;
-    width: 54px;
-    height: 68px;
-    border-radius: 8px;
-    background: linear-gradient(180deg, #c8def9, #8cbcff);
-    box-shadow: 14px 10px 0 rgba(115, 174, 253, 0.18);
-
-    &::before,
-    &::after {
-      content: '';
-      position: absolute;
-      left: 13px;
-      right: 13px;
-      height: 2px;
-      border-radius: 2px;
-      background: #fff;
-    }
-
-    &::before {
-      top: 22px;
-      box-shadow: 0 14px 0 #fff;
-    }
-
-    &::after {
-      top: 50px;
-    }
-  }
-}
-
-.finance-empty p {
-  margin: 0 0 42px;
-  font-size: 15px;
-}
-
-.finance-empty__btn {
-  width: 166px;
-  height: 43px;
-  border-radius: 24px;
-  font-size: 16px;
 }
 
 .finance-tab {

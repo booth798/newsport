@@ -94,6 +94,8 @@ onMounted(async () => {
   window.addEventListener('resize', syncViewport, { passive: true });
   window.addEventListener('mysport:session-expired', onSessionExpired);
 
+  appStore.loadPublicConfig().catch(() => {});
+
   if (isLoggedIn.value) {
     try {
       await userStore.loadUserProfile();
