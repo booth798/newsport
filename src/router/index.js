@@ -53,9 +53,9 @@ const routes = [
   },
   {
     path: '/finance',
-    name: 'finance',
     component: () => import('@/views/Finance/index.vue'),
     meta: { titleKey: '交易账务', requiresAuth: true, guestPreview: true },
+    redirect: '/finance/records',
     children: [
       {
         path: 'deposit',
