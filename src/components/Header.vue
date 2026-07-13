@@ -380,11 +380,8 @@ watch(isLoggedIn, (loggedIn) => {
           </button>
         </template>
         <template v-else>
-          <button type="button" class="header-mobile-btn" :aria-label="t('在线客服')" @click="appStore.openCustomerServiceConfirm">
-            <img class="header-mobile-btn__service-img" :src="serviceIconUrl" alt="" />
-          </button>
-          <button type="button" class="header-mobile-btn" :aria-label="t('菜单')" @click="mobileDrawerOpen = true">
-            <img class="header-mobile-btn__img" :src="moreIconUrl" alt="" />
+          <button type="button" class="header-mobile-login-btn" @click="appStore.openLoginModal()">
+            {{ t('登录') }}
           </button>
         </template>
       </div>
@@ -675,6 +672,24 @@ watch(isLoggedIn, (loggedIn) => {
         pointer-events: none;
         border-radius: 50%;
       }
+    }
+
+    .header-mobile-login-btn {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 36px;
+      padding: 0 20px;
+      border: none;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #3ba0ff 0%, #0d6cfb 100%);
+      box-shadow: 0 4px 8px rgba(21, 58, 119, 0.12);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
     }
 
     .header-mobile-search {
