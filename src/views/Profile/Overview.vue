@@ -262,6 +262,11 @@ function handleMenuClick(item) {
     router.push({ name: 'vip-benefits' });
     return;
   }
+  if (item.action === 'vipTransfer') {
+    // VIP 互转在 PC 与 H5 共用同一个财务路由，由页面内部响应式适配。
+    router.push({ name: 'finance-vip-transfer' });
+    return;
+  }
   if (item.action === 'favorites') {
     toast.info(t('暂无数据'));
     return;

@@ -47,8 +47,6 @@ function selectItem(item) {
 
 .app-side-nav {
   @include web-only {
-    position: sticky;
-    top: $spacing-xl;
     flex: 0 0 175px;
     min-height: min(690px, calc(100dvh - 12px));
     padding: 26px 18px;

@@ -10,17 +10,19 @@ const route = useRoute();
 
 const tabs = [
   { key: '/finance/deposit', label: '充值', to: '/finance/deposit' },
+  { key: '/finance/vip-transfer', label: '会员互转', to: '/finance/vip-transfer' },
   { key: '/finance/withdraw', label: '提领', to: '/finance/withdraw' },
   { key: '/finance/records', label: '交易记录', to: '/finance/records' },
 ];
 
 const activeTab = computed(() => route.path);
 const isFinanceHome = computed(() => route.name === 'finance');
+const isVipTransfer = computed(() => route.name === 'finance-vip-transfer');
 const sidebarTabs = computed(() => tabs.map((tab) => ({ ...tab, label: t(tab.label) })));
 </script>
 
 <template>
-  <div class="finance-layout">
+  <div class="finance-layout" :class="{ 'finance-layout--vip-transfer': isVipTransfer }">
     <div class="finance-layout__inner">
       <AppSideNav :items="sidebarTabs" :active-key="activeTab" aria-label="finance" />
 
@@ -71,6 +73,13 @@ const sidebarTabs = computed(() => tabs.map((tab) => ({ ...tab, label: t(tab.lab
     min-height: 100vh;
     min-height: 100dvh;
     padding: 0 8px calc(#{$mobile-tab-bar-offset} + env(safe-area-inset-bottom, 0px) + #{$spacing-md});
+  }
+}
+
+// 会员互转 H5 隐藏了全局底栏，页面底部只需保留安全区。
+.finance-layout--vip-transfer {
+  @include mobile-only {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + $spacing-lg);
   }
 }
 

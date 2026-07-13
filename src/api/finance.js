@@ -130,7 +130,8 @@ export async function transfer(payload) {
 /** 划转记录 */
 export async function fetchTransferRecords(params = {}) {
   return get('/wallet/transfer/records', {
-    type: params.type,
+    // 后端约定空类型等同 all，这里显式传值便于筛选状态与请求一致。
+    type: params.type || 'all',
     month: params.month,
     pageNum: params.pageNum || 1,
     pageSize: params.pageSize || 20,

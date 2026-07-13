@@ -16,6 +16,7 @@ import avatarDefaultUrl from '@/assets/images/common/avatar_default.png?url';
 import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.svg?url';
 import MobileNavDrawer from '@/components/MobileNavDrawer.vue';
 import MessageCenterModal from '@/components/MessageCenterModal.vue';
+import MonthSelector from '@/components/MonthSelector.vue';
 import { useAppStore } from '@/store/modules/app';
 import { useUserStore } from '@/store/modules/user';
 import { fetchUnreadCount } from '@/api/user';
@@ -133,18 +134,34 @@ const isProfileHomePage = computed(() => route.name === 'profile' || route.name 
 const isProfileSubPage = computed(
   () => route.path.startsWith('/profile') && !isProfileHomePage.value,
 );
+const isFinancePage = computed(() => route.path.startsWith('/finance'));
+const isVipTransferPage = computed(() => route.name === 'finance-vip-transfer');
+const vipTransferMonth = computed({
+  get() {
+    const month = Array.isArray(route.query.month) ? route.query.month[0] : route.query.month;
+    return /^\d{4}-(0[1-9]|1[0-2])$/.test(month || '') ? month : getShanghaiCurrentMonth();
+  },
+  set(month) {
+    // 月份写入路由查询参数，让 Header 与互转记录共用同一筛选状态。
+    router.replace({ query: { ...route.query, month } });
+  },
+});
 const isCompactDetailHeader = computed(
   () =>
     isMarketLeaguePage.value ||
     isMarketDetailPage.value ||
     isPurchaseDetailsPage.value ||
     (isMobile.value && route.meta?.compactHeader) ||
-    (isMobile.value && isProfileSubPage.value),
+    (isMobile.value && isProfileSubPage.value) ||
+    isFinancePage.value
 );
 const compactTitle = computed(() => t(route.meta?.titleKey || '返回'));
 const isMobileMarketListHeader = computed(() => isMobile.value && isMarketListPage.value);
 const isMobileProfileHomeHeader = computed(() => isMobile.value && isProfileHomePage.value);
 const compactHeaderBackTo = computed(() => {
+  if (isVipTransferPage.value) {
+    return '/profile';
+  }
   if (isPurchaseDetailsPage.value) {
     const raw = route.query.marketId;
     const id = Number(Array.isArray(raw) ? raw[0] : raw);
@@ -175,6 +192,17 @@ const compactHeaderBackTo = computed(() => {
   }
   return '/';
 });
+
+function getShanghaiCurrentMonth() {
+  // 使用上海时区确定自然月，避免用户设备时区导致月份边界偏差。
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+  }).formatToParts(new Date());
+  const pick = (type) => parts.find((part) => part.type === type)?.value || '';
+  return `${pick('year')}-${pick('month')}`;
+}
 
 const beijingNowStr = ref('');
 let beijingTimer = null;
@@ -348,12 +376,15 @@ watch(isLoggedIn, (loggedIn) => {
       </div>
       <div v-if="isMobile && !isProfileSubPage" class="header-mobile-actions">
         <template v-if="isCompactDetailHeader">
-          <template v-if="!isLoggedIn">
+          <template v-if="isVipTransferPage">
+            <MonthSelector v-model="vipTransferMonth" :aria-label="t('选择月份')" />
+          </template>
+          <template v-else-if="!isLoggedIn">
             <button type="button" class="header-mobile-btn" :aria-label="t('在线客服')" @click="appStore.openCustomerServiceConfirm">
               <img class="header-mobile-btn__service-img" :src="serviceIconUrl" alt="" />
             </button>
           </template>
-          <button type="button" class="header-mobile-btn" :aria-label="t('菜单')" @click="mobileDrawerOpen = true">
+          <button v-if="!isVipTransferPage" type="button" class="header-mobile-btn" :aria-label="t('菜单')" @click="mobileDrawerOpen = true">
             <img class="header-mobile-btn__img" :src="moreIconUrl" alt="" />
           </button>
         </template>
@@ -371,6 +402,7 @@ watch(isLoggedIn, (loggedIn) => {
             <span class="header-mobile-circle-btn__gear" aria-hidden="true"></span>
           </RouterLink>
         </template>
+     
         <template v-else-if="isLoggedIn">
           <button type="button" class="header-mobile-btn" :aria-label="t('在线客服')" @click="appStore.openCustomerServiceConfirm">
             <img class="header-mobile-btn__service-img" :src="serviceIconUrl" alt="" />
@@ -379,6 +411,7 @@ watch(isLoggedIn, (loggedIn) => {
             <img class="header-mobile-btn__img" :src="moreIconUrl" alt="" />
           </button>
         </template>
+       
         <template v-else>
           <button type="button" class="header-mobile-btn" :aria-label="t('在线客服')" @click="appStore.openCustomerServiceConfirm">
             <img class="header-mobile-btn__service-img" :src="serviceIconUrl" alt="" />

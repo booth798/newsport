@@ -70,6 +70,15 @@ const routes = [
         meta: { titleKey: '提领' },
       },
       {
+        path: 'vip-transfer',
+        name: 'finance-vip-transfer',
+        component: () => import('@/views/Finance/VipTransfer.vue'),
+        // H5 使用页面自身的返回栏，PC 继续复用财务页公共头部与侧栏。
+        meta: {
+          titleKey: '会员互转',
+        },
+      },
+      {
         path: 'records',
         name: 'finance-records',
         component: () => import('@/views/Finance/Records.vue'),
