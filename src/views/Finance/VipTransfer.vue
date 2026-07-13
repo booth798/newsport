@@ -2,11 +2,13 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
+import { storeToRefs } from 'pinia';
 
 import BaseInput from '@/components/BaseInput.vue';
 import MonthSelector from '@/components/MonthSelector.vue';
-import { fetchBalance, fetchTransferRecords, transfer } from '@/api/finance';
+import { fetchTransferRecords, transfer } from '@/api/finance';
 import { useToast } from '@/hooks/useToast';
+import { useUserStore } from '@/store/modules/user';
 
 import { getImageUrl } from '@/utils/common'
 const PAGE_SIZE = 20;
@@ -20,6 +22,8 @@ const { locale, t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
+const userStore = useUserStore();
+const { customer } = storeToRefs(userStore);
 
 const loading = ref(true);
 const error = ref(false);
@@ -28,7 +32,6 @@ const loadingMore = ref(false);
 const accountId = ref('');
 const amount = ref('');
 const withdrawPassword = ref('');
-const balance = ref({ available: 0, formatted: '0.00', currency: 'CNY' });
 const records = ref([]);
 const total = ref(0);
 const totalAmount = ref(0);
@@ -51,6 +54,12 @@ const hasMore = computed(() => records.value.length < total.value);
 const selectedFilterLabel = computed(
   () => FILTER_OPTIONS.find((option) => option.value === selectedType.value)?.label || '全部',
 );
+const balanceAmount = computed(() => {
+  // 余额直接读取登录用户缓存，并兼容接口返回带千分位的字符串。
+  const value = Number(String(customer.value?.balance ?? 0).replaceAll(',', ''));
+  return Number.isFinite(value) ? value : 0;
+});
+const displayBalance = computed(() => formatMoney(balanceAmount.value));
 
 onMounted(() => {
   loadPage();
@@ -66,16 +75,12 @@ watch(selectedMonth, () => {
   refreshRecords();
 });
 
-// 首屏同时读取余额和互转记录，记录失败时提供明确的重试入口。
+// 余额由用户 store 提供，页面只请求互转记录。
 async function loadPage() {
   loading.value = true;
   error.value = false;
   try {
-    const [balanceRes, recordsRes] = await Promise.all([
-      fetchBalance().catch(() => null),
-      fetchTransferRecords(buildRecordParams(1)),
-    ]);
-    if (balanceRes?.data) balance.value = balanceRes.data;
+    const recordsRes = await fetchTransferRecords(buildRecordParams(1));
     applyRecordResponse(recordsRes, false);
   } catch {
     error.value = true;
@@ -159,7 +164,7 @@ async function handleSubmit() {
     toast.error(t('互转金额格式提示'));
     return;
   }
-  if (transferAmount > Number(balance.value.available ?? balance.value.balance ?? 0)) {
+  if (transferAmount > balanceAmount.value) {
     toast.error(t('余额不足'));
     return;
   }
@@ -170,11 +175,15 @@ async function handleSubmit() {
 
   try {
     submitting.value = true;
-    await transfer({
+    const response = await transfer({
       toCustomerNo: accountId.value.trim(),
       amount: transferAmount,
       withdrawPassword: withdrawPassword.value,
     });
+    // 即时到账后用接口返回余额回写用户 store，保持全站余额同步。
+    if (response?.data?.balance != null) {
+      userStore.updateUserProfile({ balance: response.data.balance });
+    }
     toast.success(t('转账成功'));
     accountId.value = '';
     amount.value = '';
@@ -249,7 +258,7 @@ async function loadMore() {
           <span>{{ t('转出金额') }}</span>
           <BaseInput v-model="amount" inputmode="decimal" autocomplete="off" placeholder="0.00" />
           <small>
-            {{ t('余额') }}：<b>{{ balance.formatted }} {{ balance.currency }}</b>
+            {{ t('余额') }}：<b>{{ displayBalance }} CNY</b>
           </small>
         </label>
 
