@@ -386,14 +386,19 @@ watch(isLoggedIn, (loggedIn) => {
           <template v-if="isVipTransferPage">
             <MonthSelector v-model="vipTransferMonth" :aria-label="t('选择月份')" />
           </template>
-          <template v-else-if="!isLoggedIn">
+          <template v-else-if="isLoggedIn">
             <button type="button" class="header-mobile-btn" :aria-label="t('在线客服')" @click="appStore.openCustomerServiceConfirm">
               <img class="header-mobile-btn__service-img" :src="serviceIconUrl" alt="" />
             </button>
+            <button type="button" class="header-mobile-btn" :aria-label="t('菜单')" @click="mobileDrawerOpen = true">
+              <img class="header-mobile-btn__img" :src="moreIconUrl" alt="" />
+            </button>
           </template>
-          <button v-if="!isVipTransferPage" type="button" class="header-mobile-btn" :aria-label="t('菜单')" @click="mobileDrawerOpen = true">
-            <img class="header-mobile-btn__img" :src="moreIconUrl" alt="" />
-          </button>
+          <template v-else>
+            <button type="button" class="header-mobile-login-btn" @click="appStore.openLoginModal()">
+              {{ t('登录') }}
+            </button>
+          </template>
         </template>
         <template v-else-if="isMobileMarketListHeader">
           <button type="button" class="header-mobile-search" :aria-label="t('搜索')" @click="openMarketSearch">
@@ -450,6 +455,9 @@ watch(isLoggedIn, (loggedIn) => {
                   <span class="header-user-strip__assets-value">{{ loggedInAssetsFormatted }}</span>
                 </div>
               </div>
+              <button type="button" class="header-round-btn" :aria-label="t('在线客服')" @click="appStore.openCustomerServiceConfirm">
+                <img class="header-round-btn__img" :src="serviceIconUrl" alt="" />
+              </button>
               <button type="button" class="header-round-btn" :aria-label="t('菜单')">
                 <img class="header-round-btn__img" :src="moreIconUrl" alt="" />
               </button>
@@ -463,9 +471,6 @@ watch(isLoggedIn, (loggedIn) => {
               <div class="header-round-group">
                 <button type="button" class="header-round-btn" :aria-label="t('登录')" @click="appStore.openLoginModal">
                   <img class="header-round-btn__img" :src="loginIconUrl" alt="" />
-                </button>
-                <button type="button" class="header-round-btn" :aria-label="t('菜单')">
-                  <img class="header-round-btn__img" :src="moreIconUrl" alt="" />
                 </button>
               </div>
             </div>
@@ -497,14 +502,8 @@ watch(isLoggedIn, (loggedIn) => {
 
         <template v-else>
           <div class="header-round-group">
-            <button type="button" class="header-round-btn" :aria-label="t('在线客服')" @click="appStore.openCustomerServiceConfirm">
-              <img class="header-round-btn__img" :src="serviceIconUrl" alt="" />
-            </button>
             <button type="button" class="header-round-btn" :aria-label="t('登录')" @click="appStore.openLoginModal">
               <img class="header-round-btn__img" :src="loginIconUrl" alt="" />
-            </button>
-            <button type="button" class="header-round-btn" :aria-label="t('菜单')">
-              <img class="header-round-btn__img" :src="moreIconUrl" alt="" />
             </button>
           </div>
         </template>
