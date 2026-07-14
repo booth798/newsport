@@ -1,7 +1,6 @@
 import { get, post, put, del, request } from './request';
 import { bootstrapEncrypt, decryptResponse, saveSession } from './encrypt';
 import { resolveErrorMessage } from './errorCodes';
-import { resolveAvatarUrl } from './upload';
 
 /** 滑动验证码初始化 */
 export async function captchaInit() {
@@ -156,62 +155,19 @@ export async function resetPassword(account, code, newPassword) {
   return bootstrapRequest('/auth/reset', { account, code, newPassword });
 }
 
-/** 获取当前用户信息 */
-export async function fetchUserProfile() {
-  return get('/customer/me');
-}
-
-/** 个人中心统计 */
+/** 获取个人中心原始资料，展示字段统一由用户 store 转换 */
 export async function fetchProfileSummary() {
   const [meRes, statsRes, walletRes] = await Promise.all([
     get('/customer/me'),
     get('/customer/me/stats').catch(() => ({ data: {} })),
     get('/wallet').catch(() => ({ data: {} })),
   ]);
-  const customer = meRes.data || {};
-  const stats = statsRes.data || {};
-  const wallet = walletRes.data || {};
   return {
-    code: 200,
+    code: meRes.code,
     data: {
-      nickname: customer.nickname || customer.username || '',
-      memberId: customer.customerNo || '',
-      avatarUrl: resolveAvatarUrl(customer.avatar),
-      withdrawPasswordSet: customer.withdrawPasswordSet === true,
-      balance: formatMoney(wallet.balance),
-      currency: wallet.currency || 'CNY',
-      vipLevel: customer.vipLevel ?? 0,
-      totalBet: formatMoney(stats.totalBet),
-      winRate: stats.winRate != null ? stats.winRate : 0,
-      winRateFormatted: stats.winRate != null ? `${Number(stats.winRate).toFixed(1)}%` : '0%',
-      totalProfit: stats.profit != null ? stats.profit : 0,
-      totalProfitFormatted: stats.profit != null
-        ? `${Number(stats.profit) >= 0 ? '+' : ''}¥${formatMoney(stats.profit)}`
-        : '¥0.00',
-      _customer: customer,
-      _wallet: wallet,
-      _stats: stats,
-    },
-  };
-}
-
-/** 个人中心首页概览：兼容旧版个人中心 UI 的字段结构 */
-export async function fetchProfileOverview() {
-  const res = await fetchProfileSummary();
-  const data = res.data || {};
-  return {
-    code: res.code,
-    data: {
-      nickname: data.nickname || '',
-      memberId: data.memberId || '',
-      avatarUrl: data.avatarUrl || '',
-      balance: data.balance,
-      currency: data.currency || 'CNY',
-      vipLevel: data.vipLevel ?? 1,
-      totalBet: data.totalBet,
-      winRate: data.winRateFormatted || `${Number(data.winRate || 0).toFixed(1)}%`,
-      totalProfit: data.totalProfitFormatted || '¥0.00',
-      _wallet: data._wallet || {},
+      customer: meRes.data || {},
+      stats: statsRes.data || {},
+      wallet: walletRes.data || {},
     },
   };
 }
@@ -333,11 +289,4 @@ export async function fetchVipLevels() {
 /** 我的 VIP */
 export async function fetchVipMe() {
   return get('/vip/me');
-}
-
-function formatMoney(val) {
-  if (val == null) return '0.00';
-  const n = Number(val);
-  if (isNaN(n)) return String(val);
-  return n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }

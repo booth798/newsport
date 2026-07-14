@@ -7,7 +7,7 @@ import slideLeftHoverIcon from '@/assets/images/common/icon_slide-left_hover.svg
 import slideRightIcon from '@/assets/images/common/icon_slide-right.svg';
 import slideRightHoverIcon from '@/assets/images/common/icon_slide-right_hover.svg';
 import logoUrl from '@/assets/images/common/logo_nav.svg?url';
-import { fetchBanners, reportBannerClick } from '@/api/match';
+import { reportBannerClick } from '@/api/match';
 
 const props = defineProps({
   banners: { type: Array, default: () => [] },
@@ -24,6 +24,7 @@ watch(
       startAutoPlay();
     }
   },
+  { immediate: true },
 );
 const isEmpty = computed(() => bannerItems.value.length === 0);
 const bannerSlides = computed(() =>
@@ -70,19 +71,6 @@ function stopAutoPlay() {
   }
 }
 
-async function loadBanners() {
-  try {
-    const platform = window.innerWidth > 750 ? 'web' : 'h5';
-    const res = await fetchBanners('home', platform);
-    const list = res.data || [];
-    if (list.length) {
-      bannerItems.value = list;
-      bannerIndex.value = 0;
-      startAutoPlay();
-    }
-  } catch { /* 加载失败使用默认图 */ }
-}
-
 function handleBannerClick(idx) {
   const item = bannerItems.value[idx];
   if (!item) return;
@@ -95,7 +83,6 @@ function handleBannerClick(idx) {
 }
 
 onMounted(() => {
-  loadBanners();
   startAutoPlay();
 });
 onBeforeUnmount(() => stopAutoPlay());

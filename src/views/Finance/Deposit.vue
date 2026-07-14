@@ -1,12 +1,16 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { storeToRefs } from 'pinia';
 
-import { fetchDepositChannels, submitDeposit, fetchBalance } from '@/api/finance';
+import { fetchDepositChannels, submitDeposit } from '@/api/finance';
 import { useToast } from '@/hooks/useToast';
+import { useUserStore } from '@/store/modules/user';
 
 const { t } = useI18n();
 const toast = useToast();
+const userStore = useUserStore();
+const { loggedInAssetsFormatted, userProfile } = storeToRefs(userStore);
 
 const QUICK_AMOUNTS = [100, 500, 1000, 5000];
 
@@ -15,11 +19,15 @@ const loading = ref(true);
 const error = ref(false);
 const submitting = ref(false);
 
-const balance = ref(null);
 const channels = ref([]);
 const selectedChannel = ref(null);
 const amount = ref('');
 
+// 余额展示统一使用用户 store，充值后可同步更新全站余额。
+const balance = computed(() => ({
+  currency: userProfile.value?.currency || 'CNY',
+  formatted: loggedInAssetsFormatted.value,
+}));
 const currentChannel = computed(() =>
   channels.value.find((c) => c.channelCode === selectedChannel.value),
 );
@@ -34,11 +42,10 @@ async function loadData() {
   loading.value = true;
   error.value = false;
   try {
-    const [balanceRes, channelsRes] = await Promise.all([
-      fetchBalance().catch(() => ({ data: null })),
+    const [, channelsRes] = await Promise.all([
+      userStore.loadUserProfile().catch(() => null),
       fetchDepositChannels().catch(() => ({ data: [] })),
     ]);
-    balance.value = balanceRes.data || { currency: 'CNY', formatted: '0.00' };
     channels.value = channelsRes.data || [];
     selectedChannel.value = channels.value[0]?.channelCode ?? null;
   } catch {
@@ -84,8 +91,7 @@ async function handleSubmit() {
     await submitDeposit(selectedChannel.value, val);
     toast.success(t('充值提交成功'));
     amount.value = '';
-    const res = await fetchBalance().catch(() => null);
-    if (res?.data) balance.value = res.data;
+    await userStore.refreshUserBalance().catch(() => {});
   } catch {
     toast.error(t('提交失败请重试'));
   } finally {

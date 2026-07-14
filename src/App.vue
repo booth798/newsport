@@ -4,6 +4,7 @@ import FloatingService from '@/components/FloatingService.vue';
 import LoginModal from '@/components/LoginModal.vue';
 import AppLogoutConfirm from '@/components/AppLogoutConfirm.vue';
 import AppCustomerServiceConfirm from '@/components/AppCustomerServiceConfirm.vue';
+import AppForceLogoutAlert from '@/components/AppForceLogoutAlert.vue';
 import MobileTabBar from '@/components/MobileTabBar.vue';
 import GlobalToast from '@/components/GlobalToast.vue';
 import GlobalLoading from '@/components/GlobalLoading.vue';
@@ -18,6 +19,7 @@ import i18n from '@/i18n';
 import { useAppStore } from '@/store/modules/app';
 import { useUserStore } from '@/store/modules/user';
 import { useWalletWs } from '@/hooks/useWalletWs';
+import { loadErrorCodes } from '@/api/errorCodes';
 
 function getRouteDepth(path) {
   return path.replace(/\/$/, '').split('/').filter(Boolean).length;
@@ -94,12 +96,19 @@ function onSessionExpired() {
   if (wasLoggedIn) appStore.openLoginModal();
 }
 
+function onForceLogout() {
+  userStore.clearWebLogin();
+  appStore.openForceLogoutAlert();
+}
+
 onMounted(async () => {
   syncViewport();
   window.addEventListener('resize', syncViewport, { passive: true });
   window.addEventListener('mysport:session-expired', onSessionExpired);
+  window.addEventListener('mysport:force-logout', onForceLogout);
 
   appStore.loadPublicConfig().catch(() => {});
+  loadErrorCodes();
 
   if (isLoggedIn.value) {
     try {
@@ -111,6 +120,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   window.removeEventListener('resize', syncViewport);
   window.removeEventListener('mysport:session-expired', onSessionExpired);
+  window.removeEventListener('mysport:force-logout', onForceLogout);
 });
 
 const toastRef = ref(null);
@@ -145,6 +155,7 @@ useWalletWs({
   <LoginModal :visible="appStore.loginModalOpen" @close="appStore.closeLoginModal" />
   <AppLogoutConfirm />
   <AppCustomerServiceConfirm />
+  <AppForceLogoutAlert />
   <GlobalToast ref="toastRef" />
   <GlobalLoading />
   <NetworkBar />

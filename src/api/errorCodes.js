@@ -1,172 +1,65 @@
 import { getCurrentLocale } from '@/store/modules/app';
 
-const ERROR_MAP = {
-  ACCESS_DENIED:                    { zhCN: '无访问权限',                                 enUS: 'Access denied' },
-  ACCOUNT_DISABLED:                 { zhCN: '账号已被禁用',                               enUS: 'Account disabled' },
-  ACCOUNT_NO_NOT_MATCH:             { zhCN: '账号信息不匹配',                             enUS: 'Account does not match' },
-  ACCOUNT_OR_PASSWORD_WRONG:        { zhCN: '账号或密码错误',                             enUS: 'Incorrect account or password' },
-  ACCOUNT_TEMP_LOCKED:              { zhCN: '账号已临时锁定，请稍后再试',                 enUS: 'Account temporarily locked, try again later' },
-  ADDRESS_NOT_MATCH:                { zhCN: '地址不匹配',                                 enUS: 'Address does not match' },
-  ALREADY_BOUND:                    { zhCN: '已绑定，请勿重复操作',                       enUS: 'Already bound' },
-  AMOUNT_TOO_LARGE:                 { zhCN: '金额超过最大限额',                           enUS: 'Amount above maximum' },
-  AMOUNT_TOO_SMALL:                 { zhCN: '金额低于最小限额',                           enUS: 'Amount below minimum' },
-  BET_CLOSED:                       { zhCN: '该场次已截止下注',                           enUS: 'Betting closed for this match' },
-  BINDING_NOT_FOUND:                { zhCN: '未找到绑定信息',                             enUS: 'Binding not found' },
-  BINDING_TYPE_INVALID:             { zhCN: '绑定类型无效',                               enUS: 'Invalid binding type' },
-  CAPTCHA_FAILED:                   { zhCN: '验证失败，请重试',                           enUS: 'Verification failed, please retry' },
-  CAPTCHA_INVALID:                  { zhCN: '验证码无效，请重新验证',                     enUS: 'Invalid captcha, please verify again' },
-  CARD_TAKEN:                       { zhCN: '该卡号已被绑定',                             enUS: 'Card already bound' },
-  CAS_RETRY_EXCEEDED:               { zhCN: '操作冲突，请重试',                           enUS: 'Concurrent conflict, please retry' },
-  CHANNEL_DISABLED:                 { zhCN: '该充值渠道暂时关闭',                         enUS: 'This deposit channel is temporarily unavailable' },
-  CHANNEL_NOT_SUPPORTED:            { zhCN: '暂不支持该渠道',                             enUS: 'Channel not supported' },
-  CIPHER_TOO_SHORT:                 { zhCN: '密文长度不足',                               enUS: 'Ciphertext too short' },
-  CUSTOMER_BLACKLISTED:             { zhCN: '账户已被拉黑',                               enUS: 'Account blacklisted' },
-  CUSTOMER_NOT_FOUND:               { zhCN: '账户不存在',                                 enUS: 'Account not found' },
-  CUSTOMER_NO_GEN_EXHAUSTED:        { zhCN: '账户号生成失败，请重试',                     enUS: 'Failed to generate account number, please retry' },
-  DAILY_WITHDRAW_LIMIT:             { zhCN: '已达每日提款上限',                           enUS: 'Daily withdrawal limit reached' },
-  DECRYPT_FAILED:                   { zhCN: '解密失败',                                   enUS: 'Decryption failed' },
-  DEPOSIT_NOT_FOUND:                { zhCN: '未找到充值记录',                             enUS: 'Deposit not found' },
-  DEPOSIT_STATUS_INVALID:           { zhCN: '充值状态不可操作',                           enUS: 'Invalid deposit status' },
-  DEVICE_BLACKLISTED:               { zhCN: '设备已被拉黑',                               enUS: 'Device blacklisted' },
-  ENCRYPT_DECRYPT_FAILED:           { zhCN: '加解密失败',                                 enUS: 'Encryption/decryption failed' },
-  ENCRYPT_FAILED:                   { zhCN: '加密失败',                                   enUS: 'Encryption failed' },
-  ENCRYPT_KID_INVALID:              { zhCN: '密钥标识无效',                               enUS: 'Invalid key id' },
-  ENCRYPT_MODE_INVALID:             { zhCN: '加密模式无效',                               enUS: 'Invalid encryption mode' },
-  ENCRYPT_NONCE_DUP:                { zhCN: '请求随机数重复',                             enUS: 'Duplicate request nonce' },
-  ENCRYPT_REQUIRED:                 { zhCN: '该接口需加密请求',                           enUS: 'Encrypted request required' },
-  ENCRYPT_TIMESTAMP_INVALID:        { zhCN: '请求时间戳无效或已过期',                     enUS: 'Invalid or expired request timestamp' },
-  FILE_NOT_FOUND:                   { zhCN: '文件不存在',                                 enUS: 'File not found' },
-  FILE_NOT_OWNED:                   { zhCN: '文件不属于当前用户',                         enUS: 'File not owned by current user' },
-  FILE_WRONG_PURPOSE:               { zhCN: '文件用途不符',                               enUS: 'File purpose mismatch' },
-  FORBIDDEN:                        { zhCN: '操作被拒绝',                                 enUS: 'Operation forbidden' },
-  HOLDER_NAME_MISMATCH:             { zhCN: '持卡人姓名不一致',                           enUS: 'Cardholder name mismatch' },
-  IDEMPOTENCY_IN_PROGRESS:          { zhCN: '请求处理中，请勿重复提交',                   enUS: 'Request in progress, please do not resubmit' },
-  IDEMPOTENCY_KEY_REQUIRED:         { zhCN: '请求缺少防重标识，请刷新后重试',             enUS: 'Missing idempotency key, please refresh and retry' },
-  ID_CARD_TAKEN:                    { zhCN: '该证件号已被使用',                           enUS: 'ID number already in use' },
-  INSUFFICIENT_BALANCE:             { zhCN: '余额不足',                                   enUS: 'Insufficient balance' },
-  INSUFFICIENT_FROZEN:              { zhCN: '冻结金额不足',                               enUS: 'Insufficient frozen amount' },
-  INSUFFICIENT_POOL:                { zhCN: '奖池余量不足',                               enUS: 'Insufficient pool capacity' },
-  INVALID_ADDRESS:                  { zhCN: '地址无效',                                   enUS: 'Invalid address' },
-  INVALID_AMOUNT:                   { zhCN: '金额无效',                                   enUS: 'Invalid amount' },
-  INVALID_CARD_NUMBER:              { zhCN: '卡号无效',                                   enUS: 'Invalid card number' },
-  INVALID_CATEGORY:                 { zhCN: '分类无效',                                   enUS: 'Invalid category' },
-  INVALID_CONTENT:                  { zhCN: '内容无效',                                   enUS: 'Invalid content' },
-  INVALID_CUSTOMER:                 { zhCN: '无效账户',                                   enUS: 'Invalid account' },
-  INVALID_DATE:                     { zhCN: '日期无效',                                   enUS: 'Invalid date' },
-  INVALID_FILE_REF:                 { zhCN: '无效的文件引用',                             enUS: 'Invalid file reference' },
-  INVALID_ID_TYPE:                  { zhCN: '证件类型无效',                               enUS: 'Invalid ID type' },
-  INVALID_PARAM:                    { zhCN: '参数无效',                                   enUS: 'Invalid parameter' },
-  INVALID_REQUEST:                  { zhCN: '请求无效',                                   enUS: 'Invalid request' },
-  INVALID_SUBJECT:                  { zhCN: '主题无效',                                   enUS: 'Invalid subject' },
-  INVALID_UPLOAD_FILE:              { zhCN: '上传文件无效',                               enUS: 'Invalid upload file' },
-  INVALID_YIELD_RANGE:              { zhCN: '收益率区间无效',                             enUS: 'Invalid yield range' },
-  IO_ERROR:                         { zhCN: '读写异常，请重试',                           enUS: 'I/O error, please retry' },
-  IP_BLACKLISTED:                   { zhCN: 'IP 已被拉黑',                                enUS: 'IP blacklisted' },
-  KYC_ALREADY_PASSED:               { zhCN: '实名认证已通过',                             enUS: 'KYC already approved' },
-  KYC_NOT_FOUND:                    { zhCN: '未找到实名认证记录',                         enUS: 'KYC record not found' },
-  KYC_NOT_UNDER_REVIEW:             { zhCN: '该认证不在审核状态',                         enUS: 'KYC is not under review' },
-  KYC_REQUIRED:                     { zhCN: '请先完成实名认证',                           enUS: 'Please complete identity verification first' },
-  KYC_RESUBMIT_NOT_ALLOWED:         { zhCN: '当前状态不可重新提交',                       enUS: 'Resubmission not allowed' },
-  KYC_STATUS_CHANGED:               { zhCN: '认证状态已变更，请刷新',                     enUS: 'KYC status changed, please refresh' },
-  KYC_UNDER_REVIEW:                 { zhCN: '实名认证审核中',                             enUS: 'KYC under review' },
-  MARKET_NOT_FOUND:                 { zhCN: '盘口不存在',                                 enUS: 'Market not found' },
-  MARKET_NOT_OPEN:                  { zhCN: '盘口未开放',                                 enUS: 'Market not open' },
-  MARKET_NOT_SETTLEABLE:            { zhCN: '盘口当前状态不可结算',                       enUS: 'Market not in a settleable state' },
-  MARKET_STATUS_CHANGED:            { zhCN: '盘口状态已变更，请刷新',                     enUS: 'Market status changed, please refresh' },
-  MATCH_NOT_FOUND:                  { zhCN: '赛事不存在',                                 enUS: 'Match not found' },
-  MAX_CARDS_EXCEEDED:               { zhCN: '银行卡数量已达上限',                         enUS: 'Maximum number of cards reached' },
-  MAX_PENDING_COUNT_EXCEEDED:       { zhCN: '未结注单数量超过上限',                       enUS: 'Max pending orders exceeded' },
-  MAX_PENDING_EXCEEDED:             { zhCN: '预约单数量已达上限',                         enUS: 'Maximum pending orders reached' },
-  MAX_PER_DAY_EXCEEDED:             { zhCN: '超出单日投注限额',                           enUS: 'Daily bet limit exceeded' },
-  MAX_PER_MATCH_EXCEEDED:           { zhCN: '超出单场投注限额',                           enUS: 'Per-match bet limit exceeded' },
-  MAX_WALLETS_EXCEEDED:             { zhCN: '钱包数量已达上限',                           enUS: 'Maximum number of wallets reached' },
-  NEW_ACCOUNT_WITHDRAW_LIMIT:       { zhCN: '新账户提现受限',                             enUS: 'New account withdrawal restricted' },
-  ORDER_CANNOT_CANCEL:              { zhCN: '该订单不可取消',                             enUS: 'Order cannot be cancelled' },
-  ORDER_NOT_FOUND:                  { zhCN: '订单不存在',                                 enUS: 'Order not found' },
-  ORDER_RATE_LIMIT:                 { zhCN: '下单过于频繁，请稍后再试',                   enUS: 'Ordering too frequently, please try again later' },
-  ORDER_STATUS_CHANGED:             { zhCN: '订单状态已变更，请刷新',                     enUS: 'Order status changed, please refresh' },
-  PASSWORD_SAME_AS_OLD:             { zhCN: '新密码不能与旧密码相同',                     enUS: 'New password must differ from the old one' },
-  PAYOUT_INTERRUPTED:               { zhCN: '派奖中断，请联系客服',                       enUS: 'Payout interrupted, contact support' },
-  PAYOUT_PARALLEL_FAIL:             { zhCN: '派奖并发失败，请重试',                       enUS: 'Payout failed, please retry' },
-  PHONE_TAKEN:                      { zhCN: '该手机号已被注册',                           enUS: 'Phone number already registered' },
-  POOL_BAD_REQUEST:                 { zhCN: '奖池请求无效',                               enUS: 'Invalid pool request' },
-  POOL_NOT_FOUND:                   { zhCN: '奖池不存在',                                 enUS: 'Pool not found' },
-  POOL_UPDATE_FAILED:               { zhCN: '奖池更新失败，请重试',                       enUS: 'Pool update failed, please retry' },
-  PWD_RESET_CODE_INVALID:           { zhCN: '重置验证码无效',                             enUS: 'Invalid reset code' },
-  PWD_RESET_CODE_LOCKED:            { zhCN: '重置验证码已锁定，请稍后再试',               enUS: 'Reset code locked, try again later' },
-  PWD_RESET_DAILY_LIMIT:            { zhCN: '今日重置次数已达上限',                       enUS: 'Daily reset limit reached' },
-  PWD_RESET_TOO_FREQUENT:           { zhCN: '操作过于频繁，请稍后再试',                   enUS: 'Too frequent, please try again later' },
-  PWD_RESET_UNAVAILABLE:            { zhCN: '找回密码暂未开放，请联系客服',               enUS: 'Password reset is currently unavailable, please contact support' },
-  READ_FAIL:                        { zhCN: '读取失败',                                   enUS: 'Read failed' },
-  REASON_REQUIRED:                  { zhCN: '请填写原因',                                 enUS: 'Reason required' },
-  REFUND_FAIL:                      { zhCN: '退款失败',                                   enUS: 'Refund failed' },
-  REGISTER_CODE_GEN_FAILED:         { zhCN: '注册码生成失败',                             enUS: 'Failed to generate registration code' },
-  REGISTER_CODE_NOT_FOUND:          { zhCN: '注册码不存在',                               enUS: 'Registration code not found' },
-  REJECT_REASON_REQUIRED:           { zhCN: '请填写驳回原因',                             enUS: 'Rejection reason required' },
-  RESET_PASSWORD_FAIL:              { zhCN: '密码重置失败',                               enUS: 'Password reset failed' },
-  RESULT_NOT_READY:                 { zhCN: '赛果未就绪',                                 enUS: 'Result not ready' },
-  RISK_REJECT:                      { zhCN: '风控拦截，暂无法下单',                       enUS: 'Blocked by risk control' },
-  SCORE_NOT_FOUND:                  { zhCN: '比分不存在',                                 enUS: 'Score not found' },
-  SCORE_SUSPENDED:                  { zhCN: '比分已暂停',                                 enUS: 'Score suspended' },
-  SESSION_INVALID:                  { zhCN: '会话无效，请重新登录',                       enUS: 'Invalid session, please log in again' },
-  SESSION_JWT_MISMATCH:             { zhCN: '会话校验失败，请重新登录',                   enUS: 'Session verification failed, please log in again' },
-  SETTLE_FAIL:                      { zhCN: '结算失败',                                   enUS: 'Settlement failed' },
-  TICKET_CLOSED:                    { zhCN: '工单已关闭',                                 enUS: 'Ticket closed' },
-  TICKET_NOT_FOUND:                 { zhCN: '工单不存在',                                 enUS: 'Ticket not found' },
-  TOKEN_EXPIRED:                    { zhCN: '登录已过期，请重新登录',                     enUS: 'Login expired, please log in again' },
-  TOKEN_REVOKED:                    { zhCN: '登录已失效，请重新登录',                     enUS: 'Login revoked, please log in again' },
-  TOTP_INVALID:                     { zhCN: '两步验证码错误',                             enUS: 'Invalid two-factor code' },
-  TOTP_NOT_INITIALIZED:             { zhCN: '尚未开启两步验证',                           enUS: 'Two-factor auth not set up' },
-  TOTP_REQUIRED:                    { zhCN: '请输入两步验证码',                           enUS: 'Two-factor code required' },
-  TRANSFER_DUPLICATE:               { zhCN: '请勿重复提交相同划转',                       enUS: 'Duplicate transfer, please wait' },
-  TRANSFER_RATE_LIMIT:              { zhCN: '划转过于频繁，请稍后再试',                   enUS: 'Too many transfers, try again later' },
-  TRANSFER_SELF:                    { zhCN: '不能划转给自己',                             enUS: 'Cannot transfer to yourself' },
-  TRANSFER_TARGET_DISABLED:         { zhCN: '对方账户状态异常，无法划转',                 enUS: 'Recipient account unavailable' },
-  TRANSFER_TARGET_NOT_FOUND:        { zhCN: '对方客户号不存在',                           enUS: 'Recipient customer No. not found' },
-  UNAUTHORIZED:                     { zhCN: '请先登录',                                   enUS: 'Please log in first' },
-  UPLOAD_BASE64_INVALID:            { zhCN: '上传的 Base64 数据无效',                     enUS: 'Invalid Base64 upload data' },
-  UPLOAD_EMPTY:                     { zhCN: '上传内容为空',                               enUS: 'Upload is empty' },
-  UPLOAD_HASH_MISMATCH:             { zhCN: '文件校验失败，请重传',                       enUS: 'File hash mismatch, please re-upload' },
-  UPLOAD_MIME_INVALID:              { zhCN: '文件类型不支持',                             enUS: 'Unsupported file type' },
-  UPLOAD_MIME_MAGIC_MISMATCH:       { zhCN: '文件类型校验失败',                           enUS: 'File type check failed' },
-  UPLOAD_NONCE_DUP:                 { zhCN: '上传请求重复',                               enUS: 'Duplicate upload request' },
-  UPLOAD_NONCE_REQUIRED:            { zhCN: '缺少上传随机串',                             enUS: 'Upload nonce required' },
-  UPLOAD_PURPOSE_REQUIRED:          { zhCN: '缺少上传用途',                               enUS: 'Upload purpose required' },
-  UPLOAD_READ_FAIL:                 { zhCN: '文件读取失败',                               enUS: 'Failed to read file' },
-  UPLOAD_SCAN_UNAVAILABLE:          { zhCN: '安全扫描暂不可用，请稍后',                   enUS: 'Security scan unavailable, try later' },
-  UPLOAD_SHA_REQUIRED:              { zhCN: '缺少文件校验码',                             enUS: 'File checksum required' },
-  UPLOAD_SIG_INVALID:               { zhCN: '上传签名无效',                               enUS: 'Invalid upload signature' },
-  UPLOAD_TOO_LARGE:                 { zhCN: '文件过大',                                   enUS: 'File too large' },
-  UPLOAD_TS_INVALID:                { zhCN: '上传时间戳无效',                             enUS: 'Invalid upload timestamp' },
-  UPLOAD_VIRUS_DETECTED:            { zhCN: '检测到风险文件，已拒绝',                     enUS: 'Malicious file detected, rejected' },
-  USDT_AMOUNT_POOL_EXHAUSTED:       { zhCN: '当前金额暂无可用收款，请稍后再试',           enUS: 'No receiving address available for this amount, try later' },
-  USDT_RECEIVE_ADDRESS_NOT_CONFIGURED: { zhCN: '收款地址未配置，请联系客服',              enUS: 'Receiving address not configured, contact support' },
-  USERNAME_TAKEN:                   { zhCN: '该用户名已被注册',                           enUS: 'Username already taken' },
-  VIP_LEVEL_NOT_FOUND:              { zhCN: 'VIP 等级不存在',                             enUS: 'VIP level not found' },
-  WALLET_NOT_FOUND:                 { zhCN: '钱包不存在',                                 enUS: 'Wallet not found' },
-  WINNING_SCORE_MISSING:            { zhCN: '缺少中奖比分',                               enUS: 'Winning score missing' },
-  WITHDRAW_LOCKED:                  { zhCN: '提款已锁定',                                 enUS: 'Withdrawal locked' },
-  WITHDRAW_METHOD_DISABLED:         { zhCN: '该提现方式暂时关闭',                         enUS: 'This withdrawal method is temporarily unavailable' },
-  WITHDRAW_NOT_FOUND:               { zhCN: '未找到提款记录',                             enUS: 'Withdrawal not found' },
-  WITHDRAW_PASSWORD_NOT_SET:        { zhCN: '请先设置提款密码',                           enUS: 'Please set a withdrawal password first' },
-  WITHDRAW_PASSWORD_WRONG:          { zhCN: '提款密码错误',                               enUS: 'Incorrect withdrawal password' },
-  WITHDRAW_RATE_LIMIT:              { zhCN: '提现过于频繁，请稍后再试',                   enUS: 'Withdrawal too frequent, please try again later' },
-  WITHDRAW_STATUS_INVALID:          { zhCN: '提款状态不可操作',                           enUS: 'Invalid withdrawal status' },
-  WITHDRAW_TURNOVER_REQUIRED:       { zhCN: '未达流水要求，暂不可提现',                   enUS: 'Turnover requirement not met for withdrawal' },
-  YIELD_CHANGED:                    { zhCN: '收益率已变动，请确认后再下单',               enUS: 'Yield changed, please confirm again' },
-  YIELD_NOT_READY:                  { zhCN: '收益率未就绪，请稍后',                       enUS: 'Yield not ready yet' },
+const FALLBACK_MAP = {
+  SESSION_INVALID:      { zhCN: '会话无效，请重新登录', enUS: 'Invalid session, please log in again' },
+  SESSION_JWT_MISMATCH: { zhCN: '会话校验失败，请重新登录', enUS: 'Session verification failed, please log in again' },
+  TOKEN_EXPIRED:        { zhCN: '登录已过期，请重新登录', enUS: 'Login expired, please log in again' },
+  TOKEN_REVOKED:        { zhCN: '登录已失效，请重新登录', enUS: 'Login revoked, please log in again' },
+  UNAUTHORIZED:         { zhCN: '请先登录', enUS: 'Please log in first' },
+  LOGGED_IN_ELSEWHERE:  { zhCN: '您的账号已在其他设备登录，本次登录已下线', enUS: 'Your account has logged in on another device; this session was signed out' },
+  ACCOUNT_DISABLED:     { zhCN: '账号已被禁用', enUS: 'Account disabled' },
+  CUSTOMER_BLACKLISTED: { zhCN: '账户已被拉黑', enUS: 'Account blacklisted' },
 };
 
-/**
- * 将后端返回的 msg（可能是错误码如 ACCOUNT_OR_PASSWORD_WRONG，也可能是直接的文本）
- * 翻译为当前语言的用户友好消息。
- *
- * 查找顺序：ERROR_MAP[msg] → 原文 fallback
- */
+let remoteMap = {};
+let loaded = false;
+let loading = null;
+
+export async function loadErrorCodes() {
+  if (loaded) return;
+  if (loading) return loading;
+  loading = (async () => {
+    try {
+      const res = await fetch('/api/meta/error-codes');
+      const json = await res.json();
+      if (json.code === 200 && Array.isArray(json.data)) {
+        const map = {};
+        for (const item of json.data) {
+          if (item.code) {
+            map[item.code] = { zhCN: item.zhCN || '', enUS: item.enUS || '' };
+          }
+        }
+        remoteMap = map;
+        loaded = true;
+        if (import.meta.env.DEV) {
+          console.log(`%c[ErrorCodes]%c 已加载 ${Object.keys(map).length} 个错误码`, 'background:#1565c0;color:#fff;padding:2px 6px;border-radius:3px', '');
+        }
+      }
+    } catch {
+      /* 非关键，静默失败 */
+    } finally {
+      loading = null;
+    }
+  })();
+  return loading;
+}
+
 export function resolveErrorMessage(msg) {
   if (!msg) return '';
-  const entry = ERROR_MAP[msg];
+  const entry = remoteMap[msg] || FALLBACK_MAP[msg];
   if (!entry) return msg;
   const locale = getCurrentLocale();
   return locale === 'en-US' ? entry.enUS : entry.zhCN;
+}
+
+export const FORCE_LOGOUT_CODES = new Set([
+  'LOGGED_IN_ELSEWHERE',
+  'TOKEN_EXPIRED',
+  'TOKEN_REVOKED',
+  'ACCOUNT_DISABLED',
+  'CUSTOMER_BLACKLISTED',
+]);
+
+export function isForceLogoutCode(code) {
+  return FORCE_LOGOUT_CODES.has(code);
 }

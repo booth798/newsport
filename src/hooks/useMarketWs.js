@@ -29,12 +29,27 @@ export function useMarketWs(marketIdRef) {
   }
 
   function handleMessage(msg) {
-    if (msg.type !== 'yields') return;
     if (msg.marketId != null && String(msg.marketId) !== String(currentMarketId)) return;
 
-    const update = msg.data;
-    if (update && typeof update === 'object') {
+    if (msg.type === 'yields' && msg.data && typeof msg.data === 'object') {
+      const update = {};
+      for (const [key, val] of Object.entries(msg.data)) {
+        update[key] = typeof val === 'object' ? val : val;
+      }
       yields.value = { ...yields.value, ...update };
+      return;
+    }
+
+    if (msg.score && (msg.yieldPct != null || msg.poolAmount != null || msg.suspended != null)) {
+      yields.value = {
+        ...yields.value,
+        [msg.score]: {
+          yieldPct: msg.yieldPct,
+          poolAmount: msg.poolAmount,
+          feeRate: msg.feeRate,
+          suspended: msg.suspended,
+        },
+      };
     }
   }
 
@@ -50,24 +65,33 @@ export function useMarketWs(marketIdRef) {
       ticket = await fetchWsTicket();
     } catch { /* 降级到 token */ }
 
+    if (currentMarketId !== marketId) return;
+
     const urlFactory = () => buildWsUrl(`/ws/market/${marketId}`, ticket);
+
+    let wsOpenedOnce = false;
 
     wsControls = useWebSocket(urlFactory, {
       onMessage: handleMessage,
-      onOpen: () => { wsStatus.value = 'connected'; stopPolling(); },
+      onOpen: () => {
+        wsOpenedOnce = true;
+        wsStatus.value = 'connected';
+        stopPolling();
+      },
       onClose: () => {
         wsStatus.value = 'disconnected';
-        startPolling(marketId);
+        if (currentMarketId === marketId) startPolling(marketId);
       },
-      onError: () => { wsStatus.value = 'disconnected'; },
+      onError: () => {
+        wsStatus.value = 'disconnected';
+        if (!wsOpenedOnce && currentMarketId === marketId) startPolling(marketId);
+      },
       heartbeatMs: 25000,
       autoConnect: false,
     });
 
     wsStatus.value = 'connecting';
     wsControls.connect();
-
-    startPolling(marketId);
   }
 
   async function pollYields(marketId) {

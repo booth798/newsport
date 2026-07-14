@@ -1,218 +1,390 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
 import { useAppStore } from '@/store/modules/app';
-import { fetchRecords, fetchLedgerSummary } from '@/api/finance';
+import { useUserStore } from '@/store/modules/user';
+import { fetchLedgerSummary } from '@/api/finance';
+import { fetchOrderList, cancelOrder } from '@/api/order';
+import { useToast } from '@/hooks/useToast';
+import { resolveTeamLogoUrl } from '@/constants/teamLogos';
 
 const { t } = useI18n();
+const router = useRouter();
+const toast = useToast();
 const appStore = useAppStore();
+const userStore = useUserStore();
 const { isMobile } = storeToRefs(appStore);
 
-const filterOptions = [
-  { key: 'all', label: '全部' },
-  { key: 'deposit', label: '充值' },
-  { key: 'withdraw', label: '提现' },
-  { key: 'trade', label: '订单' },
-];
+const PAGE_SIZE = 20;
 
-const FILTER_TO_TYPES = {
-  deposit: ['DEPOSIT', 'TRANSFER_IN', 'REFUND'],
-  withdraw: ['WITHDRAW', 'TRANSFER_OUT'],
-  trade: ['BET', 'PAYOUT', 'FEE'],
-};
-
-const records = ref([]);
+const orders = ref([]);
 const loading = ref(true);
+const loadingMore = ref(false);
 const error = ref(false);
-const selectedFilter = ref('all');
-const filterOpen = ref(false);
+const pageNum = ref(1);
+const hasMore = ref(false);
 
 const summary = ref({ totalIncome: 0, totalExpense: 0, netProfit: 0 });
-const summaryLoading = ref(false);
+const expandedId = ref(null);
+const cancelingId = ref(null);
 
-const pageNum = ref(1);
-const pageSize = 20;
-const totalRecords = ref(0);
-const totalPages = computed(() => Math.ceil(totalRecords.value / pageSize) || 1);
-
-function formatSummaryMoney(val) {
-  const n = Number(val) || 0;
-  return n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function formatMoney(val) {
+  if (val == null || val === '') return '0.00';
+  const n = Number(val);
+  if (isNaN(n)) return String(val);
+  return Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-async function loadSummary() {
-  summaryLoading.value = true;
+function formatKickoff(iso) {
+  if (!iso) return '';
   try {
-    const res = await fetchLedgerSummary();
-    summary.value = res.data || { totalIncome: 0, totalExpense: 0, netProfit: 0 };
-  } catch { /* non-critical */ }
-  finally { summaryLoading.value = false; }
+    const d = new Date(iso);
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    return `${mm}-${dd} ${hh}:${mi}`;
+  } catch { return ''; }
 }
 
-async function loadRecords() {
+function formatFullDateTime(iso) {
+  if (!iso) return '';
   try {
-    loading.value = true;
+    const d = new Date(iso);
+    const y = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    const ss = String(d.getSeconds()).padStart(2, '0');
+    return `${y}-${mm}-${dd} ${hh}:${mi}:${ss}`;
+  } catch { return ''; }
+}
+
+function mapOrderState(status) {
+  if (!status) return 'unknown';
+  const s = status.toUpperCase();
+  if (['PENDING_MATCH', 'PLACED', 'PENDING', 'CREATED'].includes(s)) return 'processing';
+  if (['WON', 'LOST', 'REFUNDED', 'SETTLED', 'SETTLED_WON', 'SETTLED_LOST'].includes(s)) return 'completed';
+  if (['CANCELLED', 'CANCELED', 'FAILED', 'REJECTED', 'EXPIRED'].includes(s)) return 'cancelled';
+  return 'unknown';
+}
+
+function parseMatchScore(scoreStr) {
+  if (!scoreStr) return null;
+  const parts = scoreStr.split(/[:\-]/);
+  if (parts.length === 2 && parts[0].trim() && parts[1].trim()) {
+    return { home: parts[0].trim(), away: parts[1].trim() };
+  }
+  return null;
+}
+
+function normalizeOrder(o) {
+  const status = o.status || o.orderStatus || '';
+  const state = mapOrderState(status);
+  const amount = Number(o.amount || o.orderAmount || 0);
+  const payout = state === 'completed'
+    ? Number(o.payout || o.profit || o.returnAmount || 0)
+    : Number(o.estimatedPayout || o.payout || 0);
+
+  const league = o.leagueName || o.marketName || '';
+  const leagueShort = o.leagueShortName || league;
+  const leagueLogo = o.leagueLogo || o.leagueLogoUrl || '';
+  const homeTeam = o.homeTeamShortName || o.homeTeamName || '';
+  const awayTeam = o.awayTeamShortName || o.awayTeamName || '';
+  const homeLogo = o.homeTeamLogoUrl || o.homeTeamLogo || o.homeLogoUrl || '';
+  const awayLogo = o.awayTeamLogoUrl || o.awayTeamLogo || o.awayLogoUrl || '';
+  const kickoff = o.matchKickoffAt || o.kickoffAt || o.matchTime || '';
+  const placedAt = o.placedAt || o.createdAt || '';
+  const score = o.score || '';
+  const yieldAtBuy = o.yieldAtBuy || o.yieldPct || o.yield || '';
+  const matchScore = o.matchScore || '';
+  const orderNo = o.orderNo || o.orderId || o.id || '';
+  const parsedScore = parseMatchScore(matchScore);
+
+  let marketLabel = '';
+  if (score && yieldAtBuy) {
+    const yieldFormatted = Number(String(yieldAtBuy).replace(/%$/, '')).toFixed(2);
+    marketLabel = `比分 ${score} @${yieldFormatted}%`;
+  } else {
+    marketLabel = o.period || o.marketName || '';
+  }
+
+  return {
+    id: o.id,
+    status,
+    state,
+    statusText: o.statusLabel || status,
+    amount,
+    amountFormatted: formatMoney(amount),
+    payout,
+    payoutFormatted: formatMoney(payout),
+    league: leagueShort,
+    leagueLogo,
+    homeTeam,
+    awayTeam,
+    homeLogo: resolveTeamLogoUrl(homeTeam, homeLogo),
+    awayLogo: resolveTeamLogoUrl(awayTeam, awayLogo),
+    kickoffFormatted: formatKickoff(kickoff),
+    placedAtFormatted: formatFullDateTime(placedAt),
+    matchScore,
+    parsedScore,
+    marketLabel,
+    orderNo,
+    cancelable: state === 'processing',
+    profitLabel: state === 'completed' ? '盈利' : '预估盈利',
+    _raw: o,
+  };
+}
+
+async function loadPage(page, append = false) {
+  try {
+    if (page === 1) loading.value = true;
+    else loadingMore.value = true;
     error.value = false;
-    const typesParam = FILTER_TO_TYPES[selectedFilter.value];
-    const res = await fetchRecords({
-      types: typesParam,
-      pageNum: pageNum.value,
-      pageSize,
-    });
-    records.value = res.data || [];
-    totalRecords.value = res.total || 0;
+
+    const promises = [fetchOrderList({ pageNum: page, pageSize: PAGE_SIZE })];
+    if (page === 1) promises.push(fetchLedgerSummary().catch(() => null));
+
+    const [orderRes, summaryRes] = await Promise.all(promises);
+
+    if (summaryRes?.data) {
+      const d = summaryRes.data;
+      summary.value = {
+        totalIncome: d.totalIncome ?? d.income ?? d.totalIn ?? d.depositTotal ?? 0,
+        totalExpense: d.totalExpense ?? d.expense ?? d.totalOut ?? d.withdrawTotal ?? 0,
+        netProfit: d.netProfit ?? d.netIncome ?? d.profit ?? d.profitLoss ?? 0,
+      };
+    }
+
+    const page_ = orderRes.data || {};
+    const records = (page_.records || []).map(normalizeOrder);
+    const total = page_.total;
+    const pages = page_.pages;
+    const current = page_.current || page;
+    const size = page_.size || PAGE_SIZE;
+
+    if (append) {
+      orders.value = [...orders.value, ...records];
+    } else {
+      orders.value = records;
+    }
+
+    pageNum.value = page;
+    hasMore.value = pages != null
+      ? current < pages
+      : total != null
+        ? current * size < total
+        : records.length >= PAGE_SIZE;
   } catch {
     error.value = true;
   } finally {
     loading.value = false;
+    loadingMore.value = false;
   }
+}
+
+function loadMore() {
+  if (loadingMore.value || !hasMore.value) return;
+  loadPage(pageNum.value + 1, true);
+}
+
+function toggleExpand(id) {
+  expandedId.value = expandedId.value === id ? null : id;
+}
+
+async function handleCancel(order) {
+  if (cancelingId.value) return;
+  cancelingId.value = order.id;
+  try {
+    await cancelOrder(order.id);
+    toast.success(t('订单已取消'));
+    loadPage(1);
+  } catch (e) {
+    toast.error(e.message || t('取消失败'));
+  } finally {
+    cancelingId.value = null;
+  }
+}
+
+function copyOrderNo(orderNo) {
+  navigator.clipboard?.writeText(orderNo).then(() => {
+    toast.success(t('已复制'));
+  }).catch(() => {});
+}
+
+function goToMarket() {
+  router.push('/market');
 }
 
 onMounted(() => {
-  loadSummary();
-  loadRecords();
+  if (userStore.isLoggedIn) loadPage(1);
 });
 
-const selectedFilterLabel = computed(() => {
-  return filterOptions.find((item) => item.key === selectedFilter.value)?.label || '全部';
+watch(() => userStore.isLoggedIn, (loggedIn) => {
+  if (loggedIn) {
+    loadPage(1);
+  } else {
+    orders.value = [];
+    summary.value = { totalIncome: 0, totalExpense: 0, netProfit: 0 };
+  }
 });
-
-watch(
-  isMobile,
-  (mobile) => { filterOpen.value = !mobile; },
-  { immediate: true },
-);
-
-function selectFilter(key) {
-  selectedFilter.value = key;
-  pageNum.value = 1;
-  if (isMobile.value) filterOpen.value = false;
-  loadRecords();
-}
-
-function prevPage() {
-  if (pageNum.value > 1) {
-    pageNum.value--;
-    loadRecords();
-  }
-}
-
-function nextPage() {
-  if (pageNum.value < totalPages.value) {
-    pageNum.value++;
-    loadRecords();
-  }
-}
-
-function recordDescription(record) {
-  return record.descKey ? t(record.descKey) : record.desc || '';
-}
 </script>
 
 <template>
   <div class="records-page">
-    <!-- 汇总卡片 -->
-    <section class="records-summary">
-      <div class="records-summary__top">
-        <span>{{ t('账务汇总') }}</span>
-        <div class="records-filter" :class="{ 'records-filter--open': filterOpen }">
-          <button
-            type="button"
-            class="records-filter__trigger"
-            :aria-expanded="filterOpen"
-            @click="filterOpen = !filterOpen"
-          >
-            {{ t(selectedFilterLabel) }}
-            <span class="records-filter__chevron" aria-hidden="true" />
-          </button>
-          <div v-show="filterOpen" class="records-filter__menu" role="menu">
-            <button
-              v-for="option in filterOptions"
-              :key="option.key"
-              type="button"
-              class="records-filter__option"
-              :class="{ active: selectedFilter === option.key }"
-              role="menuitem"
-              @click="selectFilter(option.key)"
-            >
-              {{ t(option.label) }}
-            </button>
-          </div>
-        </div>
+    <!-- 汇总头 -->
+    <section class="fin-summary">
+      <div class="fin-summary__item">
+        <span class="fin-summary__label">{{ t('总收入') }}</span>
+        <span class="fin-summary__value fin-summary__value--income">{{ formatMoney(summary.totalIncome) }}</span>
       </div>
-      <div class="records-summary__stats">
-        <div class="records-summary__stat">
-          <span class="records-summary__stat-label">{{ t('总收入') }}</span>
-          <span class="records-summary__stat-value records-summary__stat-value--income">+¥{{ formatSummaryMoney(summary.totalIncome) }}</span>
-        </div>
-        <div class="records-summary__stat">
-          <span class="records-summary__stat-label">{{ t('总支出') }}</span>
-          <span class="records-summary__stat-value records-summary__stat-value--expense">-¥{{ formatSummaryMoney(summary.totalExpense) }}</span>
-        </div>
-        <div class="records-summary__stat">
-          <span class="records-summary__stat-label">{{ t('净收益') }}</span>
-          <span class="records-summary__stat-value records-summary__stat-value--profit">¥{{ formatSummaryMoney(summary.netProfit) }}</span>
-        </div>
+      <div class="fin-summary__item">
+        <span class="fin-summary__label">{{ t('总支出') }}</span>
+        <span class="fin-summary__value fin-summary__value--expense">{{ formatMoney(summary.totalExpense) }}</span>
+      </div>
+      <div class="fin-summary__item">
+        <span class="fin-summary__label">{{ t('净收益') }}</span>
+        <span class="fin-summary__value fin-summary__value--profit">{{ formatMoney(summary.netProfit) }}</span>
       </div>
     </section>
 
-    <!-- 列表 -->
-    <div v-if="loading" class="records-list records-list--center">
-      <div class="records-spinner" />
+    <!-- Loading -->
+    <div v-if="loading" class="fin-state">
+      <div class="fin-spinner" />
       <span>{{ t('加载中') }}</span>
     </div>
-    <div v-else-if="error" class="records-list records-list--center">
-      <span>{{ t('加载失败') }}</span>
-      <button type="button" class="records-retry" @click="loadRecords">{{ t('重试') }}</button>
-    </div>
-    <div v-else-if="!records.length" class="records-list records-list--center">
-      <span>{{ t('暂无数据') }}</span>
-    </div>
-    <div v-else class="records-list">
-      <article v-for="record in records" :key="record.id" class="record-card">
-        <header class="record-card__header">
-          <span class="record-card__type" :class="{
-            'record-card__type--deposit': record.type === 'deposit',
-            'record-card__type--withdraw': record.type === 'withdraw',
-          }">
-            {{ t(record.typeLabel) }}
-          </span>
-          <time class="record-card__time">{{ record.time }}</time>
-          <span class="record-card__amount" :class="{
-            'record-card__amount--positive': record._raw?.amount >= 0,
-            'record-card__amount--negative': record._raw?.amount < 0,
-          }">
-            {{ record.amount }}
-          </span>
-        </header>
 
-        <div v-if="record._raw" class="record-card__body">
-          <div v-if="record._raw.balanceAfter != null" class="record-card__row">
-            <span class="record-card__label">{{ t('变动后余额') }}</span>
-            <strong class="record-card__value">¥{{ formatSummaryMoney(record._raw.balanceAfter) }}</strong>
+    <!-- Error -->
+    <div v-else-if="error" class="fin-state">
+      <span>{{ t('加载失败') }}</span>
+      <button type="button" class="fin-retry" @click="loadPage(1)">{{ t('重试') }}</button>
+    </div>
+
+    <!-- Empty -->
+    <div v-else-if="!orders.length" class="fin-empty">
+      <div class="fin-empty__icon" aria-hidden="true"><span /></div>
+      <p>{{ t('暂无记录') }}</p>
+      <button type="button" class="fin-empty__btn" @click="goToMarket">{{ t('前往比赛') }}</button>
+    </div>
+
+    <!-- 订单列表 -->
+    <div v-else class="fin-list">
+      <article
+        v-for="order in orders"
+        :key="order.id"
+        class="ord"
+        :class="{ 'ord--expanded': expandedId === order.id }"
+      >
+        <!-- 顶栏：平台 + 开赛时间 + 状态 -->
+        <div class="ord__top">
+          <span class="ord__platform">UNI BET</span>
+          <span v-if="order.kickoffFormatted" class="ord__kickoff">{{ order.kickoffFormatted }}</span>
+          <span
+            v-if="order.statusText"
+            class="ord__badge"
+            :class="`ord__badge--${order.state}`"
+          >{{ order.statusText }}</span>
+        </div>
+
+        <div class="ord__divider" />
+
+        <!-- 联赛 -->
+        <div class="ord__league">
+          <img
+            class="ord__league-logo"
+            :src="order.leagueLogo || '/favicon.ico'"
+            alt=""
+            width="24"
+            height="24"
+            @error="(e) => e.target.src = '/favicon.ico'"
+          />
+          <span class="ord__league-name">{{ order.league }}</span>
+        </div>
+
+        <!-- 对阵区 -->
+        <div class="ord__arena">
+          <div class="ord__arena-inner">
+            <div class="ord__team">
+              <img v-if="order.homeLogo" class="ord__team-logo" :src="order.homeLogo" alt="" width="44" height="44" @error="(e) => e.target.style.display='none'" />
+              <div class="ord__team-name">
+                <span class="ord__host-tag">{{ t('主') }}</span>
+                {{ order.homeTeam }}
+              </div>
+            </div>
+            <div class="ord__score-area">
+              <template v-if="order.parsedScore">
+                <span class="ord__score ord__score--home">{{ order.parsedScore.home }}</span>
+                <span class="ord__vs">:</span>
+                <span class="ord__score ord__score--away">{{ order.parsedScore.away }}</span>
+              </template>
+              <span v-else class="ord__vs">VS</span>
+            </div>
+            <div class="ord__team">
+              <img v-if="order.awayLogo" class="ord__team-logo" :src="order.awayLogo" alt="" width="44" height="44" @error="(e) => e.target.style.display='none'" />
+              <span class="ord__team-name">{{ order.awayTeam }}</span>
+            </div>
           </div>
-          <div v-if="record._raw.matchLabel" class="record-card__row">
-            <span class="record-card__label">{{ t('赛事') }}</span>
-            <strong class="record-card__value">{{ record._raw.matchLabel }}</strong>
+        </div>
+
+        <!-- 金额摘要 -->
+        <div class="ord__money">
+          <div class="ord__money-row">
+            <span class="ord__money-label">{{ t('交易金额') }}</span>
+            <span class="ord__money-val">{{ order.amountFormatted }}</span>
           </div>
-          <div v-if="record._raw.matchScore" class="record-card__row">
-            <span class="record-card__label">{{ t('比分') }}</span>
-            <strong class="record-card__value">{{ record._raw.matchScore }}</strong>
+          <div class="ord__money-row">
+            <span class="ord__money-label">{{ t(order.profitLabel) }}</span>
+            <span class="ord__money-val ord__money-val--profit">{{ order.payoutFormatted }}</span>
           </div>
-          <div v-if="record._raw.remark && !record._raw.matchLabel" class="record-card__row">
-            <span class="record-card__label">{{ t('备注') }}</span>
-            <strong class="record-card__value">{{ record._raw.remark }}</strong>
+        </div>
+
+        <!-- 展开详情 -->
+        <div v-if="expandedId === order.id" class="ord__detail">
+          <div class="ord__detail-row">
+            <span class="ord__detail-label">{{ t('订单号') }}</span>
+            <span class="ord__detail-val ord__detail-val--copy" @click.stop="copyOrderNo(order.orderNo)">
+              {{ order.orderNo }}
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M10 3V2.5A1.5 1.5 0 008.5 1h-6A1.5 1.5 0 001 2.5v6A1.5 1.5 0 002.5 10H3" stroke="currentColor" stroke-width="1.2"/></svg>
+            </span>
           </div>
+          <div class="ord__detail-row">
+            <span class="ord__detail-label">{{ t('下单时间') }}</span>
+            <span class="ord__detail-val">{{ order.placedAtFormatted }}</span>
+          </div>
+          <div v-if="order.marketLabel" class="ord__detail-row">
+            <span class="ord__detail-label">{{ t('市场') }}</span>
+            <span class="ord__detail-val">{{ order.marketLabel }}</span>
+          </div>
+          <div class="ord__detail-row">
+            <span class="ord__detail-label">{{ t('金额') }}</span>
+            <span class="ord__detail-val">{{ order.amountFormatted }}</span>
+          </div>
+
+          <button
+            v-if="order.cancelable"
+            type="button"
+            class="ord__cancel"
+            :disabled="cancelingId === order.id"
+            @click.stop="handleCancel(order)"
+          >
+            {{ cancelingId === order.id ? t('取消中...') : t('取消订单') }}
+          </button>
+        </div>
+
+        <!-- 展开/收起 -->
+        <div class="ord__toggle" @click="toggleExpand(order.id)">
+          <span class="ord__chevron" :class="{ 'ord__chevron--up': expandedId === order.id }" />
         </div>
       </article>
 
-      <!-- 分页 -->
-      <div v-if="totalPages > 1" class="records-pagination">
-        <button type="button" :disabled="pageNum <= 1" @click="prevPage">{{ t('上一页') }}</button>
-        <span>{{ pageNum }} / {{ totalPages }}</span>
-        <button type="button" :disabled="pageNum >= totalPages" @click="nextPage">{{ t('下一页') }}</button>
+      <!-- 加载更多 -->
+      <div v-if="hasMore" class="fin-state" style="min-height: 60px">
+        <button v-if="!loadingMore" type="button" class="fin-load-more" @click="loadMore">{{ t('加载更多') }}</button>
+        <div v-else class="fin-spinner" />
       </div>
     </div>
   </div>
@@ -224,29 +396,76 @@ function recordDescription(record) {
 .records-page {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   width: 100%;
   max-width: 100%;
-
-  @include mobile-only {
-    overflow-x: hidden;
-  }
 }
 
-.records-spinner {
+// --- 汇总头 ---
+.fin-summary {
+  display: flex;
+  gap: 0;
+  padding: 16px;
+  border-radius: 16px;
+  background: #fff;
+  border: 0.8px solid #fff;
+  box-shadow: 0 4px 16px rgba(21, 58, 118, 0.08);
+}
+
+.fin-summary__item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 0;
+  border-radius: 6px;
+  background: rgba(28, 123, 255, 0.1);
+
+  &:nth-child(2) { margin: 0 6px; }
+}
+
+.fin-summary__label {
+  font-size: 14px;
+  color: #7b92ad;
+}
+
+.fin-summary__value {
+  font-family: $font-family-num, $font-family-base;
+  font-size: 16px;
+  font-weight: 700;
+
+  &--income { color: #1c7bff; }
+  &--expense { color: #ff2d2d; }
+  &--profit { color: #1c7bff; }
+}
+
+// --- 状态 ---
+.fin-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  gap: 12px;
+  color: #7b92ad;
+  font-size: 14px;
+}
+
+.fin-spinner {
   width: 24px;
   height: 24px;
   border: 3px solid #e4f0fe;
   border-top-color: #1c7bff;
   border-radius: 50%;
-  animation: records-spin 0.8s linear infinite;
+  animation: fin-spin 0.8s linear infinite;
 }
 
-@keyframes records-spin {
+@keyframes fin-spin {
   to { transform: rotate(360deg); }
 }
 
-.records-retry {
+.fin-retry {
   height: 32px;
   padding: 0 20px;
   border: 1px solid #1c7bff;
@@ -257,265 +476,349 @@ function recordDescription(record) {
   cursor: pointer;
 }
 
-// --- 汇总卡片 ---
-.records-summary {
-  position: relative;
-  z-index: 2;
-  padding: 16px;
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 4px 16px rgba(21, 58, 118, 0.08);
+.fin-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: 8px;
+  color: rgba(11, 52, 98, 0.5);
+
+  p { margin: 0 0 12px; font-size: 14px; }
 }
 
-.records-summary__top {
+.fin-empty__icon {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(116, 174, 252, 0.24));
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  color: #0b3462;
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 12px;
+  justify-content: center;
+
+  span {
+    width: 44px;
+    height: 54px;
+    border-radius: 6px;
+    background: linear-gradient(180deg, #c8def9, #8cbcff);
+  }
 }
 
-.records-summary__stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+.fin-empty__btn {
+  width: 166px;
+  height: 44px;
+  border: none;
+  border-radius: 22px;
+  background: #1c7bff;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fin-load-more {
+  height: 36px;
+  padding: 0 24px;
+  border: 1px solid #e4f0fe;
+  border-radius: 18px;
+  background: #fff;
+  color: #1c7bff;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.fin-list {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
 }
 
-.records-summary__stat {
+// --- 订单卡片 ---
+.ord {
+  padding: 12px;
+  border-radius: 16px;
+  background: #f0f4f8;
+  box-sizing: border-box;
+}
+
+.ord__top {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ord__platform {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0b3462;
+}
+
+.ord__kickoff {
+  flex: 1;
+  font-size: 14px;
+  color: #0b3462;
+  margin-left: 4px;
+}
+
+.ord__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 60px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+
+  &--processing {
+    background: rgba(28, 123, 255, 0.15);
+    color: #1c7bff;
+  }
+
+  &--completed {
+    background: rgba(11, 52, 98, 0.1);
+    color: #0b3462;
+  }
+
+  &--cancelled {
+    background: rgba(255, 45, 45, 0.1);
+    color: #ff2d2d;
+  }
+
+  &--unknown {
+    background: rgba(11, 52, 98, 0.1);
+    color: #0b3462;
+  }
+}
+
+.ord__divider {
+  height: 1px;
+  margin: 10px 0;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.ord__league {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.ord__league-logo {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.ord__league-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0b3462;
+}
+
+// --- 对阵区 ---
+.ord__arena {
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.ord__arena-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 80px;
+  padding: 12px 10px;
+  background: #fff;
+  background-image: url('@/assets/images/events/bg_score.svg');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  border-radius: 16px;
+}
+
+.ord__team {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 10px 0;
-  border-radius: 10px;
-  background: #f5f8fc;
+  min-width: 0;
 }
 
-.records-summary__stat-label {
-  font-size: 12px;
-  color: #6b7c93;
+.ord__team-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: contain;
 }
 
-.records-summary__stat-value {
-  font-family: $font-family-num, $font-family-base;
-  font-size: 15px;
-  font-weight: 700;
-
-  &--income { color: #27ae60; }
-  &--expense { color: #e74c3c; }
-  &--profit { color: #1c7bff; }
-}
-
-// --- 筛选 ---
-.records-filter {
-  position: relative;
-  flex-shrink: 0;
-}
-
-.records-filter__trigger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-width: 64px;
-  height: 28px;
-  padding: 0 12px;
-  border: none;
-  border-radius: 14px;
-  background: #1c7bff;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.records-filter__chevron {
-  width: 0;
-  height: 0;
-  border-left: 4px solid transparent;
-  border-right: 4px solid transparent;
-  border-top: 5px solid currentColor;
-  transform: translateY(1px);
-}
-
-.records-filter__menu {
-  position: absolute;
-  top: 35px;
-  right: 0;
-  width: 100px;
-  padding: 6px;
-  border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 6px 20px rgba(21, 58, 118, 0.15);
-  z-index: 10;
-}
-
-.records-filter__option {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 34px;
-  border: none;
-  background: transparent;
-  color: #0b3462;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  border-radius: 8px;
-
-  &:hover,
-  &.active {
-    color: #1c7bff;
-    background: rgba(28, 123, 255, 0.1);
-  }
-}
-
-// --- 列表 ---
-.records-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-
-  &--center {
-    align-items: center;
-    justify-content: center;
-    min-height: 200px;
-    gap: 12px;
-    color: #6b7c93;
-    font-size: 14px;
-  }
-}
-
-.record-card {
-  padding: 14px 16px;
-  border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(21, 58, 118, 0.05);
-}
-
-.record-card__header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.record-card__type {
-  position: relative;
-  padding-left: 10px;
+.ord__team-name {
   font-size: 14px;
-  font-weight: 600;
-  color: #1c7bff;
-
-  &::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    width: 3px;
-    height: 14px;
-    border-radius: 2px;
-    background: #1c7bff;
-    transform: translateY(-50%);
-  }
-
-  &--deposit {
-    color: #27ae60;
-    &::before { background: #27ae60; }
-  }
-
-  &--withdraw {
-    color: #e74c3c;
-    &::before { background: #e74c3c; }
-  }
-}
-
-.record-card__time {
-  flex: 1;
-  color: #6b7c93;
-  font-size: 12px;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.record-card__amount {
-  font-family: $font-family-num, $font-family-base;
-  font-size: 15px;
-  font-weight: 700;
-  white-space: nowrap;
-
-  &--positive { color: #27ae60; }
-  &--negative { color: #e74c3c; }
-}
-
-.record-card__body {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  border-radius: 10px;
-  background: #f5f8fc;
-  overflow: hidden;
-}
-
-.record-card__row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 36px;
-  padding: 0 12px;
-
-  &:not(:last-child) {
-    border-bottom: 1px solid #eaf1f9;
-  }
-}
-
-.record-card__label {
-  font-size: 12px;
-  color: #6b7c93;
-}
-
-.record-card__value {
-  font-size: 13px;
-  font-weight: 600;
   color: #0b3462;
-  text-align: right;
-  max-width: 60%;
+  text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  max-width: 100%;
 }
 
-// --- 分页 ---
-.records-pagination {
+.ord__host-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 2px;
+  border-radius: 3px;
+  background: #1c7bff;
+  font-size: 10px;
+  color: #fff;
+  margin-right: 2px;
+  vertical-align: middle;
+}
+
+.ord__score-area {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ord__score {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 4px;
+  border-radius: 6px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+
+  &--home { background: #1c7bff; }
+  &--away { background: #ff5722; }
+}
+
+.ord__vs {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1c7bff;
+}
+
+// --- 金额摘要 ---
+.ord__money {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(11, 52, 98, 0.05);
+}
+
+.ord__money-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+}
+
+.ord__money-label {
+  font-size: 12px;
+  color: rgba(11, 52, 98, 0.5);
+}
+
+.ord__money-val {
+  font-family: $font-family-num, $font-family-base;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0b3462;
+
+  &--profit { color: #1c7bff; }
+}
+
+// --- 展开详情 ---
+.ord__detail {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(11, 52, 98, 0.05);
+}
+
+.ord__detail-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 30px;
+  font-size: 12px;
+
+  &:not(:last-of-type) {
+    border-bottom: 1px solid rgba(11, 52, 98, 0.06);
+  }
+}
+
+.ord__detail-label {
+  width: 50px;
+  flex-shrink: 0;
+  color: rgba(11, 52, 98, 0.5);
+}
+
+.ord__detail-val {
+  flex: 1;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 500;
+  color: #0b3462;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &--copy {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    color: #1c7bff;
+    justify-content: flex-end;
+  }
+}
+
+.ord__cancel {
+  display: block;
+  width: 88px;
+  height: 32px;
+  margin: 10px 0 0 auto;
+  border: 1px solid #fb5c0d;
+  border-radius: 16px;
+  background: transparent;
+  color: #fb5c0d;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+// --- 展开/收起 ---
+.ord__toggle {
   display: flex;
   justify-content: center;
-  align-items: center;
-  gap: 16px;
-  padding: 12px 0;
+  padding-top: 8px;
+  cursor: pointer;
+}
 
-  button {
-    height: 32px;
-    padding: 0 16px;
-    border: 1px solid #e4f0fe;
-    border-radius: 16px;
-    background: #fff;
-    color: #1c7bff;
-    font-size: 13px;
-    cursor: pointer;
+.ord__chevron {
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid #94a8c4;
+  border-bottom: 2px solid #94a8c4;
+  transform: rotate(45deg);
+  transition: transform 0.15s;
 
-    &:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-  }
-
-  span {
-    font-size: 13px;
-    color: #6b7c93;
-  }
+  &--up { transform: rotate(-135deg); }
 }
 </style>

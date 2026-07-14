@@ -1,10 +1,10 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
-import { fetchLeagueList, fetchMatchList } from '@/api/match';
+import { fetchLeagueList, fetchMarketListPaged, fetchMarketListCounts } from '@/api/match';
 import { useAppStore } from '@/store/modules/app';
 import HomeMatchCard from '@/views/Home/components/HomeMatchCard.vue';
 
@@ -18,23 +18,33 @@ const { isMobile } = storeToRefs(appStore);
 const leagues = ref([]);
 const matches = ref([]);
 const loading = ref(true);
+const loadingMore = ref(false);
 const error = ref(false);
 const searchQuery = ref('');
 const activeLeague = ref('全部');
 
 const activeFilter = ref('all');
 const matchCounts = ref({ all: 0, today: 0, tomorrow: 0 });
+const pageNum = ref(1);
+const hasMore = ref(false);
+const PAGE_SIZE = 20;
 
-async function loadLeagues() {
+const selectedLeagueNames = ref([]);
+
+async function loadInitial() {
   try {
     loading.value = true;
     error.value = false;
-    const [leagueRes, matchRes] = await Promise.all([
+
+    const [leagueRes, marketRes, countsRes] = await Promise.all([
       fetchLeagueList().catch(() => ({ data: [] })),
-      fetchMatchList({ pageSize: 30 }).catch(() => null),
+      fetchMarketListPaged({ pageSize: PAGE_SIZE, day: 'all' }).catch(() => null),
+      fetchMarketListCounts().catch(() => null),
     ]);
+
     leagues.value = leagueRes.data || [];
-    matches.value = matchRes?.data?.records || [];
+    processMarketResponse(marketRes, false);
+    processCounts(countsRes);
   } catch {
     leagues.value = [];
     matches.value = [];
@@ -44,82 +54,144 @@ async function loadLeagues() {
   }
 }
 
-onMounted(() => {
-  loadLeagues();
-  if (isMobile.value) {
-    loadMatchCounts();
+function processMarketResponse(res, append) {
+  if (!res?.data) {
+    if (!append) matches.value = [];
+    return;
   }
-});
+  const page = res.data;
+  const records = page.records || [];
+  const normalized = records.map(normalizeMarketRecord);
+
+  if (append) {
+    const existingIds = new Set(matches.value.map((m) => m._dedupeKey));
+    const newItems = normalized.filter((m) => !existingIds.has(m._dedupeKey));
+    matches.value = [...matches.value, ...newItems];
+  } else {
+    matches.value = normalized;
+  }
+
+  const total = page.total;
+  const pages = page.pages;
+  const current = page.current || pageNum.value;
+  const size = page.size || PAGE_SIZE;
+  hasMore.value = pages != null
+    ? current < pages
+    : total != null
+      ? current * size < total
+      : records.length >= PAGE_SIZE;
+}
+
+function normalizeMarketRecord(r) {
+  return {
+    id: r.matchId || r.marketId || r.id,
+    _dedupeKey: r.marketId || `${r.matchId}:${r.period}`,
+    matchId: r.matchId,
+    marketId: r.marketId,
+    period: r.period,
+    league: r.leagueShortName || r.leagueName || '',
+    leagueId: r.leagueId,
+    leagueIcon: r.leagueLogoUrl || '',
+    homeTeam: r.homeTeamShortName || r.homeTeamName || '',
+    awayTeam: r.awayTeamShortName || r.awayTeamName || '',
+    homeTeamLogo: r.homeTeamLogoUrl || '',
+    awayTeamLogo: r.awayTeamLogoUrl || '',
+    kickoffAt: r.kickoffAt,
+    date: r.kickoffAt ? r.kickoffAt.split('T')[0] : '',
+    feeRate: r.feeRate,
+    displayPool: r.displayPool,
+    scores: r.scores || [],
+    topPools: (r.scores || []).slice(0, 3).map((s) => ({
+      score: s.score,
+      probability: s.yieldPct != null ? `${Number(s.yieldPct).toFixed(2)}%` : '--',
+      yieldPct: s.yieldPct,
+      poolAmount: s.poolAmount,
+      suspended: s.suspended,
+    })),
+    hotMarkets: r.hotMarkets || [],
+  };
+}
+
+function processCounts(res) {
+  if (!res?.data) return;
+  const d = res.data;
+  matchCounts.value = {
+    all: d.all ?? d.total ?? 0,
+    today: d.today ?? 0,
+    tomorrow: d.tomorrow ?? 0,
+  };
+}
+
+onMounted(loadInitial);
 
 const trimmedQuery = computed(() => searchQuery.value.trim());
 const hasQuery = computed(() => trimmedQuery.value.length > 0);
+
 const leagueTabs = computed(() => [
   { key: '全部', label: '全部' },
-  ...leagues.value.slice(0, isMobile.value ? 5 : 8).map((item) => ({ key: item.key, label: item.key })),
+  ...leagues.value.slice(0, isMobile.value ? 5 : 8).map((item) => ({
+    key: item.name || item.key,
+    label: item.shortName || item.name || item.key,
+  })),
 ]);
 
 const filteredMatches = computed(() => {
-  const q = trimmedQuery.value.toLowerCase();
-  return matches.value.filter((match) => {
-    const leagueMatched = activeLeague.value === '全部' || match.league === activeLeague.value;
-    if (!leagueMatched) return false;
-    if (!q) return true;
-    return [match.league, match.homeTeam, match.awayTeam, match.date]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase()
-      .includes(q);
-  });
+  let list = matches.value;
+  if (activeLeague.value !== '全部' && !isMobile.value) {
+    list = list.filter((m) => m.league === activeLeague.value);
+  }
+  if (hasQuery.value) {
+    const q = trimmedQuery.value.toLowerCase();
+    list = list.filter((m) =>
+      [m.league, m.homeTeam, m.awayTeam, m.date].filter(Boolean).join(' ').toLowerCase().includes(q),
+    );
+  }
+  return list;
 });
 
 function selectLeague(leagueKey) {
   activeLeague.value = leagueKey;
+  pageNum.value = 1;
+  loadWithFilters();
 }
 
-function getDateString(offset = 0) {
-  const d = new Date();
-  d.setDate(d.getDate() + offset);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
-}
-
-async function loadMatchCounts() {
-  const today = getDateString(0);
-  const tomorrow = getDateString(1);
-  try {
-    const [allRes, todayRes, tomorrowRes] = await Promise.all([
-      fetchMatchList({ pageSize: 1 }).catch(() => null),
-      fetchMatchList({ date: today, pageSize: 1 }).catch(() => null),
-      fetchMatchList({ date: tomorrow, pageSize: 1 }).catch(() => null),
-    ]);
-    matchCounts.value = {
-      all: allRes?.data?.total ?? matches.value.length,
-      today: todayRes?.data?.total ?? 0,
-      tomorrow: tomorrowRes?.data?.total ?? 0,
-    };
-  } catch {
-    matchCounts.value.all = matches.value.length;
-  }
-}
-
-const filterTags = computed(() => [
-  { key: 'all', label: t('全部赛事'), count: matchCounts.value.all },
-  { key: 'today', label: t('今日赛事'), count: matchCounts.value.today },
-  { key: 'tomorrow', label: t('明日赛事'), count: matchCounts.value.tomorrow },
-]);
-
-async function selectFilter(key) {
-  if (activeFilter.value === key) return;
-  activeFilter.value = key;
+async function loadWithFilters() {
   try {
     loading.value = true;
     error.value = false;
-    const dateParam = key === 'today' ? getDateString(0)
-      : key === 'tomorrow' ? getDateString(1) : undefined;
-    const res = await fetchMatchList({ pageSize: 30, date: dateParam });
-    matches.value = res?.data?.records?.length ? res.data.records : [];
+    pageNum.value = 1;
+
+    const dayParam = activeFilter.value === 'today' ? 'today'
+      : activeFilter.value === 'tomorrow' ? 'tomorrow' : 'all';
+    const leagueParam = activeLeague.value !== '全部' ? activeLeague.value : undefined;
+
+    if (selectedLeagueNames.value.length > 0) {
+      const results = await Promise.all(
+        selectedLeagueNames.value.map((name) =>
+          fetchMarketListPaged({ pageSize: PAGE_SIZE, day: dayParam, league: name }).catch(() => null),
+        ),
+      );
+      const allRecords = [];
+      const seen = new Set();
+      for (const res of results) {
+        for (const r of (res?.data?.records || [])) {
+          const key = r.marketId || `${r.matchId}:${r.period}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            allRecords.push(normalizeMarketRecord(r));
+          }
+        }
+      }
+      matches.value = allRecords;
+      hasMore.value = false;
+    } else {
+      const res = await fetchMarketListPaged({
+        pageSize: PAGE_SIZE,
+        day: dayParam,
+        league: leagueParam,
+      });
+      processMarketResponse(res, false);
+    }
   } catch {
     matches.value = [];
     error.value = true;
@@ -128,9 +200,52 @@ async function selectFilter(key) {
   }
 }
 
+async function selectFilter(key) {
+  if (activeFilter.value === key) return;
+  activeFilter.value = key;
+  await loadWithFilters();
+}
+
+function loadMore() {
+  if (loadingMore.value || !hasMore.value) return;
+  loadingMore.value = true;
+  const dayParam = activeFilter.value === 'today' ? 'today'
+    : activeFilter.value === 'tomorrow' ? 'tomorrow' : 'all';
+  const leagueParam = activeLeague.value !== '全部' ? activeLeague.value : undefined;
+  const nextPage = pageNum.value + 1;
+
+  fetchMarketListPaged({ pageNum: nextPage, pageSize: PAGE_SIZE, day: dayParam, league: leagueParam })
+    .then((res) => {
+      pageNum.value = nextPage;
+      processMarketResponse(res, true);
+    })
+    .catch(() => {})
+    .finally(() => { loadingMore.value = false; });
+}
+
 function goToLeagueFilter() {
   router.push('/market/filter');
 }
+
+function goToSearch() {
+  router.push('/market/search');
+}
+
+const filterTags = computed(() => [
+  { key: 'all', label: t('全部赛事'), count: matchCounts.value.all },
+  { key: 'today', label: t('今日赛事'), count: matchCounts.value.today },
+  { key: 'tomorrow', label: t('明日赛事'), count: matchCounts.value.tomorrow },
+]);
+
+watch(selectedLeagueNames, () => {
+  loadWithFilters();
+});
+
+function onFilterResult(names) {
+  selectedLeagueNames.value = names || [];
+}
+
+defineExpose({ onFilterResult });
 </script>
 
 <template>
@@ -161,6 +276,7 @@ function goToLeagueFilter() {
         </label>
       </header>
 
+      <!-- H5 筛选栏 -->
       <div v-if="isMobile" class="market-leagues__filter-bar">
         <button
           type="button"
@@ -185,6 +301,7 @@ function goToLeagueFilter() {
         </button>
       </div>
 
+      <!-- PC 联赛 Tab -->
       <div v-if="!isMobile" class="market-leagues__tabs">
         <button
           v-for="tab in leagueTabs"
@@ -198,29 +315,34 @@ function goToLeagueFilter() {
         </button>
       </div>
 
+      <!-- 状态 -->
       <div v-if="loading" class="market-leagues__state">
         <div class="market-leagues__spinner" />
         <span>{{ t('加载中') }}</span>
       </div>
-
       <div v-else-if="error" class="market-leagues__state">
         <span>{{ t('加载失败') }}</span>
-        <button type="button" class="market-leagues__retry" @click="loadLeagues">{{ t('重试') }}</button>
+        <button type="button" class="market-leagues__retry" @click="loadInitial">{{ t('重试') }}</button>
       </div>
-
-      <div
-        v-else-if="filteredMatches.length === 0"
-        class="market-leagues__state market-leagues__state--empty"
-      >
+      <div v-else-if="filteredMatches.length === 0" class="market-leagues__state market-leagues__state--empty">
         <p>{{ t('暂无相关赛事') }}</p>
       </div>
 
+      <!-- 列表 -->
       <div v-else class="market-leagues__grid">
         <HomeMatchCard
           v-for="match in filteredMatches"
-          :key="match.id"
+          :key="match._dedupeKey || match.id"
           :match="match"
         />
+      </div>
+
+      <!-- 加载更多 -->
+      <div v-if="!loading && hasMore" class="market-leagues__load-more">
+        <button v-if="!loadingMore" type="button" class="market-leagues__load-more-btn" @click="loadMore">
+          {{ t('加载更多') }}
+        </button>
+        <div v-else class="market-leagues__spinner" />
       </div>
     </section>
   </div>
@@ -229,7 +351,6 @@ function goToLeagueFilter() {
 <style lang="scss" scoped>
 @use '@/styles/tools.scss' as *;
 
-/* 外层与首页 `.home__inner`、Header 同宽 */
 .market-leagues {
   @include container;
   @include web-main-column-max;
@@ -247,7 +368,6 @@ function goToLeagueFilter() {
     padding-bottom: 30px;
   }
 
-  /* 与首页 `.hot-events` 大块一致 */
   &__panel {
     width: 100%;
     box-sizing: border-box;
@@ -294,9 +414,7 @@ function goToLeagueFilter() {
     margin-bottom: 12px;
     scrollbar-width: none;
 
-    &::-webkit-scrollbar {
-      display: none;
-    }
+    &::-webkit-scrollbar { display: none; }
   }
 
   &__filter-btn {
@@ -344,13 +462,9 @@ function goToLeagueFilter() {
     margin-bottom: 18px;
     scrollbar-width: none;
 
-    &::-webkit-scrollbar {
-      display: none;
-    }
+    &::-webkit-scrollbar { display: none; }
 
-    @include web-only {
-      margin-bottom: 24px;
-    }
+    @include web-only { margin-bottom: 24px; }
   }
 
   &__tab {
@@ -421,53 +535,6 @@ function goToLeagueFilter() {
     }
   }
 
-  &__search-trigger {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
-    width: 120px;
-    max-width: 42%;
-    height: 36px;
-    padding: 0 12px;
-    border-radius: $radius-pill;
-    border: 1px solid #d6e0eb;
-    background: #fff;
-    box-sizing: border-box;
-    cursor: pointer;
-    text-align: left;
-  }
-
-  &__search--expanded {
-    flex: 1;
-    min-width: 0;
-    width: auto;
-    height: 40px;
-    padding: 0 14px;
-  }
-
-  &__cancel {
-    flex-shrink: 0;
-    padding: 0;
-    border: none;
-    background: transparent;
-    font-size: $font-size-base;
-    font-weight: 500;
-    color: #e54545;
-    cursor: pointer;
-    line-height: 1.2;
-  }
-
-  &__search-trigger-text {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: $font-size-base;
-    color: rgba(11, 52, 98, 0.4);
-  }
-
   &__search {
     display: flex;
     align-items: center;
@@ -510,82 +577,33 @@ function goToLeagueFilter() {
     font-size: $font-size-md;
     color: #0b3462;
 
-    &::placeholder {
-      color: rgba(11, 52, 98, 0.4);
-    }
-
-    &::-webkit-search-cancel-button {
-      display: none;
-    }
+    &::placeholder { color: rgba(11, 52, 98, 0.4); }
+    &::-webkit-search-cancel-button { display: none; }
   }
 
   &__grid {
     display: grid;
     gap: 20px;
 
-    @include web-only {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-
-    @include mobile-only {
-      grid-template-columns: 1fr;
-      gap: 10px;
-    }
+    @include web-only { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    @include mobile-only { grid-template-columns: 1fr; gap: 10px; }
   }
 
-  &__card {
+  &__load-more {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    min-height: 52px;
-    padding: 14px 18px;
-    border-radius: 16px;
-    border: 1px solid #d6e0eb;
+    justify-content: center;
+    padding: 16px 0;
+  }
+
+  &__load-more-btn {
+    height: 36px;
+    padding: 0 24px;
+    border: 1px solid #e4f0fe;
+    border-radius: 18px;
     background: #fff;
+    color: #1c7bff;
+    font-size: 13px;
     cursor: pointer;
-    text-align: left;
-    box-shadow: 0 2px 8px rgba(21, 58, 119, 0.08);
-    transition:
-      background 0.15s ease,
-      border-color 0.15s ease,
-      box-shadow 0.15s ease;
-
-    @include mobile-only {
-      min-height: 48px;
-      padding: 12px 16px;
-    }
-
-    &:hover {
-      border-color: rgba(31, 124, 255, 0.45);
-      background: #f5f9ff;
-      box-shadow: 0 3px 10px rgba(21, 58, 119, 0.12);
-    }
-
-    &:focus-visible {
-      outline: 2px solid rgba(28, 123, 255, 0.45);
-      outline-offset: 2px;
-    }
-  }
-
-  &__card-name {
-    font-size: 16px;
-    font-weight: 500;
-    color: #0b3462;
-
-    @include mobile-only {
-      font-size: $font-size-base;
-    }
-  }
-
-  &__card-chevron {
-    flex-shrink: 0;
-    width: 8px;
-    height: 8px;
-    margin-right: 4px;
-    border-right: 2px solid rgba(11, 52, 98, 0.35);
-    border-bottom: 2px solid rgba(11, 52, 98, 0.35);
-    transform: rotate(-45deg);
   }
 
   &__state {
@@ -633,8 +651,6 @@ function goToLeagueFilter() {
 }
 
 @keyframes market-leagues-spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 </style>

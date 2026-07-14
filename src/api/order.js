@@ -1,5 +1,48 @@
 import { get, post, del } from './request';
 
+const IDEMPOTENCY_STORAGE_KEY = 'mysport:idempotency';
+
+function getIdempotencyStore() {
+  try {
+    return JSON.parse(localStorage.getItem(IDEMPOTENCY_STORAGE_KEY) || '{}');
+  } catch { return {}; }
+}
+
+function saveIdempotencyStore(store) {
+  localStorage.setItem(IDEMPOTENCY_STORAGE_KEY, JSON.stringify(store));
+}
+
+async function hashKey(operation, fingerprint) {
+  const input = `${operation}|${fingerprint}`;
+  const data = new TextEncoder().encode(input);
+  const buf = await crypto.subtle.digest('SHA-256', data);
+  return 'v2_' + Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function getOrCreateIdempotencyKey(operation, fingerprint) {
+  const store = getIdempotencyStore();
+  const storageKey = await hashKey(operation, fingerprint);
+  if (store[storageKey]) return { key: store[storageKey], storageKey };
+  const key = crypto.randomUUID();
+  store[storageKey] = key;
+  saveIdempotencyStore(store);
+  return { key, storageKey };
+}
+
+function completeIdempotencyKey(storageKey) {
+  const store = getIdempotencyStore();
+  delete store[storageKey];
+  saveIdempotencyStore(store);
+}
+
+async function idempotentPost(url, body, operation) {
+  const fingerprint = JSON.stringify(body);
+  const { key, storageKey } = await getOrCreateIdempotencyKey(operation, fingerprint);
+  const res = await post(url, body, { headers: { 'Idempotency-Key': key } });
+  completeIdempotencyKey(storageKey);
+  return res;
+}
+
 /** 我的订单列表 */
 export async function fetchOrderList(params = {}) {
   return get('/orders', {
@@ -19,19 +62,20 @@ export async function fetchOrderDetail(id) {
 
 /** 即时下注（返回已解包的 order 对象） */
 export async function submitBuyOrder(payload) {
-  const res = await post('/orders/instant', {
+  const body = {
     marketId: payload.marketId,
     score: payload.score,
     amount: payload.amount,
     expectedYield: payload.expectedYield,
     deviceFp: payload.deviceFp,
-  });
+  };
+  const res = await idempotentPost('/orders/instant', body, 'order_instant');
   return unwrapOrderResult(res);
 }
 
 /** 预约买入（返回已解包的 order 对象） */
 export async function submitPendingOrder(payload) {
-  const res = await post('/orders/pending', {
+  const body = {
     marketId: payload.marketId,
     score: payload.score,
     amount: payload.amount,
@@ -39,7 +83,8 @@ export async function submitPendingOrder(payload) {
     yieldMax: payload.yieldMax,
     validUntil: payload.validUntil,
     deviceFp: payload.deviceFp,
-  });
+  };
+  const res = await idempotentPost('/orders/pending', body, 'order_pending');
   return unwrapOrderResult(res);
 }
 

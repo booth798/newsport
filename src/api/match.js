@@ -38,7 +38,7 @@ export async function fetchHotMatches() {
 export async function fetchLeagueList() {
   const res = await get('/leagues');
   const list = (res.data || []).map((l) => ({
-    key: l.shortName || l.name,
+    key: l.id,
     id: l.id,
     name: l.name,
     shortName: l.shortName,
@@ -139,7 +139,9 @@ export async function fetchMarketListPaged(params = {}) {
     pageNum: params.pageNum || 1,
     pageSize: params.pageSize || 20,
     league: params.league,
+    teamName: params.teamName,
     date: params.date,
+    day: params.day,
   });
 }
 
@@ -157,9 +159,15 @@ export async function fetchMarketPeriod(matchId, period = 'FT') {
 export async function fetchScoreMarket(matchId, tab = 'fulltime') {
   const period = tab === 'halftime' ? 'HT' : 'FT';
 
-  const marketRes = await get(`/markets/${matchId}/${period}`);
+  const marketRes = await get(`/markets/${String(matchId)}/${period}`);
   const data = marketRes.data || {};
+  const market = data.market || {};
   const pools = data.pools || [];
+  const marketFeeRate = market.feeRate;
+
+  if (import.meta.env.DEV) {
+    console.log(`[ScoreMarket] ${period} matchId=${matchId} marketId=${market.marketId} pools=${pools.length}`);
+  }
 
   const rows = pools.map((p) => ({
     score: (p.score || '0:0').replace(':', '-'),
@@ -170,12 +178,12 @@ export async function fetchScoreMarket(matchId, tab = 'fulltime') {
     poolAmount: p.poolAmount,
     buyerCount: p.buyerCount,
     suspended: p.suspended,
-    feeRate: p.feeRate,
+    feeRate: p.feeRate ?? marketFeeRate,
     initialProb: p.initialProb,
-    _marketId: data.market?.marketId,
+    _marketId: market.marketId,
   }));
 
-  return { code: 200, data: rows };
+  return { code: 200, data: rows, market };
 }
 
 /** 赔率快照（历史曲线） */
@@ -183,9 +191,9 @@ export async function fetchPoolSnapshots(marketId, score, from, to) {
   return get(`/pools/${marketId}/snapshots`, { score, from, to });
 }
 
-/** 当前赔率列表 */
+/** 当前赔率列表（后台轮询用，静默不触发全局 loading） */
 export async function fetchPoolYields(marketId) {
-  return get(`/pools/${marketId}/yields`);
+  return get(`/pools/${marketId}/yields`, undefined, { silent: true });
 }
 
 /** 比赛场次统计 */
@@ -283,15 +291,13 @@ function computeCountdown(kickoffAt) {
   try {
     const diff = new Date(kickoffAt).getTime() - Date.now();
     if (diff <= 0) return { text: '', minutes: 0 };
-    const totalMin = Math.floor(diff / 60000);
-    const d = Math.floor(totalMin / 1440);
-    const h = Math.floor((totalMin % 1440) / 60);
-    const min = totalMin % 60;
-    const parts = [];
-    if (d > 0) parts.push(`${d}天`);
-    if (h > 0 || d > 0) parts.push(`${h}时`);
-    parts.push(`${min}分`);
-    return { text: parts.join(''), minutes: totalMin };
+    // 统一输出 HH:MM:SS 格式（如 10:48:46），天数折算进小时
+    const totalSec = Math.floor(diff / 1000);
+    const totalHours = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    const text = `${String(totalHours).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    return { text, minutes: Math.floor(diff / 60000) };
   } catch {
     return { text: '', minutes: 0 };
   }

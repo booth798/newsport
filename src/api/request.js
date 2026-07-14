@@ -1,4 +1,5 @@
-import { resolveErrorMessage } from './errorCodes';
+import { resolveErrorMessage, isForceLogoutCode } from './errorCodes';
+import { getCurrentLocale } from '@/store/modules/app';
 
 const API_BASE = '/api';
 
@@ -136,16 +137,43 @@ async function tryRefreshToken() {
   }
 }
 
+// ─── 强制退出检测 ───
+
+let forceLogoutFired = false;
+
+function checkForceLogout(msgCode) {
+  if (!msgCode || forceLogoutFired) return;
+  if (!isForceLogoutCode(msgCode)) return;
+  forceLogoutFired = true;
+  clearToken();
+  emitEvent('mysport:session-expired');
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('mysport:force-logout', { detail: { code: msgCode } }));
+  }
+}
+
 // ─── 响应处理 ───
 
 async function handleResponse(res, encrypted = false) {
   if (res.status === 401 || res.status === 403) {
+    let bodyMsg = '';
+    try {
+      const ct = res.headers.get('content-type') || '';
+      if (ct.includes('application/json')) {
+        const j = await res.json();
+        bodyMsg = j.msg || '';
+      }
+    } catch { /* ignore */ }
+    if (isForceLogoutCode(bodyMsg)) {
+      checkForceLogout(bodyMsg);
+      throw new ApiError(res.status, resolveErrorMessage(bodyMsg));
+    }
     const ok = await tryRefreshToken();
     if (!ok) {
       clearToken();
       throw new ApiError(401, resolveErrorMessage('TOKEN_EXPIRED'));
     }
-    return null; // 表示需要重试
+    return null;
   }
 
   const contentType = res.headers.get('content-type') || '';
@@ -157,6 +185,10 @@ async function handleResponse(res, encrypted = false) {
   const json = await res.json();
 
   if (json.code === 401) {
+    if (isForceLogoutCode(json.msg)) {
+      checkForceLogout(json.msg);
+      throw new ApiError(json.code, resolveErrorMessage(json.msg), json.data);
+    }
     const ok = await tryRefreshToken();
     if (!ok) {
       clearToken();
@@ -169,12 +201,14 @@ async function handleResponse(res, encrypted = false) {
     const { decryptSessionResponse } = await import('./encrypt');
     const decrypted = await decryptSessionResponse(json);
     if (decrypted.code !== 200 && decrypted.code !== 0) {
+      checkForceLogout(decrypted.msg);
       throw new ApiError(decrypted.code, resolveErrorMessage(decrypted.msg), decrypted.data);
     }
     return decrypted;
   }
 
   if (json.code !== 200 && json.code !== 0) {
+    checkForceLogout(json.msg);
     throw new ApiError(json.code, resolveErrorMessage(json.msg), json.data);
   }
   return json;
@@ -189,6 +223,11 @@ function buildHeaders(extraHeaders = {}, method = 'GET') {
   if (method !== 'GET' && method !== 'HEAD' && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
   }
+
+  const locale = getCurrentLocale() || 'zh-CN';
+  if (!headers['Accept-Language']) headers['Accept-Language'] = locale;
+  if (!headers['Content-Language']) headers['Content-Language'] = locale;
+  if (!headers['X-Device-Type']) headers['X-Device-Type'] = 'Web';
   return headers;
 }
 
@@ -223,6 +262,9 @@ function hideLoading() {
 
 const SILENT_PATHS = new Set([
   '/ws/ticket',
+  '/messages/unread-count',
+  '/meta/error-codes',
+  '/system/public-config',
 ]);
 
 function isSilent(url, options) {

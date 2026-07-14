@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
-import { fetchProfileOverview, fetchUnreadCount } from '@/api/user';
+import { fetchUnreadCount } from '@/api/user';
 import { useAppStore } from '@/store/modules/app';
 import { useUserStore } from '@/store/modules/user';
 import { useToast } from '@/hooks/useToast';
@@ -22,7 +22,13 @@ const toast = useToast();
 const appStore = useAppStore();
 const userStore = useUserStore();
 const { isMobile } = storeToRefs(appStore);
-const { isLoggedIn, loggedInUserId, loggedInAssetsFormatted, vipLevelList } = storeToRefs(userStore);
+const {
+  isLoggedIn,
+  loggedInUserId,
+  loggedInAssetsFormatted,
+  userProfile,
+  vipLevelList,
+} = storeToRefs(userStore);
 
 // 页面状态
 const loading = ref(false);
@@ -32,7 +38,6 @@ const showSecurityModal = ref(false);
 const showBindingModal = ref(false);
 const showLanguageSettingModal = ref(false);
 const showMessageCenterModal = ref(false);
-const avatarDisplayUrl = ref('');
 const unreadCount = ref(0);
 
 // 图片资源统一通过 getImageUrl 获取，页面只维护业务侧文件名。
@@ -58,7 +63,7 @@ const iconProfileLogout = commonImage('icon_profile_logout.svg');
 const iconBalanceRefresh = profileImage('icon_balance_refresh.svg');
 const iconBalanceRefreshPc = profileImage('pc_icon_balance_refresh.svg');
 
-// 概览接口数据
+// 概览展示统一读取用户 store，页面不再维护重复的用户资料副本。
 const defaultOverview = () => ({
   nickname: '',
   memberId: '',
@@ -69,7 +74,11 @@ const defaultOverview = () => ({
   winRate: '0%',
   totalProfit: '0.00',
 });
-const overview = ref(defaultOverview());
+const overview = computed(() => ({
+  ...defaultOverview(),
+  ...(userProfile.value || {}),
+}));
+const avatarDisplayUrl = computed(() => overview.value.avatarUrl || '');
 
 // VIP 等级接口未返回前保留默认点位，避免 H5 卡片出现空白。
 const fallbackVipLevels = [0, 1, 2, 3, 4].map((level) => ({ level }));
@@ -185,18 +194,10 @@ async function loadOverview() {
   if (!isLoggedIn.value) return;
   try {
     loading.value = true;
-    const [res] = await Promise.all([
-      fetchProfileOverview(),
+    await Promise.all([
+      userStore.loadUserProfile(),
       loadUnreadCount(),
     ]);
-    const data = res.data || {};
-    userStore.loadUserProfile().catch(() => {});
-    overview.value = { ...overview.value, ...data };
-    if (data.avatarUrl) avatarDisplayUrl.value = data.avatarUrl;
-    userStore.updateUserProfile({
-      nickname: data.nickname || undefined,
-      balance: data.balance ?? undefined,
-    });
   } catch {
     /* keep defaults / store values */
   } finally {
@@ -217,8 +218,7 @@ async function refreshBalance() {
   if (refreshing.value) return;
   try {
     refreshing.value = true;
-    const balance = await userStore.refreshUserBalance();
-    overview.value.balance = balance;
+    await userStore.refreshUserBalance();
     toast.success(t('操作成功'));
   } catch {
     toast.error(t('加载失败'));
@@ -312,22 +312,10 @@ function openUserInfoModal() {
   showUserInfoModal.value = true;
 }
 
-function handleUserInfoSaved(payload) {
-  overview.value.nickname = payload.nickname;
-  if (payload.avatarUrl) {
-    avatarDisplayUrl.value = payload.avatarUrl;
-  }
-}
-
-// 页面保持挂载时，登录成功后主动加载数据；退出后立即清空上一账号概览。
+// 页面保持挂载时，登录成功后主动加载资料。
 watch(isLoggedIn, (loggedIn, wasLoggedIn) => {
   if (loggedIn && !wasLoggedIn) {
     loadOverview();
-    return;
-  }
-  if (!loggedIn) {
-    overview.value = defaultOverview();
-    avatarDisplayUrl.value = '';
   }
 });
 
@@ -506,7 +494,7 @@ onMounted(() => {
     </template>
 
     <ProfileUserInfoModal v-model="showUserInfoModal" :nickname="displayName"
-      :avatar-url="avatarDisplayUrl" @saved="handleUserInfoSaved" />
+      :avatar-url="avatarDisplayUrl" />
     <MessageCenterModal v-model="showMessageCenterModal" />
     <ProfileSecurityModal v-model="showSecurityModal" />
     <LanguageSettingModal v-model="showLanguageSettingModal" />

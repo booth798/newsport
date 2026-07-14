@@ -23,7 +23,7 @@ const route = useRoute();
 const router = useRouter();
 const toast = useToast();
 const userStore = useUserStore();
-const { customer } = storeToRefs(userStore);
+const { loggedInAssetsFormatted } = storeToRefs(userStore);
 
 const loading = ref(true);
 const error = ref(false);
@@ -55,8 +55,8 @@ const selectedFilterLabel = computed(
   () => FILTER_OPTIONS.find((option) => option.value === selectedType.value)?.label || '全部',
 );
 const balanceAmount = computed(() => {
-  // 余额直接读取登录用户缓存，并兼容接口返回带千分位的字符串。
-  const value = Number(String(customer.value?.balance ?? 0).replaceAll(',', ''));
+  // 余额统一读取用户 store 的展示字段，并转换为表单校验所需数值。
+  const value = Number(String(loggedInAssetsFormatted.value ?? 0).replaceAll(',', ''));
   return Number.isFinite(value) ? value : 0;
 });
 const displayBalance = computed(() => formatMoney(balanceAmount.value));
@@ -266,7 +266,6 @@ async function loadMore() {
           <span>{{ t('提款密码') }}</span>
           <BaseInput v-model="withdrawPassword" type="password" autocomplete="current-password"
             :placeholder="t('请输入密码')" />
-          <RouterLink to="/profile/security">{{ t('忘记密码') }}</RouterLink>
         </label>
 
         <button class="vip-transfer-form__submit btn btn--primary" type="submit" :disabled="submitting">
@@ -446,14 +445,6 @@ async function loadMore() {
       color: var(--theme-primary);
       font-weight: 500;
     }
-  }
-
-  a {
-    align-self: flex-end;
-    color: var(--theme-primary);
-    font-size: 12px;
-    font-weight: 500;
-    text-decoration: none;
   }
 }
 

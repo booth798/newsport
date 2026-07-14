@@ -3,10 +3,62 @@ import { defineStore } from 'pinia';
 import { clearSession } from '@/api/encrypt';
 import { clearToken, setToken } from '@/api/request';
 import { fetchProfileSummary, fetchVipLevels } from '@/api/user';
+import { resolveAvatarUrl } from '@/api/upload';
 
 const CUSTOMER_STORAGE_KEY = 'mysport:customer';
 let vipLevelsRequest = null;
 let userProfileRequest = null;
+
+function formatMoney(value) {
+  if (value == null) return '0.00';
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return String(value);
+  return amount.toLocaleString('zh-CN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function normalizeUserProfile(summary = {}) {
+  // 接口层只返回原始数据，用户资料的字段兼容与展示格式统一在 store 完成。
+  const customer = summary.customer || {};
+  const wallet = summary.wallet || {};
+  const stats = summary.stats || {};
+  const winRate = Number(stats.winRate);
+  const profit = Number(stats.profit);
+  const vipLevel = customer.vipLevel ?? customer.level ?? 0;
+
+  return {
+    ...customer,
+    nickname: customer.nickname || customer.username || '',
+    memberId: customer.customerNo || '',
+    avatarUrl: resolveAvatarUrl(customer.avatar),
+    withdrawPasswordSet: customer.withdrawPasswordSet === true,
+    balance: formatMoney(wallet.balance),
+    frozenBalance: formatMoney(wallet.frozen),
+    currency: wallet.currency || 'CNY',
+    vipLevel,
+    totalBet: formatMoney(stats.totalBet),
+    winRate: `${Number.isFinite(winRate) ? winRate.toFixed(1) : '0.0'}%`,
+    totalProfit: Number.isFinite(profit)
+      ? `${profit >= 0 ? '+' : ''}¥${formatMoney(profit)}`
+      : '¥0.00',
+    wallet,
+    stats,
+  };
+}
+
+function normalizeUserProfilePatch(profile = {}) {
+  const normalized = { ...profile };
+  // 局部更新也复用相同展示规则，避免组件自行解析头像和金额。
+  if (Object.prototype.hasOwnProperty.call(profile, 'avatar')) {
+    normalized.avatarUrl = resolveAvatarUrl(profile.avatar);
+  }
+  if (Object.prototype.hasOwnProperty.call(profile, 'balance')) {
+    normalized.balance = formatMoney(profile.balance);
+  }
+  return normalized;
+}
 
 function loadCachedCustomer() {
   try {
@@ -30,7 +82,7 @@ export const useUserStore = defineStore('user', {
     // localStorage 本身不具备响应式，登录态必须由 store state 承载。
     isLoggedIn: Boolean(localStorage.getItem('mysport:token')),
     customer: loadCachedCustomer(),
-    userProfile: {},
+    userProfile: null,
     vipLevels: [],
   }),
   getters: {
@@ -72,13 +124,7 @@ export const useUserStore = defineStore('user', {
 
       userProfileRequest = fetchProfileSummary()
         .then((res) => {
-          const summary = res.data || {};
-          this.userProfile = {
-            ...(summary._customer || {}),
-            nickname: summary.nickname || '',
-            balance: summary.balance,
-            withdrawPasswordSet: summary.withdrawPasswordSet === true,
-          };
+          this.userProfile = normalizeUserProfile(res.data);
           this.customer = { ...(this.customer || {}), ...this.userProfile };
           persistCustomer(this.customer);
           return this.userProfile;
@@ -91,9 +137,14 @@ export const useUserStore = defineStore('user', {
     },
     updateUserProfile(profile = {}) {
       // 用户资料及本地缓存由同一个入口更新，避免不同页面维护多份状态。
-      this.userProfile = { ...(this.userProfile || this.customer || {}), ...profile };
-      this.customer = { ...(this.customer || {}), ...profile };
+      const normalizedProfile = normalizeUserProfilePatch(profile);
+      this.userProfile = {
+        ...(this.userProfile || this.customer || {}),
+        ...normalizedProfile,
+      };
+      this.customer = { ...(this.customer || {}), ...normalizedProfile };
       persistCustomer(this.customer);
+      return this.userProfile;
     },
     async refreshUserBalance() {
       // 余额刷新统一复用用户资料接口，并同步内存状态与本地缓存。

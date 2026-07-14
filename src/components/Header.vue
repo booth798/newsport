@@ -148,6 +148,7 @@ const vipTransferMonth = computed({
     router.replace({ query: { ...route.query, month } });
   },
 });
+const isFinanceCompact = computed(() => isFinancePage.value && !isMobile.value);
 const isCompactDetailHeader = computed(
   () =>
     isMarketLeaguePage.value ||
@@ -155,7 +156,7 @@ const isCompactDetailHeader = computed(
     isPurchaseDetailsPage.value ||
     (isMobile.value && route.meta?.compactHeader) ||
     (isMobile.value && isProfileSubPage.value) ||
-    isFinancePage.value
+    isFinanceCompact.value
 );
 const compactTitle = computed(() => t(route.meta?.titleKey || '返回'));
 const isMobileMarketListHeader = computed(() => isMobile.value && isMarketListPage.value);

@@ -7,7 +7,6 @@ import { useI18n } from 'vue-i18n';
 import { useAppStore } from '@/store/modules/app';
 import { useCountdown } from '@/hooks/useCountdown';
 
-import bgScoreUrl from '@/assets/images/events/bg_score.svg?url';
 import bgGridPatternUrl from '@/assets/images/events/bg_grid_pattern.svg?url';
 import bgScoreDefaultUrl from '@/assets/images/events/bg_score_default.svg?url';
 import bgScoreHighUrl from '@/assets/images/events/bg_score_high.svg?url';
@@ -40,8 +39,6 @@ const props = defineProps({
     default: '',
   },
 });
-
-const emit = defineEmits(['enter-market']);
 
 const router = useRouter();
 
@@ -194,7 +191,7 @@ const topPools = computed(() => {
           <div class="match-card__arena-grid">
             <img
               class="match-card__arena-bg"
-              :src="isDetailH5 ? bgScoreUrl : bgGridPatternUrl"
+              :src="bgGridPatternUrl"
               alt=""
               width="311"
               height="126"
@@ -259,41 +256,6 @@ const topPools = computed(() => {
                 <span class="match-card__team-name match-card__team-name--home"><span v-if="isDetailH5" class="match-card__home-tag">{{ t('主') }}</span>{{ match.homeTeam }}</span>
                 <span class="match-card__vs">VS</span>
                 <span class="match-card__team-name match-card__team-name--away">{{ match.awayTeam }}</span>
-
-                <template v-if="detailMode">
-                  <div class="match-card__mg-score-slot match-card__mg-score-slot--home">
-                    <span
-                      class="match-card__score match-card__score--m"
-                      :class="{ 'match-card__score--leading': match.homeScore > match.awayScore }"
-                    >
-                      <img
-                        class="match-card__score-bg"
-                        :src="homeScoreBg"
-                        alt=""
-                        width="32"
-                        height="26"
-                        draggable="false"
-                      />
-                      <span class="match-card__score-txt">{{ match.homeScore }}</span>
-                    </span>
-                  </div>
-                  <div class="match-card__mg-score-slot match-card__mg-score-slot--away">
-                    <span
-                      class="match-card__score match-card__score--m"
-                      :class="{ 'match-card__score--leading': match.awayScore > match.homeScore }"
-                    >
-                      <img
-                        class="match-card__score-bg"
-                        :src="awayScoreBg"
-                        alt=""
-                        width="32"
-                        height="26"
-                        draggable="false"
-                      />
-                      <span class="match-card__score-txt">{{ match.awayScore }}</span>
-                    </span>
-                  </div>
-                </template>
               </div>
 
               <div v-if="!isDetailH5" class="match-card__odds-pills">
@@ -315,15 +277,6 @@ const topPools = computed(() => {
         </div>
       </div>
 
-      <div v-if="isDetailH5" class="match-card__foot">
-        <button
-          type="button"
-          class="btn btn--primary match-card__btn"
-          @click="$emit('enter-market')"
-        >
-          {{ t('进入市场') }}
-        </button>
-      </div>
     </div>
 
     <!-- PC: 桌面端布局（与移动端结构一致） -->
@@ -439,41 +392,6 @@ const topPools = computed(() => {
                 <span class="match-card__team-name match-card__team-name--home">{{ match.homeTeam }}</span>
                 <span class="match-card__vs">VS</span>
                 <span class="match-card__team-name match-card__team-name--away">{{ match.awayTeam }}</span>
-
-                <template v-if="detailMode">
-                  <div class="match-card__mg-score-slot match-card__mg-score-slot--home">
-                    <span
-                      class="match-card__score match-card__score--m"
-                      :class="{ 'match-card__score--leading': match.homeScore > match.awayScore }"
-                    >
-                      <img
-                        class="match-card__score-bg"
-                        :src="homeScoreBg"
-                        alt=""
-                        width="32"
-                        height="26"
-                        draggable="false"
-                      />
-                      <span class="match-card__score-txt">{{ match.homeScore }}</span>
-                    </span>
-                  </div>
-                  <div class="match-card__mg-score-slot match-card__mg-score-slot--away">
-                    <span
-                      class="match-card__score match-card__score--m"
-                      :class="{ 'match-card__score--leading': match.awayScore > match.homeScore }"
-                    >
-                      <img
-                        class="match-card__score-bg"
-                        :src="awayScoreBg"
-                        alt=""
-                        width="32"
-                        height="26"
-                        draggable="false"
-                      />
-                      <span class="match-card__score-txt">{{ match.awayScore }}</span>
-                    </span>
-                  </div>
-                </template>
               </div>
 
               <div v-if="!detailMode" class="match-card__odds-pills">
@@ -495,15 +413,6 @@ const topPools = computed(() => {
         </div>
       </div>
 
-      <div v-if="detailMode" class="match-card__foot">
-        <button
-          type="button"
-          class="btn btn--primary match-card__btn"
-          @click="$emit('enter-market')"
-        >
-          {{ t('进入市场') }}
-        </button>
-      </div>
     </div>
   </component>
 </template>

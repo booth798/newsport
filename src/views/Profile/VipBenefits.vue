@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
@@ -37,7 +37,8 @@ const sideNavItems = computed(() => [
 const mobileCardBackground = getImageUrl('vip/vip-card-mobile.png');
 const desktopCardBackground = getImageUrl('vip/vip-card-desktop.png');
 
-const currentLevel = computed(() => Number(userProfile.value?.level ?? myVip.value?.level) || 0);
+// VIP 专属接口优先，未返回时回退用户资料中的统一 vipLevel 字段。
+const currentLevel = computed(() => Number(myVip.value?.level ?? userProfile.value?.vipLevel) || 0);
 const currentLevelInfo = computed(
   () => levels.value.find((item) => Number(item.level) === currentLevel.value) || levels.value[0] || null,
 );
@@ -114,6 +115,24 @@ function endPrivilegeDrag(event) {
 function selectPrivilegeLevel(level) {
   // 点击始终优先切换等级，拖动仅改变列表滚动位置。
   selectedPrivilegeLevel.value = Number(level);
+  scrollPrivilegeLevelToCenter(level);
+}
+
+/**
+ * 将指定等级项平滑滚动到容器水平居中位置，
+ * 通过 offsetLeft 计算目标偏移量，使选中项视觉居中。
+ */
+function scrollPrivilegeLevelToCenter(level) {
+  nextTick(() => {
+    const container = privilegeLevelsRef.value;
+    if (!container) return;
+    const items = container.querySelectorAll('.vip-privilege-levels__item');
+    const idx = levels.value.findIndex((l) => Number(l.level) === Number(level));
+    const target = items[idx];
+    if (!target) return;
+    const scrollLeft = target.offsetLeft - (container.clientWidth / 2) + (target.offsetWidth / 2);
+    container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+  });
 }
 
 async function loadData() {
@@ -124,8 +143,9 @@ async function loadData() {
     if (isLoggedIn.value) requests.push(fetchVipMe());
     const [, vipResponse] = await Promise.all(requests);
     myVip.value = vipResponse?.data || null;
-    // 进入特权 Tab 时默认展示当前会员等级的权益。
+    // 进入特权 Tab 时默认展示当前会员等级的权益，并滚动居中。
     selectedPrivilegeLevel.value = currentLevel.value;
+    scrollPrivilegeLevelToCenter(currentLevel.value);
   } catch {
     error.value = t('加载失败');
   } finally {
@@ -646,12 +666,16 @@ onMounted(loadData);
     padding-bottom: 2px;
     cursor: grab;
     user-select: none;
+    /* 首尾留白，使边缘等级项也能滚动到居中位置 */
+    scroll-padding-inline: 50%;
   }
 
   @include mobile-only {
     gap: 10px;
     margin-top: 8px;
     padding-bottom: 2px;
+    /* 首尾留白，使边缘等级项也能滚动到居中位置 */
+    scroll-padding-inline: 50%;
   }
 
   &--dragging {

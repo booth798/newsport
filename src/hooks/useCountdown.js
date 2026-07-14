@@ -47,19 +47,13 @@ export function useCountdown(kickoffRef, opts = {}) {
 
     isOver.value = false;
 
+    // 统一输出 HH:MM:SS 格式（如 10:48:46），天数折算进小时
     const totalSec = Math.floor(diff / 1000);
-    const d = Math.floor(totalSec / 86400);
-    const h = Math.floor((totalSec % 86400) / 3600);
+    const totalHours = Math.floor(totalSec / 3600);
     const m = Math.floor((totalSec % 3600) / 60);
     const s = totalSec % 60;
 
-    const parts = [];
-    if (d > 0) parts.push(`${d}天`);
-    if (h > 0 || d > 0) parts.push(`${h}时`);
-    parts.push(`${m}分`);
-    parts.push(`${String(s).padStart(2, '0')}秒`);
-
-    text.value = parts.join('');
+    text.value = `${String(totalHours).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
     minutes.value = Math.floor(diff / 60000);
   }
 

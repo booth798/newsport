@@ -1,22 +1,8 @@
 import { get, post, del } from './request';
 
-/** 查询钱包 */
+/** 查询钱包余额 */
 export async function fetchBalance() {
-  const res = await get('/wallet');
-  const w = res.data || {};
-  return {
-    code: 200,
-    data: {
-      available: w.available ?? w.balance ?? 0,
-      balance: w.balance ?? 0,
-      frozen: w.frozen ?? 0,
-      formatted: formatMoney(w.balance),
-      currency: w.currency || 'CNY',
-      totalDeposit: w.totalDeposit,
-      totalWithdraw: w.totalWithdraw,
-      _raw: w,
-    },
-  };
+  return get('/wallet');
 }
 
 /** 查询锁定钱包分项 */

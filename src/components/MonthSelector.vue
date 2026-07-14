@@ -22,8 +22,8 @@ const open = ref(false);
 // 月份范围为上海时区当前月及之前 23 个月，并按时间升序展示。
 const monthOptions = computed(() => {
   const [currentYear, currentMonth] = getShanghaiCurrentMonth().split('-').map(Number);
-  return Array.from({ length: 24 }, (_, index) => {
-    const offset = index - 23;
+  return Array.from({ length: 12 }, (_, index) => {
+    const offset = index - 11;
     const date = new Date(Date.UTC(currentYear, currentMonth - 1 + offset, 1));
     const value = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
     return { value, label: formatMonth(value) };
