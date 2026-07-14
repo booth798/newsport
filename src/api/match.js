@@ -191,9 +191,9 @@ export async function fetchPoolSnapshots(marketId, score, from, to) {
   return get(`/pools/${marketId}/snapshots`, { score, from, to });
 }
 
-/** 当前赔率列表 */
+/** 当前赔率列表（后台轮询用，静默不触发全局 loading） */
 export async function fetchPoolYields(marketId) {
-  return get(`/pools/${marketId}/yields`);
+  return get(`/pools/${marketId}/yields`, undefined, { silent: true });
 }
 
 /** 比赛场次统计 */
