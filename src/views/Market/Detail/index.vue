@@ -1,10 +1,11 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
 import { useAppStore } from '@/store/modules/app';
+import { useUserStore } from '@/store/modules/user';
 import { fetchMatchDetail, fetchScoreMarket } from '@/api/match';
 import { useMarketWs } from '@/hooks/useMarketWs';
 import MarketDetailScoreSection from '@/views/Market/Detail/components/MarketDetailScoreSection.vue';
@@ -19,7 +20,9 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const appStore = useAppStore();
+const userStore = useUserStore();
 const { isMobile } = storeToRefs(appStore);
+const { isLoggedIn } = storeToRefs(userStore);
 
 const activeTab = ref('fulltime');
 const expandedSections = ref({
@@ -42,30 +45,49 @@ const scoreRowsFulltime = ref([]);
 const scoreRowsHalftime = ref([]);
 const scoreRowsLoading = ref(false);
 
-const scoreRows = ref([]);
+const scoreRows = computed(() =>
+  activeTab.value === 'halftime' ? scoreRowsHalftime.value : scoreRowsFulltime.value,
+);
 
 const ftMarketId = ref(null);
 const htMarketId = ref(null);
-const activeMarketId = computed(() =>
-  activeTab.value === 'halftime' ? htMarketId.value : ftMarketId.value,
-);
 
-const { yields: wsYields } = useMarketWs(activeMarketId);
+const { yields: ftYields, disconnect: disconnectFt } = useMarketWs(ftMarketId);
+const { yields: htYields, disconnect: disconnectHt } = useMarketWs(htMarketId);
 
-watch(wsYields, (newYields) => {
+function applyWsYields(newYields, rowsRef) {
   if (!newYields || !Object.keys(newYields).length) return;
-  const rows = activeTab.value === 'halftime' ? scoreRowsHalftime : scoreRowsFulltime;
-  rows.value = rows.value.map((row) => {
-    const newVal = newYields[row.scoreRaw];
-    if (newVal == null) return row;
+  rowsRef.value = rowsRef.value.map((row) => {
+    const update = newYields[row.scoreRaw];
+    if (update == null) return row;
+    if (typeof update === 'object') {
+      return {
+        ...row,
+        yieldPct: update.yieldPct ?? row.yieldPct,
+        probability: update.yieldPct != null ? `${Number(update.yieldPct).toFixed(2)}%` : row.probability,
+        poolAmount: update.poolAmount ?? row.poolAmount,
+        volumeFormatted: update.poolAmount != null ? formatVolume(update.poolAmount) : row.volumeFormatted,
+        feeRate: update.feeRate ?? row.feeRate,
+        suspended: update.suspended ?? row.suspended,
+      };
+    }
     return {
       ...row,
-      yieldPct: newVal,
-      probability: `${Number(newVal).toFixed(2)}%`,
+      yieldPct: update,
+      probability: `${Number(update).toFixed(2)}%`,
     };
   });
-  scoreRows.value = rows.value;
-}, { deep: true });
+}
+
+function formatVolume(n) {
+  if (n == null) return '¥0.00';
+  const num = Number(n);
+  if (isNaN(num)) return '¥0.00';
+  return `¥${num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+watch(ftYields, (y) => applyWsYields(y, scoreRowsFulltime), { deep: true });
+watch(htYields, (y) => applyWsYields(y, scoreRowsHalftime), { deep: true });
 
 function scoreRowsForTab(tab) {
   return tab === 'halftime' ? scoreRowsHalftime.value : scoreRowsFulltime.value;
@@ -83,18 +105,37 @@ async function loadMatchData(id) {
   try {
     loading.value = true;
     error.value = false;
-    const [matchRes, fulltimeRes, halftimeRes] = await Promise.all([
-      fetchMatchDetail(id),
-      fetchScoreMarket(Number(id), 'fulltime'),
-      fetchScoreMarket(Number(id), 'halftime'),
-    ]);
+
+    const matchRes = await fetchMatchDetail(id);
     match.value = matchRes.data;
-    scoreRowsFulltime.value = fulltimeRes.data;
-    scoreRowsHalftime.value = halftimeRes.data;
-    scoreRows.value = fulltimeRes.data;
+
+    const matchId = String(match.value?.matchId || match.value?.id || id);
+
+    const empty = { data: [], market: null };
+    const [fulltimeRes, halftimeRes] = await Promise.all([
+      fetchScoreMarket(matchId, 'fulltime').catch((e) => {
+        if (import.meta.env.DEV) console.warn('[Detail] FT load failed:', e?.message || e);
+        return empty;
+      }),
+      fetchScoreMarket(matchId, 'halftime').catch((e) => {
+        if (import.meta.env.DEV) console.warn('[Detail] HT load failed:', e?.message || e);
+        return empty;
+      }),
+    ]);
+
+    if (import.meta.env.DEV) {
+      console.log('[Detail] matchId=%s  FT rows=%d  HT rows=%d', matchId, fulltimeRes.data?.length, halftimeRes.data?.length);
+    }
+
+    scoreRowsFulltime.value = fulltimeRes.data || [];
+    scoreRowsHalftime.value = halftimeRes.data || [];
     ftMarketId.value = fulltimeRes.data?.[0]?._marketId || null;
     htMarketId.value = halftimeRes.data?.[0]?._marketId || null;
-  } catch {
+    if (fulltimeRes.market?.feeRate != null) {
+      match.value = { ...match.value, feeRate: fulltimeRes.market.feeRate };
+    }
+  } catch (e) {
+    if (import.meta.env.DEV) console.error('[Detail] loadMatchData failed:', e);
     error.value = true;
   } finally {
     loading.value = false;
@@ -113,8 +154,12 @@ onMounted(async () => {
   }
 });
 
+onBeforeUnmount(() => {
+  disconnectFt();
+  disconnectHt();
+});
+
 watch(activeTab, () => {
-  scoreRows.value = activeTab.value === 'halftime' ? scoreRowsHalftime.value : scoreRowsFulltime.value;
   closeBuySheet();
 });
 
@@ -133,7 +178,11 @@ function defaultScoreRow(tab = 'fulltime') {
 }
 
 function openBuySheet(row, tab = activeTab.value) {
-  if (!row) return;
+  if (!row || row.suspended) return;
+  if (!isLoggedIn.value) {
+    router.push('/login');
+    return;
+  }
   activeTab.value = tab;
   selectedRow.value = row;
   showBuySheet.value = true;
@@ -161,7 +210,7 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
     name: 'trade-purchases',
     query: {
       tab: 'ordered',
-      marketId: String(match.value.id),
+      marketId: String(tab === 'halftime' ? htMarketId.value : ftMarketId.value),
       score: row.score,
       probability: row.probability,
       marketTab: tab,
@@ -211,7 +260,7 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
 
       <div class="market-detail__main">
         <div class="market-detail__hero">
-          <HomeMatchCard :match="match" detail-mode @enter-market="openBuySheetFromHero" />
+          <HomeMatchCard :match="match" detail-mode />
         </div>
 
         <section
@@ -238,11 +287,14 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
               v-for="row in scoreRows"
               :key="`${activeTab}-${row.score}`"
               class="score-table__row"
-              :class="{ 'score-table__row--active': selectedRow?.score === row.score && showBuySheet }"
-              role="button"
-              tabindex="0"
-              @click="selectRow(row)"
-              @keydown.enter.prevent="selectRow(row)"
+              :class="{
+                'score-table__row--active': selectedRow?.score === row.score && showBuySheet,
+                'score-table__row--suspended': row.suspended,
+              }"
+              :role="row.suspended ? undefined : 'button'"
+              :tabindex="row.suspended ? -1 : 0"
+              @click="!row.suspended && selectRow(row)"
+              @keydown.enter.prevent="!row.suspended && selectRow(row)"
             >
               <span class="score-table__cell score-table__cell--score">{{ formatScoreLabel(row.score) }}</span>
               <span class="score-table__cell score-table__cell--prob">{{ row.probability }}</span>
@@ -254,7 +306,7 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
                 height="24"
                 alt=""
                 aria-hidden="true"
-                @click.stop="goToPurchaseDetails(row)"
+                @click.stop="!row.suspended && goToPurchaseDetails(row)"
               />
             </li>
           </ul>
@@ -267,7 +319,7 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
       <div class="market-detail__main market-detail__main--m">
         <div class="m-detail-wrap">
           <div class="m-detail-wrap__hero">
-            <HomeMatchCard :match="match" detail-mode @enter-market="openBuySheetFromHero" />
+            <HomeMatchCard :match="match" detail-mode />
           </div>
 
           <section class="m-score-card">
@@ -302,7 +354,7 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
             </span>
           </div>
 
-          <ul class="m-score-card__list">
+          <ul v-if="scoreRows.length" class="m-score-card__list">
             <li
               v-for="row in scoreRows"
               :key="`${activeTab}-${row.score}`"
@@ -310,11 +362,12 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
               :class="{
                 'm-score-card__row--active': selectedRow?.score === row.score && showBuySheet,
                 'm-score-card__row--halftime': activeTab === 'halftime',
+                'm-score-card__row--suspended': row.suspended,
               }"
-              role="button"
-              tabindex="0"
-              @click="selectRow(row)"
-              @keydown.enter.prevent="selectRow(row)"
+              :role="row.suspended ? undefined : 'button'"
+              :tabindex="row.suspended ? -1 : 0"
+              @click="!row.suspended && selectRow(row)"
+              @keydown.enter.prevent="!row.suspended && selectRow(row)"
             >
               <span class="m-score-card__cell m-score-card__cell--score">{{ formatScoreLabel(row.score) }}</span>
               <span class="m-score-card__cell m-score-card__cell--prob">{{ row.probability }}</span>
@@ -326,10 +379,13 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
                 height="16"
                 alt=""
                 aria-hidden="true"
-                @click.stop="goToPurchaseDetails(row)"
+                @click.stop="!row.suspended && goToPurchaseDetails(row)"
               />
             </li>
           </ul>
+          <div v-else class="m-score-card__empty">
+            <span>{{ t('暂无数据') }}</span>
+          </div>
         </section>
         </div>
       </div>
@@ -684,14 +740,13 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
   }
 }
 
-/* H5 比分市场卡片 — pill tabs + 平铺列表（Figma 355:3541） */
+/* H5 比分市场卡片 — pill tabs + 平铺列表 */
 .m-score-card {
   @include mobile-only {
-    background: #eaf1f9;
-    border-radius: 16px;
-    border: 1px solid #eaf1f9;
+    background: #fff;
+    border-radius: 20px;
     overflow: hidden;
-    padding: 12px;
+    padding: 16px 12px;
     box-sizing: border-box;
   }
 
@@ -785,6 +840,45 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
     }
   }
 
+  &__head-row {
+    @include mobile-only {
+      display: grid;
+      grid-template-columns: 50px 60px 1fr 16px;
+      align-items: center;
+      padding: 0 14px;
+      height: 28px;
+    }
+  }
+
+  &__head-label {
+    @include mobile-only {
+      font-size: 11px;
+      color: #8ba3c0;
+      font-weight: 500;
+
+      &--right {
+        text-align: right;
+      }
+    }
+  }
+
+  &__head-spacer {
+    @include mobile-only {
+      width: 16px;
+    }
+  }
+
+  &__empty {
+    @include mobile-only {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 120px;
+      color: #8ba3c0;
+      font-size: 14px;
+    }
+  }
+
   &__list {
     @include mobile-only {
       list-style: none;
@@ -822,6 +916,14 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
     &--active {
       @include mobile-only {
         background: rgba(28, 123, 255, 0.12);
+      }
+    }
+
+    &--suspended {
+      @include mobile-only {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
       }
     }
   }
@@ -1045,6 +1147,12 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
         box-shadow: 0 2px 10px rgba(28, 123, 255, 0.12);
       }
     }
+
+    &--suspended {
+      opacity: 0.5;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
   }
 
   &__cell {
@@ -1066,10 +1174,11 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
     }
 
     &--prob {
+      color: #1c7bff;
+
       @include web-only {
         font-family: $font-family-num;
         font-weight: 600;
-        color: #1c7bff;
         text-align: center;
       }
     }

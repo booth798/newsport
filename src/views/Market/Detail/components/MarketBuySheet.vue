@@ -4,7 +4,9 @@ import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
 import { useToast } from '@/hooks/useToast';
-import { submitBuyOrder } from '@/api/order';
+import { submitBuyOrder, fetchPendingQuota } from '@/api/order';
+import { fetchBalance } from '@/api/finance';
+import { fetchPoolYields } from '@/api/match';
 
 import avatarDefaultUrl from '@/assets/images/common/avatar_default.png?url';
 import iconChampionUrl from '@/assets/images/events/icon_champion.svg?url';
@@ -54,6 +56,11 @@ const profitMin = ref('5.34');
 const profitMax = ref('7.34');
 const phase = ref('form');
 
+const walletBalance = ref(null);
+const walletLoading = ref(false);
+const pendingQuota = ref(null);
+const refreshedYield = ref(null);
+
 const LEAGUE_ICON_BY_NAME = {
   欧冠: iconChampionUrl,
   英超: iconUkUrl,
@@ -71,15 +78,18 @@ const homeLogoUrl = computed(() => resolveTeamLogoUrl(props.match.homeTeam, prop
 const awayLogoUrl = computed(() => resolveTeamLogoUrl(props.match.awayTeam, props.match.awayTeamLogo));
 
 const profitPercent = computed(() => {
+  if (refreshedYield.value != null) return String(refreshedYield.value);
   if (props.row?.yieldPct != null) return String(props.row.yieldPct);
   const raw = props.row?.probability ?? '6.99%';
   return String(raw).replace(/%$/, '') || '6.99';
 });
 
 const feeRateDisplay = computed(() => {
-  const rate = props.row?.feeRate;
-  if (rate != null) return `-${Number(rate)}%`;
-  return '-5%';
+  const rate = props.row?.feeRate ?? props.match?.feeRate;
+  if (rate == null) return '';
+  const pct = Number(rate) * 100;
+  const display = pct % 1 === 0 ? String(pct) : pct.toFixed(2).replace(/\.?0+$/, '');
+  return `-${display}%`;
 });
 
 const scoreLabel = computed(() => {
@@ -95,13 +105,19 @@ const matchDateDisplay = computed(() => {
   return `2026-${raw}`;
 });
 
+const estimatedProfit = computed(() => {
+  const amt = Number(buyAmount.value);
+  if (!Number.isFinite(amt) || amt <= 0) return '0.00';
+  return (amt * Number(profitPercent.value) / 100).toFixed(2);
+});
+
 const estimatedProfitRange = computed(() => {
   const amt = Number(buyAmount.value);
-  if (!Number.isFinite(amt) || amt <= 0) return '0.00~0.00';
-  const p = Number(profitPercent.value) / 100;
-  const min = (amt * p * 0.8).toFixed(2);
-  const max = (amt * p * 1.2).toFixed(2);
-  return `${min}~${max}`;
+  if (!Number.isFinite(amt) || amt <= 0) return '--';
+  const min = Number(profitMin.value);
+  const max = Number(profitMax.value);
+  if (min <= 0 && max <= 0) return '--';
+  return `${(amt * min / 100).toFixed(2)} ~ ${(amt * max / 100).toFixed(2)}`;
 });
 
 const successOrderNo = ref('NO.B01774853483511738');
@@ -114,6 +130,23 @@ const lockScroll = (locked) => {
   document.body.style.overflow = locked ? 'hidden' : '';
 };
 
+async function refreshWalletBalance() {
+  walletLoading.value = true;
+  try {
+    const res = await fetchBalance();
+    walletBalance.value = res.data?.available ?? res.data?.balance ?? null;
+    userStore.updateUserProfile({ balance: walletBalance.value });
+  } catch { /* non-critical */ }
+  finally { walletLoading.value = false; }
+}
+
+async function loadPendingQuota() {
+  try {
+    const res = await fetchPendingQuota();
+    pendingQuota.value = res.data?.remaining ?? res.data?.remainingCount ?? null;
+  } catch { /* non-critical */ }
+}
+
 watch(
   () => props.visible,
   (open) => {
@@ -122,8 +155,12 @@ watch(
       phase.value = 'form';
       buyType.value = 'standard';
       buyAmount.value = '';
-      profitMin.value = '5.34';
-      profitMax.value = '7.34';
+      const yield_ = Number(profitPercent.value);
+      profitMin.value = yield_ ? yield_.toFixed(2) : '5.34';
+      profitMax.value = yield_ ? yield_.toFixed(2) : '7.34';
+      refreshedYield.value = null;
+      refreshWalletBalance();
+      loadPendingQuota();
     }
   },
 );
@@ -162,6 +199,21 @@ async function confirmBuy() {
     return;
   }
 
+  if (walletLoading.value) {
+    toast.error(t('正在获取余额请稍候'));
+    return;
+  }
+  if (walletBalance.value == null) {
+    toast.error(t('余额获取失败请重试'));
+    refreshWalletBalance();
+    return;
+  }
+  if (amt > Number(walletBalance.value)) {
+    const formatted = Number(walletBalance.value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    toast.error(`${t('余额不足')}，${t('当前余额')}：${formatted}`);
+    return;
+  }
+
   try {
     submitting.value = true;
     const marketId = props.row?._marketId;
@@ -173,13 +225,12 @@ async function confirmBuy() {
       expectedYield: Number(profitPercent.value),
     };
 
-    const res = buyType.value === 'scheduled'
-      ? await (await import('@/api/order')).submitPendingOrder({
-          ...payload,
-          yieldMin: Number(profitMin.value),
-          yieldMax: Number(profitMax.value),
-        })
-      : await submitBuyOrder(payload);
+    const res = await submitBuyOrder(payload);
+
+    if (res.walletBalance != null) {
+      userStore.updateUserProfile({ balance: res.walletBalance });
+      walletBalance.value = res.walletBalance;
+    }
 
     const order = res.data || {};
     successAmount.value = amt.toFixed(2);
@@ -191,7 +242,19 @@ async function confirmBuy() {
     const errCode = e?.code || e?.response?.data?.code;
     const errMsg = e?.message || '';
     if (errCode === 'YIELD_CHANGED' || errMsg.includes('YIELD_CHANGED')) {
-      toast.error(t('赔率已变化，请确认最新赔率后重新提交'));
+      toast.error(errMsg || t('赔率已变化，请确认最新赔率后重新提交'));
+      try {
+        const marketId = props.row?._marketId;
+        if (marketId) {
+          const yieldRes = await fetchPoolYields(marketId);
+          const pools = yieldRes.data || [];
+          const scoreKey = props.row?.scoreRaw ?? (props.row?.score ?? '0-0').replace(/-/g, ':');
+          const found = pools.find((p) => p.score === scoreKey);
+          if (found?.yieldPct != null) {
+            refreshedYield.value = Number(found.yieldPct);
+          }
+        }
+      } catch { /* non-critical */ }
     } else {
       toast.error(errMsg || t('提交失败，请重试'));
     }
@@ -202,18 +265,7 @@ async function confirmBuy() {
 
 function goPurchaseDetails() {
   emit('close');
-  router.push({
-    name: 'trade-purchases',
-    query: {
-      tab: buyType.value === 'scheduled' ? 'scheduled' : 'ordered',
-      marketId: String(props.row?._marketId || props.match.id),
-      matchId: String(props.match.id),
-      score: props.row?.score ?? '0-0',
-      probability: props.row?.probability,
-      marketTab: props.marketTab,
-      from: 'market',
-    },
-  });
+  router.push('/finance/records');
 }
 
 function onBackdropKeydown(e) {
@@ -309,7 +361,7 @@ function onBackdropKeydown(e) {
             class="btn btn--default-1 buy-sheet__success-btn"
             @click="goPurchaseDetails"
           >
-            {{ t('前往买入明细') }}
+            {{ t('前往财务查看') }}
           </button>
         </div>
 
@@ -321,7 +373,7 @@ function onBackdropKeydown(e) {
           class="btn btn--primary buy-sheet__success-btn buy-sheet__success-btn--outer norem"
           @click="goPurchaseDetails"
         >
-          {{ t('前往买入明细') }}
+          {{ t('前往财务查看') }}
         </button>
         </div>
 
@@ -329,30 +381,11 @@ function onBackdropKeydown(e) {
         <div v-else class="buy-sheet__form-stack">
         <div class="buy-sheet__frame">
         <div class="buy-sheet__body">
-        <nav class="buy-sheet__tabs card-primary norem" :aria-label="t('买入金额')">
-          <button
-            type="button"
-            class="buy-sheet__tab btn"
-            :class="buyType === 'standard' ? 'btn--primary' : 'buy-sheet__tab--idle'"
-            @click="buyType = 'standard'"
-          >
-            {{ t('一般买入') }}
-          </button>
-          <button
-            type="button"
-            class="buy-sheet__tab btn"
-            :class="buyType === 'scheduled' ? 'btn--primary' : 'buy-sheet__tab--idle'"
-            @click="buyType = 'scheduled'"
-          >
-            {{ t('预约买入') }}
-          </button>
-        </nav>
-
         <div class="buy-sheet__invest">
           <span class="buy-sheet__invest-icon" aria-hidden="true">◎</span>
           <span class="buy-sheet__invest-text">
             {{ t('您正在投资') }}:
-            <strong class="buy-sheet__invest-option">{{ t('选项') }} {{ formatScoreOption(row?.score ?? '0-0') }}</strong>
+            <strong class="buy-sheet__invest-option">{{ formatScoreOption(row?.score ?? '0-0') }}</strong>
             <span class="buy-sheet__invest-tag">{{ t(marketScopeKey) }}</span>
           </span>
         </div>
@@ -383,14 +416,11 @@ function onBackdropKeydown(e) {
           </div>
         </div>
 
-        <!-- 一般买入 -->
-        <div v-if="buyType === 'standard'" class="buy-sheet__panel card-default">
+        <div class="buy-sheet__panel card-default">
           <div class="buy-sheet__panel-head">
             <span class="buy-sheet__panel-title">{{ t('交易金额') }}</span>
-            <button type="button" class="buy-sheet__profit-link">{{ t('收益') }} %</button>
           </div>
           <div class="buy-sheet__formula">
-            <span class="buy-sheet__formula-prefix">x {{ profitPercent }}% =</span>
             <input
               v-model="buyAmount"
               type="text"
@@ -398,8 +428,9 @@ function onBackdropKeydown(e) {
               class="buy-sheet__amount-input"
               :placeholder="t('输入金额')"
             />
+            <span class="buy-sheet__formula-suffix">x {{ profitPercent }}% = {{ estimatedProfit }}</span>
           </div>
-          <p class="buy-sheet__fee">{{ t('手续费') }} {{ feeRateDisplay }}</p>
+          <p v-if="feeRateDisplay" class="buy-sheet__fee">{{ t('手续费') }}{{ feeRateDisplay }}</p>
           <div class="buy-sheet__chips">
             <button type="button" class="buy-sheet__chip buy-sheet__chip--icon" :aria-label="t('设置')">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -413,60 +444,15 @@ function onBackdropKeydown(e) {
             <button type="button" class="buy-sheet__chip" @click="setQuickAmount('all')">{{ t('全部') }}</button>
           </div>
         </div>
-
-        <!-- 预约买入 -->
-        <div v-else class="buy-sheet__panel buy-sheet__panel--scheduled card-default">
-          <div class="buy-sheet__scheduled-meta">
-            <div class="buy-sheet__scheduled-row">
-              <span>{{ t('尚可预约笔数') }}:</span>
-              <strong>50</strong>
-            </div>
-            <div class="buy-sheet__scheduled-row">
-              <span>{{ t('目前获利') }}%:</span>
-              <strong class="buy-sheet__scheduled-profit">{{ profitPercent }}%</strong>
-            </div>
-            <div class="buy-sheet__scheduled-range">
-              <span class="buy-sheet__scheduled-range-label">{{ t('收益区间') }}</span>
-              <div class="buy-sheet__scheduled-range-inputs">
-                <input v-model="profitMin" type="text" inputmode="decimal" class="buy-sheet__range-input" />
-                <span class="buy-sheet__range-sep">~</span>
-                <input v-model="profitMax" type="text" inputmode="decimal" class="buy-sheet__range-input" />
-              </div>
-            </div>
-            <p class="buy-sheet__scheduled-tip">{{ t('赔率变动同意买入') }}</p>
-          </div>
-
-          <div class="buy-sheet__panel-head buy-sheet__panel-head--sub">
-            <span class="buy-sheet__panel-title">{{ t('交易金额') }}</span>
-          </div>
-          <div class="buy-sheet__formula buy-sheet__formula--plain">
-            <input
-              v-model="buyAmount"
-              type="text"
-              inputmode="decimal"
-              class="buy-sheet__amount-input buy-sheet__amount-input--full"
-              :placeholder="t('输入金额')"
-            />
-          </div>
-          <div class="buy-sheet__chips">
-            <button type="button" class="buy-sheet__chip" @click="setQuickAmount(100)">100</button>
-            <button type="button" class="buy-sheet__chip" @click="setQuickAmount(500)">500</button>
-            <button type="button" class="buy-sheet__chip" @click="setQuickAmount(1000)">1000</button>
-            <button type="button" class="buy-sheet__chip" @click="setQuickAmount('all')">{{ t('全部') }}</button>
-          </div>
-          <p class="buy-sheet__est">
-            {{ t('预估收益') }} {{ estimatedProfitRange }}
-            <span class="buy-sheet__fee-inline">{{ t('手续费') }}{{ feeRateDisplay }}</span>
-          </p>
-        </div>
         </div>
 
         <div class="buy-sheet__wallet card-primary norem">
           <img class="buy-sheet__wallet-avatar" :src="avatarDefaultUrl" alt="" width="32" height="32" />
-          <span class="buy-sheet__wallet-id">{{ loggedInUserId || 'Y05741' }}</span>
+          <span class="buy-sheet__wallet-id">{{ loggedInUserId || '' }}</span>
           <span class="buy-sheet__wallet-balance">
-            {{ t('主钱包') }}
-            <strong>{{ loggedInAssetsFormatted }}</strong>
+            {{ t('当前余额') }}
+            <strong v-if="walletLoading">{{ t('正在获取余额请稍候') }}</strong>
+            <strong v-else>¥ {{ walletBalance != null ? Number(walletBalance).toFixed(2) : '--' }}</strong>
           </span>
         </div>
 
@@ -475,7 +461,7 @@ function onBackdropKeydown(e) {
             {{ t('取消') }}
           </button>
           <button type="button" class="btn btn--primary buy-sheet__confirm-btn" :disabled="submitting" @click="confirmBuy">
-            {{ submitting ? t('提交中...') : buyType === 'scheduled' ? t('确定预约') : t('确定') }}
+            {{ submitting ? t('提交中...') : t('确定') }}
           </button>
         </div>
         </div>
@@ -485,7 +471,7 @@ function onBackdropKeydown(e) {
             {{ t('取消') }}
           </button>
           <button type="button" class="btn btn--primary buy-sheet__confirm-btn" :disabled="submitting" @click="confirmBuy">
-            {{ submitting ? t('提交中...') : buyType === 'scheduled' ? t('确定预约') : t('确定') }}
+            {{ submitting ? t('提交中...') : t('确定') }}
           </button>
         </div>
         </div>
@@ -883,6 +869,14 @@ function onBackdropKeydown(e) {
     font-family: $font-family-num;
     font-size: 13px;
     color: rgba(11, 52, 98, 0.55);
+  }
+
+  &__formula-suffix {
+    flex-shrink: 0;
+    font-family: $font-family-num;
+    font-size: 13px;
+    color: rgba(11, 52, 98, 0.55);
+    white-space: nowrap;
   }
 
   &__amount-input {

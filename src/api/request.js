@@ -1,4 +1,5 @@
 import { resolveErrorMessage } from './errorCodes';
+import { getCurrentLocale } from '@/store/modules/app';
 
 const API_BASE = '/api';
 
@@ -189,6 +190,11 @@ function buildHeaders(extraHeaders = {}, method = 'GET') {
   if (method !== 'GET' && method !== 'HEAD' && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
   }
+
+  const locale = getCurrentLocale() || 'zh-CN';
+  if (!headers['Accept-Language']) headers['Accept-Language'] = locale;
+  if (!headers['Content-Language']) headers['Content-Language'] = locale;
+  if (!headers['X-Device-Type']) headers['X-Device-Type'] = 'Web';
   return headers;
 }
 
