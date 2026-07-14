@@ -18,6 +18,7 @@ import i18n from '@/i18n';
 import { useAppStore } from '@/store/modules/app';
 import { useUserStore } from '@/store/modules/user';
 import { useWalletWs } from '@/hooks/useWalletWs';
+import { loadErrorCodes, resolveErrorMessage } from '@/api/errorCodes';
 
 function getRouteDepth(path) {
   return path.replace(/\/$/, '').split('/').filter(Boolean).length;
@@ -94,12 +95,25 @@ function onSessionExpired() {
   if (wasLoggedIn) appStore.openLoginModal();
 }
 
+function onForceLogout(e) {
+  const code = e.detail?.code;
+  userStore.clearWebLogin();
+  const msg = code ? resolveErrorMessage(code) : '';
+  if (msg && toastRef.value) {
+    toastRef.value.show(msg, { type: 'error', duration: 4000 });
+  }
+  router.replace('/');
+  appStore.openLoginModal();
+}
+
 onMounted(async () => {
   syncViewport();
   window.addEventListener('resize', syncViewport, { passive: true });
   window.addEventListener('mysport:session-expired', onSessionExpired);
+  window.addEventListener('mysport:force-logout', onForceLogout);
 
   appStore.loadPublicConfig().catch(() => {});
+  loadErrorCodes();
 
   if (isLoggedIn.value) {
     try {
@@ -111,6 +125,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   window.removeEventListener('resize', syncViewport);
   window.removeEventListener('mysport:session-expired', onSessionExpired);
+  window.removeEventListener('mysport:force-logout', onForceLogout);
 });
 
 const toastRef = ref(null);
