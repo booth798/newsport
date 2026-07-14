@@ -158,9 +158,23 @@ export function useCustomerService() {
       await appStore.loadPublicConfig();
       if (gen !== generation) return;
 
-      const csUrl = appStore.csUrl;
+      // 对齐 Android SportsOnlineServiceHost + resolveEntryLinkCode：
+      // 1. 从公开配置提取客服 URL（支持 4 种键名，见 app.js csUrl getter）
+      // 2. 解析出 base（origin）和 entryLinkCode（query 参数 code/id/linkCode/tenant 或纯字符串）
+      // 3. base / entryLinkCode 解析失败时强制刷新一次公开配置再试
+      // 4. 所有 HTTP 和 WebSocket 均直连 kfBase（不走本地代理）
+      let csUrl = appStore.csUrl;
       kfBase = extractKfBase(csUrl);
       entryLinkCode = extractEntryLinkCode(csUrl);
+
+      // 兜底：配置为空或解析失败时，强制拉一次公开配置
+      if (!kfBase || !entryLinkCode) {
+        await appStore.loadPublicConfig({ force: true });
+        if (gen !== generation) return;
+        csUrl = appStore.csUrl;
+        if (!kfBase) kfBase = extractKfBase(csUrl);
+        if (!entryLinkCode) entryLinkCode = extractEntryLinkCode(csUrl);
+      }
 
       if (!kfBase) {
         fail('在线客服地址尚未配置');
@@ -189,7 +203,8 @@ export function useCustomerService() {
       if (!receiveId) throw new Error('客服配置缺少 linkCode');
 
       kfName.value = config.kfName || '';
-      kfAvatar.value = config.kfAvatar || '';
+      // kfAvatar 是相对路径（如 /profile/upload/...），需拼接 kfBase 得到完整 URL
+      kfAvatar.value = buildKfImageUrl(kfBase, config.kfAvatar) || '';
 
       if (__DEV__) console.log('[KF] 配置获取成功', { receiveId, kfName: kfName.value });
 
