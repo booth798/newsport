@@ -515,7 +515,7 @@ function onBackdropKeydown(e) {
     max-width: 420px;
     max-height: calc(100dvh - 56px);
     flex-shrink: 0;
-    overflow: hidden;
+    overflow: visible;
 
     @include web-only {
       max-width: 440px;
