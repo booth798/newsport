@@ -1,5 +1,10 @@
 import { get, post, del } from './request';
 
+/** 查询钱包余额 */
+export async function fetchBalance() {
+  return get('/wallet');
+}
+
 /** 查询锁定钱包分项 */
 export async function fetchLockedWallet() {
   return get('/wallet/locked');
