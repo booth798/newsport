@@ -65,24 +65,33 @@ export function useMarketWs(marketIdRef) {
       ticket = await fetchWsTicket();
     } catch { /* 降级到 token */ }
 
+    if (currentMarketId !== marketId) return;
+
     const urlFactory = () => buildWsUrl(`/ws/market/${marketId}`, ticket);
+
+    let wsOpenedOnce = false;
 
     wsControls = useWebSocket(urlFactory, {
       onMessage: handleMessage,
-      onOpen: () => { wsStatus.value = 'connected'; stopPolling(); },
+      onOpen: () => {
+        wsOpenedOnce = true;
+        wsStatus.value = 'connected';
+        stopPolling();
+      },
       onClose: () => {
         wsStatus.value = 'disconnected';
-        startPolling(marketId);
+        if (currentMarketId === marketId) startPolling(marketId);
       },
-      onError: () => { wsStatus.value = 'disconnected'; },
+      onError: () => {
+        wsStatus.value = 'disconnected';
+        if (!wsOpenedOnce && currentMarketId === marketId) startPolling(marketId);
+      },
       heartbeatMs: 25000,
       autoConnect: false,
     });
 
     wsStatus.value = 'connecting';
     wsControls.connect();
-
-    startPolling(marketId);
   }
 
   async function pollYields(marketId) {

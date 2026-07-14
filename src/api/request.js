@@ -263,24 +263,13 @@ function hideLoading() {
 const SILENT_PATHS = new Set([
   '/ws/ticket',
   '/messages/unread-count',
-  '/system/public-config',
   '/meta/error-codes',
-  '/home',
-  '/leagues',
-  '/leagues/hot',
-  '/wallet',
+  '/system/public-config',
 ]);
-
-const SILENT_PREFIXES = [
-  '/matches/',
-  '/markets/',
-  '/pools/',
-];
 
 function isSilent(url, options) {
   if (options.silent) return true;
-  if (SILENT_PATHS.has(url)) return true;
-  return SILENT_PREFIXES.some((p) => url.startsWith(p));
+  return SILENT_PATHS.has(url);
 }
 
 // ─── 核心 request ───

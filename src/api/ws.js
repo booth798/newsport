@@ -1,13 +1,20 @@
 import { get } from './request';
 import { getCurrentLocale } from '@/store/modules/app';
 
+let _ticketPromise = null;
+let _ticketExpireAt = 0;
+
 /**
  * 获取 WebSocket 一次性握手票据（60s 有效，用后即焚）
- * 需要已登录状态
+ * 短时间内多次调用共享同一请求，避免并发重复
  */
 export async function fetchWsTicket() {
-  const res = await get('/ws/ticket');
-  return res.data?.ticket || res.data;
+  if (_ticketPromise && Date.now() < _ticketExpireAt) return _ticketPromise;
+  _ticketExpireAt = Date.now() + 5000;
+  _ticketPromise = get('/ws/ticket')
+    .then((res) => res.data?.ticket || res.data)
+    .catch((e) => { _ticketPromise = null; throw e; });
+  return _ticketPromise;
 }
 
 /**
