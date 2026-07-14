@@ -81,7 +81,8 @@ const navbarList = [
   { kind: 'plain', labelKey: '首页', key: 'home', width: 104, to: '/' },
   { kind: 'dropdown', labelKey: '市场', key: 'market', width: 104, to: '/market', menuKey: 'market' },
   { kind: 'dropdown', labelKey: '交易账务', key: 'trade', width: 124, to: '/finance/deposit', menuKey: 'trade' },
-  { kind: 'dropdown', labelKey: '我的权益', key: 'myBenefit', width: 124, to: '/profile', menuKey: 'myBenefit' },
+  { kind: 'dropdown', labelKey: '会员权益', key: 'myBenefit', width: 124, to: '/profile', menuKey: 'myBenefit' },
+  { kind: 'plain', labelKey: '关于我们', key: 'about', width: 124, to: '/profile/about' },
 ];
 
 const isNavActive = (item) => {
@@ -94,7 +95,8 @@ const isNavActive = (item) => {
     );
   }
   if (item.key === 'trade') return route.path.startsWith('/finance') || route.name === 'trade-purchases';
-  if (item.key === 'myBenefit') return route.path.startsWith('/profile');
+  if (item.key === 'myBenefit') return route.path.startsWith('/profile') && route.name !== 'profile-about';
+  if (item.key === 'about') return route.name === 'profile-about';
   return false;
 };
 
@@ -317,12 +319,16 @@ watch(isLoggedIn, (loggedIn) => {
           >
             <a
               :href="href"
-              class="navbar-item navbar-item--plain"
-              :class="{ active: isNavActive(item) }"
+              class="navbar-item"
+              :class="{
+                active: isNavActive(item),
+                'navbar-item--plain': item.key === 'home',
+              }"
               :style="{ width: `${item.width}px` }"
               @click="navigate"
             >
               <img
+                v-if="item.key === 'home'"
                 class="navbar-item-icon"
                 :src="isNavActive(item) ? navbarHomeIcon : navbarHomeMutedIcon"
                 alt=""
@@ -1302,4 +1308,3 @@ watch(isLoggedIn, (loggedIn) => {
   }
 }
 </style>
-

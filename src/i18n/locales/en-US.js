@@ -11,6 +11,7 @@ export default {
   账务: 'Finance',
   交易账务: 'Finance',
   会员服务: 'Membership',
+  会员权益: 'VIP Benefits',
   我的权益: 'My Benefits',
   市场列表: 'Market List',
   赛事结果: 'Match Results',
@@ -240,6 +241,10 @@ export default {
   次: ' times',
   提现优惠说明: 'Each VIP level includes a corresponding number of fee-free withdrawals per month. Unused withdrawals do not carry over.',
   提现限额说明: 'Each level has a different maximum amount for a single withdrawal. There is no limit on the number of withdrawals.',
+  门槛条件释义: 'Threshold Definition',
+  总额度释义: 'Total amount = Main wallet + Locked wallet.',
+  等级升降说明: 'Level Adjustment',
+  等级升降说明内容: 'Your level is recalculated from your total balance after completed deposits, withdrawals, or member transfers. All member thresholds are reviewed daily at 12:30 PM.',
   实名认证: 'Verification',
   安全设置: 'Security',
   语言设置: 'Language',
@@ -335,6 +340,9 @@ export default {
 
   // Footer
   关于我们: 'About Us',
+  关于我们介绍一: 'We are a pioneering sports investment company in Asia, among the first to introduce the concept of combining sports and investment to the regional market. Unlike traditional sports funds managed entirely by professional managers, our model gives members direct control and lets them share in the results.',
+  关于我们介绍二: 'Football is our primary operating sector. We focus on globally influential sports with strong commercial value and work with established, legally operated exchanges in Sweden, the United Kingdom, Germany, and other markets. Years of research and practical experience have enabled us to apply probability models and statistical theory to football finance.',
+  关于我们风险提示: 'All investments involve risk. We remain committed to transparency, compliance, stability, and rational participation. Members are reminded to understand the risks and invest with care.',
   联系我们: 'Contact Us',
   帮助中心: 'Help Center',
   服务条款: 'Terms of Service',
