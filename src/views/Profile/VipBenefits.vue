@@ -37,7 +37,8 @@ const sideNavItems = computed(() => [
 const mobileCardBackground = getImageUrl('vip/vip-card-mobile.png');
 const desktopCardBackground = getImageUrl('vip/vip-card-desktop.png');
 
-const currentLevel = computed(() => Number(userProfile.value?.level ?? myVip.value?.level) || 0);
+// VIP 专属接口优先，未返回时回退用户资料中的统一 vipLevel 字段。
+const currentLevel = computed(() => Number(myVip.value?.level ?? userProfile.value?.vipLevel) || 0);
 const currentLevelInfo = computed(
   () => levels.value.find((item) => Number(item.level) === currentLevel.value) || levels.value[0] || null,
 );

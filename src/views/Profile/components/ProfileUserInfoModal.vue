@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n';
 import { updateNickname, updateAvatar } from '@/api/user';
 import { uploadFile } from '@/api/upload';
 import { useToast } from '@/hooks/useToast';
+import { useUserStore } from '@/store/modules/user';
 import BaseInput from '@/components/BaseInput.vue';
 import BaseModal from '@/components/BaseModal.vue';
 
@@ -32,6 +33,7 @@ const AVATAR_ACCEPT = 'image/jpeg,image/png,image/gif,image/webp';
 
 const { t } = useI18n();
 const toast = useToast();
+const userStore = useUserStore();
 
 const formNickname = ref('');
 const previewUrl = ref('');
@@ -77,7 +79,11 @@ async function handleFileChange(event) {
     const fileRef = uploadRes?.data?.ref;
     if (!fileRef) throw new Error(t('上传失败'));
     const avatarRes = await updateAvatar(fileRef);
-    previewUrl.value = avatarRes?.data?.avatar || '';
+    const avatar = avatarRes?.data?.avatar || '';
+    if (avatar) {
+      // 头像引用交由 store 转换为可展示 URL，并同步全局用户资料。
+      previewUrl.value = userStore.updateUserProfile({ avatar }).avatarUrl;
+    }
     toast.success(t('头像上传成功'));
   } catch (e) {
     toast.error(e.message || t('头像上传失败'));
@@ -96,6 +102,7 @@ async function handleSave() {
   try {
     submitting.value = true;
     await updateNickname(trimmedNickname);
+    userStore.updateUserProfile({ nickname: trimmedNickname });
     emit('saved', {
       nickname: trimmedNickname,
       avatarUrl: previewUrl.value,

@@ -1,24 +1,5 @@
 import { get, post, del } from './request';
 
-/** 查询钱包 */
-export async function fetchBalance() {
-  const res = await get('/wallet');
-  const w = res.data || {};
-  return {
-    code: 200,
-    data: {
-      available: w.available ?? w.balance ?? 0,
-      balance: w.balance ?? 0,
-      frozen: w.frozen ?? 0,
-      formatted: formatMoney(w.balance),
-      currency: w.currency || 'CNY',
-      totalDeposit: w.totalDeposit,
-      totalWithdraw: w.totalWithdraw,
-      _raw: w,
-    },
-  };
-}
-
 /** 查询锁定钱包分项 */
 export async function fetchLockedWallet() {
   return get('/wallet/locked');
