@@ -266,7 +266,6 @@ async function loadMore() {
           <span>{{ t('提款密码') }}</span>
           <BaseInput v-model="withdrawPassword" type="password" autocomplete="current-password"
             :placeholder="t('请输入密码')" />
-          <RouterLink to="/profile/security">{{ t('忘记密码') }}</RouterLink>
         </label>
 
         <button class="vip-transfer-form__submit btn btn--primary" type="submit" :disabled="submitting">
@@ -446,14 +445,6 @@ async function loadMore() {
       color: var(--theme-primary);
       font-weight: 500;
     }
-  }
-
-  a {
-    align-self: flex-end;
-    color: var(--theme-primary);
-    font-size: 12px;
-    font-weight: 500;
-    text-decoration: none;
   }
 }
 
