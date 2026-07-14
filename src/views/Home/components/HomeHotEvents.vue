@@ -29,6 +29,7 @@ watch(
     if (val && val.length) {
       matchList.value = val;
       loading.value = false;
+      error.value = false;
     }
   },
   { immediate: true },
@@ -39,6 +40,13 @@ const dynamicLeagueTabs = ref([]);
 onMounted(async () => {
   if (matchList.value.length) {
     loading.value = false;
+    loadLeagueTabs();
+    return;
+  }
+  // 父组件通过 /api/home 提供 preloadedMatches，watcher 会即时更新 UI。
+  // 给父组件数据一个到达窗口，避免请求不存在的 /matches/hot。
+  await new Promise((r) => setTimeout(r, 3000));
+  if (matchList.value.length) {
     loadLeagueTabs();
     return;
   }

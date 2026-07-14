@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
@@ -44,6 +44,9 @@ const error = ref(false);
 const scoreRowsFulltime = ref([]);
 const scoreRowsHalftime = ref([]);
 const scoreRowsLoading = ref(false);
+
+// 请求代数计数器：每次调用 loadMatchData 递增，用于丢弃过期请求的响应
+let loadGeneration = 0;
 
 const scoreRows = computed(() =>
   activeTab.value === 'halftime' ? scoreRowsHalftime.value : scoreRowsFulltime.value,
@@ -102,11 +105,13 @@ function toggleSection(tab) {
 }
 
 async function loadMatchData(id) {
+  const gen = ++loadGeneration;
   try {
     loading.value = true;
     error.value = false;
 
     const matchRes = await fetchMatchDetail(id);
+    if (gen !== loadGeneration) return;
     match.value = matchRes.data;
 
     const matchId = String(match.value?.matchId || match.value?.id || id);
@@ -123,6 +128,9 @@ async function loadMatchData(id) {
       }),
     ]);
 
+    // 丢弃过期请求，避免旧响应覆盖新数据
+    if (gen !== loadGeneration) return;
+
     if (import.meta.env.DEV) {
       console.log('[Detail] matchId=%s  FT rows=%d  HT rows=%d', matchId, fulltimeRes.data?.length, halftimeRes.data?.length);
     }
@@ -135,24 +143,15 @@ async function loadMatchData(id) {
       match.value = { ...match.value, feeRate: fulltimeRes.market.feeRate };
     }
   } catch (e) {
+    if (gen !== loadGeneration) return;
     if (import.meta.env.DEV) console.error('[Detail] loadMatchData failed:', e);
     error.value = true;
   } finally {
-    loading.value = false;
+    if (gen === loadGeneration) {
+      loading.value = false;
+    }
   }
 }
-
-onMounted(async () => {
-  await loadMatchData(route.params.id);
-  if (route.query.autoBuy === '1') {
-    const targetScore = route.query.score;
-    const rows = scoreRowsFulltime.value;
-    const row = targetScore
-      ? rows.find((r) => r.score === targetScore) ?? rows[0]
-      : rows[0];
-    if (row) openBuySheet(row, 'fulltime');
-  }
-});
 
 onBeforeUnmount(() => {
   disconnectFt();
@@ -163,13 +162,26 @@ watch(activeTab, () => {
   closeBuySheet();
 });
 
+// 统一由 watcher 驱动初始加载与路由切换，避免 onMounted + watch 重复触发导致多次 loading
 watch(
   () => route.params.id,
-  (id) => {
-    expandedSections.value = { fulltime: true, halftime: false };
-    closeBuySheet();
-    loadMatchData(id);
+  async (id, oldId) => {
+    if (oldId != null) {
+      expandedSections.value = { fulltime: true, halftime: false };
+      closeBuySheet();
+    }
+    await loadMatchData(id);
+    // 首次进入且携带 autoBuy 参数时自动打开购买面板
+    if (oldId == null && route.query.autoBuy === '1') {
+      const targetScore = route.query.score;
+      const rows = scoreRowsFulltime.value;
+      const row = targetScore
+        ? rows.find((r) => r.score === targetScore) ?? rows[0]
+        : rows[0];
+      if (row) openBuySheet(row, 'fulltime');
+    }
   },
+  { immediate: true },
 );
 
 function defaultScoreRow(tab = 'fulltime') {

@@ -291,15 +291,13 @@ function computeCountdown(kickoffAt) {
   try {
     const diff = new Date(kickoffAt).getTime() - Date.now();
     if (diff <= 0) return { text: '', minutes: 0 };
-    const totalMin = Math.floor(diff / 60000);
-    const d = Math.floor(totalMin / 1440);
-    const h = Math.floor((totalMin % 1440) / 60);
-    const min = totalMin % 60;
-    const parts = [];
-    if (d > 0) parts.push(`${d}天`);
-    if (h > 0 || d > 0) parts.push(`${h}时`);
-    parts.push(`${min}分`);
-    return { text: parts.join(''), minutes: totalMin };
+    // 统一输出 HH:MM:SS 格式（如 10:48:46），天数折算进小时
+    const totalSec = Math.floor(diff / 1000);
+    const totalHours = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    const text = `${String(totalHours).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    return { text, minutes: Math.floor(diff / 60000) };
   } catch {
     return { text: '', minutes: 0 };
   }

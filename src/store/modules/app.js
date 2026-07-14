@@ -19,7 +19,13 @@ export const useAppStore = defineStore('app', {
   }),
   getters: {
     isMobile: (state) => state.viewportWidth <= 750,
-    csUrl: (state) => state.publicConfig['customer-service.url'] || '',
+    // 对齐 Android CustomerServiceConfigStore.CONFIG_KEYS，按优先级尝试多个键名
+    csUrl: (state) =>
+      state.publicConfig['customer-service.url']
+      || state.publicConfig['customerServiceUrl']
+      || state.publicConfig['customer_service_url']
+      || state.publicConfig['customer.service.url']
+      || '',
     csHours: (state) => state.publicConfig['customer-service.hours'] || '',
     csQQ: (state) => state.publicConfig['customer-service.qq'] || '',
     csEmail: (state) => state.publicConfig['customer-service.email'] || '',
