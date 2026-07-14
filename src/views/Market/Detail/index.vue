@@ -1,10 +1,11 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
 import { useAppStore } from '@/store/modules/app';
+import { useUserStore } from '@/store/modules/user';
 import { fetchMatchDetail, fetchScoreMarket } from '@/api/match';
 import { useMarketWs } from '@/hooks/useMarketWs';
 import MarketDetailScoreSection from '@/views/Market/Detail/components/MarketDetailScoreSection.vue';
@@ -19,7 +20,9 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const appStore = useAppStore();
+const userStore = useUserStore();
 const { isMobile } = storeToRefs(appStore);
+const { isLoggedIn } = storeToRefs(userStore);
 
 const activeTab = ref('fulltime');
 const expandedSections = ref({
@@ -42,30 +45,49 @@ const scoreRowsFulltime = ref([]);
 const scoreRowsHalftime = ref([]);
 const scoreRowsLoading = ref(false);
 
-const scoreRows = ref([]);
+const scoreRows = computed(() =>
+  activeTab.value === 'halftime' ? scoreRowsHalftime.value : scoreRowsFulltime.value,
+);
 
 const ftMarketId = ref(null);
 const htMarketId = ref(null);
-const activeMarketId = computed(() =>
-  activeTab.value === 'halftime' ? htMarketId.value : ftMarketId.value,
-);
 
-const { yields: wsYields } = useMarketWs(activeMarketId);
+const { yields: ftYields, disconnect: disconnectFt } = useMarketWs(ftMarketId);
+const { yields: htYields, disconnect: disconnectHt } = useMarketWs(htMarketId);
 
-watch(wsYields, (newYields) => {
+function applyWsYields(newYields, rowsRef) {
   if (!newYields || !Object.keys(newYields).length) return;
-  const rows = activeTab.value === 'halftime' ? scoreRowsHalftime : scoreRowsFulltime;
-  rows.value = rows.value.map((row) => {
-    const newVal = newYields[row.scoreRaw];
-    if (newVal == null) return row;
+  rowsRef.value = rowsRef.value.map((row) => {
+    const update = newYields[row.scoreRaw];
+    if (update == null) return row;
+    if (typeof update === 'object') {
+      return {
+        ...row,
+        yieldPct: update.yieldPct ?? row.yieldPct,
+        probability: update.yieldPct != null ? `${Number(update.yieldPct).toFixed(2)}%` : row.probability,
+        poolAmount: update.poolAmount ?? row.poolAmount,
+        volumeFormatted: update.poolAmount != null ? formatVolume(update.poolAmount) : row.volumeFormatted,
+        feeRate: update.feeRate ?? row.feeRate,
+        suspended: update.suspended ?? row.suspended,
+      };
+    }
     return {
       ...row,
-      yieldPct: newVal,
-      probability: `${Number(newVal).toFixed(2)}%`,
+      yieldPct: update,
+      probability: `${Number(update).toFixed(2)}%`,
     };
   });
-  scoreRows.value = rows.value;
-}, { deep: true });
+}
+
+function formatVolume(n) {
+  if (n == null) return '¥0.00';
+  const num = Number(n);
+  if (isNaN(num)) return '¥0.00';
+  return `¥${num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+watch(ftYields, (y) => applyWsYields(y, scoreRowsFulltime), { deep: true });
+watch(htYields, (y) => applyWsYields(y, scoreRowsHalftime), { deep: true });
 
 function scoreRowsForTab(tab) {
   return tab === 'halftime' ? scoreRowsHalftime.value : scoreRowsFulltime.value;
@@ -83,17 +105,29 @@ async function loadMatchData(id) {
   try {
     loading.value = true;
     error.value = false;
-    const [matchRes, fulltimeRes, halftimeRes] = await Promise.all([
-      fetchMatchDetail(id),
-      fetchScoreMarket(Number(id), 'fulltime'),
-      fetchScoreMarket(Number(id), 'halftime'),
-    ]);
-    match.value = matchRes.data;
-    scoreRowsFulltime.value = fulltimeRes.data;
-    scoreRowsHalftime.value = halftimeRes.data;
-    scoreRows.value = fulltimeRes.data;
-    ftMarketId.value = fulltimeRes.data?.[0]?._marketId || null;
-    htMarketId.value = halftimeRes.data?.[0]?._marketId || null;
+
+    const promises = [fetchMatchDetail(id)];
+    if (isLoggedIn.value) {
+      promises.push(
+        fetchScoreMarket(Number(id), 'fulltime'),
+        fetchScoreMarket(Number(id), 'halftime'),
+      );
+    }
+
+    const results = await Promise.all(promises);
+    match.value = results[0].data;
+
+    if (results.length > 1) {
+      const fulltimeRes = results[1];
+      const halftimeRes = results[2];
+      scoreRowsFulltime.value = fulltimeRes.data || [];
+      scoreRowsHalftime.value = halftimeRes.data || [];
+      ftMarketId.value = fulltimeRes.data?.[0]?._marketId || null;
+      htMarketId.value = halftimeRes.data?.[0]?._marketId || null;
+      if (fulltimeRes.market?.feeRate != null) {
+        match.value = { ...match.value, feeRate: fulltimeRes.market.feeRate };
+      }
+    }
   } catch {
     error.value = true;
   } finally {
@@ -113,8 +147,12 @@ onMounted(async () => {
   }
 });
 
+onBeforeUnmount(() => {
+  disconnectFt();
+  disconnectHt();
+});
+
 watch(activeTab, () => {
-  scoreRows.value = activeTab.value === 'halftime' ? scoreRowsHalftime.value : scoreRowsFulltime.value;
   closeBuySheet();
 });
 
@@ -133,7 +171,11 @@ function defaultScoreRow(tab = 'fulltime') {
 }
 
 function openBuySheet(row, tab = activeTab.value) {
-  if (!row) return;
+  if (!row || row.suspended) return;
+  if (!isLoggedIn.value) {
+    router.push('/login');
+    return;
+  }
   activeTab.value = tab;
   selectedRow.value = row;
   showBuySheet.value = true;
@@ -161,7 +203,7 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
     name: 'trade-purchases',
     query: {
       tab: 'ordered',
-      marketId: String(match.value.id),
+      marketId: String(tab === 'halftime' ? htMarketId.value : ftMarketId.value),
       score: row.score,
       probability: row.probability,
       marketTab: tab,
@@ -238,11 +280,14 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
               v-for="row in scoreRows"
               :key="`${activeTab}-${row.score}`"
               class="score-table__row"
-              :class="{ 'score-table__row--active': selectedRow?.score === row.score && showBuySheet }"
-              role="button"
-              tabindex="0"
-              @click="selectRow(row)"
-              @keydown.enter.prevent="selectRow(row)"
+              :class="{
+                'score-table__row--active': selectedRow?.score === row.score && showBuySheet,
+                'score-table__row--suspended': row.suspended,
+              }"
+              :role="row.suspended ? undefined : 'button'"
+              :tabindex="row.suspended ? -1 : 0"
+              @click="!row.suspended && selectRow(row)"
+              @keydown.enter.prevent="!row.suspended && selectRow(row)"
             >
               <span class="score-table__cell score-table__cell--score">{{ formatScoreLabel(row.score) }}</span>
               <span class="score-table__cell score-table__cell--prob">{{ row.probability }}</span>
@@ -254,7 +299,7 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
                 height="24"
                 alt=""
                 aria-hidden="true"
-                @click.stop="goToPurchaseDetails(row)"
+                @click.stop="!row.suspended && goToPurchaseDetails(row)"
               />
             </li>
           </ul>
@@ -310,11 +355,12 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
               :class="{
                 'm-score-card__row--active': selectedRow?.score === row.score && showBuySheet,
                 'm-score-card__row--halftime': activeTab === 'halftime',
+                'm-score-card__row--suspended': row.suspended,
               }"
-              role="button"
-              tabindex="0"
-              @click="selectRow(row)"
-              @keydown.enter.prevent="selectRow(row)"
+              :role="row.suspended ? undefined : 'button'"
+              :tabindex="row.suspended ? -1 : 0"
+              @click="!row.suspended && selectRow(row)"
+              @keydown.enter.prevent="!row.suspended && selectRow(row)"
             >
               <span class="m-score-card__cell m-score-card__cell--score">{{ formatScoreLabel(row.score) }}</span>
               <span class="m-score-card__cell m-score-card__cell--prob">{{ row.probability }}</span>
@@ -326,7 +372,7 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
                 height="16"
                 alt=""
                 aria-hidden="true"
-                @click.stop="goToPurchaseDetails(row)"
+                @click.stop="!row.suspended && goToPurchaseDetails(row)"
               />
             </li>
           </ul>
@@ -824,6 +870,14 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
         background: rgba(28, 123, 255, 0.12);
       }
     }
+
+    &--suspended {
+      @include mobile-only {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+      }
+    }
   }
 
   &__cell {
@@ -1045,6 +1099,12 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
         box-shadow: 0 2px 10px rgba(28, 123, 255, 0.12);
       }
     }
+
+    &--suspended {
+      opacity: 0.5;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
   }
 
   &__cell {
@@ -1066,10 +1126,11 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
     }
 
     &--prob {
+      color: #1c7bff;
+
       @include web-only {
         font-family: $font-family-num;
         font-weight: 600;
-        color: #1c7bff;
         text-align: center;
       }
     }

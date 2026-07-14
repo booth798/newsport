@@ -59,8 +59,9 @@ async function loadLeagueTabs() {
   try {
     const res = await fetchLeagueList();
     const hotLeagues = (res.data || []).filter(l => l.hot);
+    // 使用联赛 id 作为 key，避免同名联赛（如 Serie A）导致 Tab 重复选中
     dynamicLeagueTabs.value = hotLeagues.map(l => ({
-      key: l.shortName || l.name,
+      key: l.id,
       labelKey: `${l.shortName || l.name}赛事`,
       shortLabelKey: l.shortName || l.name,
       icon: l.logoUrl || iconEventsUrl,
@@ -99,9 +100,10 @@ function selectTab(key) {
   scrollTabToCenter(key);
 }
 
+// 按联赛 id 筛选比赛，保证同名联赛互不干扰
 const filteredMatches = computed(() => {
   if (activeLeague.value === 'hot') return matchList.value;
-  return matchList.value.filter((m) => m.league === activeLeague.value);
+  return matchList.value.filter((m) => m.leagueId === activeLeague.value);
 });
 
 async function reload() {

@@ -29,12 +29,27 @@ export function useMarketWs(marketIdRef) {
   }
 
   function handleMessage(msg) {
-    if (msg.type !== 'yields') return;
     if (msg.marketId != null && String(msg.marketId) !== String(currentMarketId)) return;
 
-    const update = msg.data;
-    if (update && typeof update === 'object') {
+    if (msg.type === 'yields' && msg.data && typeof msg.data === 'object') {
+      const update = {};
+      for (const [key, val] of Object.entries(msg.data)) {
+        update[key] = typeof val === 'object' ? val : val;
+      }
       yields.value = { ...yields.value, ...update };
+      return;
+    }
+
+    if (msg.score && (msg.yieldPct != null || msg.poolAmount != null || msg.suspended != null)) {
+      yields.value = {
+        ...yields.value,
+        [msg.score]: {
+          yieldPct: msg.yieldPct,
+          poolAmount: msg.poolAmount,
+          feeRate: msg.feeRate,
+          suspended: msg.suspended,
+        },
+      };
     }
   }
 

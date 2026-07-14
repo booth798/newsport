@@ -4,7 +4,9 @@ import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
 import { useToast } from '@/hooks/useToast';
-import { submitBuyOrder } from '@/api/order';
+import { submitBuyOrder, fetchPendingQuota } from '@/api/order';
+import { fetchBalance } from '@/api/finance';
+import { fetchPoolYields } from '@/api/match';
 
 import avatarDefaultUrl from '@/assets/images/common/avatar_default.png?url';
 import iconChampionUrl from '@/assets/images/events/icon_champion.svg?url';
@@ -54,6 +56,11 @@ const profitMin = ref('5.34');
 const profitMax = ref('7.34');
 const phase = ref('form');
 
+const walletBalance = ref(null);
+const walletLoading = ref(false);
+const pendingQuota = ref(null);
+const refreshedYield = ref(null);
+
 const LEAGUE_ICON_BY_NAME = {
   欧冠: iconChampionUrl,
   英超: iconUkUrl,
@@ -71,15 +78,18 @@ const homeLogoUrl = computed(() => resolveTeamLogoUrl(props.match.homeTeam, prop
 const awayLogoUrl = computed(() => resolveTeamLogoUrl(props.match.awayTeam, props.match.awayTeamLogo));
 
 const profitPercent = computed(() => {
+  if (refreshedYield.value != null) return String(refreshedYield.value);
   if (props.row?.yieldPct != null) return String(props.row.yieldPct);
   const raw = props.row?.probability ?? '6.99%';
   return String(raw).replace(/%$/, '') || '6.99';
 });
 
 const feeRateDisplay = computed(() => {
-  const rate = props.row?.feeRate;
-  if (rate != null) return `-${Number(rate)}%`;
-  return '-5%';
+  const rate = props.row?.feeRate ?? props.match?.feeRate;
+  if (rate == null) return '';
+  const pct = Number(rate) * 100;
+  const display = pct % 1 === 0 ? String(pct) : pct.toFixed(2).replace(/\.?0+$/, '');
+  return `-${display}%`;
 });
 
 const scoreLabel = computed(() => {
@@ -95,13 +105,19 @@ const matchDateDisplay = computed(() => {
   return `2026-${raw}`;
 });
 
+const estimatedProfit = computed(() => {
+  const amt = Number(buyAmount.value);
+  if (!Number.isFinite(amt) || amt <= 0) return '0.00';
+  return (amt * Number(profitPercent.value) / 100).toFixed(2);
+});
+
 const estimatedProfitRange = computed(() => {
   const amt = Number(buyAmount.value);
-  if (!Number.isFinite(amt) || amt <= 0) return '0.00~0.00';
-  const p = Number(profitPercent.value) / 100;
-  const min = (amt * p * 0.8).toFixed(2);
-  const max = (amt * p * 1.2).toFixed(2);
-  return `${min}~${max}`;
+  if (!Number.isFinite(amt) || amt <= 0) return '--';
+  const min = Number(profitMin.value);
+  const max = Number(profitMax.value);
+  if (min <= 0 && max <= 0) return '--';
+  return `${(amt * min / 100).toFixed(2)} ~ ${(amt * max / 100).toFixed(2)}`;
 });
 
 const successOrderNo = ref('NO.B01774853483511738');
@@ -114,6 +130,23 @@ const lockScroll = (locked) => {
   document.body.style.overflow = locked ? 'hidden' : '';
 };
 
+async function refreshWalletBalance() {
+  walletLoading.value = true;
+  try {
+    const res = await fetchBalance();
+    walletBalance.value = res.data?.available ?? res.data?.balance ?? null;
+    userStore.updateUserProfile({ balance: walletBalance.value });
+  } catch { /* non-critical */ }
+  finally { walletLoading.value = false; }
+}
+
+async function loadPendingQuota() {
+  try {
+    const res = await fetchPendingQuota();
+    pendingQuota.value = res.data?.remaining ?? res.data?.remainingCount ?? null;
+  } catch { /* non-critical */ }
+}
+
 watch(
   () => props.visible,
   (open) => {
@@ -122,8 +155,12 @@ watch(
       phase.value = 'form';
       buyType.value = 'standard';
       buyAmount.value = '';
-      profitMin.value = '5.34';
-      profitMax.value = '7.34';
+      const yield_ = Number(profitPercent.value);
+      profitMin.value = yield_ ? yield_.toFixed(2) : '5.34';
+      profitMax.value = yield_ ? yield_.toFixed(2) : '7.34';
+      refreshedYield.value = null;
+      refreshWalletBalance();
+      loadPendingQuota();
     }
   },
 );
@@ -162,6 +199,28 @@ async function confirmBuy() {
     return;
   }
 
+  if (walletLoading.value) {
+    toast.error(t('正在获取余额请稍候'));
+    return;
+  }
+  if (walletBalance.value == null) {
+    toast.error(t('余额获取失败请重试'));
+    refreshWalletBalance();
+    return;
+  }
+  if (amt > Number(walletBalance.value)) {
+    const formatted = Number(walletBalance.value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    toast.error(`${t('余额不足')}，${t('当前余额')}：${formatted}`);
+    return;
+  }
+
+  if (buyType.value === 'scheduled') {
+    if (Number(profitMin.value) > Number(profitMax.value)) {
+      toast.error(t('最低收益率不能高于最高收益率'));
+      return;
+    }
+  }
+
   try {
     submitting.value = true;
     const marketId = props.row?._marketId;
@@ -181,6 +240,11 @@ async function confirmBuy() {
         })
       : await submitBuyOrder(payload);
 
+    if (res.walletBalance != null) {
+      userStore.updateUserProfile({ balance: res.walletBalance });
+      walletBalance.value = res.walletBalance;
+    }
+
     const order = res.data || {};
     successAmount.value = amt.toFixed(2);
     successYield.value = profitPercent.value;
@@ -191,7 +255,19 @@ async function confirmBuy() {
     const errCode = e?.code || e?.response?.data?.code;
     const errMsg = e?.message || '';
     if (errCode === 'YIELD_CHANGED' || errMsg.includes('YIELD_CHANGED')) {
-      toast.error(t('赔率已变化，请确认最新赔率后重新提交'));
+      toast.error(errMsg || t('赔率已变化，请确认最新赔率后重新提交'));
+      try {
+        const marketId = props.row?._marketId;
+        if (marketId) {
+          const yieldRes = await fetchPoolYields(marketId);
+          const pools = yieldRes.data || [];
+          const scoreKey = props.row?.scoreRaw ?? (props.row?.score ?? '0-0').replace(/-/g, ':');
+          const found = pools.find((p) => p.score === scoreKey);
+          if (found?.yieldPct != null) {
+            refreshedYield.value = Number(found.yieldPct);
+          }
+        }
+      } catch { /* non-critical */ }
     } else {
       toast.error(errMsg || t('提交失败，请重试'));
     }
@@ -455,8 +531,10 @@ function onBackdropKeydown(e) {
             <button type="button" class="buy-sheet__chip" @click="setQuickAmount('all')">{{ t('全部') }}</button>
           </div>
           <p class="buy-sheet__est">
-            {{ t('预估收益') }} {{ estimatedProfitRange }}
-            <span class="buy-sheet__fee-inline">{{ t('手续费') }}{{ feeRateDisplay }}</span>
+            {{ t('预估收益') }}
+            <template v-if="buyType === 'scheduled'">{{ estimatedProfitRange }}</template>
+            <template v-else>x {{ profitPercent }}% = {{ estimatedProfit }}</template>
+            <span v-if="feeRateDisplay" class="buy-sheet__fee-inline">{{ t('手续费') }}{{ feeRateDisplay }}</span>
           </p>
         </div>
         </div>

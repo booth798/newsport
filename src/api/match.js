@@ -38,7 +38,7 @@ export async function fetchHotMatches() {
 export async function fetchLeagueList() {
   const res = await get('/leagues');
   const list = (res.data || []).map((l) => ({
-    key: l.shortName || l.name,
+    key: l.id,
     id: l.id,
     name: l.name,
     shortName: l.shortName,
@@ -139,7 +139,9 @@ export async function fetchMarketListPaged(params = {}) {
     pageNum: params.pageNum || 1,
     pageSize: params.pageSize || 20,
     league: params.league,
+    teamName: params.teamName,
     date: params.date,
+    day: params.day,
   });
 }
 
@@ -159,7 +161,9 @@ export async function fetchScoreMarket(matchId, tab = 'fulltime') {
 
   const marketRes = await get(`/markets/${matchId}/${period}`);
   const data = marketRes.data || {};
+  const market = data.market || {};
   const pools = data.pools || [];
+  const marketFeeRate = market.feeRate;
 
   const rows = pools.map((p) => ({
     score: (p.score || '0:0').replace(':', '-'),
@@ -170,12 +174,12 @@ export async function fetchScoreMarket(matchId, tab = 'fulltime') {
     poolAmount: p.poolAmount,
     buyerCount: p.buyerCount,
     suspended: p.suspended,
-    feeRate: p.feeRate,
+    feeRate: p.feeRate ?? marketFeeRate,
     initialProb: p.initialProb,
-    _marketId: data.market?.marketId,
+    _marketId: market.marketId,
   }));
 
-  return { code: 200, data: rows };
+  return { code: 200, data: rows, market };
 }
 
 /** 赔率快照（历史曲线） */
