@@ -1,184 +1,69 @@
 <script setup>
-import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 
 import logoUrl from '@/assets/images/common/logo_nav.svg?url';
-import iconLoginUserUrl from '@/assets/images/login/icon_login_user.svg?url';
-import iconLoginLockUrl from '@/assets/images/login/icon_login_lock.svg?url';
 import iconEyeClosedUrl from '@/assets/images/login/icon_login_eye_closed.svg?url';
 import iconEyeOpenUrl from '@/assets/images/login/icon_login_eye_open.svg?url';
+import iconLockUrl from '@/assets/images/login/icon_login_lock.svg?url';
+import iconRefreshUrl from '@/assets/images/login/icon_register_refresh.svg?url';
 import { useToast } from '@/hooks/useToast';
-import { registerApi, captchaInit, captchaVerify } from '@/api/user';
-import { useUserStore } from '@/store/modules/user';
+import { registerApi } from '@/api/user';
+import { useAppStore } from '@/store/modules/app';
 
 const { t } = useI18n();
 const router = useRouter();
 const toast = useToast();
-const userStore = useUserStore();
+const appStore = useAppStore();
 
-const username = ref('');
+const accountOptions = ref([]);
+const selectedAccount = ref('');
 const password = ref('');
+const confirmPassword = ref('');
 const showPassword = ref(false);
 const submitting = ref(false);
 const successOpen = ref(false);
 
 const passwordType = computed(() => (showPassword.value ? 'text' : 'password'));
-const isAccountValid = computed(() => username.value.trim().length > 0);
+const isAccountValid = computed(() => selectedAccount.value.length > 0);
 const isPasswordValid = computed(() => /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,16}$/.test(password.value));
+const canSubmit = computed(() => isAccountValid.value && isPasswordValid.value
+  && confirmPassword.value === password.value && !submitting.value);
 
-// --- 滑块验证 ---
-const SLIDER_KNOB_W = 52;
-const SLIDER_TRACK_PAD_X = 4;
-
-const verifyTrackRef = ref(null);
-const sliderOffsetPx = ref(0);
-const sliderVerified = ref(false);
-const sliderDragging = ref(false);
-const sliderAnimating = ref(false);
-const captchaToken = ref('');
-const captchaId = ref('');
-
-function resetSlider() {
-  sliderOffsetPx.value = 0;
-  sliderVerified.value = false;
-  sliderDragging.value = false;
-  sliderAnimating.value = false;
+function makeAccount() {
+  const suffix = Array.from({ length: 4 }, () => Math.floor(Math.random() * 10)).join('');
+  return `Y${suffix}`;
 }
 
-const sliderProgress = computed(() => {
-  const max = getSliderMaxOffset();
-  if (max <= 0) return 0;
-  return Math.min(1, sliderOffsetPx.value / max);
-});
-
-const labelOpacity = computed(() => Math.max(0, 1 - sliderProgress.value * 2.5));
-
-const knobTransformStyle = computed(() => ({
-  transform: `translate(${sliderOffsetPx.value}px, -50%)`,
-  transition: sliderDragging.value ? 'none' : 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
-}));
-
-const fillStyle = computed(() => ({
-  width: `${sliderOffsetPx.value + SLIDER_KNOB_W + SLIDER_TRACK_PAD_X}px`,
-  transition: sliderDragging.value ? 'none' : 'width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
-}));
-
-function getSliderMaxOffset() {
-  const track = verifyTrackRef.value;
-  if (!track) return 0;
-  const w = track.getBoundingClientRect().width;
-  return Math.max(0, w - SLIDER_TRACK_PAD_X * 2 - SLIDER_KNOB_W);
+function shuffleAccounts() {
+  const next = new Set();
+  while (next.size < 8) next.add(makeAccount());
+  accountOptions.value = [...next];
+  selectedAccount.value = accountOptions.value[0];
 }
-
-function onSliderKnobPointerDown(e) {
-  if (sliderVerified.value || sliderAnimating.value) return;
-  if (e.pointerType === 'mouse' && e.button !== 0) return;
-  e.preventDefault();
-
-  const knobEl = e.currentTarget;
-  if (!(knobEl instanceof Element)) return;
-
-  knobEl.setPointerCapture(e.pointerId);
-  sliderDragging.value = true;
-
-  const startClientX = e.clientX;
-  const startOffset = sliderOffsetPx.value;
-
-  const onMove = (ev) => {
-    const max = getSliderMaxOffset();
-    const dx = ev.clientX - startClientX;
-    sliderOffsetPx.value = Math.min(max, Math.max(0, startOffset + dx));
-  };
-
-  const onUp = () => {
-    knobEl.releasePointerCapture(e.pointerId);
-    knobEl.removeEventListener('pointermove', onMove);
-    knobEl.removeEventListener('pointerup', onUp);
-    knobEl.removeEventListener('pointercancel', onUp);
-    sliderDragging.value = false;
-
-    const max = getSliderMaxOffset();
-    const threshold = max * 0.88;
-    if (max > 0 && sliderOffsetPx.value >= threshold) {
-      sliderOffsetPx.value = max;
-      sliderAnimating.value = true;
-      verifyCaptchaSlider(sliderOffsetPx.value);
-    } else {
-      sliderOffsetPx.value = 0;
-    }
-  };
-
-  knobEl.addEventListener('pointermove', onMove);
-  knobEl.addEventListener('pointerup', onUp);
-  knobEl.addEventListener('pointercancel', onUp);
-}
-
-async function doInitCaptcha() {
-  try {
-    const res = await captchaInit();
-    const data = res.data || {};
-    captchaId.value = data.captchaId || '';
-    if (!data.captchaId) {
-      captchaToken.value = 'ALWAYS_PASS';
-      sliderVerified.value = true;
-    }
-  } catch {
-    captchaToken.value = 'ALWAYS_PASS';
-    sliderVerified.value = true;
-  }
-}
-
-async function verifyCaptchaSlider(offsetPx) {
-  if (captchaId.value) {
-    try {
-      const res = await captchaVerify(captchaId.value, Math.round(offsetPx));
-      captchaToken.value = res.data?.captchaToken || '';
-    } catch { /* 验证失败静默 */ }
-  }
-  sliderVerified.value = true;
-  sliderAnimating.value = false;
-}
-
-const canSubmit = computed(
-  () => isAccountValid.value && isPasswordValid.value && sliderVerified.value && !submitting.value,
-);
 
 async function submitRegister() {
   if (!canSubmit.value) return;
-  if (!sliderVerified.value) {
-    toast.error(t('请完成滑动验证'));
-    return;
-  }
 
   try {
     submitting.value = true;
-    const token = captchaToken.value || 'ALWAYS_PASS';
-    const res = await registerApi(username.value.trim(), password.value, token);
-    userStore.completeWebLogin(res.data || {});
-    userStore.loadUserProfile({ force: true }).catch(() => {});
+    await registerApi(selectedAccount.value, password.value, 'ALWAYS_PASS');
     successOpen.value = true;
   } catch (e) {
     toast.error(e.message || t('提交失败，请重试'));
-    resetSlider();
-    doInitCaptcha();
   } finally {
     submitting.value = false;
   }
 }
 
-function finishRegister() {
+async function openLogin() {
   successOpen.value = false;
-  router.replace('/');
+  await router.replace('/');
+  appStore.openLoginModal();
 }
 
-onMounted(() => {
-  doInitCaptcha();
-});
-
-onBeforeUnmount(() => {
-  resetSlider();
-});
+shuffleAccounts();
 </script>
 
 <template>
@@ -190,25 +75,35 @@ onBeforeUnmount(() => {
       </header>
 
       <section class="register-card" :aria-label="t('注册会员')">
+        <h2 class="register-card__title">{{ t('注册会员') }}</h2>
         <form class="register-form" @submit.prevent="submitRegister">
-          <div class="register-field">
-            <img class="register-field__icon" :src="iconLoginUserUrl" alt="" width="28" height="28" />
-            <input
-              v-model.trim="username"
-              class="register-field__input"
-              type="text"
-              maxlength="32"
-              :placeholder="t('请输入账号')"
-              autocomplete="username"
-            />
+          <div class="register-account">
+            <div class="register-account__label">
+              <span>{{ t('账号') }}</span>
+              <button type="button" @click="shuffleAccounts">
+                {{ t('换一批') }}
+                <img :src="iconRefreshUrl" width="12" height="12" alt="" />
+              </button>
+            </div>
+            <div class="register-account__options">
+              <button
+                v-for="account in accountOptions"
+                :key="account"
+                type="button"
+                :class="{ active: selectedAccount === account }"
+                @click="selectedAccount = account"
+              >
+                {{ account }}
+              </button>
+            </div>
           </div>
 
-          <div class="register-field">
-            <img class="register-field__icon" :src="iconLoginLockUrl" alt="" width="28" height="28" />
+          <label class="register-field">
+            <span class="register-field__label">{{ t('登录密码') }}</span>
+            <img class="register-lock" :src="iconLockUrl" width="28" height="28" alt="" />
             <input
               v-model="password"
-              class="register-field__input register-field__input--password"
-              :class="{ 'register-field__input--dots': password && !showPassword }"
+              class="register-field__input"
               :type="passwordType"
               maxlength="16"
               :placeholder="t('请设置8-16位字母+数字密码')"
@@ -222,58 +117,36 @@ onBeforeUnmount(() => {
             >
               <img :src="showPassword ? iconEyeOpenUrl : iconEyeClosedUrl" width="28" height="28" alt="" />
             </button>
-          </div>
+          </label>
 
-          <!-- 滑块验证 -->
-          <div class="register-verify">
-            <Transition name="verify-flip" mode="out-in">
-              <div
-                v-if="sliderVerified"
-                key="success"
-                class="register-verify__track register-verify__track--success"
-                role="status"
-                aria-live="polite"
-              >
-                <svg class="register-verify__check-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path d="M4 10.5L8.5 15L16 5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-                <span class="register-verify__success-text">{{ t('验证成功') }}</span>
-              </div>
-              <div
-                v-else
-                key="track"
-                ref="verifyTrackRef"
-                class="register-verify__track"
-                :class="{ 'register-verify__track--dragging': sliderDragging }"
-              >
-                <div class="register-verify__fill" :style="fillStyle" />
-                <button
-                  type="button"
-                  class="register-verify__knob"
-                  :class="{ 'register-verify__knob--dragging': sliderDragging }"
-                  :style="knobTransformStyle"
-                  :aria-label="t('向右滑动验证')"
-                  @pointerdown="onSliderKnobPointerDown"
-                >
-                  <svg class="register-verify__knob-icon" width="18" height="18" viewBox="0 0 18 18" fill="none">
-                    <path d="M7 4.5L11.5 9L7 13.5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                </button>
-                <span
-                  class="register-verify__label"
-                  :class="{ 'register-verify__label--dragging': sliderDragging }"
-                  :style="{ opacity: sliderDragging ? labelOpacity : undefined }"
-                  aria-hidden="true"
-                >
-                  {{ t('向右滑动验证') }}
-                </span>
-              </div>
-            </Transition>
-          </div>
+          <label class="register-field" :class="{ 'register-field--error': confirmPassword && confirmPassword !== password }">
+            <span class="register-field__label">{{ t('确认登录密码') }}</span>
+            <img class="register-lock" :src="iconLockUrl" width="28" height="28" alt="" />
+            <input
+              v-model="confirmPassword"
+              class="register-field__input"
+              :type="passwordType"
+              maxlength="16"
+              :placeholder="t('再次输入相同密码')"
+              autocomplete="new-password"
+            />
+            <button
+              type="button"
+              class="register-eye"
+              :aria-label="showPassword ? t('隐藏密码') : t('显示密码')"
+              @click="showPassword = !showPassword"
+            >
+              <img :src="showPassword ? iconEyeOpenUrl : iconEyeClosedUrl" width="28" height="28" alt="" />
+            </button>
+          </label>
 
-          <button class="register-submit" type="submit" :disabled="!canSubmit">
+          <button class="register-submit btn btn--primary" type="submit" :disabled="!canSubmit">
             {{ submitting ? t('提交中...') : t('注册') }}
           </button>
+          <p class="register-login-link">
+            {{ t('已有账号？') }}
+            <button type="button" @click="openLogin">{{ t('去登录') }}</button>
+          </p>
         </form>
       </section>
     </div>
@@ -287,10 +160,10 @@ onBeforeUnmount(() => {
               <path d="M11 19.4L16.2 24.6L27.5 13.4" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </div>
-          <h2 class="register-dialog__title">{{ t('注册成功') }}</h2>
+          <h2 class="register-dialog__title">{{ t('提示') }}</h2>
           <p class="register-dialog__desc">{{ t('恭喜您成功注册UNIBET！') }}</p>
-          <button type="button" class="register-dialog__btn" @click="finishRegister">
-            {{ t('进入首页') }}
+          <button type="button" class="register-dialog__btn" @click="openLogin">
+            {{ t('去登录') }}
           </button>
         </div>
       </div>
@@ -300,8 +173,6 @@ onBeforeUnmount(() => {
 
 <style lang="scss" scoped>
 @use '@/styles/tools.scss' as *;
-
-$register-cta-blue: #2f7df5;
 
 .register-page {
   min-height: 100vh;
@@ -380,20 +251,6 @@ $register-cta-blue: #2f7df5;
   box-shadow: 0 2px 10px rgba(72, 115, 166, 0.03);
 }
 
-.register-field__icon {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  width: 28px;
-  height: 28px;
-  transform: translateY(-50%);
-  color: #a9b7c6;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-}
-
 .register-field__input {
   width: 100%;
   height: 100%;
@@ -420,16 +277,6 @@ $register-cta-blue: #2f7df5;
   }
 }
 
-.register-field__input--password {
-  padding-right: 52px;
-}
-
-.register-field__input--dots:not(:placeholder-shown) {
-  font-size: 22px;
-  letter-spacing: 0.16em;
-  font-family: $font-family-num, $font-family-base;
-}
-
 .register-eye {
   position: absolute;
   right: 11px;
@@ -453,168 +300,12 @@ $register-cta-blue: #2f7df5;
   }
 }
 
-// --- 滑块验证 ---
-.register-verify {
-  width: 100%;
-}
-
-.register-verify__track {
-  position: relative;
-  box-sizing: border-box;
-  height: 48px;
-  border-radius: $radius-pill;
-  background: #fff;
-  border: 0.8px solid rgba(184, 206, 232, 0.45);
-  touch-action: none;
-  overflow: hidden;
-  transition: border-color 0.2s, box-shadow 0.2s;
-
-  @include mobile-only {
-    height: 46px;
-  }
-
-  &--dragging {
-    border-color: rgba(13, 108, 251, 0.35);
-    box-shadow: 0 0 0 3px rgba(13, 108, 251, 0.1);
-  }
-
-  &--success {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    touch-action: auto;
-    background: $register-cta-blue;
-    border: 1px solid rgba(255, 255, 255, 0.92);
-    box-shadow: 0 2px 14px rgba(13, 108, 251, 0.4);
-    overflow: visible;
-  }
-}
-
-.register-verify__fill {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  border-radius: $radius-pill;
-  background: linear-gradient(90deg, rgba(13, 108, 251, 0.08) 0%, rgba(13, 108, 251, 0.18) 100%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.register-verify__check-icon {
-  flex-shrink: 0;
-  animation: verify-check-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-
-@keyframes verify-check-pop {
-  0% { transform: scale(0) rotate(-45deg); opacity: 0; }
-  100% { transform: scale(1) rotate(0); opacity: 1; }
-}
-
-.register-verify__success-text {
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.2;
-  color: #fff;
-  text-align: center;
-  letter-spacing: 0.02em;
-}
-
-.register-verify__knob {
-  position: absolute;
-  left: 4px;
-  top: 50%;
-  z-index: 2;
-  width: 52px;
-  height: 40px;
-  border-radius: 20px;
-  padding: 0;
-  margin: 0;
-  border: none;
-  background: $register-cta-blue;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(13, 108, 251, 0.35);
-  cursor: grab;
-  touch-action: none;
-  -webkit-tap-highlight-color: transparent;
-  transition: box-shadow 0.2s, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-
-  &--dragging {
-    cursor: grabbing;
-    box-shadow: 0 4px 16px rgba(13, 108, 251, 0.5);
-    transition: box-shadow 0.15s;
-  }
-
-  &:focus-visible {
-    outline: 2px solid rgba(13, 108, 251, 0.55);
-    outline-offset: 2px;
-  }
-}
-
-.register-verify__knob-icon {
-  transition: transform 0.2s;
-  flex-shrink: 0;
-
-  .register-verify__knob--dragging & {
-    transform: translateX(1px);
-  }
-}
-
-.register-verify__label {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  padding: 0 60px 0 12px;
-  font-size: 15px;
-  font-weight: 500;
-  color: $register-cta-blue;
-  text-align: center;
-  line-height: 1.2;
-  pointer-events: none;
-  transition: opacity 0.15s;
-  animation: slider-shimmer 2.5s ease-in-out infinite;
-}
-
-.register-verify__label--dragging {
-  animation: none;
-}
-
-@keyframes slider-shimmer {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.55; }
-}
-
-.verify-flip-enter-active {
-  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.verify-flip-leave-active {
-  transition: all 0.2s ease-in;
-}
-
-.verify-flip-enter-from {
-  opacity: 0;
-  transform: scale(0.92);
-}
-
-.verify-flip-leave-to {
-  opacity: 0;
-  transform: scale(0.96);
-}
-
 .register-submit {
   height: 50px;
   margin-top: 21px;
   border: 0;
   border-radius: 28px;
-  background: #2f7df5;
+  background: var(--theme-primary);
   color: #fff;
   font-size: 23px;
   font-weight: 700;
@@ -623,10 +314,26 @@ $register-cta-blue: #2f7df5;
   cursor: pointer;
 
   &:disabled {
-    background: #8db8f5;
-    color: rgba(255, 255, 255, 0.68);
+    background: var(--theme-primary);
+    color: #fff;
+    opacity: 0.45;
     box-shadow: none;
     cursor: not-allowed;
+  }
+}
+
+.register-login-link {
+  margin: 0;
+  color: rgba(23, 59, 97, 0.46);
+  font-size: 13px;
+  text-align: center;
+
+  button {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--theme-primary);
+    cursor: pointer;
   }
 }
 
@@ -684,12 +391,6 @@ $register-cta-blue: #2f7df5;
   .register-field {
     height: 50px;
     border-radius: 14px;
-  }
-
-  .register-field__icon {
-    left: 14px;
-    width: 24px;
-    height: 24px;
   }
 
   .register-field__input {
@@ -784,6 +485,317 @@ $register-cta-blue: #2f7df5;
 
   .register-dialog__panel {
     transform: translateY(10px) scale(0.96);
+  }
+}
+
+// 注册页新稿：账号候选 + 双密码确认。
+.register-card__title {
+  margin: 0 0 28px;
+  color: #153a61;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+}
+
+.register-account__label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  color: #173b61;
+  font-size: 14px;
+  font-weight: 500;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--theme-primary);
+    font-size: 12px;
+    cursor: pointer;
+
+    img {
+      display: block;
+      flex-shrink: 0;
+    }
+  }
+}
+
+.register-account__options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+
+  button {
+    height: 36px;
+    padding: 0 4px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: #fff;
+    color: rgba(23, 59, 97, 0.42);
+    font-family: $font-family-num, $font-family-base;
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+
+    &:hover,
+    &.active {
+      border-color: var(--theme-primary);
+      background: #f7fbff;
+      color: var(--theme-primary);
+    }
+
+    &:focus-visible {
+      outline: 2px solid rgba(28, 123, 255, 0.28);
+      outline-offset: 2px;
+    }
+  }
+}
+
+.register-form {
+  gap: 20px;
+}
+
+.register-field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  height: auto;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.register-field__label {
+  margin-bottom: 8px;
+  color: #173b61;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.register-field__input {
+  height: 48px;
+  flex: 0 0 48px;
+  padding: 0 48px 0 40px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: #fff;
+  font-size: 14px;
+  transition: border-color 0.18s ease, color 0.18s ease;
+
+  &:focus {
+    border-color: var(--theme-primary);
+  }
+}
+
+.register-field--error .register-field__input {
+  border-color: #ef4c43;
+  color: #ef4c43;
+}
+
+.register-eye {
+  top: auto;
+  right: 8px;
+  bottom: 6px;
+  transform: none;
+}
+
+.register-lock {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  z-index: 1;
+  display: block;
+  width: 28px;
+  height: 28px;
+  pointer-events: none;
+}
+
+.register-submit {
+  height: 48px;
+  margin-top: 4px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.register-dialog {
+  background: rgba(23, 35, 49, 0.58);
+  backdrop-filter: none;
+}
+
+.register-dialog__panel {
+  width: min(290px, 100%);
+  padding: 18px 12px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #2f7df5, #61a5f4);
+}
+
+.register-dialog__icon {
+  display: none;
+}
+
+.register-dialog__title {
+  margin: 0 0 16px;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.register-dialog__desc {
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  border-radius: 16px;
+  background: #fff;
+  color: #173b61;
+  font-size: 14px;
+}
+
+.register-dialog__btn {
+  height: 42px;
+  margin-top: 8px;
+  border-radius: 16px;
+  background: #fff;
+  color: var(--theme-primary);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+@include mobile-only {
+  .register-phone {
+    max-width: 430px;
+    padding: 12px 8px 20px;
+  }
+
+  .register-title {
+    height: 52px;
+    margin: 4px 0 8px;
+  }
+
+  .register-title__logo {
+    display: block;
+    width: 86px;
+    height: 31px;
+    object-fit: contain;
+  }
+
+  .register-title h1 {
+    display: none;
+  }
+
+  .register-card {
+    min-height: calc(100dvh - 88px);
+    padding: 18px 12px 28px;
+    border-radius: 16px;
+  }
+
+  .register-card__title {
+    display: block;
+    margin-bottom: 24px;
+  }
+
+  .register-account__options {
+    gap: 8px;
+
+    button {
+      height: 34px;
+      font-size: 12px;
+    }
+  }
+
+  .register-field__input {
+    height: 50px;
+    flex-basis: 50px;
+  }
+
+  .register-eye {
+    bottom: 7px;
+  }
+
+  .register-submit {
+    width: 100%;
+    height: 46px;
+    margin-top: 2px;
+    font-size: 18px;
+  }
+}
+
+@include web-only {
+  .register-page,
+  .register-phone {
+    background: #e3ecfb;
+  }
+
+  .register-title {
+    width: calc(100% - 60px);
+    max-width: 1860px;
+    height: 80px;
+    margin: 30px auto 20px;
+  }
+
+  .register-card {
+    width: 800px;
+    min-height: 610px;
+    padding: 40px;
+    border-radius: 32px;
+  }
+
+  .register-form {
+    width: 400px;
+    margin: 0 auto;
+    gap: 12px;
+  }
+
+  .register-account__options {
+    gap: 10px;
+
+    button {
+      height: 52px;
+      border-radius: 16px;
+      color: rgba(11, 52, 98, 0.5);
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+  }
+
+  .register-field__input {
+    height: 52px;
+    flex-basis: 52px;
+    padding-left: 40px;
+    border-radius: 16px;
+    font-size: 16px;
+  }
+
+  .register-lock {
+    left: 10px;
+    bottom: 12px;
+  }
+
+  .register-eye {
+    right: 12px;
+    bottom: 8px;
+  }
+
+  .register-submit {
+    margin-top: 18px;
+  }
+
+  .register-card__title {
+    display: none;
+  }
+
+  .register-title h1 {
+    font-size: 20px;
   }
 }
 </style>

@@ -15,6 +15,7 @@ export const useAppStore = defineStore('app', {
     loginModalOpen: false,
     logoutConfirmOpen: false,
     customerServiceConfirmOpen: false,
+    forceLogoutAlertOpen: false,
     publicConfig: {},
   }),
   getters: {
@@ -58,6 +59,12 @@ export const useAppStore = defineStore('app', {
     },
     closeCustomerServiceConfirm() {
       this.customerServiceConfirmOpen = false;
+    },
+    openForceLogoutAlert() {
+      this.forceLogoutAlertOpen = true;
+    },
+    closeForceLogoutAlert() {
+      this.forceLogoutAlertOpen = false;
     },
     async loadPublicConfig({ force = false } = {}) {
       if (!force && Object.keys(this.publicConfig).length > 0) return this.publicConfig;

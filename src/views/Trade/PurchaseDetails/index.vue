@@ -257,7 +257,7 @@ function handleCancelled(orderId) {
       border: 1px solid #fff;
       box-shadow: 0 6px 20px 0 rgba(21, 58, 118, 0.18);
       position: sticky;
-      top: $web-market-detail-sidebar-sticky-top;
+      top: 0;
       align-self: start;
       min-height: calc(100dvh - #{$web-market-detail-sidebar-sticky-top} - 36px);
       overflow-x: hidden;

@@ -81,7 +81,8 @@ const navbarList = [
   { kind: 'plain', labelKey: '首页', key: 'home', width: 104, to: '/' },
   { kind: 'dropdown', labelKey: '市场', key: 'market', width: 104, to: '/market', menuKey: 'market' },
   { kind: 'dropdown', labelKey: '交易账务', key: 'trade', width: 124, to: '/finance/deposit', menuKey: 'trade' },
-  { kind: 'dropdown', labelKey: '我的权益', key: 'myBenefit', width: 124, to: '/profile', menuKey: 'myBenefit' },
+  { kind: 'dropdown', labelKey: '会员权益', key: 'myBenefit', width: 124, to: '/profile', menuKey: 'myBenefit' },
+  { kind: 'plain', labelKey: '关于我们', key: 'about', width: 124, to: '/profile/about' },
 ];
 
 const isNavActive = (item) => {
@@ -94,7 +95,8 @@ const isNavActive = (item) => {
     );
   }
   if (item.key === 'trade') return route.path.startsWith('/finance') || route.name === 'trade-purchases';
-  if (item.key === 'myBenefit') return route.path.startsWith('/profile');
+  if (item.key === 'myBenefit') return route.path.startsWith('/profile') && route.name !== 'profile-about';
+  if (item.key === 'about') return route.name === 'profile-about';
   return false;
 };
 
@@ -318,12 +320,16 @@ watch(isLoggedIn, (loggedIn) => {
           >
             <a
               :href="href"
-              class="navbar-item navbar-item--plain"
-              :class="{ active: isNavActive(item) }"
+              class="navbar-item"
+              :class="{
+                active: isNavActive(item),
+                'navbar-item--plain': item.key === 'home',
+              }"
               :style="{ width: `${item.width}px` }"
               @click="navigate"
             >
               <img
+                v-if="item.key === 'home'"
                 class="navbar-item-icon"
                 :src="isNavActive(item) ? navbarHomeIcon : navbarHomeMutedIcon"
                 alt=""
@@ -380,14 +386,19 @@ watch(isLoggedIn, (loggedIn) => {
           <template v-if="isVipTransferPage">
             <MonthSelector v-model="vipTransferMonth" :aria-label="t('选择月份')" />
           </template>
-          <template v-else-if="!isLoggedIn">
+          <template v-else-if="isLoggedIn">
             <button type="button" class="header-mobile-btn" :aria-label="t('在线客服')" @click="appStore.openCustomerServiceConfirm">
               <img class="header-mobile-btn__service-img" :src="serviceIconUrl" alt="" />
             </button>
+            <button type="button" class="header-mobile-btn" :aria-label="t('菜单')" @click="mobileDrawerOpen = true">
+              <img class="header-mobile-btn__img" :src="moreIconUrl" alt="" />
+            </button>
           </template>
-          <button v-if="!isVipTransferPage" type="button" class="header-mobile-btn" :aria-label="t('菜单')" @click="mobileDrawerOpen = true">
-            <img class="header-mobile-btn__img" :src="moreIconUrl" alt="" />
-          </button>
+          <template v-else>
+            <button type="button" class="header-mobile-login-btn" @click="appStore.openLoginModal()">
+              {{ t('登录') }}
+            </button>
+          </template>
         </template>
         <template v-else-if="isMobileMarketListHeader">
           <button type="button" class="header-mobile-search" :aria-label="t('搜索')" @click="openMarketSearch">
@@ -444,6 +455,9 @@ watch(isLoggedIn, (loggedIn) => {
                   <span class="header-user-strip__assets-value">{{ loggedInAssetsFormatted }}</span>
                 </div>
               </div>
+              <button type="button" class="header-round-btn" :aria-label="t('在线客服')" @click="appStore.openCustomerServiceConfirm">
+                <img class="header-round-btn__img" :src="serviceIconUrl" alt="" />
+              </button>
               <button type="button" class="header-round-btn" :aria-label="t('菜单')">
                 <img class="header-round-btn__img" :src="moreIconUrl" alt="" />
               </button>
@@ -457,9 +471,6 @@ watch(isLoggedIn, (loggedIn) => {
               <div class="header-round-group">
                 <button type="button" class="header-round-btn" :aria-label="t('登录')" @click="appStore.openLoginModal">
                   <img class="header-round-btn__img" :src="loginIconUrl" alt="" />
-                </button>
-                <button type="button" class="header-round-btn" :aria-label="t('菜单')">
-                  <img class="header-round-btn__img" :src="moreIconUrl" alt="" />
                 </button>
               </div>
             </div>
@@ -491,14 +502,8 @@ watch(isLoggedIn, (loggedIn) => {
 
         <template v-else>
           <div class="header-round-group">
-            <button type="button" class="header-round-btn" :aria-label="t('在线客服')" @click="appStore.openCustomerServiceConfirm">
-              <img class="header-round-btn__img" :src="serviceIconUrl" alt="" />
-            </button>
             <button type="button" class="header-round-btn" :aria-label="t('登录')" @click="appStore.openLoginModal">
               <img class="header-round-btn__img" :src="loginIconUrl" alt="" />
-            </button>
-            <button type="button" class="header-round-btn" :aria-label="t('菜单')">
-              <img class="header-round-btn__img" :src="moreIconUrl" alt="" />
             </button>
           </div>
         </template>
@@ -1303,4 +1308,3 @@ watch(isLoggedIn, (loggedIn) => {
   }
 }
 </style>
-

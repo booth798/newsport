@@ -249,6 +249,17 @@ onMounted(loadData);
           </template>
         </section>
 
+        <section v-if="activeTab === 'detail'" class="vip-panel vip-level-notes">
+          <div>
+            <h2>{{ t('门槛条件释义') }}</h2>
+            <p>{{ t('总额度释义') }}</p>
+          </div>
+          <div>
+            <h2>{{ t('等级升降说明') }}</h2>
+            <p>{{ t('等级升降说明内容') }}</p>
+          </div>
+        </section>
+
         <template v-else>
           <section class="vip-panel vip-panel--privileges">
             <h2>{{ t('各等级权限') }}</h2>
@@ -860,6 +871,31 @@ onMounted(loadData);
       font-size: 12px;
       line-height: 20px;
     }
+  }
+}
+
+.vip-level-notes {
+  h2 {
+    color: #1c7bff;
+  }
+
+  p {
+    margin: 8px 0 0;
+    color: #0b3462;
+
+    @include web-only {
+      font-size: 14px;
+      line-height: 26px;
+    }
+
+    @include mobile-only {
+      font-size: 12px;
+      line-height: 20px;
+    }
+  }
+
+  div + div {
+    margin-top: 18px;
   }
 }
 </style>
