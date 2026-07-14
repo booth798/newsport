@@ -27,7 +27,13 @@ const activeTab = ref('detail');
 const myVip = ref(null);
 const selectedPrivilegeLevel = ref(null);
 const privilegeLevelsRef = ref(null);
-const privilegeDragState = ref({ pointerId: null, startX: 0, startScrollLeft: 0, moved: false });
+const privilegeDragState = ref({
+  pointerId: null,
+  startX: 0,
+  startScrollLeft: 0,
+  moved: false,
+  pendingLevel: null,
+});
 const sideNavItems = computed(() => [
   { key: 'detail', label: t('VIP详情') },
   { key: 'privilege', label: t('VIP特权') },
@@ -84,13 +90,14 @@ function getLevelLogo(level) {
   return getImageUrl(`vip/vip_level_logo_${normalizedLevel}.svg`);
 }
 
-function startPrivilegeDrag(event) {
+function startPrivilegeDrag(event, level = null) {
   if (!privilegeLevelsRef.value || event.pointerType === 'touch') return;
   privilegeDragState.value = {
     pointerId: event.pointerId,
     startX: event.clientX,
     startScrollLeft: privilegeLevelsRef.value.scrollLeft,
     moved: false,
+    pendingLevel: level,
   };
   privilegeLevelsRef.value.setPointerCapture?.(event.pointerId);
 }
@@ -105,17 +112,37 @@ function dragPrivilegeLevels(event) {
 }
 
 function endPrivilegeDrag(event) {
-  if (privilegeDragState.value.pointerId !== event.pointerId) return;
+  const state = privilegeDragState.value;
+  if (state.pointerId !== event.pointerId) return;
   privilegeLevelsRef.value?.releasePointerCapture?.(event.pointerId);
+
+  // 只有按下与松开之间没有形成拖拽时，才将当前等级切换为选中状态。
+  if (!state.moved && state.pendingLevel !== null) {
+    selectPrivilegeLevel(state.pendingLevel);
+  }
+
+  // 保留 moved 到 click 事件结束，避免拖拽松手后生成的 click 误选等级。
   setTimeout(() => {
-    privilegeDragState.value = { pointerId: null, startX: 0, startScrollLeft: 0, moved: false };
+    privilegeDragState.value = {
+      pointerId: null,
+      startX: 0,
+      startScrollLeft: 0,
+      moved: false,
+      pendingLevel: null,
+    };
   }, 0);
 }
 
 function selectPrivilegeLevel(level) {
-  // 点击始终优先切换等级，拖动仅改变列表滚动位置。
   selectedPrivilegeLevel.value = Number(level);
+  // 点击选中后，PC 与移动端都将目标等级平滑滚动到可视区域中央。
   scrollPrivilegeLevelToCenter(level);
+}
+
+function handlePrivilegeClick(level) {
+  // 触屏设备依赖原生 click；鼠标拖拽产生的 click 在此被过滤。
+  if (privilegeDragState.value.moved || privilegeDragState.value.pointerId !== null) return;
+  selectPrivilegeLevel(level);
 }
 
 /**
@@ -130,7 +157,14 @@ function scrollPrivilegeLevelToCenter(level) {
     const idx = levels.value.findIndex((l) => Number(l.level) === Number(level));
     const target = items[idx];
     if (!target) return;
-    const scrollLeft = target.offsetLeft - (container.clientWidth / 2) + (target.offsetWidth / 2);
+    // 使用元素相对视口的位置换算内容区坐标，避免 PC 端父级 padding 影响 offsetLeft。
+    const containerRect = container.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const targetCenter = container.scrollLeft
+      + targetRect.left
+      - containerRect.left
+      + (targetRect.width / 2);
+    const scrollLeft = targetCenter - (container.clientWidth / 2);
     container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
   });
 }
@@ -143,7 +177,7 @@ async function loadData() {
     if (isLoggedIn.value) requests.push(fetchVipMe());
     const [, vipResponse] = await Promise.all(requests);
     myVip.value = vipResponse?.data || null;
-    // 进入特权 Tab 时默认展示当前会员等级的权益，并滚动居中。
+    // 进入特权 Tab 时默认展示当前会员等级的权益，并在列表渲染后滚动居中。
     selectedPrivilegeLevel.value = currentLevel.value;
     scrollPrivilegeLevelToCenter(currentLevel.value);
   } catch {
@@ -229,7 +263,8 @@ onMounted(loadData);
             >
               <div class="vip-privilege-levels__item" v-for="level in levels" :key="level.level"
                 :class="{ 'vip-privilege-levels__item--active': Number(level.level) === selectedPrivilegeLevel }"
-                @pointerdown.stop="startPrivilegeDrag($event); selectPrivilegeLevel(level.level)">
+                @pointerdown.stop="startPrivilegeDrag($event, level.level)"
+                @click="handlePrivilegeClick(level.level)">
                 <img :src="getLevelLogo(level.level)" :alt="getLevelName(level)" />
                 <div class="vip-name">{{ getLevelName(level) }}</div>
               </div>
