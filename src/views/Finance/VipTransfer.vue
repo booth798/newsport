@@ -23,7 +23,7 @@ const route = useRoute();
 const router = useRouter();
 const toast = useToast();
 const userStore = useUserStore();
-const { customer } = storeToRefs(userStore);
+const { loggedInAssetsFormatted } = storeToRefs(userStore);
 
 const loading = ref(true);
 const error = ref(false);
@@ -55,8 +55,8 @@ const selectedFilterLabel = computed(
   () => FILTER_OPTIONS.find((option) => option.value === selectedType.value)?.label || '全部',
 );
 const balanceAmount = computed(() => {
-  // 余额直接读取登录用户缓存，并兼容接口返回带千分位的字符串。
-  const value = Number(String(customer.value?.balance ?? 0).replaceAll(',', ''));
+  // 余额统一读取用户 store 的展示字段，并转换为表单校验所需数值。
+  const value = Number(String(loggedInAssetsFormatted.value ?? 0).replaceAll(',', ''));
   return Number.isFinite(value) ? value : 0;
 });
 const displayBalance = computed(() => formatMoney(balanceAmount.value));

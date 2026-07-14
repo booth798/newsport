@@ -4,8 +4,8 @@ import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import { useUserStore } from '@/store/modules/user';
 import { useToast } from '@/hooks/useToast';
-import { fetchUserProfile, updateNickname, updateAvatar } from '@/api/user';
-import { uploadFile, resolveAvatarUrl } from '@/api/upload';
+import { updateNickname, updateAvatar } from '@/api/user';
+import { uploadFile } from '@/api/upload';
 
 const { t } = useI18n();
 const toast = useToast();
@@ -27,12 +27,11 @@ const displayInitial = computed(() => (nickname.value.charAt(0) || 'U').toUpperC
 
 onMounted(async () => {
   try {
-    const res = await fetchUserProfile();
-    const d = res.data || {};
+    // 页面只消费 store 已转换的统一用户资料。
+    const d = await userStore.loadUserProfile();
     nickname.value = d.nickname || d.username || loggedInUserId.value || '';
     phone.value = d.phone || '';
-    const resolved = resolveAvatarUrl(d.avatar);
-    if (resolved) avatarUrl.value = resolved;
+    avatarUrl.value = d.avatarUrl || '';
   } catch {
     /* keep defaults */
   } finally {
@@ -63,9 +62,10 @@ async function handleFileChange(event) {
     const fileRef = uploadRes?.data?.ref;
     if (!fileRef) throw new Error(t('上传失败'));
     const avatarRes = await updateAvatar(fileRef);
-    avatarUrl.value = avatarRes?.data?.avatar || '';
-    if (avatarUrl.value) {
-      userStore.updateUserProfile({ avatar: avatarUrl.value });
+    const avatar = avatarRes?.data?.avatar || '';
+    if (avatar) {
+      const profile = userStore.updateUserProfile({ avatar });
+      avatarUrl.value = profile.avatarUrl;
     }
     toast.success(t('头像上传成功'));
   } catch (e) {

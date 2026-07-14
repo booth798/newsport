@@ -225,7 +225,7 @@ async function submitWebLogin() {
     captchaToken.value = '';
     captchaId.value = '';
     resetSlider();
-    fetchUserProfile();
+    userStore.loadUserProfile({ force: true }).catch(() => {});
   } catch (e) {
     toast.error(e.message || t('提交失败，请重试'));
     resetSlider();
@@ -275,7 +275,7 @@ async function submitRegister() {
     captchaToken.value = '';
     captchaId.value = '';
     resetSlider();
-    fetchUserProfile();
+    userStore.loadUserProfile({ force: true }).catch(() => {});
   } catch (e) {
     toast.error(e.message || t('提交失败，请重试'));
     resetSlider();
@@ -283,16 +283,6 @@ async function submitRegister() {
   } finally {
     loginSubmitting.value = false;
   }
-}
-
-async function fetchUserProfile() {
-  try {
-    const data = await userStore.loadUserProfile({ force: true });
-    userStore.updateUserProfile({
-      nickname: data.nickname || undefined,
-      balance: data.balance ?? undefined,
-    });
-  } catch { /* non-critical */ }
 }
 
 const close = () => emit('close');
