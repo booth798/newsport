@@ -106,29 +106,36 @@ async function loadMatchData(id) {
     loading.value = true;
     error.value = false;
 
-    const promises = [fetchMatchDetail(id)];
-    if (isLoggedIn.value) {
-      promises.push(
-        fetchScoreMarket(Number(id), 'fulltime'),
-        fetchScoreMarket(Number(id), 'halftime'),
-      );
+    const matchRes = await fetchMatchDetail(id);
+    match.value = matchRes.data;
+
+    const matchId = String(match.value?.matchId || match.value?.id || id);
+
+    const empty = { data: [], market: null };
+    const [fulltimeRes, halftimeRes] = await Promise.all([
+      fetchScoreMarket(matchId, 'fulltime').catch((e) => {
+        if (import.meta.env.DEV) console.warn('[Detail] FT load failed:', e?.message || e);
+        return empty;
+      }),
+      fetchScoreMarket(matchId, 'halftime').catch((e) => {
+        if (import.meta.env.DEV) console.warn('[Detail] HT load failed:', e?.message || e);
+        return empty;
+      }),
+    ]);
+
+    if (import.meta.env.DEV) {
+      console.log('[Detail] matchId=%s  FT rows=%d  HT rows=%d', matchId, fulltimeRes.data?.length, halftimeRes.data?.length);
     }
 
-    const results = await Promise.all(promises);
-    match.value = results[0].data;
-
-    if (results.length > 1) {
-      const fulltimeRes = results[1];
-      const halftimeRes = results[2];
-      scoreRowsFulltime.value = fulltimeRes.data || [];
-      scoreRowsHalftime.value = halftimeRes.data || [];
-      ftMarketId.value = fulltimeRes.data?.[0]?._marketId || null;
-      htMarketId.value = halftimeRes.data?.[0]?._marketId || null;
-      if (fulltimeRes.market?.feeRate != null) {
-        match.value = { ...match.value, feeRate: fulltimeRes.market.feeRate };
-      }
+    scoreRowsFulltime.value = fulltimeRes.data || [];
+    scoreRowsHalftime.value = halftimeRes.data || [];
+    ftMarketId.value = fulltimeRes.data?.[0]?._marketId || null;
+    htMarketId.value = halftimeRes.data?.[0]?._marketId || null;
+    if (fulltimeRes.market?.feeRate != null) {
+      match.value = { ...match.value, feeRate: fulltimeRes.market.feeRate };
     }
-  } catch {
+  } catch (e) {
+    if (import.meta.env.DEV) console.error('[Detail] loadMatchData failed:', e);
     error.value = true;
   } finally {
     loading.value = false;
@@ -253,7 +260,7 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
 
       <div class="market-detail__main">
         <div class="market-detail__hero">
-          <HomeMatchCard :match="match" detail-mode @enter-market="openBuySheetFromHero" />
+          <HomeMatchCard :match="match" detail-mode />
         </div>
 
         <section
@@ -312,7 +319,7 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
       <div class="market-detail__main market-detail__main--m">
         <div class="m-detail-wrap">
           <div class="m-detail-wrap__hero">
-            <HomeMatchCard :match="match" detail-mode @enter-market="openBuySheetFromHero" />
+            <HomeMatchCard :match="match" detail-mode />
           </div>
 
           <section class="m-score-card">
@@ -347,7 +354,7 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
             </span>
           </div>
 
-          <ul class="m-score-card__list">
+          <ul v-if="scoreRows.length" class="m-score-card__list">
             <li
               v-for="row in scoreRows"
               :key="`${activeTab}-${row.score}`"
@@ -376,6 +383,9 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
               />
             </li>
           </ul>
+          <div v-else class="m-score-card__empty">
+            <span>{{ t('暂无数据') }}</span>
+          </div>
         </section>
         </div>
       </div>
@@ -730,14 +740,13 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
   }
 }
 
-/* H5 比分市场卡片 — pill tabs + 平铺列表（Figma 355:3541） */
+/* H5 比分市场卡片 — pill tabs + 平铺列表 */
 .m-score-card {
   @include mobile-only {
-    background: #eaf1f9;
-    border-radius: 16px;
-    border: 1px solid #eaf1f9;
+    background: #fff;
+    border-radius: 20px;
     overflow: hidden;
-    padding: 12px;
+    padding: 16px 12px;
     box-sizing: border-box;
   }
 
@@ -828,6 +837,45 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
       font-weight: 500;
       line-height: 1;
       white-space: nowrap;
+    }
+  }
+
+  &__head-row {
+    @include mobile-only {
+      display: grid;
+      grid-template-columns: 50px 60px 1fr 16px;
+      align-items: center;
+      padding: 0 14px;
+      height: 28px;
+    }
+  }
+
+  &__head-label {
+    @include mobile-only {
+      font-size: 11px;
+      color: #8ba3c0;
+      font-weight: 500;
+
+      &--right {
+        text-align: right;
+      }
+    }
+  }
+
+  &__head-spacer {
+    @include mobile-only {
+      width: 16px;
+    }
+  }
+
+  &__empty {
+    @include mobile-only {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 120px;
+      color: #8ba3c0;
+      font-size: 14px;
     }
   }
 

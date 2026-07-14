@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 
 import { fetchTickets, createTicket, fetchTicketMessages, replyTicket } from '@/api/cs';
+import BaseModal from '@/components/BaseModal.vue';
 import iconBackUrl from '@/assets/images/common/icon_back.svg?url';
 import avatarDefaultUrl from '@/assets/images/common/avatar_default.png?url';
 
@@ -162,7 +163,19 @@ function formatTime(iso) {
   }
 }
 
+// --- 退出确认弹窗（参考安卓端：点返回先弹"是否结束对话"） ---
+const showExitConfirm = ref(false);
+
 function goBack() {
+  showExitConfirm.value = true;
+}
+
+function cancelExit() {
+  showExitConfirm.value = false;
+}
+
+function confirmExit() {
+  showExitConfirm.value = false;
   if (window.history.length > 1) {
     router.back();
     return;
@@ -265,6 +278,27 @@ onBeforeUnmount(() => {
         </footer>
       </section>
     </div>
+
+    <!-- 退出确认弹窗：参考安卓端，点返回时弹出"是否结束对话" -->
+    <BaseModal
+      :model-value="showExitConfirm"
+      :title="t('提示')"
+      :show-close="false"
+      @update:model-value="cancelExit"
+    >
+      <div class="service-exit-dialog__body">
+        <span class="service-exit-dialog__info" aria-hidden="true">i</span>
+        <p>{{ t('是否结束对话') }}</p>
+      </div>
+      <div class="service-exit-dialog__actions">
+        <button type="button" class="service-exit-dialog__btn--cancel" @click="cancelExit">
+          {{ t('取消') }}
+        </button>
+        <button type="button" class="service-exit-dialog__btn--confirm" @click="confirmExit">
+          {{ t('确定') }}
+        </button>
+      </div>
+    </BaseModal>
   </div>
 </template>
 
@@ -1042,5 +1076,63 @@ onBeforeUnmount(() => {
   font-size: $font-size-sm;
   text-align: center;
   flex-shrink: 0;
+}
+
+// --- 退出确认弹窗（与 AppCustomerServiceConfirm 保持一致） ---
+
+.service-exit-dialog__body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 70px;
+  border-radius: 12px;
+  background: #fff;
+  color: #0b3462;
+  font-size: 16px;
+  font-weight: 700;
+
+  p {
+    margin: 0;
+  }
+}
+
+.service-exit-dialog__info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid #5d7899;
+  border-radius: 50%;
+  color: #5d7899;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: $font-family-num, $font-family-base;
+}
+
+.service-exit-dialog__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+
+  button {
+    height: 44px;
+    border-radius: 22px;
+    font-size: 18px;
+    font-weight: 400;
+    cursor: pointer;
+  }
+}
+
+.service-exit-dialog__btn--cancel {
+  border: 1px solid #fff;
+  color: #fff;
+}
+
+.service-exit-dialog__btn--confirm {
+  background: #fff;
+  color: var(--theme-primary);
 }
 </style>

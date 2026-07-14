@@ -159,11 +159,15 @@ export async function fetchMarketPeriod(matchId, period = 'FT') {
 export async function fetchScoreMarket(matchId, tab = 'fulltime') {
   const period = tab === 'halftime' ? 'HT' : 'FT';
 
-  const marketRes = await get(`/markets/${matchId}/${period}`);
+  const marketRes = await get(`/markets/${String(matchId)}/${period}`);
   const data = marketRes.data || {};
   const market = data.market || {};
   const pools = data.pools || [];
   const marketFeeRate = market.feeRate;
+
+  if (import.meta.env.DEV) {
+    console.log(`[ScoreMarket] ${period} matchId=${matchId} marketId=${market.marketId} pools=${pools.length}`);
+  }
 
   const rows = pools.map((p) => ({
     score: (p.score || '0:0').replace(':', '-'),
