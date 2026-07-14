@@ -4,6 +4,7 @@ import FloatingService from '@/components/FloatingService.vue';
 import LoginModal from '@/components/LoginModal.vue';
 import AppLogoutConfirm from '@/components/AppLogoutConfirm.vue';
 import AppCustomerServiceConfirm from '@/components/AppCustomerServiceConfirm.vue';
+import AppForceLogoutAlert from '@/components/AppForceLogoutAlert.vue';
 import MobileTabBar from '@/components/MobileTabBar.vue';
 import GlobalToast from '@/components/GlobalToast.vue';
 import GlobalLoading from '@/components/GlobalLoading.vue';
@@ -18,7 +19,7 @@ import i18n from '@/i18n';
 import { useAppStore } from '@/store/modules/app';
 import { useUserStore } from '@/store/modules/user';
 import { useWalletWs } from '@/hooks/useWalletWs';
-import { loadErrorCodes, resolveErrorMessage } from '@/api/errorCodes';
+import { loadErrorCodes } from '@/api/errorCodes';
 
 function getRouteDepth(path) {
   return path.replace(/\/$/, '').split('/').filter(Boolean).length;
@@ -95,15 +96,9 @@ function onSessionExpired() {
   if (wasLoggedIn) appStore.openLoginModal();
 }
 
-function onForceLogout(e) {
-  const code = e.detail?.code;
+function onForceLogout() {
   userStore.clearWebLogin();
-  const msg = code ? resolveErrorMessage(code) : '';
-  if (msg && toastRef.value) {
-    toastRef.value.show(msg, { type: 'error', duration: 4000 });
-  }
-  router.replace('/');
-  appStore.openLoginModal();
+  appStore.openForceLogoutAlert();
 }
 
 onMounted(async () => {
@@ -160,6 +155,7 @@ useWalletWs({
   <LoginModal :visible="appStore.loginModalOpen" @close="appStore.closeLoginModal" />
   <AppLogoutConfirm />
   <AppCustomerServiceConfirm />
+  <AppForceLogoutAlert />
   <GlobalToast ref="toastRef" />
   <GlobalLoading />
   <NetworkBar />

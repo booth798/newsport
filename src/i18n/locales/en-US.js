@@ -504,4 +504,6 @@ export default {
   订单已取消: 'Order cancelled',
   暂无记录: 'No records',
   状态: 'Status',
+  '您的账号已在其他设备登录，本次登录已下线': 'Your account has logged in on another device; this session was signed out',
+  知道了: 'Got it',
 };
