@@ -446,14 +446,6 @@ async function loadMore() {
       font-weight: 500;
     }
   }
-
-  a {
-    align-self: flex-end;
-    color: var(--theme-primary);
-    font-size: 12px;
-    font-weight: 500;
-    text-decoration: none;
-  }
 }
 
 .vip-transfer-form__submit {

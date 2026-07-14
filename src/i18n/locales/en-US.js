@@ -90,7 +90,6 @@ export default {
   位: 'characters',
   邀请码: 'Invite code',
   选填: 'optional',
-  忘记密码: 'Forgot password?',
   还没有账号: "Don't have an account?",
   '没有账号？': "Don't have an account?",
   已有账号: 'Already have an account?',
