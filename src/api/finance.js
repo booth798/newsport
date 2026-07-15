@@ -38,6 +38,7 @@ export async function fetchDepositList(params = {}) {
     pageNum: params.pageNum || 1,
     pageSize: params.pageSize || 20,
     status: params.status,
+    month: params.month,
   });
 }
 

@@ -1,53 +1,124 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+/**
+ * 充值页（按设计稿：充值改为线下客服操作，本页仅展示充值记录）
+ * - 顶部橙色提示：请「联系客服」进行充值操作
+ * - 月份选择器筛选
+ * - 充值记录卡片：日期 + 状态徽标 / 金额 / 备注
+ */
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { storeToRefs } from 'pinia';
+import { useRoute, useRouter } from 'vue-router';
 
-import { fetchDepositChannels, submitDeposit } from '@/api/finance';
+import MonthSelector from '@/components/MonthSelector.vue';
+import { fetchDepositList } from '@/api/finance';
 import { useToast } from '@/hooks/useToast';
-import { useUserStore } from '@/store/modules/user';
+import { useAppStore } from '@/store/modules/app';
 
-const { t } = useI18n();
+const { locale, t } = useI18n();
+const route = useRoute();
+const router = useRouter();
 const toast = useToast();
-const userStore = useUserStore();
-const { loggedInAssetsFormatted, userProfile } = storeToRefs(userStore);
+const appStore = useAppStore();
 
-const QUICK_AMOUNTS = [100, 500, 1000, 5000];
-
+const PAGE_SIZE = 20;
 
 const loading = ref(true);
 const error = ref(false);
-const submitting = ref(false);
+const loadingMore = ref(false);
+const records = ref([]);
+const total = ref(0);
+const pageNum = ref(1);
 
-const channels = ref([]);
-const selectedChannel = ref(null);
-const amount = ref('');
+const hasMore = computed(() => records.value.length < total.value);
 
-// 余额展示统一使用用户 store，充值后可同步更新全站余额。
-const balance = computed(() => ({
-  currency: userProfile.value?.currency || 'CNY',
-  formatted: loggedInAssetsFormatted.value,
-}));
-const currentChannel = computed(() =>
-  channels.value.find((c) => c.channelCode === selectedChannel.value),
-);
-
-const isEmpty = computed(() => !loading.value && !error.value && channels.value.length === 0);
-
-onMounted(() => {
-  loadData();
+// 月份与路由同步，PC 选择器与移动端 Header 共用同一状态。
+const selectedMonth = computed({
+  get() {
+    const month = Array.isArray(route.query.month) ? route.query.month[0] : route.query.month;
+    return /^\d{4}-(0[1-9]|1[0-2])$/.test(month || '') ? month : getCurrentMonth();
+  },
+  set(month) {
+    router.replace({ query: { ...route.query, month } });
+  },
 });
 
-async function loadData() {
+function getCurrentMonth() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+  }).formatToParts(new Date());
+  const pick = (type) => parts.find((part) => part.type === type)?.value || '';
+  return `${pick('year')}-${pick('month')}`;
+}
+
+function statusInfo(status, statusLabel) {
+  const s = String(status || '').toUpperCase();
+  if (['SUCCESS', 'COMPLETED', 'DONE', 'PAID', 'FINISHED'].includes(s)) {
+    return { tone: 'completed', label: statusLabel || t('已完成') };
+  }
+  if (['PENDING', 'PROCESSING', 'REVIEWING', 'CREATED', 'WAIT'].includes(s)) {
+    return { tone: 'processing', label: statusLabel || t('处理中') };
+  }
+  if (['CANCELLED', 'CANCELED', 'FAILED', 'REJECTED', 'EXPIRED'].includes(s)) {
+    return { tone: 'cancelled', label: statusLabel || t('已取消') };
+  }
+  return { tone: 'completed', label: statusLabel || t('已完成') };
+}
+
+function formatMoney(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '0.00';
+  return number.toLocaleString(locale.value, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function formatDateTime(value) {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  const parts = new Intl.DateTimeFormat('zh-CN', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(date);
+  const p = (type) => parts.find((item) => item.type === type)?.value || '';
+  return `${p('year')}-${p('month')}-${p('day')} ${p('hour')}:${p('minute')}`;
+}
+
+function normalizeRecord(r) {
+  const info = statusInfo(r.status, r.statusLabel);
+  return {
+    id: r.id || r.depositOrderId || r.orderNo,
+    createdAt: formatDateTime(r.createdAt || r.completedAt || r.createTime),
+    amount: formatMoney(r.amount),
+    currency: r.currency || 'CNY',
+    remark: r.remark || r.note || r.desc || t('系统充值'),
+    statusLabel: info.label,
+    statusTone: info.tone,
+  };
+}
+
+function buildParams(page) {
+  return { pageNum: page, pageSize: PAGE_SIZE, month: selectedMonth.value };
+}
+
+function applyResponse(res, append, requestedPage) {
+  const data = res?.data || {};
+  const next = (data.records || []).map(normalizeRecord);
+  records.value = append ? [...records.value, ...next] : next;
+  total.value = Number(data.total) || records.value.length;
+  pageNum.value = Number(data.pageNum) || requestedPage;
+}
+
+async function loadPage() {
   loading.value = true;
   error.value = false;
   try {
-    const [, channelsRes] = await Promise.all([
-      userStore.loadUserProfile().catch(() => null),
-      fetchDepositChannels().catch(() => ({ data: [] })),
-    ]);
-    channels.value = channelsRes.data || [];
-    selectedChannel.value = channels.value[0]?.channelCode ?? null;
+    const res = await fetchDepositList(buildParams(1));
+    applyResponse(res, false, 1);
   } catch {
     error.value = true;
   } finally {
@@ -55,155 +126,98 @@ async function loadData() {
   }
 }
 
-function selectAmount(val) {
-  amount.value = String(val);
-}
-
-async function handleSubmit() {
-  const val = Number(amount.value);
-  if (!amount.value.trim()) {
-    toast.error(t('请输入充值金额'));
-    return;
-  }
-  if (!Number.isFinite(val) || val <= 0) {
-    toast.error(t('金额必须大于零'));
-    return;
-  }
-  if (!selectedChannel.value) {
-    toast.error(t('请选择充值渠道'));
-    return;
-  }
-
-  const ch = currentChannel.value;
-  if (ch) {
-    if (val < ch.minAmount) {
-      toast.error(t('最低充值金额为') + ` ${ch.minAmount}`);
-      return;
-    }
-    if (val > ch.maxAmount) {
-      toast.error(t('最高充值金额为') + ` ${ch.maxAmount}`);
-      return;
-    }
-  }
-
+async function loadMore() {
+  if (loadingMore.value || !hasMore.value) return;
+  const nextPage = pageNum.value + 1;
   try {
-    submitting.value = true;
-    await submitDeposit(selectedChannel.value, val);
-    toast.success(t('充值提交成功'));
-    amount.value = '';
-    await userStore.refreshUserBalance().catch(() => {});
+    loadingMore.value = true;
+    const res = await fetchDepositList(buildParams(nextPage));
+    applyResponse(res, true, nextPage);
   } catch {
-    toast.error(t('提交失败请重试'));
+    toast.error(t('加载失败'));
   } finally {
-    submitting.value = false;
+    loadingMore.value = false;
   }
 }
+
+function contactService() {
+  appStore.openCustomerServiceConfirm();
+}
+
+watch(selectedMonth, () => {
+  loadPage();
+});
+
+onMounted(() => {
+  loadPage();
+});
 </script>
 
 <template>
   <div class="deposit-page" aria-label="deposit">
-    <!-- Loading -->
-    <div v-if="loading" class="deposit-state">
-      <span class="deposit-state__text">{{ t('加载中...') }}</span>
-    </div>
-
-    <!-- Error -->
-    <div v-else-if="error" class="deposit-state deposit-state--error">
-      <span class="deposit-state__text">{{ t('加载失败') }}</span>
-      <button class="btn btn--primary deposit-state__retry" type="button" @click="loadData">
-        {{ t('重试') }}
-      </button>
-    </div>
-
-    <!-- Empty (no channels at all — defensive) -->
-    <div v-else-if="isEmpty" class="deposit-state">
-      <span class="deposit-state__text">{{ t('暂无可用充值渠道') }}</span>
-    </div>
-
-    <!-- Main content -->
-    <template v-else>
-      <!-- Balance card -->
-      <section v-if="balance" class="deposit-balance card-default">
-        <span class="deposit-balance__label">{{ t('钱包余额') }}</span>
-        <span class="deposit-balance__value">
-          {{ balance.currency === 'CNY' ? '\u00A5' : '' }}{{ balance.formatted }}
+    <main class="deposit-panel">
+      <!-- 提示：充值走线下客服 -->
+      <div class="deposit-notice">
+        <span class="deposit-notice__icon" aria-hidden="true">i</span>
+        <span class="deposit-notice__text">
+          {{ t('充值操作提示前') }}<button type="button" class="deposit-notice__link" @click="contactService">{{ t('联系客服') }}</button>{{ t('充值操作提示后') }}
         </span>
-      </section>
+      </div>
 
-      <!-- Channel selector -->
-      <section class="deposit-channels card-default">
-        <span class="deposit-channels__title">{{ t('充值渠道') }}</span>
-        <div class="deposit-channels__list">
-          <button
-            v-for="ch in channels"
-            :key="ch.channelCode"
-            type="button"
-            class="deposit-channels__btn"
-            :class="{ active: selectedChannel === ch.channelCode }"
-            @click="selectedChannel = ch.channelCode"
-          >
-            {{ t(ch.channelName) }}
-          </button>
-        </div>
-      </section>
+      <!-- 月份筛选 -->
+      <div class="deposit-toolbar">
+        <MonthSelector v-model="selectedMonth" :aria-label="t('选择月份')" />
+      </div>
 
-      <!-- Form -->
-      <form class="deposit-form card-default" @submit.prevent="handleSubmit">
-        <!-- Notice -->
-        <div class="deposit-form__notice">
-          <span class="deposit-form__notice-icon">!</span>
-          <span>{{ t('充值金额到账后将自动更新余额，请耐心等待') }}</span>
-        </div>
+      <!-- 加载 -->
+      <div v-if="loading" class="deposit-state">
+        <div class="deposit-spinner" />
+        <span>{{ t('加载中') }}</span>
+      </div>
 
-        <!-- Amount -->
-        <label class="finance-field">
-          <span class="finance-field__label">{{ t('充值金额') }}</span>
-          <input
-            v-model="amount"
-            class="finance-field__input"
-            inputmode="decimal"
-            :placeholder="
-              currentChannel
-                ? `${t('限额')} ${currentChannel.minAmount} - ${currentChannel.maxAmount}`
-                : t('请输入金额')
-            "
-          />
-        </label>
+      <!-- 错误 -->
+      <div v-else-if="error" class="deposit-state">
+        <span>{{ t('加载失败') }}</span>
+        <button type="button" class="deposit-retry" @click="loadPage">{{ t('重试') }}</button>
+      </div>
 
-        <!-- Quick amounts -->
-        <div class="deposit-quick">
-          <button
-            v-for="q in QUICK_AMOUNTS"
-            :key="q"
-            type="button"
-            class="deposit-quick__btn"
-            :class="{ active: amount === String(q) }"
-            @click="selectAmount(q)"
-          >
-            {{ q }}
-          </button>
-        </div>
+      <!-- 空 -->
+      <div v-else-if="!records.length" class="deposit-state">
+        <span>{{ t('暂无记录') }}</span>
+      </div>
 
-        <!-- Notice list -->
-        <div class="deposit-tips">
-          <p class="deposit-tips__title">{{ t('充值说明') }}</p>
-          <ul class="deposit-tips__list">
-            <li>{{ t('充值成功后资金将在短时间内到账') }}</li>
-            <li>{{ t('请确认充值金额与实际转账金额一致') }}</li>
-            <li>{{ t('如遇问题请联系在线客服') }}</li>
-          </ul>
-        </div>
+      <!-- 记录列表 -->
+      <template v-else>
+        <article v-for="record in records" :key="record.id" class="deposit-record">
+          <div class="deposit-record__header">
+            <time>{{ record.createdAt }}</time>
+            <span class="deposit-record__badge" :class="`deposit-record__badge--${record.statusTone}`">
+              {{ record.statusLabel }}
+            </span>
+          </div>
+          <dl class="deposit-record__body">
+            <div>
+              <dt>{{ t('金额') }}</dt>
+              <dd>{{ record.amount }} {{ record.currency }}</dd>
+            </div>
+            <div>
+              <dt>{{ t('备注') }}</dt>
+              <dd>{{ record.remark }}</dd>
+            </div>
+          </dl>
+        </article>
 
-        <!-- Submit -->
         <button
-          class="btn btn--primary deposit-form__submit"
-          type="submit"
-          :disabled="submitting"
+          v-if="hasMore"
+          type="button"
+          class="deposit-more"
+          :disabled="loadingMore"
+          @click="loadMore"
         >
-          {{ submitting ? t('提交中...') : t('确认充值') }}
+          {{ loadingMore ? t('加载中') : t('加载更多') }}
         </button>
-      </form>
-    </template>
+      </template>
+    </main>
   </div>
 </template>
 
@@ -211,346 +225,214 @@ async function handleSubmit() {
 @use '@/styles/tools.scss' as *;
 
 .deposit-page {
+  width: 100%;
+  color: var(--theme-text);
+}
+
+.deposit-panel {
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  width: 100%;
-  max-width: 100%;
-  overflow-x: hidden;
+
+  @include web-only {
+    min-height: min(690px, calc(100dvh - 20px));
+    padding: 24px;
+    border: 1px solid var(--auxiliary-1);
+    border-radius: 32px;
+    background: var(--auxiliary-1);
+    box-shadow: var(--shadow-card);
+  }
+
+  @include mobile-only {
+    gap: 12px;
+  }
 }
 
-/* ---------- States ---------- */
+/* ---------- 提示条 ---------- */
+.deposit-notice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-sizing: border-box;
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: rgba(251, 92, 13, 0.1);
+  color: #fb5c0d;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.deposit-notice__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-family: $font-family-num, $font-family-base;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.deposit-notice__text {
+  color: rgba(11, 52, 98, 0.5);
+}
+
+.deposit-notice__link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--theme-primary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* ---------- 月份筛选 ---------- */
+.deposit-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  @include mobile-only {
+    display: none;
+  }
+}
+
+/* ---------- 状态 ---------- */
 .deposit-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  min-height: 240px;
+  gap: 12px;
+  color: #7b92ad;
+  font-size: 14px;
+}
 
-  @include web-only {
-    min-height: min(690px, calc(100dvh - 12px));
-  }
+.deposit-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #e4f0fe;
+  border-top-color: #1c7bff;
+  border-radius: 50%;
+  animation: deposit-spin 0.8s linear infinite;
+}
+
+@keyframes deposit-spin {
+  to { transform: rotate(360deg); }
+}
+
+.deposit-retry {
+  height: 32px;
+  padding: 0 20px;
+  border: 1px solid #1c7bff;
+  border-radius: 16px;
+  background: transparent;
+  color: #1c7bff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* ---------- 记录卡片 ---------- */
+.deposit-record {
+  box-sizing: border-box;
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(28, 123, 255, 0.1);
 
   @include mobile-only {
-    min-height: calc(100dvh - 60px);
+    background: var(--auxiliary-1);
+    box-shadow: 0 2px 12px rgba(21, 58, 118, 0.06);
   }
 }
 
-.deposit-state__text {
-  color: var(--theme-text-2, #999);
-  font-size: $font-size-base;
-}
-
-.deposit-state__retry {
-  width: 120px;
-  height: 40px;
-  font-size: $font-size-base;
-}
-
-/* ---------- Balance ---------- */
-.deposit-balance {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 100%;
+.deposit-record__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 12px;
 
-  @include web-only {
-    height: 92px;
-    padding: 0 $spacing-2xl;
-    border-radius: $radius-xl;
-  }
-
-  @include mobile-only {
-    height: 84px;
-    padding: 0 $spacing-lg;
-    border-radius: $radius-lg;
+  time {
+    color: var(--theme-text);
+    font-size: 14px;
+    font-weight: 300;
   }
 }
 
-.deposit-balance__label {
-  color: var(--theme-text-1);
+.deposit-record__badge {
+  min-width: 56px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 14px;
   font-weight: 500;
+  text-align: center;
 
-  @include web-only {
-    font-size: $font-size-base;
+  &--completed {
+    background: rgba(11, 52, 98, 0.1);
+    color: #5d7899;
   }
 
-  @include mobile-only {
-    font-size: $font-size-md;
-  }
-}
-
-.deposit-balance__value {
-  color: var(--theme-primary);
-  font-family: $font-family-num, $font-family-base;
-  font-weight: 700;
-
-  @include web-only {
-    font-size: 24px;
+  &--processing {
+    background: rgba(28, 123, 255, 0.15);
+    color: #1c7bff;
   }
 
-  @include mobile-only {
-    font-size: $font-size-lg;
+  &--cancelled {
+    background: rgba(255, 45, 45, 0.12);
+    color: #ff2d2d;
   }
 }
 
-/* ---------- Channels ---------- */
-.deposit-channels {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 100%;
-
-  @include web-only {
-    padding: $spacing-2xl;
-    border-radius: $radius-xl;
-  }
-
-  @include mobile-only {
-    padding: $spacing-lg;
-    border-radius: $radius-lg;
-  }
-}
-
-.deposit-channels__title {
-  display: block;
-  color: var(--theme-text-1);
-  font-weight: 500;
-  margin-bottom: 14px;
-
-  @include web-only {
-    font-size: $font-size-base;
-  }
-
-  @include mobile-only {
-    font-size: $font-size-md;
-  }
-}
-
-.deposit-channels__list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.deposit-channels__btn {
-  height: 44px;
-  padding: 0 24px;
-  border: 1px solid var(--theme-divider);
-  border-radius: $radius-pill;
-  background: var(--auxiliary-1);
-  color: var(--theme-text);
-  font-size: 15px;
-  cursor: pointer;
-  transition:
-    border-color 0.18s ease,
-    color 0.18s ease,
-    background 0.18s ease;
-
-  @include mobile-only {
-    flex: 1 1 0;
-    min-width: 0;
-    padding: 0 12px;
-    font-size: $font-size-md;
-  }
-}
-
-.deposit-channels__btn:hover,
-.deposit-channels__btn.active {
-  border-color: var(--theme-primary);
-  color: var(--theme-primary);
-  background: var(--surface-card);
-  box-shadow: var(--shadow-primary-btn);
-}
-
-/* ---------- Form ---------- */
-.deposit-form {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 100%;
-
-  @include web-only {
-    padding: $spacing-2xl $spacing-2xl 30px;
-    border-radius: $radius-xl;
-  }
-
-  @include mobile-only {
-    padding: $spacing-lg;
-    border-radius: $radius-lg;
-  }
-}
-
-.deposit-form__notice {
-  display: flex;
-  align-items: center;
-  gap: $spacing-xs;
-  height: 38px;
-  padding: 0 $spacing-xl;
-  margin-bottom: 18px;
-  box-sizing: border-box;
-  border-radius: $radius-lg;
-  background: rgba(251, 92, 13, 0.1);
-  color: var(--auxiliary-3);
-  font-size: $font-size-md;
-  font-weight: 400;
-}
-
-.deposit-form__notice-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-  border: 1px solid currentColor;
-  border-radius: 50%;
-  font-family: $font-family-num, $font-family-base;
-  font-size: 10px;
-  font-weight: 800;
-  line-height: 1;
-}
-
-/* ---------- Quick amounts ---------- */
-.deposit-quick {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: $spacing-xl;
-}
-
-.deposit-quick__btn {
-  height: 40px;
-  border: 1px solid var(--theme-divider);
-  border-radius: $radius-md;
-  background: var(--auxiliary-1);
-  color: var(--theme-text);
-  font-family: $font-family-num, $font-family-base;
-  font-size: $font-size-base;
-  font-weight: 500;
-  cursor: pointer;
-  transition:
-    border-color 0.18s ease,
-    color 0.18s ease,
-    background 0.18s ease;
-
-  @include web-only {
-    flex: 0 0 calc(25% - 8px);
-  }
-
-  @include mobile-only {
-    flex: 1 1 calc(50% - 5px);
-  }
-}
-
-.deposit-quick__btn:hover,
-.deposit-quick__btn.active {
-  border-color: var(--theme-primary);
-  color: var(--theme-primary);
-  background: rgba(28, 123, 255, 0.06);
-}
-
-/* ---------- Tips ---------- */
-.deposit-tips {
-  margin-bottom: 24px;
-  padding: 14px $spacing-xl;
-  border-radius: $radius-lg;
-  background: var(--surface-card, #f7f9fc);
-}
-
-.deposit-tips__title {
-  margin: 0 0 8px;
-  color: var(--theme-text-1);
-  font-weight: 500;
-
-  @include web-only {
-    font-size: $font-size-base;
-  }
-
-  @include mobile-only {
-    font-size: $font-size-md;
-  }
-}
-
-.deposit-tips__list {
+.deposit-record__body {
   margin: 0;
-  padding: 0 0 0 18px;
-  color: var(--theme-text-2, #999);
-  font-size: $font-size-md;
-  line-height: 1.8;
-}
-
-/* ---------- Submit ---------- */
-.deposit-form__submit {
-  display: block;
-  width: 100%;
-  height: 44px;
-  font-size: $font-size-lg;
-
-  @include web-only {
-    width: 300px;
-    height: 48px;
-    margin: 0 auto;
-  }
-}
-
-/* ---------- Finance field (mirrors Withdraw.vue) ---------- */
-.finance-field {
-  display: flex;
-  flex-direction: column;
-
-  @include web-only {
-    margin-bottom: $spacing-xl;
-    gap: 10px;
-  }
-
-  @include mobile-only {
-    margin-bottom: $spacing-lg;
-    gap: 6px;
-  }
-}
-
-.finance-field__label {
-  color: var(--theme-text-1);
-  font-weight: 400;
-
-  @include web-only {
-    font-size: $font-size-base;
-  }
-
-  @include mobile-only {
-    font-size: $font-size-md;
-  }
-}
-
-.finance-field__input {
-  box-sizing: border-box;
-  width: 100%;
-  border: 1px solid var(--theme-divider);
-  border-radius: $radius-md;
-  outline: none;
+  padding: 0 12px;
+  border-radius: 12px;
   background: var(--auxiliary-1);
-  color: var(--theme-text);
-  font-weight: 400;
 
-  @include web-only {
-    height: 52px;
-    font-size: $font-size-base;
-    padding: 0 $spacing-xl;
+  div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 48px;
+
+    & + div {
+      border-top: 1px solid var(--theme-divider);
+    }
   }
 
-  @include mobile-only {
-    font-size: $font-size-md;
-    height: 44px;
-    padding: 0 14px;
+  dt,
+  dd {
+    margin: 0;
+  }
+
+  dt {
+    color: rgba(11, 52, 98, 0.5);
+    font-size: 14px;
+  }
+
+  dd {
+    color: var(--theme-text);
+    font-size: 16px;
+    font-weight: 500;
+    font-family: $font-family-num, $font-family-base;
   }
 }
 
-.finance-field__input:focus {
-  border-color: var(--theme-primary);
-  background: var(--surface-card);
-}
-
-.finance-field__input::placeholder {
-  color: var(--theme-text-3, #bbb);
+/* ---------- 加载更多 ---------- */
+.deposit-more {
+  align-self: center;
+  padding: 8px 20px;
+  border: 0;
+  background: transparent;
+  color: rgba(11, 52, 98, 0.5);
+  font-size: 14px;
+  cursor: pointer;
 }
 </style>
