@@ -1,20 +1,19 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRouter } from 'vue-router';
 
 import logoLoginUrl from '@/assets/images/common/logo_login.svg?url';
 import iconLoginUserUrl from '@/assets/images/login/icon_login_user.svg?url';
 import iconLoginLockUrl from '@/assets/images/login/icon_login_lock.svg?url';
 import iconEyeClosedUrl from '@/assets/images/login/icon_login_eye_closed.svg?url';
 import iconEyeOpenUrl from '@/assets/images/login/icon_login_eye_open.svg?url';
+import iconContactSupportUrl from '@/assets/images/menu/icon_my_contact_support.svg?url';
 import { useAppStore } from '@/store/modules/app';
 import { useUserStore } from '@/store/modules/user';
 import { useToast } from '@/hooks/useToast';
 import { loginApi, registerApi, captchaInit, captchaVerify } from '@/api/user';
 
 const { t } = useI18n();
-const router = useRouter();
 const appStore = useAppStore();
 const userStore = useUserStore();
 const toast = useToast();
@@ -321,11 +320,6 @@ const toggleMode = () => {
   inviteCode.value = '';
 };
 
-const openRegisterPage = () => {
-  close();
-  router.push('/register');
-};
-
 const passwordInputType = computed(() => (showPassword.value ? 'text' : 'password'));
 </script>
 
@@ -334,9 +328,6 @@ const passwordInputType = computed(() => (showPassword.value ? 'text' : 'passwor
     <Transition name="modal">
       <div v-if="visible" class="login-overlay" @click.self="close">
         <div class="login-overlay__stack">
-          <button type="button" class="login-overlay__close" :aria-label="t('关闭')" @click="close">
-            <span aria-hidden="true">×</span>
-          </button>
           <div class="login-modal" role="dialog" aria-modal="true" :aria-label="isLogin ? t('会员登入') : t('会员注册')">
             <div class="login-modal__watermark" aria-hidden="true">UNIBET</div>
 
@@ -401,6 +392,7 @@ const passwordInputType = computed(() => (showPassword.value ? 'text' : 'passwor
                   <div class="login-modal__remember-row">
                     <label class="login-modal__remember">
                       <input v-model="rememberPassword" type="checkbox" class="login-modal__remember-input" />
+                      <span class="login-modal__remember-mark" aria-hidden="true" />
                       <span>{{ t('记住密码') }}</span>
                     </label>
                   </div>
@@ -597,14 +589,15 @@ const passwordInputType = computed(() => (showPassword.value ? 'text' : 'passwor
                 {{ loginSubmitting ? t('提交中...') : t('登入') }}
               </button>
 
-              <div class="login-modal__switch login-modal__switch--on-blue">
-                <span>
-                  {{ t('没有账号？') }}
-                  <a href="javascript:;" @click="openRegisterPage">{{ t('立即注册') }}</a>
-                </span>
-              </div>
+              <button type="button" class="login-modal__service" @click="appStore.openCustomerServiceConfirm">
+                <img :src="iconContactSupportUrl" alt="" aria-hidden="true" />
+                <span>{{ t('联系客服') }}</span>
+              </button>
             </div>
           </div>
+          <button type="button" class="login-overlay__close" :aria-label="t('关闭')" @click="close">
+            <span aria-hidden="true">×</span>
+          </button>
         </div>
       </div>
     </Transition>
@@ -629,18 +622,15 @@ $login-input-text: rgba(11, 52, 98, 1);
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: rgba(11, 52, 98, 0.5);
+  background: rgba(0, 0, 0, 0.72);
   display: flex;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(8px);
+  backdrop-filter: none;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
 
-  @include mobile-only {
-    align-items: flex-start;
-  }
 }
 
 .login-overlay__stack {
@@ -660,20 +650,21 @@ $login-input-text: rgba(11, 52, 98, 1);
   }
 
   @include mobile-only {
-    padding: 12px 0 calc(12px + env(safe-area-inset-bottom, 0px));
+    max-width: calc(100vw - 32px);
+    padding: 0 0 calc(20px + env(safe-area-inset-bottom, 0px));
   }
 }
 
 .login-overlay__close {
-  align-self: flex-end;
+  align-self: center;
   flex-shrink: 0;
-  margin-bottom: 10px;
+  margin-top: 28px;
   width: 32px;
   height: 32px;
   padding: 0;
   border: 1.5px solid rgba(255, 255, 255, 0.9);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
+  background: transparent;
   color: #fff;
   font-size: 20px;
   line-height: 1;
@@ -681,13 +672,12 @@ $login-input-text: rgba(11, 52, 98, 1);
   display: flex;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(4px);
   transition:
     background 0.2s ease,
     border-color 0.2s ease;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.18);
     border-color: #fff;
   }
 
@@ -701,7 +691,7 @@ $login-input-text: rgba(11, 52, 98, 1);
     height: 28px;
     font-size: 17px;
     border-width: 1px;
-    margin-bottom: 8px;
+    margin-top: 24px;
   }
 }
 
@@ -723,14 +713,14 @@ $login-input-text: rgba(11, 52, 98, 1);
   @include web-only {
     width: 400px;
     max-width: 400px;
-    min-height: 500px;
+    min-height: 544px;
     border-radius: 32px;
     overflow: hidden;
   }
 
   @include mobile-only {
-    min-height: 0;
-    padding: 20px 10px 14px;
+    min-height: 480px;
+    padding: 20px 12px 16px;
     border-radius: 24px;
   }
 
@@ -750,7 +740,7 @@ $login-input-text: rgba(11, 52, 98, 1);
     line-height: 1;
     letter-spacing: 0.06em;
     // 略偏冷白，在渐变蓝底上更接近稿图 2 的水印层次
-    color: rgba(232, 244, 255, 0.38);
+    color: rgba(232, 244, 255, 0.14);
     text-transform: uppercase;
     user-select: none;
   }
@@ -798,17 +788,17 @@ $login-input-text: rgba(11, 52, 98, 1);
     }
 
     @include mobile-only {
-      border-radius: 16px;
-      padding: 24px 16px 18px;
+      border-radius: 24px;
+      padding: 34px 20px 22px;
     }
   }
 
   &__title {
-    font-size: 19px;
-    font-weight: 700;
+    font-size: 24px;
+    font-weight: 500;
     color: var(--theme-text);
     text-align: center;
-    margin: 0 0 10px;
+    margin: 0 0 24px;
     letter-spacing: 0.02em;
 
     @include web-only {
@@ -816,18 +806,18 @@ $login-input-text: rgba(11, 52, 98, 1);
     }
 
     @include mobile-only {
-      font-size: 17px;
-      margin-bottom: 10px;
+      font-size: 24px;
+      margin-bottom: 24px;
     }
   }
 
   &__form {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 16px;
 
     @include mobile-only {
-      gap: 12px;
+      gap: 16px;
     }
   }
 
@@ -843,37 +833,53 @@ $login-input-text: rgba(11, 52, 98, 1);
     align-items: center;
     gap: 8px;
     margin-top: 0;
-    font-size: $font-size-md;
+    font-size: 18px;
     color: $login-placeholder;
     cursor: pointer;
     user-select: none;
   }
 
   &__remember-input {
-    flex-shrink: 0;
-    width: 18px;
-    height: 18px;
-    margin: 0;
-    cursor: pointer;
-    appearance: none;
-    border-radius: 50%;
-    border: 1.5px solid rgba(13, 108, 251, 0.45);
-    background: #fff;
-    transition:
-      background 0.15s,
-      border-color 0.15s,
-      box-shadow 0.15s;
-
-    &:checked {
-      background: $login-cta-blue;
-      border-color: $login-cta-blue;
-      box-shadow: inset 0 0 0 2px #fff;
-    }
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    opacity: 0;
+    pointer-events: none;
 
     &:focus-visible {
       outline: 2px solid rgba(13, 108, 251, 0.45);
       outline-offset: 2px;
     }
+  }
+
+  &__remember-mark {
+    position: relative;
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    box-sizing: border-box;
+    border: 1.5px solid $login-cta-blue;
+    border-radius: 50%;
+    background: #fff;
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: 5px;
+      top: 2px;
+      width: 5px;
+      height: 9px;
+      border-right: 1.7px solid $login-cta-blue;
+      border-bottom: 1.7px solid $login-cta-blue;
+      transform: rotate(45deg) scale(0);
+      transform-origin: center;
+      transition: transform 0.15s ease;
+    }
+  }
+
+  &__remember-input:checked + &__remember-mark::after {
+    transform: rotate(45deg) scale(1);
   }
 
   &__submit {
@@ -891,7 +897,7 @@ $login-input-text: rgba(11, 52, 98, 1);
       background 0.2s;
 
     &:disabled {
-      opacity: 0.48;
+      opacity: 1;
       cursor: not-allowed;
       box-shadow: none;
     }
@@ -944,11 +950,46 @@ $login-input-text: rgba(11, 52, 98, 1);
     display: flex;
     flex-direction: column;
     gap: 10px;
-    margin-top: 10px;
+    margin-top: auto;
+    padding-top: 10px;
 
     @include mobile-only {
-      gap: 8px;
-      margin-top: 10px;
+      gap: 12px;
+      margin-top: auto;
+      padding-top: 10px;
+    }
+  }
+
+  &__service {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 30px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #fff;
+    font: inherit;
+    font-size: 18px;
+    cursor: pointer;
+
+    img {
+      display: block;
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+    }
+
+    &:focus-visible {
+      outline: 2px solid rgba(255, 255, 255, 0.8);
+      outline-offset: 4px;
+      border-radius: 4px;
+    }
+
+    @include mobile-only {
+      font-size: 18px;
+      min-height: 32px;
     }
   }
 }
