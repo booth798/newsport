@@ -458,7 +458,7 @@ watch(isLoggedIn, (loggedIn) => {
               <button type="button" class="header-round-btn" :aria-label="t('在线客服')" @click="appStore.openCustomerServiceConfirm">
                 <img class="header-round-btn__img" :src="serviceIconUrl" alt="" />
               </button>
-              <button type="button" class="header-round-btn" :aria-label="t('菜单')">
+              <button type="button" class="header-round-btn" :aria-label="t('菜单')" @click="mobileDrawerOpen = true">
                 <img class="header-round-btn__img" :src="moreIconUrl" alt="" />
               </button>
             </div>
@@ -495,7 +495,7 @@ watch(isLoggedIn, (loggedIn) => {
           <button type="button" class="header-round-btn" :aria-label="t('在线客服')" @click="appStore.openCustomerServiceConfirm">
             <img class="header-round-btn__img" :src="serviceIconUrl" alt="" />
           </button>
-          <button type="button" class="header-round-btn" :aria-label="t('菜单')">
+          <button type="button" class="header-round-btn" :aria-label="t('菜单')" @click="mobileDrawerOpen = true">
             <img class="header-round-btn__img" :src="moreIconUrl" alt="" />
           </button>
         </template>
@@ -509,7 +509,8 @@ watch(isLoggedIn, (loggedIn) => {
         </template>
       </div>
     </div>
-    <MobileNavDrawer v-if="isMobile" v-model="mobileDrawerOpen" :menus="navMenus" />
+    <!-- PC / H5 共用右侧菜单抽屉（Figma 1510:11242） -->
+    <MobileNavDrawer v-model="mobileDrawerOpen" :menus="navMenus" />
     <MessageCenterModal v-model="messageCenterOpen" />
   </div>
 </template>

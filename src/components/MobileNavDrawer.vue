@@ -1,28 +1,49 @@
 <script setup>
+/**
+ * PC / H5 右侧导航抽屉（对齐 Figma 1510:11242）
+ * - 顶部 Logo
+ * - 快捷入口 2×2：充值 / 提现 / 会员互转 / 共赢伙伴
+ * - 折叠分组：市场、会员服务、我的权益
+ * - 底部联络客服
+ */
 import { ref, watch, onBeforeUnmount } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 
 import logoUrl from '@/assets/images/common/logo_nav.svg';
 import chevronUp from '@/assets/images/common/icon_drawer_section_chevron_up.svg';
 import chevronDown from '@/assets/images/common/icon_drawer_section_chevron_down.svg';
 import bgScoreUrl from '@/assets/images/events/bg_score.svg?url';
-import iconTradeSuccess from '@/assets/images/common/icon_trade_success.svg';
+
+import iconDeposit from '@/assets/images/menu/icon_deposit.svg';
 import iconWithdraw from '@/assets/images/common/icon_withdraw.svg';
-import iconInvesting from '@/assets/images/common/icon_investing.svg';
+import iconVipTransfer from '@/assets/images/profile/vip_transfer_icon.svg';
+import iconPartner from '@/assets/images/menu/icon_rules_description.svg';
+
+import iconMarketList from '@/assets/images/menu/icon_market_list.svg';
+import iconMatchResults from '@/assets/images/menu/icon_match_results.svg';
+import iconLiveScores from '@/assets/images/menu/icon_live_scores.svg';
+
+import iconVipBenefits from '@/assets/images/profile/vip_benefits_icon.svg';
+import iconAbout from '@/assets/images/menu/icon_about_unibet.svg';
+
+import iconMy from '@/assets/images/menu/icon_my.svg';
+import iconPersonalProfile from '@/assets/images/menu/icon_personal_profile.svg';
+import iconSettings from '@/assets/images/menu/icon_settings.svg';
 import iconContact from '@/assets/images/menu/icon_my_contact_support.svg';
 
-import { openCustomerService } from '@/utils/customerService';
+import { useAppStore } from '@/store/modules/app';
+import { useToast } from '@/hooks/useToast';
 
 const props = defineProps({
   modelValue: {
     type: Boolean,
     default: false,
   },
-  /** 与 Header `navMenus` 同结构 */
+  /** 兼容旧调用；菜单以设计稿为准，内部自维护 */
   menus: {
     type: Object,
-    required: true,
+    default: () => ({}),
   },
 });
 
@@ -30,38 +51,66 @@ const emit = defineEmits(['update:modelValue']);
 
 const { t } = useI18n();
 const route = useRoute();
+const router = useRouter();
+const appStore = useAppStore();
+const toast = useToast();
 
-const sections = [
-  { menuKey: 'market', titleKey: '市场' },
-  { menuKey: 'trade', titleKey: '交易账务' },
-  { menuKey: 'myBenefit', titleKey: '我的权益' },
+/** 快捷入口：设计稿 2×2 */
+const quickLinks = [
+  { labelKey: '充值', to: '/finance/deposit', icon: iconDeposit },
+  { labelKey: '提现', to: '/finance/withdraw', icon: iconWithdraw },
+  { labelKey: '会员互转', to: '/finance/vip-transfer', icon: iconVipTransfer },
+  { labelKey: '共赢伙伴', action: 'soon', icon: iconPartner },
 ];
 
-const quickLinks = [
-  { labelKey: '充值', to: '/finance/deposit', icon: iconTradeSuccess },
-  { labelKey: '提领', to: '/finance/withdraw', icon: iconWithdraw },
-  { labelKey: '会员互转', to: '/profile', icon: iconInvesting },
+/** 折叠分组：市场 / 会员服务 / 我的权益 */
+const sections = [
+  {
+    menuKey: 'market',
+    titleKey: '市场',
+    items: [
+      { labelKey: '市场列表', to: '/market', icon: iconMarketList },
+      { labelKey: '赛事结果', action: 'soon', icon: iconMatchResults },
+      { labelKey: '即时比分', action: 'soon', icon: iconLiveScores },
+    ],
+  },
+  {
+    menuKey: 'member',
+    titleKey: '会员服务',
+    items: [
+      { labelKey: 'VIP权益', to: '/profile/vipBenefits', icon: iconVipBenefits },
+      { labelKey: '关于我们', to: '/profile/about', icon: iconAbout },
+    ],
+  },
+  {
+    menuKey: 'myBenefit',
+    titleKey: '我的权益',
+    items: [
+      { labelKey: '我的', to: '/profile', icon: iconMy },
+      { labelKey: '个人资料', to: '/profile/info', icon: iconPersonalProfile },
+      { labelKey: '设置', to: '/profile/security', icon: iconSettings },
+    ],
+  },
 ];
 
 const sectionOpen = ref({
   market: true,
-  trade: true,
   member: true,
   myBenefit: true,
 });
 
-const toggleSection = (menuKey) => {
+function toggleSection(menuKey) {
   sectionOpen.value[menuKey] = !sectionOpen.value[menuKey];
-};
+}
 
-const close = () => {
+function close() {
   emit('update:modelValue', false);
-};
+}
 
-const lockScroll = (locked) => {
+function lockScroll(locked) {
   if (typeof document === 'undefined') return;
   document.body.style.overflow = locked ? 'hidden' : '';
-};
+}
 
 watch(
   () => props.modelValue,
@@ -71,136 +120,137 @@ watch(
   { immediate: true },
 );
 
+// 路由变化时自动关闭抽屉，避免跳转后仍遮挡页面
+watch(
+  () => route.fullPath,
+  () => {
+    if (props.modelValue) close();
+  },
+);
+
 onBeforeUnmount(() => {
   lockScroll(false);
 });
 
-const isSubmenuLinkActive = (sub) => {
-  const to = sub.to;
-  if (typeof to === 'object' && to != null && 'path' in to) {
-    const hash = to.hash ?? '';
-    return route.path === to.path && (route.hash || '') === hash;
+function isLinkActive(item) {
+  const to = item.to;
+  if (!to) return false;
+  if (to === '/market') {
+    return route.name === 'market' || route.name === 'market-league' || route.name === 'market-detail';
   }
-  if (to === '/market') return route.name === 'market' || route.name === 'market-detail';
   if (to === '/finance/deposit') return route.name === 'finance-deposit';
-  if (to === '/finance/records') return route.name === 'finance-records';
+  if (to === '/finance/withdraw') return route.name === 'finance-withdraw';
+  if (to === '/finance/vip-transfer') return route.name === 'finance-vip-transfer';
+  if (to === '/profile/vipBenefits') return route.name === 'vip-benefits';
+  if (to === '/profile/about') return route.name === 'profile-about';
   if (to === '/profile') return route.name === 'profile' || route.name === 'profile-home';
   if (to === '/profile/info') return route.name === 'profile-info';
   if (to === '/profile/security') return route.name === 'profile-security';
-  if (to === '/') return false;
-  return false;
-};
+  return route.path === to;
+}
 
-const onContact = () => {
-  openCustomerService();
+function onItemClick(item) {
+  if (item.action === 'soon') {
+    toast.info(t('暂无数据'));
+    return;
+  }
+  if (item.to) {
+    router.push(item.to);
+    close();
+  }
+}
+
+function onContact() {
   close();
-};
+  appStore.openCustomerServiceConfirm();
+}
 </script>
 
 <template>
   <Teleport to="body">
     <Transition name="mobile-nav-drawer-transition">
-    <div v-if="modelValue" class="mobile-nav-drawer">
-      <div class="mobile-nav-drawer__backdrop" @click="close" />
-      <aside
-        class="mobile-nav-drawer__panel"
-        role="dialog"
-        aria-modal="true"
-        :aria-label="t('菜单')"
-        @click.stop
-      >
-        <div class="mobile-nav-drawer__arena">
-          <img class="mobile-nav-drawer__arena-bg" :src="bgScoreUrl" alt="" aria-hidden="true" />
-          <div class="mobile-nav-drawer__scroll">
-            <header class="mobile-nav-drawer__header">
-              <div class="mobile-nav-drawer__logo-wrap">
-                <img class="mobile-nav-drawer__logo" :src="logoUrl" alt="UNIBET" />
-               
-              </div>
-            </header>
+      <div v-if="modelValue" class="nav-drawer">
+        <div class="nav-drawer__backdrop" @click="close" />
+        <aside
+          class="nav-drawer__panel"
+          role="dialog"
+          aria-modal="true"
+          :aria-label="t('菜单')"
+          @click.stop
+        >
+          <div class="nav-drawer__arena">
+            <img class="nav-drawer__arena-bg" :src="bgScoreUrl" alt="" aria-hidden="true" />
+            <div class="nav-drawer__scroll">
+              <header class="nav-drawer__header">
+                <div class="nav-drawer__logo-wrap">
+                  <img class="nav-drawer__logo" :src="logoUrl" alt="UNIBET" />
+                </div>
+              </header>
 
-            <div class="mobile-nav-drawer__main">
-            <div class="mobile-nav-drawer__quick">
-              <RouterLink
-                v-for="item in quickLinks"
-                :key="item.labelKey"
-                :to="item.to"
-                custom
-                v-slot="{ href, navigate }"
-              >
-                <a
-                  :href="href"
-                  class="mobile-nav-drawer__quick-tile"
-                  @click="
-                    (e) => {
-                      navigate(e);
-                      close();
-                    }
-                  "
-                >
-                  <img class="mobile-nav-drawer__quick-icon" :src="item.icon" alt="" />
-                  <span class="mobile-nav-drawer__quick-label">{{ t(item.labelKey) }}</span>
-                </a>
-              </RouterLink>
-            </div>
-
-            <div
-              v-for="sec in sections"
-              :key="sec.menuKey"
-              class="mobile-nav-drawer__section"
-            >
-              <button
-                type="button"
-                class="mobile-nav-drawer__section-head"
-                :aria-expanded="sectionOpen[sec.menuKey]"
-                @click="toggleSection(sec.menuKey)"
-              >
-                <span class="mobile-nav-drawer__section-title">{{ t(sec.titleKey) }}</span>
-                <img
-                  class="mobile-nav-drawer__section-chevron"
-                  :src="sectionOpen[sec.menuKey] ? chevronUp : chevronDown"
-                  alt=""
-                />
-              </button>
-              <div v-show="sectionOpen[sec.menuKey]" class="mobile-nav-drawer__section-body">
-                <div class="mobile-nav-drawer__link-grid">
-                  <RouterLink
-                    v-for="sub in menus[sec.menuKey]"
-                    :key="sub.labelKey"
-                    :to="sub.to"
-                    custom
-                    v-slot="{ href, navigate }"
+              <div class="nav-drawer__main">
+                <!-- 快捷入口 2×2 -->
+                <div class="nav-drawer__quick">
+                  <button
+                    v-for="item in quickLinks"
+                    :key="item.labelKey"
+                    type="button"
+                    class="nav-drawer__tile"
+                    :class="{ 'is-active': isLinkActive(item) }"
+                    @click="onItemClick(item)"
                   >
-                    <a
-                      :href="href"
-                      class="mobile-nav-drawer__link-tile"
-                      :class="{ 'is-active': isSubmenuLinkActive(sub) }"
-                      @click="
-                        (e) => {
-                          navigate(e);
-                          close();
-                        }
-                      "
-                    >
-                      <img class="mobile-nav-drawer__link-icon" :src="sub.icon" alt="" />
-                      <span class="mobile-nav-drawer__link-label">{{ t(sub.labelKey) }}</span>
-                    </a>
-                  </RouterLink>
+                    <img class="nav-drawer__tile-icon" :src="item.icon" alt="" />
+                    <span class="nav-drawer__tile-label">{{ t(item.labelKey) }}</span>
+                  </button>
+                </div>
+
+                <!-- 折叠分组 -->
+                <div
+                  v-for="sec in sections"
+                  :key="sec.menuKey"
+                  class="nav-drawer__section"
+                >
+                  <button
+                    type="button"
+                    class="nav-drawer__section-head"
+                    :aria-expanded="sectionOpen[sec.menuKey]"
+                    @click="toggleSection(sec.menuKey)"
+                  >
+                    <span class="nav-drawer__section-title">{{ t(sec.titleKey) }}</span>
+                    <img
+                      class="nav-drawer__section-chevron"
+                      :src="sectionOpen[sec.menuKey] ? chevronUp : chevronDown"
+                      alt=""
+                    />
+                  </button>
+                  <div v-show="sectionOpen[sec.menuKey]" class="nav-drawer__section-body">
+                    <div class="nav-drawer__link-grid">
+                      <button
+                        v-for="sub in sec.items"
+                        :key="sub.labelKey"
+                        type="button"
+                        class="nav-drawer__tile"
+                        :class="{ 'is-active': isLinkActive(sub) }"
+                        @click="onItemClick(sub)"
+                      >
+                        <img class="nav-drawer__tile-icon" :src="sub.icon" alt="" />
+                        <span class="nav-drawer__tile-label">{{ t(sub.labelKey) }}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 联络客服 -->
+                <div class="nav-drawer__footer">
+                  <button type="button" class="nav-drawer__tile nav-drawer__contact" @click="onContact">
+                    <img class="nav-drawer__tile-icon" :src="iconContact" alt="" />
+                    <span class="nav-drawer__tile-label">{{ t('联络客服') }}</span>
+                  </button>
                 </div>
               </div>
             </div>
-
-            <div class="mobile-nav-drawer__footer">
-              <button type="button" class="mobile-nav-drawer__contact" @click="onContact">
-                <img class="mobile-nav-drawer__contact-icon" :src="iconContact" alt="" />
-                <span>{{ t('联络客服') }}</span>
-              </button>
-            </div>
-            </div>
           </div>
-        </div>
-      </aside>
-    </div>
+        </aside>
+      </div>
     </Transition>
   </Teleport>
 </template>
@@ -208,6 +258,7 @@ const onContact = () => {
 <style lang="scss" scoped>
 @use '@/styles/tools.scss' as *;
 
+/* 设计稿尺寸：面板约 288，磁贴 120×40，间距 12/10 */
 $drawer-w: 288px;
 $drawer-pad-x: 18px;
 $tile-w: 120px;
@@ -221,12 +272,11 @@ $divider-gap: 16px;
   box-sizing: border-box;
   width: $tile-w;
   height: $tile-h;
-  /* 设计稿：白底 + 自上而下淡蓝叠层（上层须叠在 #fff 之上才可见） */
   background:
     linear-gradient(360deg, rgba(104, 136, 186, 0) 0%, rgba(104, 136, 186, 0.15) 100%),
     linear-gradient(0deg, #ffffff, #ffffff);
   border: 0.8px solid #ffffff;
-  box-shadow: 0px 2px 6px 0px #153a771a;
+  box-shadow: 0 2px 6px 0 rgba(21, 58, 119, 0.1);
   border-radius: $tile-radius;
 }
 
@@ -238,283 +288,206 @@ $divider-gap: 16px;
   justify-content: start;
 }
 
-.mobile-nav-drawer {
+.nav-drawer {
   position: fixed;
   inset: 0;
   z-index: 200;
   display: flex;
   justify-content: flex-end;
+}
 
-  &__backdrop {
-    position: absolute;
-    inset: 0;
-    background: rgba(17, 24, 39, 0.45);
-    transition: opacity 0.25s ease;
+.nav-drawer__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.45);
+}
+
+.nav-drawer__panel {
+  position: relative;
+  height: 100%;
+  width: min($drawer-w, 100%);
+  max-width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  border-radius: 16px 0 0 16px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: -6px 0 24px rgba(21, 58, 119, 0.12);
+}
+
+.nav-drawer__arena {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  background-color: #fff;
+}
+
+.nav-drawer__arena-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  pointer-events: none;
+  opacity: 0.88;
+}
+
+.nav-drawer__scroll {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 0 $drawer-pad-x;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0));
+}
+
+.nav-drawer__header {
+  padding: 20px 0 16px;
+  box-sizing: border-box;
+}
+
+.nav-drawer__logo-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-drawer__logo {
+  width: 100px;
+  height: auto;
+  max-height: 36px;
+  object-fit: contain;
+  display: block;
+}
+
+.nav-drawer__main {
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.nav-drawer__quick {
+  @include drawer-tile-grid;
+}
+
+.nav-drawer__tile {
+  @include drawer-tile-surface;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  padding: 0 8px;
+  margin: 0;
+  border: 0.8px solid #ffffff;
+  cursor: pointer;
+  font-family: $font-family-base;
+  color: #1f2227;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.15;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+
+  &.is-active {
+    border-color: rgba(28, 123, 255, 0.75);
+    color: var(--theme-primary);
   }
 
-  &__panel {
-    position: relative;
-    height: 100%;
-    width: min($drawer-w, 100%);
-    max-width: 100%;
-    box-sizing: border-box;
-    flex-shrink: 0;
-    border-radius: 16px 0 0 16px;
-    overflow: hidden;
-    background: #fff;
-    box-shadow: -6px 0 24px rgba(21, 58, 119, 0.12);
-    transition: transform 0.28s ease;
+  &:focus-visible {
+    outline: 2px solid var(--theme-primary);
+    outline-offset: 1px;
   }
+}
 
-  &__arena {
-    position: relative;
-    height: 100%;
-    overflow: hidden;
-    background-color: #ffffff;
-  }
+.nav-drawer__tile-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  flex-shrink: 0;
+  display: block;
+}
 
-  &__arena-bg {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center top;
-    pointer-events: none;
-    opacity: 0.88;
-  }
+.nav-drawer__tile-label {
+  flex: 1;
+  min-width: 0;
+  display: block;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
-  &__scroll {
-    position: relative;
-    z-index: 1;
-    height: 100%;
-    overflow-y: auto;
-    box-sizing: border-box;
-    padding: 0 $drawer-pad-x;
-    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0));
-  }
+.nav-drawer__section {
+  border-top: 1px solid #e8eaef;
+  margin-top: $divider-gap;
+  padding-top: $divider-gap;
+  box-sizing: border-box;
+}
 
-  &__header {
-    padding: 16px 0 12px;
-    box-sizing: border-box;
-  }
+.nav-drawer__section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0 0 10px;
+  margin: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-family: $font-family-base;
+}
 
-  &__logo-wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-  }
+.nav-drawer__section-title {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  color: #1c7bff;
+}
 
-  &__logo {
-    width: 100px;
-    height: auto;
-    max-height: 36px;
-    object-fit: contain;
-    display: block;
-  }
+.nav-drawer__section-chevron {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: block;
+  object-fit: contain;
+}
 
-  &__logo-dots {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-  }
+.nav-drawer__link-grid {
+  @include drawer-tile-grid;
+}
 
-  &__logo-dots-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-  }
-
-  &__logo-dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: #22c55e;
-    flex-shrink: 0;
-  }
-
-  &__main {
-    padding: 0;
-    box-sizing: border-box;
-  }
-
-  &__quick {
-    @include drawer-tile-grid;
-    margin-bottom: 0;
-  }
-
-  &__quick-tile {
-    @include drawer-tile-surface;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 6px;
-    padding: 0 8px;
-    text-decoration: none;
-    color: #1f2227;
-    font-size: 12px;
-    font-weight: 500;
-    line-height: 1.15;
-    text-align: left;
-  }
-
-  &__quick-icon {
-    width: 20px;
-    height: 20px;
-    object-fit: contain;
-    flex-shrink: 0;
-    display: block;
-  }
-
-  &__quick-label {
-    flex: 1;
-    min-width: 0;
-    display: block;
-    line-height: 1.2;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__section {
-    border-top: 1px solid #e8eaef;
-    margin-top: $divider-gap;
-    padding-top: $divider-gap;
-    box-sizing: border-box;
-  }
-
-  &__section-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    padding: 0 0 8px;
-    margin: 0;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    text-align: left;
-    font-family: $font-family-base;
-  }
-
-  &__section-title {
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 100%;
-    letter-spacing: 0;
-    color: #1c7bff;
-  }
-
-  &__section-chevron {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-    display: block;
-    object-fit: contain;
-  }
-
-  &__section-body {
-    padding-bottom: 0;
-  }
-
-  &__link-grid {
-    @include drawer-tile-grid;
-  }
-
-  &__link-tile {
-    @include drawer-tile-surface;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 6px;
-    padding: 0 8px;
-    text-decoration: none;
-    color: #1f2227;
-    font-size: 12px;
-    font-weight: 500;
-    line-height: 1.15;
-
-    &.is-active {
-      border: 1px solid rgba(28, 123, 255, 0.75);
-      color: var(--theme-primary);
-      background:
-        linear-gradient(360deg, rgba(104, 136, 186, 0) 0%, rgba(104, 136, 186, 0.15) 100%),
-        linear-gradient(0deg, #ffffff, #ffffff);
-      box-shadow: 0px 2px 6px 0px #153a771a;
-    }
-  }
-
-  &__link-icon {
-    width: 20px;
-    height: 20px;
-    object-fit: contain;
-    flex-shrink: 0;
-    display: block;
-  }
-
-  &__link-label {
-    flex: 1;
-    min-width: 0;
-    text-align: left;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__footer {
-    border-top: 1px solid #e8eaef;
-    margin-top: $divider-gap;
-    padding-top: $divider-gap;
-    padding-bottom: 4px;
-    box-sizing: border-box;
-    @include drawer-tile-grid;
-  }
-
-  &__contact {
-    @include drawer-tile-surface;
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 6px;
-    padding: 0 8px;
-    margin: 0;
-    cursor: pointer;
-    font-family: $font-family-base;
-    font-size: 12px;
-    font-weight: 500;
-    color: #1f2227;
-  }
-
-  &__contact-icon {
-    width: 20px;
-    height: 20px;
-    object-fit: contain;
-    display: block;
-    flex-shrink: 0;
-  }
+.nav-drawer__footer {
+  border-top: 1px solid #e8eaef;
+  margin-top: $divider-gap;
+  padding-top: $divider-gap;
+  padding-bottom: 4px;
+  box-sizing: border-box;
+  @include drawer-tile-grid;
 }
 
 .mobile-nav-drawer-transition-enter-active,
 .mobile-nav-drawer-transition-leave-active {
-  .mobile-nav-drawer__backdrop {
+  .nav-drawer__backdrop {
     transition: opacity 0.25s ease;
   }
-  .mobile-nav-drawer__panel {
+
+  .nav-drawer__panel {
     transition: transform 0.28s ease;
   }
 }
 
 .mobile-nav-drawer-transition-enter-from,
 .mobile-nav-drawer-transition-leave-to {
-  .mobile-nav-drawer__backdrop {
+  .nav-drawer__backdrop {
     opacity: 0;
   }
-  .mobile-nav-drawer__panel {
+
+  .nav-drawer__panel {
     transform: translateX(100%);
   }
 }
