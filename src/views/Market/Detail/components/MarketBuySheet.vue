@@ -8,7 +8,6 @@ import { submitBuyOrder, fetchPendingQuota } from '@/api/order';
 import { fetchBalance } from '@/api/finance';
 import { fetchPoolYields } from '@/api/match';
 
-import avatarDefaultUrl from '@/assets/images/common/avatar_default.png?url';
 import iconChampionUrl from '@/assets/images/events/icon_champion.svg?url';
 import iconEventsUrl from '@/assets/images/events/icon_events.svg?url';
 import iconFranceUrl from '@/assets/images/events/icon_france.svg?url';
@@ -17,6 +16,9 @@ import iconItalyUrl from '@/assets/images/events/icon_italy.svg?url';
 import iconSpainUrl from '@/assets/images/events/icon_spain.svg?url';
 import iconUkUrl from '@/assets/images/events/icon_uk.svg?url';
 import iconTradeSuccessUrl from '@/assets/images/common/icon_trade_success.svg?url';
+import iconBuySettingsUrl from '@/assets/images/common/icon_buy_settings.svg?url';
+import iconInvestingUrl from '@/assets/images/common/icon_investing.svg?url';
+import iconBuySettingsGrayUrl from '@/assets/images/common/icon_buy_settings_gray.svg?url';
 import { useAppStore } from '@/store/modules/app';
 import { useUserStore } from '@/store/modules/user';
 import { resolveTeamLogoUrl } from '@/constants/teamLogos';
@@ -60,6 +62,26 @@ const walletBalance = ref(null);
 const walletLoading = ref(false);
 const pendingQuota = ref(null);
 const refreshedYield = ref(null);
+
+const QUICK_AMOUNTS_KEY = 'mysport:buy_quick_amounts';
+const DEFAULT_QUICK_AMOUNTS = [100, 500, 1000];
+
+function loadQuickAmounts() {
+  try {
+    const raw = localStorage.getItem(QUICK_AMOUNTS_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr) && arr.length === DEFAULT_QUICK_AMOUNTS.length) {
+        return arr.map((n) => Number(n) || 0);
+      }
+    }
+  } catch { /* ignore */ }
+  return [...DEFAULT_QUICK_AMOUNTS];
+}
+
+const quickAmounts = ref(loadQuickAmounts());
+const editingAmounts = ref(false);
+const editAmounts = ref([]);
 
 const LEAGUE_ICON_BY_NAME = {
   欧冠: iconChampionUrl,
@@ -155,6 +177,7 @@ watch(
       phase.value = 'form';
       buyType.value = 'standard';
       buyAmount.value = '';
+      editingAmounts.value = false;
       const yield_ = Number(profitPercent.value);
       profitMin.value = yield_ ? yield_.toFixed(2) : '5.34';
       profitMax.value = yield_ ? yield_.toFixed(2) : '7.34';
@@ -179,6 +202,26 @@ function setQuickAmount(val) {
     return;
   }
   buyAmount.value = String(val);
+}
+
+function toggleEditAmounts() {
+  if (editingAmounts.value) {
+    finishEditAmounts();
+    return;
+  }
+  editAmounts.value = quickAmounts.value.map((n) => String(n));
+  editingAmounts.value = true;
+}
+
+function finishEditAmounts() {
+  quickAmounts.value = editAmounts.value.map((v, i) => {
+    const n = Math.floor(Number(String(v).trim()));
+    return Number.isFinite(n) && n > 0 ? n : DEFAULT_QUICK_AMOUNTS[i];
+  });
+  try {
+    localStorage.setItem(QUICK_AMOUNTS_KEY, JSON.stringify(quickAmounts.value));
+  } catch { /* ignore */ }
+  editingAmounts.value = false;
 }
 
 function closeSheet() {
@@ -298,8 +341,8 @@ function onBackdropKeydown(e) {
             class="buy-sheet__success-icon"
             :src="iconTradeSuccessUrl"
             alt=""
-            width="64"
-            height="56"
+            width="44"
+            height="44"
             decoding="async"
             draggable="false"
           />
@@ -337,20 +380,20 @@ function onBackdropKeydown(e) {
           </div>
           <div class="buy-sheet__success-field">
             <span class="buy-sheet__success-label">{{ t('选项') }}</span>
-            <span class="buy-sheet__success-val">{{ t('选项') }} {{ scoreLabel }}</span>
+            <span class="buy-sheet__success-val">{{ t('选项') }} {{ scoreLabel }} ({{ t(marketScopeKey) }})</span>
           </div>
 
           <div class="buy-sheet__success-summary">
             <div class="buy-sheet__success-summary-row">
-              <span>{{ t('金额') }}</span>
-              <span class="buy-sheet__success-summary-val">¥ {{ successAmount }}</span>
+              <span class="buy-sheet__success-summary-label">{{ t('金额') }}</span>
+              <span class="buy-sheet__success-summary-val buy-sheet__success-summary-val--profit">¥ {{ successAmount }}</span>
             </div>
             <div class="buy-sheet__success-summary-row">
-              <span>{{ t('收益率') }}</span>
+              <span class="buy-sheet__success-summary-label">{{ t('收益率') }}%</span>
               <span class="buy-sheet__success-summary-val buy-sheet__success-summary-val--rate">x {{ successYield }}%</span>
             </div>
             <div class="buy-sheet__success-summary-row">
-              <span>{{ t('预估收益') }}</span>
+              <span class="buy-sheet__success-summary-label">{{ t('预估收益') }}</span>
               <span class="buy-sheet__success-summary-val buy-sheet__success-summary-val--profit">+ ¥ {{ successProfit }}</span>
             </div>
           </div>
@@ -382,12 +425,12 @@ function onBackdropKeydown(e) {
         <div class="buy-sheet__frame">
         <div class="buy-sheet__body">
         <div class="buy-sheet__invest">
-          <span class="buy-sheet__invest-icon" aria-hidden="true">◎</span>
-          <span class="buy-sheet__invest-text">
-            {{ t('您正在投资') }}:
-            <strong class="buy-sheet__invest-option">{{ formatScoreOption(row?.score ?? '0-0') }}</strong>
-            <span class="buy-sheet__invest-tag">{{ t(marketScopeKey) }}</span>
+          <span class="buy-sheet__invest-icon" aria-hidden="true">
+            <img :src="iconInvestingUrl" width="30" height="30" alt="" />
           </span>
+          <span class="buy-sheet__invest-text">{{ t('您正在投资') }}:</span>
+          <strong class="buy-sheet__invest-option">{{ t('选项') }} {{ formatScoreOption(row?.score ?? '0-0') }}</strong>
+          <span class="buy-sheet__invest-tag">{{ t(marketScopeKey) }}</span>
         </div>
 
         <div class="buy-sheet__match card-default">
@@ -402,8 +445,8 @@ function onBackdropKeydown(e) {
                 <div class="buy-sheet__match-team">
                   <img v-if="homeLogoUrl" class="buy-sheet__match-logo" :src="homeLogoUrl" :alt="match.homeTeam" width="40" height="40" />
                   <span class="buy-sheet__match-name">
-                    <span class="buy-sheet__home-tag">{{ t('主') }}</span>
                     {{ match.homeTeam }}
+                    <span class="buy-sheet__home-tag">{{ t('主') }}</span>
                   </span>
                 </div>
                 <span class="buy-sheet__match-vs">VS</span>
@@ -419,41 +462,73 @@ function onBackdropKeydown(e) {
         <div class="buy-sheet__panel card-default">
           <div class="buy-sheet__panel-head">
             <span class="buy-sheet__panel-title">{{ t('交易金额') }}</span>
+            <span class="buy-sheet__panel-yield">{{ t('收益') }} %</span>
           </div>
           <div class="buy-sheet__formula">
             <input
               v-model="buyAmount"
               type="text"
               inputmode="decimal"
-              class="buy-sheet__amount-input"
+              class="buy-sheet__amount-input buy-sheet__amount-input--full"
               :placeholder="t('输入金额')"
             />
-            <span class="buy-sheet__formula-suffix">x {{ profitPercent }}% = {{ estimatedProfit }}</span>
+            <span class="buy-sheet__formula-suffix">x {{ profitPercent }}% =</span>
+            <span class="buy-sheet__formula-result">{{ estimatedProfit }}</span>
           </div>
           <p v-if="feeRateDisplay" class="buy-sheet__fee">{{ t('手续费') }}{{ feeRateDisplay }}</p>
           <div class="buy-sheet__chips">
-            <button type="button" class="buy-sheet__chip buy-sheet__chip--icon" :aria-label="t('设置')">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path d="M8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" stroke="currentColor" stroke-width="1.2" />
-                <path d="M12.5 8.8 12 10l1 .6 1.2-.7.8 1.4-1 .6.2 1.2h-1.6l-.2 1.2-1.4-.8-.7 1.2-1-.6-.6 1-.8-1.4 1-.6-.2-1.2h1.6l.2-1.2 1.4.8.7-1.2 1 .6.6-1 .8 1.4Z" stroke="currentColor" stroke-width="0.9" />
-              </svg>
+            <button
+              type="button"
+              class="buy-sheet__chip buy-sheet__chip--icon"
+              :class="{ 'buy-sheet__chip--icon-editing': editingAmounts }"
+              :aria-label="t('设置')"
+              @click="toggleEditAmounts"
+            >
+              <img v-if="!editingAmounts" :src="iconBuySettingsUrl" width="36" height="36" alt="" aria-hidden="true" />
+              <img v-else :src="iconBuySettingsGrayUrl" width="22" height="22" alt="" aria-hidden="true" />
             </button>
-            <button type="button" class="buy-sheet__chip" @click="setQuickAmount(100)">100</button>
-            <button type="button" class="buy-sheet__chip" @click="setQuickAmount(500)">500</button>
-            <button type="button" class="buy-sheet__chip" @click="setQuickAmount(1000)">1000</button>
-            <button type="button" class="buy-sheet__chip" @click="setQuickAmount('all')">{{ t('全部') }}</button>
+            <template v-if="editingAmounts">
+              <input
+                v-for="(_, i) in editAmounts"
+                :key="i"
+                v-model="editAmounts[i]"
+                type="text"
+                inputmode="numeric"
+                class="buy-sheet__chip buy-sheet__chip--edit"
+                @keyup.enter="finishEditAmounts"
+              />
+              <button type="button" class="buy-sheet__chip buy-sheet__chip--done" @click="finishEditAmounts">
+                {{ t('完成') }}
+              </button>
+            </template>
+            <template v-else>
+              <button
+                v-for="(amt, i) in quickAmounts"
+                :key="i"
+                type="button"
+                class="buy-sheet__chip"
+                @click="setQuickAmount(amt)"
+              >
+                {{ amt }}
+              </button>
+              <button type="button" class="buy-sheet__chip" @click="setQuickAmount('all')">{{ t('全部') }}</button>
+            </template>
+          </div>
+          <div class="buy-sheet__wallet">
+            <span class="buy-sheet__wallet-account">
+              <svg class="buy-sheet__wallet-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <circle cx="10" cy="7" r="3.2" fill="#8AA0BC" />
+                <path d="M4 16.2c0-3 2.7-5.2 6-5.2s6 2.2 6 5.2" fill="#8AA0BC" />
+              </svg>
+              <span class="buy-sheet__wallet-id">{{ loggedInUserId || '' }}</span>
+            </span>
+            <span class="buy-sheet__wallet-pill">
+              <span class="buy-sheet__wallet-name">{{ t('主钱包') }}</span>
+              <strong class="buy-sheet__wallet-balance" v-if="walletLoading">--</strong>
+              <strong class="buy-sheet__wallet-balance" v-else>{{ walletBalance != null ? Number(walletBalance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--' }}</strong>
+            </span>
           </div>
         </div>
-        </div>
-
-        <div class="buy-sheet__wallet card-primary norem">
-          <img class="buy-sheet__wallet-avatar" :src="avatarDefaultUrl" alt="" width="32" height="32" />
-          <span class="buy-sheet__wallet-id">{{ loggedInUserId || '' }}</span>
-          <span class="buy-sheet__wallet-balance">
-            {{ t('当前余额') }}
-            <strong v-if="walletLoading">{{ t('正在获取余额请稍候') }}</strong>
-            <strong v-else>¥ {{ walletBalance != null ? Number(walletBalance).toFixed(2) : '--' }}</strong>
-          </span>
         </div>
 
         <div v-if="!isMobile" class="buy-sheet__actions">
@@ -674,36 +749,54 @@ function onBackdropKeydown(e) {
   &__invest {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 10px;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.72);
-    border: 1px solid rgba(255, 255, 255, 0.9);
-    font-size: 12px;
-    color: rgba(11, 52, 98, 0.75);
+    gap: 6px;
+    min-height: 44px;
+    padding: 7px 10px;
+    border-radius: 30px;
+    background: #eaf1f9;
+    border: 0.8px solid #fff;
+    box-shadow: 0 4px 10px rgba(21, 58, 119, 0.18);
+    font-size: 14px;
+    color: #0b3462;
     flex-shrink: 0;
   }
 
   &__invest-icon {
-    color: #1c7bff;
-    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+
+    img {
+      display: block;
+      width: 30px;
+      height: 30px;
+    }
+  }
+
+  &__invest-text {
     flex-shrink: 0;
   }
 
   &__invest-option {
     color: #ff2d2d;
-    font-weight: 600;
+    font-weight: 500;
+    white-space: nowrap;
   }
 
   &__invest-tag {
     display: inline-flex;
-    margin-left: 4px;
-    padding: 2px 6px;
-    border-radius: 4px;
-    background: rgba(255, 45, 45, 0.12);
+    align-items: center;
+    margin-left: auto;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: rgba(255, 45, 45, 0.15);
     color: #ff2d2d;
-    font-size: 11px;
-    font-weight: 500;
+    font-size: 12px;
+    font-weight: 400;
+    flex-shrink: 0;
   }
 
   &__match {
@@ -802,7 +895,7 @@ function onBackdropKeydown(e) {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-right: 2px;
+    margin-left: 2px;
     min-width: 14px;
     height: 14px;
     padding: 0 2px;
@@ -832,8 +925,14 @@ function onBackdropKeydown(e) {
 
   &__panel-title {
     font-size: 14px;
-    font-weight: 600;
-    color: #0b3462;
+    font-weight: 400;
+    color: rgba(11, 52, 98, 0.5);
+  }
+
+  &__panel-yield {
+    font-size: 14px;
+    font-weight: 500;
+    color: #1c7bff;
   }
 
   &__profit-link {
@@ -874,8 +973,17 @@ function onBackdropKeydown(e) {
   &__formula-suffix {
     flex-shrink: 0;
     font-family: $font-family-num;
-    font-size: 13px;
-    color: rgba(11, 52, 98, 0.55);
+    font-size: 12px;
+    color: rgba(11, 52, 98, 0.5);
+    white-space: nowrap;
+  }
+
+  &__formula-result {
+    flex-shrink: 0;
+    font-family: $font-family-num;
+    font-size: 14px;
+    font-weight: 500;
+    color: #1c7bff;
     white-space: nowrap;
   }
 
@@ -885,11 +993,11 @@ function onBackdropKeydown(e) {
     max-width: 100%;
     border: none;
     background: transparent;
-    font-family: $font-family-num;
-    font-size: 16px;
-    font-weight: 600;
+    font-family: $font-family-base;
+    font-size: 14px;
+    font-weight: 400;
     color: #0b3462;
-    text-align: right;
+    text-align: left;
     outline: none;
     box-sizing: border-box;
 
@@ -898,15 +1006,17 @@ function onBackdropKeydown(e) {
     }
 
     &::placeholder {
-      color: rgba(11, 52, 98, 0.35);
+      color: rgba(11, 52, 98, 0.5);
       font-weight: 400;
     }
   }
 
   &__fee {
-    margin: 0 0 8px;
-    font-size: 11px;
+    margin: 0 0 10px;
+    font-size: 12px;
+    font-weight: 300;
     color: #ff2d2d;
+    text-align: right;
   }
 
   &__fee-inline {
@@ -917,30 +1027,83 @@ function onBackdropKeydown(e) {
 
   &__chips {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
   }
 
   &__chip {
-    min-width: 44px;
-    height: 32px;
-    padding: 0 10px;
-    border-radius: 8px;
-    border: 1px solid rgba(214, 224, 235, 0.9);
-    background: rgba(240, 247, 255, 0.9);
-    color: #0b3462;
-    font-family: $font-family-num;
-    font-size: 13px;
+    flex: 1;
+    min-width: 0;
+    height: 36px;
+    padding: 0 6px;
+    border-radius: 12px;
+    border: none;
+    background: #eaf1f9;
+    color: rgba(11, 52, 98, 0.5);
+    font-family: $font-family-base;
+    font-size: 14px;
     font-weight: 500;
     cursor: pointer;
+
+    &:last-child {
+      color: #0b3462;
+    }
 
     &--icon {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-width: 32px;
+      flex: 0 0 36px;
+      width: 36px;
+      height: 36px;
       padding: 0;
-      color: #1c7bff;
+      border-radius: 50%;
+      background: transparent;
+      border: none;
+
+      img {
+        display: block;
+        width: 36px;
+        height: 36px;
+      }
+    }
+
+    &--icon-editing {
+      border-radius: 12px;
+      background: #eaf1f9;
+
+      img {
+        width: 22px;
+        height: 22px;
+      }
+    }
+
+    &--edit {
+      flex: 1;
+      min-width: 0;
+      height: 36px;
+      padding: 0 6px;
+      border-radius: 12px;
+      border: 0.8px solid #d6e0eb;
+      background: #fff;
+      color: #0b3462;
+      font-family: $font-family-base;
+      font-size: 14px;
+      font-weight: 500;
+      text-align: center;
+      outline: none;
+      box-sizing: border-box;
+
+      &:focus {
+        border-color: #1c7bff;
+      }
+    }
+
+    &--done,
+    &--done:last-child {
+      background: #1c7bff;
+      color: #fff;
     }
   }
 
@@ -1025,41 +1188,57 @@ function onBackdropKeydown(e) {
   &__wallet {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 8px;
-    padding: 8px 10px;
-    border-radius: 999px;
+    height: 36px;
+    padding: 4px 8px;
+    border-radius: 22px;
+    background: #eaf1f9;
     flex-shrink: 0;
     width: 100%;
     box-sizing: border-box;
   }
 
-  &__wallet-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    object-fit: cover;
+  &__wallet-account {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  &__wallet-icon {
     flex-shrink: 0;
   }
 
   &__wallet-id {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
-    color: rgba(11, 52, 98, 0.58);
-    flex-shrink: 0;
+    color: rgba(11, 52, 98, 0.5);
+    white-space: nowrap;
+  }
+
+  &__wallet-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 22px;
+    padding: 2px 10px;
+    border-radius: 38px;
+    background: #fff;
+  }
+
+  &__wallet-name {
+    font-size: 14px;
+    color: rgba(11, 52, 98, 0.5);
+    white-space: nowrap;
   }
 
   &__wallet-balance {
-    margin-left: auto;
-    font-size: 12px;
-    color: rgba(11, 52, 98, 0.55);
-
-    strong {
-      margin-left: 4px;
-      font-family: $font-family-num;
-      font-size: 13px;
-      font-weight: 700;
-      color: #1c7bff;
-    }
+    font-family: $font-family-num;
+    font-size: 14px;
+    font-weight: 500;
+    color: #1c7bff;
+    white-space: nowrap;
   }
 
   &__actions {
@@ -1094,18 +1273,25 @@ function onBackdropKeydown(e) {
     }
   }
 
-  /* H5：红边红字胶囊按钮（设计稿，在弹框外部） */
+  /* H5：白底红字取消 + 蓝底白字确定（设计稿，在弹框外部） */
   @include mobile-only {
+    &__actions--outer.norem {
+      gap: 11px;
+    }
+
     &__actions--outer.norem &__cancel-btn,
     &__actions--outer.norem &__confirm-btn {
-      padding: 10px 16px;
-      border-radius: 999px;
-      font-size: 15px;
+      height: 44px;
+      min-height: 44px;
+      padding: 0 16px;
+      border-radius: 32px;
+      font-size: 18px;
+      font-weight: 400;
       line-height: 1.2;
     }
 
     &__actions--outer.norem &__cancel-btn {
-      border: 1.5px solid var(--auxiliary-2);
+      border: none;
       color: var(--auxiliary-2);
       background: #fff;
       box-shadow: none;
@@ -1122,82 +1308,87 @@ function onBackdropKeydown(e) {
 
   /* 交易成功 */
   &__success {
-    padding: 0;
-    overflow: hidden;
-    border: none;
-    background: transparent;
-    box-shadow: none;
-    gap: 0;
-  }
-
-  &__success-head {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 20px 16px 24px;
-    background: linear-gradient(180deg, #1c7bff 0%, #3d94ff 100%);
-    border-radius: 16px 16px 0 0;
     position: relative;
+    padding: 12px;
     overflow: hidden;
+    border: 0.8px solid rgba(214, 224, 235, 1);
+    border-radius: 24px;
+    background: radial-gradient(100% 100% at 50% 100%, #68b3fd 0%, #0d6cfb 100%);
+    box-shadow: 0 12px 40px rgba(21, 58, 118, 0.28);
+    gap: 0;
 
     &::before {
       content: 'UNIBET';
       position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 48px;
+      top: 6px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 52px;
       font-weight: 800;
-      color: rgba(255, 255, 255, 0.08);
+      letter-spacing: 2px;
+      color: rgba(255, 255, 255, 0.1);
       pointer-events: none;
+      z-index: 0;
     }
+  }
+
+  &__success-head {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 16px 16px 18px;
   }
 
   &__success-icon {
     display: block;
-    width: 64px;
-    height: 56px;
+    width: 44px;
+    height: 44px;
     flex-shrink: 0;
-    z-index: 1;
     object-fit: contain;
   }
 
   &__success-title {
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 700;
     color: #fff;
-    z-index: 1;
   }
 
   &__success-body {
+    position: relative;
+    z-index: 1;
     margin: 0;
-    padding: 16px 14px 14px;
-    border-radius: 0 0 16px 16px;
-    border: 3px solid #1c7bff;
-    border-top: none;
+    padding: 4px 14px 14px;
+    border-radius: 16px;
+    border: none;
+    background: #fff;
     display: flex;
     flex-direction: column;
+
+    @include mobile-only {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+    }
   }
 
   &__success-field {
-    margin-bottom: 12px;
-
-    &--teams {
-      margin-bottom: 14px;
-    }
+    padding: 12px 0 10px;
+    border-bottom: 0.8px solid #eaf1f9;
   }
 
   &__success-label {
     display: block;
-    font-size: 11px;
-    color: rgba(11, 52, 98, 0.45);
-    margin-bottom: 4px;
+    font-size: 12px;
+    color: rgba(11, 52, 98, 0.5);
+    margin-bottom: 6px;
   }
 
   &__success-val {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 600;
     color: #0b3462;
     word-break: break-all;
@@ -1207,16 +1398,17 @@ function onBackdropKeydown(e) {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    margin-top: 2px;
   }
 
   &__success-team {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 8px;
+    padding: 6px 8px;
     border-radius: 8px;
-    background: rgba(228, 240, 254, 0.6);
-    font-size: 13px;
+    background: #eaf1f9;
+    font-size: 14px;
     font-weight: 500;
     color: #0b3462;
 
@@ -1249,23 +1441,29 @@ function onBackdropKeydown(e) {
   }
 
   &__success-summary {
+    margin-top: 12px;
     padding: 12px;
-    border-radius: 10px;
-    background: rgba(228, 240, 254, 0.55);
+    border-radius: 12px;
+    background: #eaf1f9;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
   }
 
   &__success-summary-row {
     display: flex;
-    justify-content: space-between;
-    font-size: 13px;
-    color: rgba(11, 52, 98, 0.65);
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__success-summary-label {
+    font-size: 12px;
+    color: rgba(11, 52, 98, 0.5);
   }
 
   &__success-summary-val {
     font-family: $font-family-num;
+    font-size: 15px;
     font-weight: 600;
     color: #0b3462;
 
