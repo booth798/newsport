@@ -500,6 +500,7 @@ export default {
   卡号: 'Card Number',
   开户银行: 'Bank',
   进行中: 'In Progress',
+  已结束: 'Finished',
   已成交: 'Filled',
   已结算: 'Settled',
   处理中: 'Processing',

@@ -52,6 +52,20 @@ const routes = [
     meta: { titleKey: '买入明细' },
   },
   {
+    path: '/live-scores',
+    name: 'live-scores',
+    // 即时比分页面自带返回栏与北京时间，使用 bare 隐藏全局头部。
+    component: () => import('@/views/LiveScores/index.vue'),
+    meta: { titleKey: '即时比分', bare: true, requiresAuth: true, guestPreview: true },
+  },
+  {
+    path: '/match-results',
+    name: 'match-results',
+    // 赛事结果页面自带返回栏与北京时间，使用 bare 隐藏全局头部。
+    component: () => import('@/views/MatchResults/index.vue'),
+    meta: { titleKey: '赛事结果', bare: true, requiresAuth: true, guestPreview: true },
+  },
+  {
     path: '/finance',
     component: () => import('@/views/Finance/index.vue'),
     meta: { titleKey: '交易账务', requiresAuth: true },

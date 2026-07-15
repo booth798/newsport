@@ -70,8 +70,8 @@ const sections = [
     titleKey: '市场',
     items: [
       { labelKey: '市场列表', to: '/market', icon: iconMarketList },
-      { labelKey: '赛事结果', action: 'soon', icon: iconMatchResults },
-      { labelKey: '即时比分', action: 'soon', icon: iconLiveScores },
+      { labelKey: '赛事结果', to: '/match-results', icon: iconMatchResults },
+      { labelKey: '即时比分', to: '/live-scores', icon: iconLiveScores },
     ],
   },
   {
@@ -141,6 +141,8 @@ function isLinkActive(item) {
   if (to === '/finance/deposit') return route.name === 'finance-deposit';
   if (to === '/finance/withdraw') return route.name === 'finance-withdraw';
   if (to === '/finance/vip-transfer') return route.name === 'finance-vip-transfer';
+  if (to === '/live-scores') return route.name === 'live-scores';
+  if (to === '/match-results') return route.name === 'match-results';
   if (to === '/profile/vipBenefits') return route.name === 'vip-benefits';
   if (to === '/profile/about') return route.name === 'profile-about';
   if (to === '/profile') return route.name === 'profile' || route.name === 'profile-home';

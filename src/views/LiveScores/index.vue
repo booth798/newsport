@@ -1,0 +1,501 @@
+<script setup>
+/**
+ * 即时比分（PC 主视图，H5 兼容）
+ * - 顶部返回栏 + 北京时间
+ * - 左侧栏：Logo + 「即时比分」
+ * - 右侧：进行中赛事两列卡片（H5 单列）
+ * 数据源：/matches 列表，取进行中赛事展示实时比分。
+ */
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
+import { storeToRefs } from 'pinia';
+
+import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.svg?url';
+import AppSideNav from '@/components/AppSideNav.vue';
+import { fetchMatchList } from '@/api/match';
+import { resolveTeamLogoUrl } from '@/constants/teamLogos';
+import { useAppStore } from '@/store/modules/app';
+
+const { t } = useI18n();
+const router = useRouter();
+const appStore = useAppStore();
+const { isMobile } = storeToRefs(appStore);
+
+const sideNavItems = [{ key: 'live', label: t('即时比分') }];
+
+const matches = ref([]);
+const loading = ref(true);
+const error = ref(false);
+
+const beijingNow = ref('');
+let clockTimer = null;
+let refreshTimer = null;
+
+/** 进行中赛事的状态标识（兼容多种后端枚举） */
+const LIVE_STATUS = new Set(['LIVE', 'IN_PROGRESS', 'RUNNING', 'PLAYING', '1H', '2H', 'HT', 'INPLAY']);
+
+function isLiveStatus(status) {
+  return LIVE_STATUS.has(String(status || '').toUpperCase());
+}
+
+/** 依据开赛时间估算进行中分钟数（后端未直接下发分钟时兜底） */
+function liveMinute(match) {
+  const raw = match.minute ?? match.liveMinute ?? match.playedMinutes;
+  if (raw != null && `${raw}` !== '') return Number(raw);
+  if (!match.kickoffAt) return null;
+  const diffMin = Math.floor((Date.now() - new Date(match.kickoffAt).getTime()) / 60000);
+  if (diffMin < 0) return null;
+  return Math.min(diffMin, 120);
+}
+
+function statusBadge(match) {
+  if (isLiveStatus(match.status)) {
+    const min = liveMinute(match);
+    return min != null ? `${t('进行中')} ${min}'` : t('进行中');
+  }
+  return match.statusLabel || t('进行中');
+}
+
+function kickoffTime(iso) {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    return `${hh}:${mi}`;
+  } catch { return ''; }
+}
+
+const liveMatches = computed(() =>
+  matches.value.map((m) => ({
+    id: m.id,
+    league: m.league,
+    leagueIcon: m.leagueIcon,
+    homeTeam: m.homeTeam,
+    awayTeam: m.awayTeam,
+    homeLogo: resolveTeamLogoUrl(m.homeTeam, m.homeTeamLogo),
+    awayLogo: resolveTeamLogoUrl(m.awayTeam, m.awayTeamLogo),
+    homeScore: m.homeScore ?? 0,
+    awayScore: m.awayScore ?? 0,
+    badge: statusBadge(m),
+    time: kickoffTime(m.kickoffAt),
+  })),
+);
+
+function updateBeijingClock() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+  }).formatToParts(new Date());
+  const pick = (type) => parts.find((p) => p.type === type)?.value ?? '';
+  beijingNow.value = `${pick('year')}-${pick('month')}-${pick('day')} ${pick('hour')}:${pick('minute')}:${pick('second')}`;
+}
+
+async function loadMatches() {
+  try {
+    error.value = false;
+    if (!matches.value.length) loading.value = true;
+    const res = await fetchMatchList({ status: 'LIVE', pageSize: 50 });
+    let records = res.data?.records || [];
+    // 后端未按 status 过滤时，前端再兜底筛一次进行中赛事。
+    const live = records.filter((m) => isLiveStatus(m.status));
+    matches.value = live.length ? live : records;
+  } catch {
+    error.value = true;
+    matches.value = [];
+  } finally {
+    loading.value = false;
+  }
+}
+
+function goBack() {
+  if (window.history.length > 1) router.back();
+  else router.push('/');
+}
+
+onMounted(() => {
+  updateBeijingClock();
+  clockTimer = window.setInterval(updateBeijingClock, 1000);
+  loadMatches();
+  refreshTimer = window.setInterval(loadMatches, 30000);
+});
+
+onBeforeUnmount(() => {
+  if (clockTimer) window.clearInterval(clockTimer);
+  if (refreshTimer) window.clearInterval(refreshTimer);
+});
+</script>
+
+<template>
+  <div class="live-page">
+    <!-- 顶部返回栏 + 北京时间 -->
+    <header class="live-topbar">
+      <span v-if="!isMobile" class="live-topbar__clock">Beijing Time: {{ beijingNow }}</span>
+      <div class="live-topbar__bar">
+        <button type="button" class="live-topbar__back" :aria-label="t('返回')" @click="goBack">
+          <img :src="iconNavBackMarketUrl" width="48" height="48" alt="" />
+        </button>
+        <h1 v-if="isMobile" class="live-topbar__title">{{ t('即时比分') }}</h1>
+      </div>
+    </header>
+
+    <div class="live-layout">
+      <AppSideNav v-if="!isMobile" :items="sideNavItems" active-key="live" />
+
+      <main class="live-content">
+        <!-- 加载 -->
+        <div v-if="loading" class="live-state">
+          <div class="live-spinner" />
+          <span>{{ t('加载中') }}</span>
+        </div>
+
+        <!-- 错误 -->
+        <div v-else-if="error" class="live-state">
+          <span>{{ t('加载失败') }}</span>
+          <button type="button" class="live-retry" @click="loadMatches">{{ t('重试') }}</button>
+        </div>
+
+        <!-- 空 -->
+        <div v-else-if="!liveMatches.length" class="live-state">
+          <span>{{ t('暂无相关赛事') }}</span>
+        </div>
+
+        <!-- 卡片列表 -->
+        <div v-else class="live-grid">
+          <article v-for="m in liveMatches" :key="m.id" class="live-card">
+            <div class="live-card__top">
+              <span class="live-card__league">
+                <svg class="live-card__gear" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M8 10a2 2 0 100-4 2 2 0 000 4z" stroke="#7b92ad" stroke-width="1.2"/>
+                  <path d="M8 1.5l1 1.6 1.9-.4.4 1.9 1.6 1-1 .9 1 .9-1.6 1-.4 1.9-1.9-.4-1 1.6-1-1.6-1.9.4-.4-1.9-1.6-1 1-.9-1-.9 1.6-1 .4-1.9 1.9.4 1-1.6z" stroke="#7b92ad" stroke-width="1" stroke-linejoin="round"/>
+                </svg>
+                <img v-if="m.leagueIcon" class="live-card__league-logo" :src="m.leagueIcon" alt="" width="18" height="18" @error="(e) => e.target.style.display='none'" />
+                <span class="live-card__league-name">{{ m.league }}</span>
+              </span>
+              <span class="live-card__badge">{{ m.badge }}</span>
+            </div>
+
+            <div class="live-card__body">
+              <div class="live-card__team live-card__team--home">
+                <span class="live-card__team-name">{{ m.homeTeam }}</span>
+                <img v-if="m.homeLogo" class="live-card__team-logo" :src="m.homeLogo" alt="" width="28" height="28" @error="(e) => e.target.style.display='none'" />
+              </div>
+
+              <div class="live-card__center">
+                <div class="live-card__score">
+                  <span class="live-card__score-home">{{ m.homeScore }}</span>
+                  <span class="live-card__score-sep">:</span>
+                  <span class="live-card__score-away">{{ m.awayScore }}</span>
+                </div>
+                <span class="live-card__time">{{ m.time }}</span>
+              </div>
+
+              <div class="live-card__team live-card__team--away">
+                <img v-if="m.awayLogo" class="live-card__team-logo" :src="m.awayLogo" alt="" width="28" height="28" @error="(e) => e.target.style.display='none'" />
+                <span class="live-card__team-name">{{ m.awayTeam }}</span>
+              </div>
+            </div>
+          </article>
+        </div>
+      </main>
+    </div>
+  </div>
+</template>
+
+<style lang="scss" scoped>
+@use '@/styles/tools.scss' as *;
+
+.live-page {
+  min-height: 100dvh;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #e3ecfb 0%, var(--theme-bg) 220px);
+
+  @include web-only {
+    padding: 30px 30px 60px;
+  }
+
+  @include mobile-only {
+    padding: calc(env(safe-area-inset-top, 20px) + 8px) 8px 20px;
+  }
+}
+
+/* --- 顶部返回栏 + 北京时间 --- */
+.live-topbar {
+  position: relative;
+
+  @include web-only {
+    width: min(1000px, calc(100vw - 60px));
+    margin: 0 auto;
+  }
+}
+
+.live-topbar__clock {
+  position: absolute;
+  top: -18px;
+  right: 4px;
+  font-family: $font-family-num, $font-family-base;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(11, 52, 98, 0.48);
+  white-space: nowrap;
+}
+
+.live-topbar__bar {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+
+  @include web-only {
+    height: 80px;
+    padding: 0 32px;
+    border: 0.8px solid var(--auxiliary-1);
+    border-radius: 40px;
+    background: var(--surface-card);
+  }
+
+  @include mobile-only {
+    position: relative;
+    height: 52px;
+    padding: 0 8px;
+    border: 0.8px solid #fff;
+    border-radius: 30px;
+    background: var(--surface-card);
+  }
+}
+
+.live-topbar__back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.2s ease;
+
+  &:hover { opacity: 0.85; }
+
+  img {
+    display: block;
+
+    @include mobile-only {
+      width: 40px;
+      height: 40px;
+    }
+  }
+}
+
+.live-topbar__title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0b3462;
+  white-space: nowrap;
+}
+
+/* --- 布局 --- */
+.live-layout {
+  @include web-only {
+    display: flex;
+    gap: 20px;
+    width: min(1000px, calc(100vw - 60px));
+    margin: 20px auto 0;
+    align-items: flex-start;
+  }
+
+  @include mobile-only {
+    margin-top: 12px;
+  }
+}
+
+.live-content {
+  min-width: 0;
+
+  @include web-only {
+    flex: 1;
+  }
+
+  @include mobile-only {
+    width: 100%;
+  }
+}
+
+/* --- 状态 --- */
+.live-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 260px;
+  gap: 12px;
+  color: #7b92ad;
+  font-size: 14px;
+}
+
+.live-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #e4f0fe;
+  border-top-color: #1c7bff;
+  border-radius: 50%;
+  animation: live-spin 0.8s linear infinite;
+}
+
+@keyframes live-spin {
+  to { transform: rotate(360deg); }
+}
+
+.live-retry {
+  height: 32px;
+  padding: 0 20px;
+  border: 1px solid #1c7bff;
+  border-radius: 16px;
+  background: transparent;
+  color: #1c7bff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* --- 卡片网格 --- */
+.live-grid {
+  display: grid;
+  gap: 12px;
+
+  @include web-only {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @include mobile-only {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.live-card {
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: #fff;
+  border: 0.8px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 12px rgba(21, 58, 118, 0.06);
+  box-sizing: border-box;
+}
+
+.live-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.live-card__league {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.live-card__gear {
+  flex-shrink: 0;
+  display: block;
+}
+
+.live-card__league-logo {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.live-card__league-name {
+  font-size: 13px;
+  color: #5d7899;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.live-card__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 6px;
+  background: #1c7bff;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.live-card__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.live-card__team {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+
+  &--home { justify-content: flex-end; }
+  &--away { justify-content: flex-start; }
+}
+
+.live-card__team-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #0b3462;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.live-card__team-logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.live-card__center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.live-card__score {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: $font-family-num, $font-family-base;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.live-card__score-home { color: #1c7bff; }
+.live-card__score-sep { color: #0b3462; }
+.live-card__score-away { color: #0b3462; }
+
+.live-card__time {
+  font-family: $font-family-num, $font-family-base;
+  font-size: 12px;
+  color: rgba(11, 52, 98, 0.45);
+  line-height: 1;
+}
+</style>
