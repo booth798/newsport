@@ -1,48 +1,127 @@
 <script setup>
-/**
- * 充值页（按设计稿：充值改为线下客服操作，本页仅展示充值记录）
- * - 顶部橙色提示：请「联系客服」进行充值操作
- * - 月份选择器筛选
- * - 充值记录卡片：日期 + 状态徽标 / 金额 / 备注
- */
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
+import { storeToRefs } from 'pinia';
 
 import EmptyState from '@/components/EmptyState.vue';
 import MonthSelector from '@/components/MonthSelector.vue';
 import { fetchDepositList } from '@/api/finance';
-import { useToast } from '@/hooks/useToast';
 import { useAppStore } from '@/store/modules/app';
+
+import { getImageUrl } from '@/utils/common';
+
+
+const PAGE_SIZE = 20;
 
 const { locale, t } = useI18n();
 const route = useRoute();
 const router = useRouter();
-const toast = useToast();
 const appStore = useAppStore();
 
-const PAGE_SIZE = 20;
-
+const panelRef = ref(null);
 const loading = ref(true);
-const error = ref(false);
 const loadingMore = ref(false);
-const records = ref([]);
+const error = ref(false);
+const orders = ref([]);
 const pageNum = ref(1);
-const reachedEnd = ref(false);
+const total = ref(0);
+const hasMore = ref(false);
 
-// 后端 data 为数组直返、无总数，用「是否满页」推断是否还有下一页
-const hasMore = computed(() => !reachedEnd.value && records.value.length > 0);
+const { isMobile } = storeToRefs(appStore);
 
-// 月份与路由同步，PC 选择器与移动端 Header 共用同一状态。
 const selectedMonth = computed({
   get() {
     const month = Array.isArray(route.query.month) ? route.query.month[0] : route.query.month;
     return /^\d{4}-(0[1-9]|1[0-2])$/.test(month || '') ? month : getCurrentMonth();
   },
   set(month) {
+    // PC 月份选择器同步到路由，移动端 Header 会展示同一个筛选月份。
     router.replace({ query: { ...route.query, month } });
   },
 });
+
+const isEmpty = computed(() => !loading.value && !error.value && orders.value.length === 0);
+
+onMounted(() => {
+  loadPage(1);
+  panelRef.value?.addEventListener('scroll', handlePanelScroll, { passive: true });
+});
+
+onBeforeUnmount(() => {
+  panelRef.value?.removeEventListener('scroll', handlePanelScroll);
+});
+
+// 月份来自页面或移动端 Header，变化后从第一页重新加载充值订单。
+watch(selectedMonth, () => {
+  loadPage(1);
+});
+
+async function loadPage(page = 1, append = false) {
+  if (append) {
+    loadingMore.value = true;
+  } else {
+    loading.value = true;
+  }
+  error.value = false;
+  try {
+    const response = await fetchDepositList({
+      pageNum: page,
+      pageSize: PAGE_SIZE,
+      month: selectedMonth.value,
+    });
+    applyOrderResponse(response, page, append);
+  } catch {
+    error.value = true;
+  } finally {
+    loading.value = false;
+    loadingMore.value = false;
+  }
+}
+
+function applyOrderResponse(response, page, append) {
+  const data = response?.data;
+  const rawList = Array.isArray(data) ? data : data?.records || data?.list || [];
+  const nextOrders = rawList.map(normalizeOrder);
+  orders.value = append ? [...orders.value, ...nextOrders] : nextOrders;
+  pageNum.value = page;
+
+  const totalValue = Array.isArray(data) ? response?.total : data?.total;
+  const pagesValue = Array.isArray(data) ? response?.pages : data?.pages;
+  total.value = Number(totalValue) || 0;
+  hasMore.value = pagesValue != null
+    ? page < Number(pagesValue)
+    : total.value > 0
+      ? orders.value.length < total.value
+      : nextOrders.length >= PAGE_SIZE;
+}
+
+function normalizeOrder(order, index) {
+  const id = order.id || order.orderNo || `deposit-order-${pageNum.value}-${index}`;
+  return {
+    id,
+    orderNo: order.orderNo || id,
+    amount: `${formatMoney(order.amount)} ${order.currency || 'CNY'}`,
+    remark: '系统充值',
+    statusLabel: mapStatusLabel(order.status),
+    createdAt: formatDateTime(order.createdAt),
+    _raw: order,
+  };
+}
+
+function mapStatusLabel(status) {
+  const normalized = String(status || '').toUpperCase();
+  if (['COMPLETED', 'SUCCESS', 'SUCCESSFUL', 'PAID', 'APPROVED', 'DONE'].includes(normalized)) {
+    return '已完成';
+  }
+  if (['PENDING', 'CREATED', 'PROCESSING', 'WAITING'].includes(normalized)) {
+    return '处理中';
+  }
+  if (['REJECTED', 'FAILED', 'CANCELLED', 'CANCELED', 'EXPIRED'].includes(normalized)) {
+    return '已取消';
+  }
+  return status || '处理中';
+}
 
 function getCurrentMonth() {
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -52,20 +131,6 @@ function getCurrentMonth() {
   }).formatToParts(new Date());
   const pick = (type) => parts.find((part) => part.type === type)?.value || '';
   return `${pick('year')}-${pick('month')}`;
-}
-
-function statusInfo(status) {
-  const s = String(status || '').toUpperCase();
-  if (['SUCCESS', 'COMPLETED', 'DONE', 'PAID', 'FINISHED', 'APPROVED'].includes(s)) {
-    return { tone: 'completed', label: t('已完成') };
-  }
-  if (['PENDING', 'PROCESSING', 'REVIEWING', 'CREATED', 'WAIT', 'AUDITING'].includes(s)) {
-    return { tone: 'processing', label: t('处理中') };
-  }
-  if (['CANCELLED', 'CANCELED', 'FAILED', 'REJECTED', 'EXPIRED'].includes(s)) {
-    return { tone: 'cancelled', label: t('已取消') };
-  }
-  return { tone: 'completed', label: t('已完成') };
 }
 
 function formatMoney(value) {
@@ -78,340 +143,280 @@ function formatMoney(value) {
 }
 
 function formatDateTime(value) {
-  if (!value) return '—';
+  if (!value) return '--';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
   const parts = new Intl.DateTimeFormat('zh-CN', {
     timeZone: 'Asia/Shanghai',
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', hour12: false,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
   }).formatToParts(date);
-  const p = (type) => parts.find((item) => item.type === type)?.value || '';
-  return `${p('year')}-${p('month')}-${p('day')} ${p('hour')}:${p('minute')}`;
+  const pick = (type) => parts.find((part) => part.type === type)?.value || '';
+  return `${pick('year')}-${pick('month')}-${pick('day')} ${pick('hour')}:${pick('minute')}`;
 }
 
-function normalizeRecord(r) {
-  const info = statusInfo(r.status);
-  // 已拒绝时备注优先展示拒绝原因，否则用支付提示/渠道，兜底「系统充值」
-  const remark =
-    (info.tone === 'cancelled' && r.rejectReason) ||
-    r.payHint ||
-    r.channel ||
-    t('系统充值');
-  return {
-    id: r.id || r.orderNo,
-    createdAt: formatDateTime(r.createdAt),
-    amount: formatMoney(r.amount),
-    currency: r.currency || 'CNY',
-    remark,
-    statusLabel: info.label,
-    statusTone: info.tone,
-  };
-}
-
-function buildParams(page) {
-  return { pageNum: page, pageSize: PAGE_SIZE, month: selectedMonth.value };
-}
-
-// 接口 data 直接是订单数组（{ code, msg, data: [...] }）
-function applyResponse(res, append, requestedPage) {
-  const list = Array.isArray(res?.data) ? res.data : [];
-  const next = list.map(normalizeRecord);
-  records.value = append ? [...records.value, ...next] : next;
-  pageNum.value = requestedPage;
-  reachedEnd.value = list.length < PAGE_SIZE;
-}
-
-async function loadPage() {
-  loading.value = true;
-  error.value = false;
-  reachedEnd.value = false;
-  try {
-    const res = await fetchDepositList(buildParams(1));
-    applyResponse(res, false, 1);
-  } catch {
-    error.value = true;
-  } finally {
-    loading.value = false;
-  }
-}
-
-async function loadMore() {
-  if (loadingMore.value || !hasMore.value) return;
-  const nextPage = pageNum.value + 1;
-  try {
-    loadingMore.value = true;
-    const res = await fetchDepositList(buildParams(nextPage));
-    applyResponse(res, true, nextPage);
-  } catch {
-    toast.error(t('加载失败'));
-  } finally {
-    loadingMore.value = false;
-  }
-}
-
-function contactService() {
+function handleCustomerService() {
   appStore.openCustomerServiceConfirm();
 }
 
-watch(selectedMonth, () => {
-  loadPage();
-});
-
-onMounted(() => {
-  loadPage();
-});
+function handlePanelScroll() {
+  const el = panelRef.value;
+  if (!el || loading.value || loadingMore.value || !hasMore.value) return;
+  if (el.scrollTop + el.clientHeight >= el.scrollHeight - 80) {
+    loadPage(pageNum.value + 1, true);
+  }
+}
 </script>
 
 <template>
-  <div class="deposit-page" aria-label="deposit">
-    <main class="deposit-panel">
-      <!-- 提示：充值走线下客服 -->
-      <div class="deposit-notice">
-        <span class="deposit-notice__icon" aria-hidden="true">i</span>
-        <span class="deposit-notice__text">
-          {{ t('充值操作提示前') }}<button type="button" class="deposit-notice__link" @click="contactService">{{ t('联系客服') }}</button>{{ t('充值操作提示后') }}
-        </span>
-      </div>
+  <div class="deposit-record-page">
+    <section ref="panelRef" class="deposit-record-panel">
+      <button type="button" class="deposit-record-notice" @click="handleCustomerService">
+        <img :src="getImageUrl('common/icon_tips.svg')" alt="">
+        <strong>{{ t('请联系客服进行充值操作') }}</strong>
+        <i aria-hidden="true"></i>
+      </button>
 
-      <!-- 月份筛选 -->
-      <div class="deposit-toolbar">
+      <div class="deposit-record-toolbar">
         <MonthSelector v-model="selectedMonth" :aria-label="t('选择月份')" />
       </div>
 
-      <!-- 加载 -->
-      <div v-if="loading" class="deposit-state">
-        <div class="deposit-spinner" />
+      <!-- 页面状态统一在列表区域内展示，避免 PC 右侧区域出现空白。 -->
+      <div v-if="loading" class="deposit-record-state">
         <span>{{ t('加载中') }}</span>
       </div>
-
-      <!-- 错误 -->
-      <div v-else-if="error" class="deposit-state">
+      <div v-else-if="error" class="deposit-record-state">
         <span>{{ t('加载失败') }}</span>
-        <button type="button" class="deposit-retry" @click="loadPage">{{ t('重试') }}</button>
-      </div>
-
-      <!-- 空 -->
-      <EmptyState v-else-if="!records.length" :text="t('暂无记录')" />
-
-      <!-- 记录列表 -->
-      <template v-else>
-        <article v-for="record in records" :key="record.id" class="deposit-record">
-          <div class="deposit-record__header">
-            <time>{{ record.createdAt }}</time>
-            <span class="deposit-record__badge" :class="`deposit-record__badge--${record.statusTone}`">
-              {{ record.statusLabel }}
-            </span>
-          </div>
-          <dl class="deposit-record__body">
-            <div>
-              <dt>{{ t('金额') }}</dt>
-              <dd>{{ record.amount }} {{ record.currency }}</dd>
-            </div>
-            <div>
-              <dt>{{ t('备注') }}</dt>
-              <dd>{{ record.remark }}</dd>
-            </div>
-          </dl>
-        </article>
-
-        <button
-          v-if="hasMore"
-          type="button"
-          class="deposit-more"
-          :disabled="loadingMore"
-          @click="loadMore"
-        >
-          {{ loadingMore ? t('加载中') : t('加载更多') }}
+        <button type="button" class="deposit-record-state__retry" @click="loadPage(1)">
+          {{ t('重试') }}
         </button>
+      </div>
+      <EmptyState
+        v-else-if="isEmpty"
+        class="deposit-record-empty"
+        :text="t('暂无充值记录')"
+        :icon-size="isMobile ? 110 : 120"
+      />
+
+      <template v-else>
+        <div class="deposit-order-list">
+          <article
+            v-for="order in orders"
+            :key="order.id"
+            class="deposit-order-card"
+          >
+            <header class="deposit-order-card__header">
+              <time>{{ order.createdAt }}</time>
+              <span>{{ t(order.statusLabel) }}</span>
+            </header>
+
+            <dl class="deposit-order-card__body">
+              <div>
+                <dt>{{ t('金额') }}</dt>
+                <dd>{{ order.amount }}</dd>
+              </div>
+              <div>
+                <dt>{{ t('备注') }}</dt>
+                <dd>{{ t(order.remark) }}</dd>
+              </div>
+            </dl>
+          </article>
+
+          <div v-if="loadingMore" class="deposit-record-more">{{ t('加载中') }}</div>
+          <div v-else-if="!hasMore" class="deposit-record-more">{{ t('没有更多了') }}</div>
+        </div>
       </template>
-    </main>
+    </section>
   </div>
 </template>
 
 <style lang="scss" scoped>
 @use '@/styles/tools.scss' as *;
 
-.deposit-page {
+.deposit-record-page {
   width: 100%;
   color: var(--theme-text);
 }
 
-.deposit-panel {
-  box-sizing: border-box;
+.deposit-record-panel {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  box-sizing: border-box;
 
   @include web-only {
-    min-height: min(690px, calc(100dvh - 20px));
-    padding: 24px;
+    height: min(818px, calc(100dvh - 20px));
+    padding: 22px 22px 32px;
+    overflow-y: auto;
     border: 1px solid var(--auxiliary-1);
-    border-radius: 32px;
+    border-radius: 30px;
     background: var(--auxiliary-1);
     box-shadow: var(--shadow-card);
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
   }
 
   @include mobile-only {
-    gap: 12px;
+    min-height: calc(100dvh - 80px - #{$mobile-tab-bar-offset});
   }
 }
 
-/* ---------- 提示条 ---------- */
-.deposit-notice {
+.deposit-record-notice {
   display: flex;
   align-items: center;
-  gap: 6px;
-  box-sizing: border-box;
-  min-height: 40px;
-  padding: 8px 14px;
-  border-radius: 12px;
-  background: rgba(251, 92, 13, 0.1);
-  color: #fb5c0d;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.deposit-notice__icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 15px;
-  height: 15px;
-  border: 1px solid currentColor;
-  border-radius: 50%;
-  font-family: $font-family-num, $font-family-base;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-.deposit-notice__text {
-  color: rgba(11, 52, 98, 0.5);
-}
-
-.deposit-notice__link {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--theme-primary);
-  font-size: 13px;
-  font-weight: 500;
+  width: 100%;
+  background: #FEEEE6;
+  color: #FB5C0D;
   cursor: pointer;
+  img {
+    width: 18px;
+    margin-right: 4px;
+  }
+  strong {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 400;
+    text-align: left;
+  }
+
+  i {
+    display: none;
+    width: 9px;
+    height: 9px;
+    border-top: 1.5px solid currentColor;
+    border-right: 1.5px solid currentColor;
+    transform: rotate(45deg);
+    color: #0C3462;
+  }
+
+  @include web-only {
+    height: 36px;
+    padding: 0 20px;
+    border-radius: 18px;
+  }
+
+  @include mobile-only {
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 12px;
+
+    i {
+      display: block;
+    }
+  }
 }
 
-/* ---------- 月份筛选 ---------- */
-.deposit-toolbar {
+.deposit-record-toolbar {
   display: flex;
-  align-items: center;
   justify-content: flex-end;
+  margin: 14px 0 16px;
 
   @include mobile-only {
     display: none;
   }
 }
 
-/* ---------- 状态 ---------- */
-.deposit-state {
+.deposit-record-state,
+.deposit-record-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 240px;
+  min-height: 260px;
   gap: 12px;
-  color: #7b92ad;
+  color: rgba(11, 52, 98, 0.5);
   font-size: 14px;
 }
 
-.deposit-spinner {
-  width: 24px;
-  height: 24px;
-  border: 3px solid #e4f0fe;
-  border-top-color: #1c7bff;
-  border-radius: 50%;
-  animation: deposit-spin 0.8s linear infinite;
-}
-
-@keyframes deposit-spin {
-  to { transform: rotate(360deg); }
-}
-
-.deposit-retry {
-  height: 32px;
-  padding: 0 20px;
-  border: 1px solid #1c7bff;
-  border-radius: 16px;
-  background: transparent;
-  color: #1c7bff;
+.deposit-record-state__retry {
+  height: 36px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--theme-primary);
+  color: var(--auxiliary-1);
   font-size: 14px;
   cursor: pointer;
+  box-shadow: var(--shadow-primary-btn);
 }
 
-/* ---------- 记录卡片 ---------- */
-.deposit-record {
+.deposit-order-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  @include mobile-only {
+    gap: 10px;
+    margin-top: 10px;
+  }
+}
+
+.deposit-order-card {
   box-sizing: border-box;
-  padding: 16px;
-  border-radius: 16px;
-  background: rgba(28, 123, 255, 0.1);
+  background: #e7f1ff;
+
+  @include web-only {
+    padding: 17px 16px;
+    border-radius: 14px;
+  }
 
   @include mobile-only {
     background: var(--auxiliary-1);
-    box-shadow: 0 2px 12px rgba(21, 58, 118, 0.06);
+    padding: 17px 20px;
+    border-radius: 16px;
   }
 }
 
-.deposit-record__header {
+.deposit-order-card__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 
   time {
+    color: rgba(11, 52, 98, 0.8);
+    font-family: $font-family-num, $font-family-base;
+    font-size: 14px;
+  }
+
+  span {
+    min-width: 62px;
+    height: 30px;
+    padding: 0 10px;
+    border-radius: 6px;
+    background: rgba(199, 214, 232, 0.62);
     color: var(--theme-text);
     font-size: 14px;
-    font-weight: 300;
+    line-height: 30px;
+    text-align: center;
   }
 }
 
-.deposit-record__badge {
-  min-width: 56px;
-  padding: 4px 12px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  text-align: center;
-
-  &--completed {
-    background: rgba(11, 52, 98, 0.1);
-    color: #5d7899;
-  }
-
-  &--processing {
-    background: rgba(28, 123, 255, 0.15);
-    color: #1c7bff;
-  }
-
-  &--cancelled {
-    background: rgba(255, 45, 45, 0.12);
-    color: #ff2d2d;
-  }
-}
-
-.deposit-record__body {
+.deposit-order-card__body {
   margin: 0;
   padding: 0 12px;
   border-radius: 12px;
   background: var(--auxiliary-1);
 
+  @include mobile-only {
+    padding: 0 14px;
+    background: #eaf2fb;
+  }
+
   div {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 48px;
+    min-height: 44px;
 
     & + div {
-      border-top: 1px solid var(--theme-divider);
+      border-top: 1px solid rgba(255, 255, 255, 0.75);
     }
   }
 
@@ -421,26 +426,22 @@ onMounted(() => {
   }
 
   dt {
-    color: rgba(11, 52, 98, 0.5);
+    color: rgba(11, 52, 98, 0.45);
     font-size: 14px;
   }
 
   dd {
     color: var(--theme-text);
+    font-family: $font-family-num, $font-family-base;
     font-size: 16px;
     font-weight: 500;
-    font-family: $font-family-num, $font-family-base;
   }
 }
 
-/* ---------- 加载更多 ---------- */
-.deposit-more {
-  align-self: center;
-  padding: 8px 20px;
-  border: 0;
-  background: transparent;
-  color: rgba(11, 52, 98, 0.5);
+.deposit-record-more {
+  padding: 8px 0 2px;
+  color: rgba(11, 52, 98, 0.45);
   font-size: 14px;
-  cursor: pointer;
+  text-align: center;
 }
 </style>
