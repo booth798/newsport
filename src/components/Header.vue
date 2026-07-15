@@ -36,7 +36,9 @@ const userStore = useUserStore();
 const route = useRoute();
 const router = useRouter();
 const { isMobile } = storeToRefs(appStore);
-const { isLoggedIn, loggedInUserId, loggedInAssetsFormatted } = storeToRefs(userStore);
+const { isLoggedIn, loggedInUserId, loggedInAssetsFormatted, loggedInAvatarUrl } = storeToRefs(userStore);
+// PC 用户条头像：优先用户真实头像，无则回退默认图。
+const displayAvatarUrl = computed(() => loggedInAvatarUrl.value || avatarDefaultUrl);
 
 const hoverOpenKey = ref(null);
 const mobileDrawerOpen = ref(false);
@@ -444,7 +446,7 @@ watch(isLoggedIn, (loggedIn) => {
               <div class="header-user-strip" role="group" :aria-label="loggedInUserId">
                 <img
                   class="header-user-strip__avatar"
-                  :src="avatarDefaultUrl"
+                  :src="displayAvatarUrl"
                   width="40"
                   height="40"
                   alt=""
@@ -481,7 +483,7 @@ watch(isLoggedIn, (loggedIn) => {
           <div class="header-user-strip" role="group" :aria-label="loggedInUserId">
             <img
               class="header-user-strip__avatar"
-              :src="avatarDefaultUrl"
+              :src="displayAvatarUrl"
               width="40"
               height="40"
               alt=""

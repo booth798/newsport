@@ -94,6 +94,13 @@ export const useUserStore = defineStore('user', {
       || '',
     loggedInAssetsFormatted: (state) =>
       state.userProfile?.balance ?? state.customer?.balance ?? '0.00',
+    // Header / 全站头像统一从此读取；无头像时返回空串，由 UI 层兜底默认图。
+    loggedInAvatarUrl: (state) => {
+      const profile = state.userProfile || state.customer;
+      if (!profile) return '';
+      if (profile.avatarUrl) return profile.avatarUrl;
+      return resolveAvatarUrl(profile.avatar);
+    },
     customerId: (state) => {
       const customer = state.userProfile || state.customer;
       return customer?.id || customer?.customerId || customer?.customerNo || null;
