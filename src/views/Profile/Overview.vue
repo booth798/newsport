@@ -402,7 +402,8 @@ onMounted(() => {
             @click="handleMobileMenuClick(item)">
             <img class="profile-h5-menu__icon" :src="item.icon" width="22" height="22" alt="" />
             <span class="profile-h5-menu__label">{{ t(item.label) }}</span>
-            <span v-if="item.action === 'service' && unreadCount > 0" class="profile-h5-menu__badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+            <!-- 暂不展示联系客服未读数 -->
+            <!-- <span v-if="item.action === 'service' && unreadCount > 0" class="profile-h5-menu__badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span> -->
             <i aria-hidden="true" />
           </button>
         </section>
@@ -484,7 +485,8 @@ onMounted(() => {
               @click="handleMenuClick(item)">
               <span class="profile-home__menu-icon-wrap">
                 <img class="profile-home__menu-icon" :src="item.icon" width="54" height="54" alt="" />
-                <span v-if="item.action === 'service' && unreadCount > 0" class="profile-home__menu-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+                <!-- 暂不展示联系客服未读数 -->
+                <!-- <span v-if="item.action === 'service' && unreadCount > 0" class="profile-home__menu-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span> -->
               </span>
               <span class="profile-home__menu-label">{{ t(item.label) }}</span>
             </button>
