@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 
 import { useAppStore } from '@/store/modules/app';
+import EmptyState from '@/components/EmptyState.vue';
 import HomeMatchCard from './HomeMatchCard.vue';
 import { fetchHotMatches, fetchLeagueList } from '@/api/match';
 
@@ -170,9 +171,7 @@ async function reload() {
       <span>{{ t('加载失败') }}</span>
       <button type="button" class="hot-events__retry" @click="reload">{{ t('重试') }}</button>
     </div>
-    <div v-else-if="!filteredMatches.length" class="hot-events__empty">
-      {{ t('暂无数据') }}
-    </div>
+    <EmptyState v-else-if="!filteredMatches.length" />
     <div v-else class="hot-events__grid">
       <HomeMatchCard v-for="match in filteredMatches" :key="match.id" :match="match" />
     </div>
@@ -489,13 +488,6 @@ async function reload() {
       background: var(--theme-primary);
       color: #fff;
     }
-  }
-
-  &__empty {
-    text-align: center;
-    padding: 32px 16px;
-    color: var(--theme-text-1);
-    font-size: $font-size-md;
   }
 
   &__grid {

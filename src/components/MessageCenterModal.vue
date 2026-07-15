@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router';
 
 import { fetchMessages } from '@/api/user';
 import BaseModal from '@/components/BaseModal.vue';
+import EmptyState from '@/components/EmptyState.vue';
 import arrowMoreIcon from '@/assets/images/common/icon_arrow_more.svg';
 
 const props = defineProps({
@@ -66,9 +67,7 @@ watch(
         <button type="button" class="message-center-modal__retry" @click="loadMessages">{{ t('重试') }}</button>
       </div>
 
-      <div v-else-if="messages.length === 0" class="message-center-modal__state">
-        <span>{{ t('暂无数据') }}</span>
-      </div>
+      <EmptyState v-else-if="messages.length === 0" :icon-size="96" />
 
       <div v-else class="message-center-modal__list">
         <button v-for="message in messages" :key="message.id" type="button" class="message-center-modal__item"

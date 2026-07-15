@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { fetchMessages, markMessageRead, markAllRead } from '@/api/user';
+import EmptyState from '@/components/EmptyState.vue';
 
 const { t } = useI18n();
 const messages = ref([]);
@@ -58,10 +59,7 @@ onMounted(loadMessages);
       <button type="button" class="msg-retry" @click="loadMessages">{{ t('重试') }}</button>
     </div>
 
-    <div v-else-if="messages.length === 0" class="empty-state">
-      <div class="empty-state__icon">📭</div>
-      <div class="empty-state__text">{{ t('暂无数据') }}</div>
-    </div>
+    <EmptyState v-else-if="messages.length === 0" />
 
     <div v-else class="msg-list">
       <div v-for="msg in messages" :key="msg.id" class="msg-item" :class="{ 'msg-item--unread': !msg.read }" @click="handleRead(msg)">
@@ -197,21 +195,6 @@ onMounted(loadMessages);
     font-size: $font-size-sm;
     color: var(--theme-text-1);
     line-height: 1.5;
-  }
-}
-
-.empty-state {
-  text-align: center;
-  padding: 60px 0;
-
-  &__icon {
-    font-size: 48px;
-    margin-bottom: $spacing-lg;
-  }
-
-  &__text {
-    font-size: $font-size-md;
-    color: var(--theme-text-1);
   }
 }
 </style>

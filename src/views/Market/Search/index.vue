@@ -6,6 +6,7 @@ import { storeToRefs } from 'pinia';
 
 import { fetchMatchList } from '@/api/match';
 import { useAppStore } from '@/store/modules/app';
+import EmptyState from '@/components/EmptyState.vue';
 import HomeMatchCard from '@/views/Home/components/HomeMatchCard.vue';
 
 import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.svg?url';
@@ -205,16 +206,10 @@ onMounted(async () => {
     </div>
 
     <!-- 无结果 -->
-    <div v-else-if="showEmpty" class="search-page__empty">
-      <div class="search-page__empty-icon">
-        <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <circle cx="28" cy="28" r="18" stroke="#D6E0EB" stroke-width="3"/>
-          <path d="M42 42L56 56" stroke="#D6E0EB" stroke-width="3" stroke-linecap="round"/>
-          <path d="M22 24h12M22 32h8" stroke="#D6E0EB" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      </div>
-      <p class="search-page__empty-text">{{ t('没有相关内容，请重新尝试') }}</p>
-    </div>
+    <EmptyState
+      v-else-if="showEmpty"
+      :text="t('没有相关内容，请重新尝试')"
+    />
   </div>
 </template>
 
@@ -479,26 +474,6 @@ onMounted(async () => {
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 20px;
     }
-  }
-
-  &__empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding-top: 80px;
-    gap: 16px;
-  }
-
-  &__empty-icon {
-    opacity: 0.6;
-  }
-
-  &__empty-text {
-    margin: 0;
-    font-size: 14px;
-    color: rgba(11, 52, 98, 0.45);
-    text-align: center;
   }
 }
 </style>

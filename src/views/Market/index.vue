@@ -6,6 +6,7 @@ import { storeToRefs } from 'pinia';
 
 import { fetchLeagueList, fetchMarketListPaged, fetchMarketListCounts } from '@/api/match';
 import { useAppStore } from '@/store/modules/app';
+import EmptyState from '@/components/EmptyState.vue';
 import HomeMatchCard from '@/views/Home/components/HomeMatchCard.vue';
 
 import iconEventsUrl from '@/assets/images/events/icon_events.svg?url';
@@ -324,9 +325,10 @@ defineExpose({ onFilterResult });
         <span>{{ t('加载失败') }}</span>
         <button type="button" class="market-leagues__retry" @click="loadInitial">{{ t('重试') }}</button>
       </div>
-      <div v-else-if="filteredMatches.length === 0" class="market-leagues__state market-leagues__state--empty">
-        <p>{{ t('暂无相关赛事') }}</p>
-      </div>
+      <EmptyState
+        v-else-if="filteredMatches.length === 0"
+        :text="t('暂无相关赛事')"
+      />
 
       <!-- 列表 -->
       <div v-else class="market-leagues__grid">

@@ -8,6 +8,7 @@ import { useAppStore } from '@/store/modules/app';
 import { useUserStore } from '@/store/modules/user';
 import { fetchMatchDetail, fetchScoreMarket } from '@/api/match';
 import { useMarketWs } from '@/hooks/useMarketWs';
+import EmptyState from '@/components/EmptyState.vue';
 import MarketDetailScoreSection from '@/views/Market/Detail/components/MarketDetailScoreSection.vue';
 import MarketBuySheet from '@/views/Market/Detail/components/MarketBuySheet.vue';
 import HomeMatchCard from '@/views/Home/components/HomeMatchCard.vue';
@@ -381,9 +382,7 @@ function formatScoreLabel(score) {
               />
             </li>
           </ul>
-          <div v-else class="m-score-card__empty">
-            <span>{{ t('暂无数据') }}</span>
-          </div>
+          <EmptyState v-else :icon-size="96" />
         </section>
         </div>
       </div>
@@ -863,17 +862,6 @@ function formatScoreLabel(score) {
   &__head-spacer {
     @include mobile-only {
       width: 16px;
-    }
-  }
-
-  &__empty {
-    @include mobile-only {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 120px;
-      color: #8ba3c0;
-      font-size: 14px;
     }
   }
 

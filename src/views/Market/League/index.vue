@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router';
 
 import { fetchLeagueMatches } from '@/api/match';
 import { isValidMarketLeague } from '@/constants/marketLeagues';
+import EmptyState from '@/components/EmptyState.vue';
 import HomeMatchCard from '@/views/Home/components/HomeMatchCard.vue';
 
 import iconChampionUrl from '@/assets/images/events/icon_champion.svg?url';
@@ -130,9 +131,10 @@ watch(
         <button type="button" class="market-league__retry" @click="loadMatches">{{ t('重试') }}</button>
       </div>
 
-      <div v-else-if="filteredMatches.length === 0" class="market-league__state market-league__state--empty">
-        <p>{{ searchQuery.trim() ? t('暂无数据') : t('暂无相关赛事') }}</p>
-      </div>
+      <EmptyState
+        v-else-if="filteredMatches.length === 0"
+        :text="searchQuery.trim() ? t('暂无数据') : t('暂无相关赛事')"
+      />
 
       <div v-else class="market-league__grid">
         <HomeMatchCard

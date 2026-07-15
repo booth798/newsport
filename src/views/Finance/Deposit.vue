@@ -9,6 +9,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 
+import EmptyState from '@/components/EmptyState.vue';
 import MonthSelector from '@/components/MonthSelector.vue';
 import { fetchDepositList } from '@/api/finance';
 import { useToast } from '@/hooks/useToast';
@@ -191,9 +192,7 @@ onMounted(() => {
       </div>
 
       <!-- 空 -->
-      <div v-else-if="!records.length" class="deposit-state">
-        <span>{{ t('暂无记录') }}</span>
-      </div>
+      <EmptyState v-else-if="!records.length" :text="t('暂无记录')" />
 
       <!-- 记录列表 -->
       <template v-else>

@@ -10,6 +10,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
 import BaseInput from '@/components/BaseInput.vue';
+import EmptyState from '@/components/EmptyState.vue';
 import MonthSelector from '@/components/MonthSelector.vue';
 import WithdrawAddressModal from './components/WithdrawAddressModal.vue';
 import ProfileBindingModal from '@/views/Profile/components/ProfileBindingModal.vue';
@@ -397,9 +398,7 @@ onBeforeUnmount(() => {
             <strong>{{ formatMoney(completedTotal) }}</strong>
           </div>
 
-          <div v-if="!visibleRecords.length" class="wc-state wc-state--empty">
-            <span>{{ t('暂无记录') }}</span>
-          </div>
+          <EmptyState v-if="!visibleRecords.length" :text="t('暂无记录')" />
 
           <article v-for="record in visibleRecords" :key="record.id" class="wc-record">
             <div class="wc-record__header">
@@ -767,10 +766,6 @@ onBeforeUnmount(() => {
   gap: 12px;
   color: #7b92ad;
   font-size: 14px;
-}
-
-.wc-state--empty {
-  min-height: 120px;
 }
 
 .wc-spinner {

@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
 import BaseInput from '@/components/BaseInput.vue';
+import EmptyState from '@/components/EmptyState.vue';
 import MonthSelector from '@/components/MonthSelector.vue';
 import { fetchTransferRecords, transfer } from '@/api/finance';
 import { useToast } from '@/hooks/useToast';
@@ -331,6 +332,7 @@ async function loadMore() {
               </dl>
             </article>
           </template>
+          <EmptyState v-else :text="t('暂无记录')" />
 
           <button v-if="hasMore" type="button" class="vip-transfer-records__more" :disabled="loadingMore"
             @click="loadMore">

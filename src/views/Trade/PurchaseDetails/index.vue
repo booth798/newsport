@@ -6,6 +6,7 @@ import { storeToRefs } from 'pinia';
 
 import { fetchOrderedList, fetchScheduledList } from '@/api/order';
 import { getOrderedPurchaseList, getScheduledPurchaseList } from '@/constants/purchaseOrders';
+import EmptyState from '@/components/EmptyState.vue';
 import { useAppStore } from '@/store/modules/app';
 import PurchaseOrderCard from '@/views/Trade/PurchaseDetails/components/PurchaseOrderCard.vue';
 
@@ -145,9 +146,7 @@ function handleCancelled(orderId) {
           <span>{{ t('加载失败') }}</span>
           <button type="button" class="purchase-details__retry" @click="loadOrders">{{ t('重试') }}</button>
         </div>
-        <div v-else-if="orders.length === 0" class="purchase-details__state">
-          <span>{{ t('暂无数据') }}</span>
-        </div>
+        <EmptyState v-else-if="orders.length === 0" />
         <div v-else class="purchase-details__grid">
           <PurchaseOrderCard
             v-for="order in orders"
@@ -189,9 +188,7 @@ function handleCancelled(orderId) {
         <span>{{ t('加载失败') }}</span>
         <button type="button" class="purchase-details__retry" @click="loadOrders">{{ t('重试') }}</button>
       </div>
-      <div v-else-if="orders.length === 0" class="purchase-details__state">
-        <span>{{ t('暂无数据') }}</span>
-      </div>
+      <EmptyState v-else-if="orders.length === 0" />
       <div v-else class="purchase-details__list">
         <PurchaseOrderCard
           v-for="order in orders"

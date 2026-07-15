@@ -3,6 +3,7 @@ import { onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 
+import EmptyState from '@/components/EmptyState.vue';
 import { useUserStore } from '@/store/modules/user';
 import { fetchLedgerSummary } from '@/api/finance';
 import { fetchOrderList, cancelOrder } from '@/api/order';
@@ -307,11 +308,9 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
     </div>
 
     <!-- Empty -->
-    <div v-else-if="!orders.length" class="fin-empty">
-      <div class="fin-empty__icon" aria-hidden="true"><span /></div>
-      <p>{{ t('暂无记录') }}</p>
+    <EmptyState v-else-if="!orders.length" :text="t('暂无记录')">
       <button type="button" class="fin-empty__btn" @click="goToMarket">{{ t('前往比赛') }}</button>
-    </div>
+    </EmptyState>
 
     <!-- 订单列表 -->
     <div v-else class="fin-list">
@@ -521,35 +520,6 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   color: #1c7bff;
   font-size: 14px;
   cursor: pointer;
-}
-
-.fin-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 300px;
-  gap: 8px;
-  color: rgba(11, 52, 98, 0.5);
-
-  p { margin: 0 0 12px; font-size: 14px; }
-}
-
-.fin-empty__icon {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(116, 174, 252, 0.24));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  span {
-    width: 44px;
-    height: 54px;
-    border-radius: 6px;
-    background: linear-gradient(180deg, #c8def9, #8cbcff);
-  }
 }
 
 .fin-empty__btn {

@@ -13,6 +13,7 @@ import { storeToRefs } from 'pinia';
 
 import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.svg?url';
 import AppSideNav from '@/components/AppSideNav.vue';
+import EmptyState from '@/components/EmptyState.vue';
 import { fetchMatchList } from '@/api/match';
 import { resolveTeamLogoUrl } from '@/constants/teamLogos';
 import { useAppStore } from '@/store/modules/app';
@@ -139,9 +140,7 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- 空 -->
-        <div v-else-if="!resultMatches.length" class="result-state">
-          <span>{{ t('暂无相关赛事') }}</span>
-        </div>
+        <EmptyState v-else-if="!resultMatches.length" :text="t('暂无相关赛事')" />
 
         <!-- 卡片列表 -->
         <div v-else class="result-grid">
