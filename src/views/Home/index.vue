@@ -7,14 +7,20 @@ import HomeAnnouncement from './components/HomeAnnouncement.vue';
 import HomeHotEvents from './components/HomeHotEvents.vue';
 import { useAppStore } from '@/store/modules/app';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const appStore = useAppStore();
 const { csHours } = storeToRefs(appStore);
 
 const vipLevel = ref(0);
 const homeMatches = ref([]);
 const homeBanners = ref([]);
-const announcementText = computed(() => csHours.value || '');
+// 接口只返回时段（如 09:00-21:00），前端按当前语言拼完整走马灯文案。
+const announcementText = computed(() => {
+  void locale.value;
+  const hours = (csHours.value || '').trim();
+  if (!hours) return '';
+  return t('客服工作时间公告', { hours });
+});
 
 onMounted(async () => {
   try {

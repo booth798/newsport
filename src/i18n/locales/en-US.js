@@ -458,6 +458,7 @@ export default {
 
   // Announcement
   默认公告: '',
+  客服工作时间公告: 'Greater China live customer service hours are {hours}. For a better experience, please handle related matters during this period. Thank you for your understanding.',
 
   // Toast
   复制成功: 'Copied',
