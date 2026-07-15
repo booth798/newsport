@@ -693,20 +693,23 @@ const topPools = computed(() => {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    width: auto;
+    max-width: 100%;
     border: 0.5px solid #1c7bff;
     border-radius: 16px;
     background: transparent;
     gap: 0;
     box-sizing: border-box;
+    white-space: nowrap;
 
     @include mobile-only {
-      width: 70px;
       height: 24px;
+      padding: 0 8px;
     }
 
     @include web-only {
-      width: 80px;
       height: 26px;
+      padding: 0 10px;
     }
   }
 
@@ -715,6 +718,7 @@ const topPools = computed(() => {
     font-weight: 400;
     line-height: 1;
     color: #1c7bff;
+    white-space: nowrap;
 
     @include mobile-only {
       font-size: 10px;
