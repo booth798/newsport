@@ -10,6 +10,8 @@ import iconTipsUrl from '@/assets/images/common/icon_tips.svg?url';
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
+  // 打开时默认选中的标签：'bank' 银行卡 / 'wallet' 区块链
+  initialTab: { type: String, default: 'bank' },
 });
 
 const emit = defineEmits(['update:modelValue', 'saved']);
@@ -114,7 +116,7 @@ watch(
   () => props.modelValue,
   (visible) => {
     if (!visible) return;
-    activeTab.value = 'bank';
+    activeTab.value = props.initialTab === 'wallet' ? 'wallet' : 'bank';
     resetForm();
   },
 );

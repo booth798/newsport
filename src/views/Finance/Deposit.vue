@@ -26,10 +26,11 @@ const loading = ref(true);
 const error = ref(false);
 const loadingMore = ref(false);
 const records = ref([]);
-const total = ref(0);
 const pageNum = ref(1);
+const reachedEnd = ref(false);
 
-const hasMore = computed(() => records.value.length < total.value);
+// 后端 data 为数组直返、无总数，用「是否满页」推断是否还有下一页
+const hasMore = computed(() => !reachedEnd.value && records.value.length > 0);
 
 // 月份与路由同步，PC 选择器与移动端 Header 共用同一状态。
 const selectedMonth = computed({
@@ -52,18 +53,18 @@ function getCurrentMonth() {
   return `${pick('year')}-${pick('month')}`;
 }
 
-function statusInfo(status, statusLabel) {
+function statusInfo(status) {
   const s = String(status || '').toUpperCase();
-  if (['SUCCESS', 'COMPLETED', 'DONE', 'PAID', 'FINISHED'].includes(s)) {
-    return { tone: 'completed', label: statusLabel || t('已完成') };
+  if (['SUCCESS', 'COMPLETED', 'DONE', 'PAID', 'FINISHED', 'APPROVED'].includes(s)) {
+    return { tone: 'completed', label: t('已完成') };
   }
-  if (['PENDING', 'PROCESSING', 'REVIEWING', 'CREATED', 'WAIT'].includes(s)) {
-    return { tone: 'processing', label: statusLabel || t('处理中') };
+  if (['PENDING', 'PROCESSING', 'REVIEWING', 'CREATED', 'WAIT', 'AUDITING'].includes(s)) {
+    return { tone: 'processing', label: t('处理中') };
   }
   if (['CANCELLED', 'CANCELED', 'FAILED', 'REJECTED', 'EXPIRED'].includes(s)) {
-    return { tone: 'cancelled', label: statusLabel || t('已取消') };
+    return { tone: 'cancelled', label: t('已取消') };
   }
-  return { tone: 'completed', label: statusLabel || t('已完成') };
+  return { tone: 'completed', label: t('已完成') };
 }
 
 function formatMoney(value) {
@@ -89,13 +90,19 @@ function formatDateTime(value) {
 }
 
 function normalizeRecord(r) {
-  const info = statusInfo(r.status, r.statusLabel);
+  const info = statusInfo(r.status);
+  // 已拒绝时备注优先展示拒绝原因，否则用支付提示/渠道，兜底「系统充值」
+  const remark =
+    (info.tone === 'cancelled' && r.rejectReason) ||
+    r.payHint ||
+    r.channel ||
+    t('系统充值');
   return {
-    id: r.id || r.depositOrderId || r.orderNo,
-    createdAt: formatDateTime(r.createdAt || r.completedAt || r.createTime),
+    id: r.id || r.orderNo,
+    createdAt: formatDateTime(r.createdAt),
     amount: formatMoney(r.amount),
     currency: r.currency || 'CNY',
-    remark: r.remark || r.note || r.desc || t('系统充值'),
+    remark,
     statusLabel: info.label,
     statusTone: info.tone,
   };
@@ -105,17 +112,19 @@ function buildParams(page) {
   return { pageNum: page, pageSize: PAGE_SIZE, month: selectedMonth.value };
 }
 
+// 接口 data 直接是订单数组（{ code, msg, data: [...] }）
 function applyResponse(res, append, requestedPage) {
-  const data = res?.data || {};
-  const next = (data.records || []).map(normalizeRecord);
+  const list = Array.isArray(res?.data) ? res.data : [];
+  const next = list.map(normalizeRecord);
   records.value = append ? [...records.value, ...next] : next;
-  total.value = Number(data.total) || records.value.length;
-  pageNum.value = Number(data.pageNum) || requestedPage;
+  pageNum.value = requestedPage;
+  reachedEnd.value = list.length < PAGE_SIZE;
 }
 
 async function loadPage() {
   loading.value = true;
   error.value = false;
+  reachedEnd.value = false;
   try {
     const res = await fetchDepositList(buildParams(1));
     applyResponse(res, false, 1);

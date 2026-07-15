@@ -69,7 +69,7 @@ const routes = [
     path: '/finance',
     component: () => import('@/views/Finance/index.vue'),
     meta: { titleKey: '交易账务', requiresAuth: true },
-    redirect: '/finance/records',
+    redirect: '/finance/deposit',
     children: [
       {
         path: 'deposit',
@@ -81,7 +81,13 @@ const routes = [
         path: 'withdraw',
         name: 'finance-withdraw',
         component: () => import('@/views/Finance/Withdraw.vue'),
-        meta: { titleKey: '提领' },
+        meta: { titleKey: '银行卡提现' },
+      },
+      {
+        path: 'withdraw-chain',
+        name: 'finance-withdraw-chain',
+        component: () => import('@/views/Finance/WithdrawChain.vue'),
+        meta: { titleKey: '区块链提现' },
       },
       {
         path: 'vip-transfer',

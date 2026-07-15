@@ -11,8 +11,8 @@ const route = useRoute();
 const tabs = [
   { key: '/finance/deposit', label: '充值', to: '/finance/deposit' },
   { key: '/finance/vip-transfer', label: '会员互转', to: '/finance/vip-transfer' },
-  { key: '/finance/withdraw', label: '提领', to: '/finance/withdraw' },
-  { key: '/finance/records', label: '交易记录', to: '/finance/records' },
+  { key: '/finance/withdraw', label: '银行卡提现', to: '/finance/withdraw' },
+  { key: '/finance/withdraw-chain', label: '区块链提现', to: '/finance/withdraw-chain' },
 ];
 
 const activeTab = computed(() => route.path);
