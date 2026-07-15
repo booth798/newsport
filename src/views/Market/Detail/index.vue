@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
 import { useAppStore } from '@/store/modules/app';
@@ -18,7 +18,6 @@ import logoMarketUrl from '@/assets/images/common/logo-market.svg?url';
 
 const { t } = useI18n();
 const route = useRoute();
-const router = useRouter();
 const appStore = useAppStore();
 const userStore = useUserStore();
 const { isMobile } = storeToRefs(appStore);
@@ -192,7 +191,7 @@ function defaultScoreRow(tab = 'fulltime') {
 function openBuySheet(row, tab = activeTab.value) {
   if (!row || row.suspended) return;
   if (!isLoggedIn.value) {
-    router.push('/login');
+    appStore.openLoginModal();
     return;
   }
   activeTab.value = tab;
@@ -217,19 +216,6 @@ function formatScoreLabel(score) {
   return score.replace('-', ' - ');
 }
 
-function goToPurchaseDetails(row, tab = activeTab.value) {
-  router.push({
-    name: 'trade-purchases',
-    query: {
-      tab: 'ordered',
-      marketId: String(tab === 'halftime' ? htMarketId.value : ftMarketId.value),
-      score: row.score,
-      probability: row.probability,
-      marketTab: tab,
-      from: 'market',
-    },
-  });
-}
 </script>
 
 <template>
@@ -318,7 +304,7 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
                 height="24"
                 alt=""
                 aria-hidden="true"
-                @click.stop="!row.suspended && goToPurchaseDetails(row)"
+                @click.stop="!row.suspended && selectRow(row)"
               />
             </li>
           </ul>
@@ -391,7 +377,7 @@ function goToPurchaseDetails(row, tab = activeTab.value) {
                 height="16"
                 alt=""
                 aria-hidden="true"
-                @click.stop="!row.suspended && goToPurchaseDetails(row)"
+                @click.stop="!row.suspended && selectRow(row)"
               />
             </li>
           </ul>
