@@ -126,7 +126,12 @@ const routes = [
         path: 'about',
         name: 'profile-about',
         component: () => import('@/views/Profile/About.vue'),
-        meta: { titleKey: '关于我们' },
+        // H5 使用页面自身返回栏与品牌区，不复用全局头部与底部 Tab。
+        meta: {
+          titleKey: '关于我们',
+          hideMobileHeader: true,
+          hideMobileTabBar: true,
+        },
       },
       {
         path: 'vipBenefits',
