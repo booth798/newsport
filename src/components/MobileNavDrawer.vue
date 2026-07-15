@@ -18,7 +18,6 @@ import bgScoreUrl from '@/assets/images/events/bg_score.svg?url';
 import iconDeposit from '@/assets/images/menu/icon_deposit.svg';
 import iconWithdraw from '@/assets/images/common/icon_withdraw.svg';
 import iconVipTransfer from '@/assets/images/profile/vip_transfer_icon.svg';
-import iconPartner from '@/assets/images/menu/icon_rules_description.svg';
 
 import iconMarketList from '@/assets/images/menu/icon_market_list.svg';
 import iconMatchResults from '@/assets/images/menu/icon_match_results.svg';
@@ -60,7 +59,6 @@ const quickLinks = [
   { labelKey: '充值', to: '/finance/deposit', icon: iconDeposit },
   { labelKey: '提现', to: '/finance/withdraw', icon: iconWithdraw },
   { labelKey: '会员互转', to: '/finance/vip-transfer', icon: iconVipTransfer },
-  { labelKey: '共赢伙伴', action: 'soon', icon: iconPartner },
 ];
 
 /** 折叠分组：市场 / 会员服务 / 我的权益 */
