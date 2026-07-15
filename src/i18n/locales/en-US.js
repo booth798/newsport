@@ -371,7 +371,7 @@ export default {
   确认提现密码: 'Confirm Withdrawal Password',
   请输入旧登录密码: 'Enter current login password',
   请输入旧提现密码: 'Enter current withdrawal password',
-  请输入新密码占位: 'Enter new password (6-12 characters)',
+  请输入新密码占位: 'Set a 6-12 character letters + numbers password',
   请输入新提现密码占位: 'Enter withdrawal password (6-20 characters)',
   请再次输入新密码: 'Re-enter new password',
   请再次输入提现密码: 'Re-enter withdrawal password',

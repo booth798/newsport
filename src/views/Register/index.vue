@@ -234,7 +234,7 @@ onBeforeUnmount(() => {
               class="register-field__input"
               :type="passwordType"
               maxlength="16"
-              :placeholder="t('请设置8-16位字母+数字密码')"
+              :placeholder="t('请输入新密码占位')"
               autocomplete="new-password"
             />
             <button
