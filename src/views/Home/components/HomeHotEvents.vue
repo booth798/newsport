@@ -9,7 +9,7 @@ import { fetchHotMatches, fetchLeagueList } from '@/api/match';
 
 import iconEventsUrl from '@/assets/images/events/icon_events.svg?url';
 import iconHotUrl from '@/assets/images/events/icon_hot.svg?url';
-import btnMoreUrl from '@/assets/images/events/btn_more.svg?url';
+import iconMoreUrl from '@/assets/images/events/icon_more.svg?url';
 
 const { t } = useI18n();
 const appStore = useAppStore();
@@ -156,9 +156,9 @@ async function reload() {
       <RouterLink
         to="/market"
         class="hot-events__more"
-        :aria-label="t('更多市场')"
       >
-        <img class="hot-events__more-img" :src="btnMoreUrl" alt="" />
+        <span class="hot-events__more-label">{{ t('更多市场') }}</span>
+        <img class="hot-events__more-icon" :src="iconMoreUrl" alt="" />
       </RouterLink>
     </div>
 
@@ -274,50 +274,119 @@ async function reload() {
   }
 
   &__more {
+    position: relative;
     flex-shrink: 0;
-    display: inline-block;
-    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 154px;
+    height: 48px;
+    padding: 0 10px;
     margin: 0;
     border: 0;
-    line-height: 0;
+    border-radius: 32px;
+    gap: 4px;
+    color: #fff;
+    font-family: $font-family-base;
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 26px;
+    white-space: nowrap;
     text-decoration: none;
-    background: transparent;
-    box-shadow: none;
-    transition: opacity 0.2s ease;
+    background: #1c7bff;
+    box-shadow: 0 3px 8px rgba(21, 58, 119, 0.1);
+    transition:
+      opacity 0.2s ease,
+      transform 0.2s ease;
 
     &:hover {
       opacity: 0.82;
     }
 
+    &:active {
+      transform: translateY(1px);
+    }
+
+    &:focus-visible {
+      outline: 2px solid #1c7bff;
+      outline-offset: 2px;
+    }
+
     @include web-only {
       grid-column: 3;
       grid-row: 1;
-      /* 与标题区首行顶对齐；按钮图略矮时在行内垂直居中，避免贴顶悬空 */
-      align-self: center;
+      align-self: start;
+
+      &::before,
+      &::after {
+        content: '';
+        position: absolute;
+        left: calc(50% - 5px);
+        pointer-events: none;
+      }
+
+      &::before {
+        top: 39px;
+        width: 96px;
+        height: 22px;
+        border-radius: 38px;
+        background: #a6b5fe;
+        filter: blur(16px);
+        transform: translateX(-50%);
+      }
+
+      &::after {
+        bottom: 1px;
+        width: 66px;
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 0) 0%,
+          rgba(255, 255, 255, 0.25) 35%,
+          #fff 50%,
+          rgba(255, 255, 255, 0.25) 65%,
+          rgba(255, 255, 255, 0) 100%
+        );
+        transform: translateX(-50%);
+      }
     }
 
     @include mobile-only {
       grid-column: 2;
       grid-row: 1;
       align-self: center;
+      width: 108px;
+      height: 41px;
+      padding: 0 14px;
+      gap: 4px;
+      font-size: 14px;
+
+      &:lang(en) {
+        width: 116px;
+        padding-inline: 6px;
+        font-size: 12px;
+      }
     }
   }
 
-  &__more-img {
+  &__more-label {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+  }
+
+  &__more-icon {
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
     display: block;
-    padding: 0;
-    margin: 0;
-    border: 0;
-    width: 170px;
-    max-width: 100%;
-    height: auto;
+    width: 20px;
+    height: 20px;
 
     @include mobile-only {
-      /* 约 170:64，与稿图比例一致；较原 70×26 明显放大，便于点击 */
-      width: 108px;
-      height: auto;
-      max-width: none;
-      object-fit: contain;
+      width: 16px;
+      height: 16px;
     }
   }
 
