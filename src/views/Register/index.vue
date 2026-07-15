@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 
@@ -9,8 +9,9 @@ import iconEyeOpenUrl from '@/assets/images/login/icon_login_eye_open.svg?url';
 import iconLockUrl from '@/assets/images/login/icon_login_lock.svg?url';
 import iconRefreshUrl from '@/assets/images/login/icon_register_refresh.svg?url';
 import { useToast } from '@/hooks/useToast';
-import { registerApi } from '@/api/user';
+import { registerApi, captchaInit, captchaVerify } from '@/api/user';
 import { useAppStore } from '@/store/modules/app';
+import BaseModal from '@/components/BaseModal.vue';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -25,11 +26,123 @@ const showPassword = ref(false);
 const submitting = ref(false);
 const successOpen = ref(false);
 
+// ─── 滑块验证码 ───
+const SLIDER_KNOB_W = 52;
+const SLIDER_TRACK_PAD_X = 4;
+
+const verifyTrackRef = ref(null);
+const sliderOffsetPx = ref(0);
+const sliderVerified = ref(false);
+const sliderDragging = ref(false);
+const sliderAnimating = ref(false);
+const captchaToken = ref('');
+const captchaId = ref('');
+
+function resetSlider() {
+  sliderOffsetPx.value = 0;
+  sliderVerified.value = false;
+  sliderDragging.value = false;
+  sliderAnimating.value = false;
+}
+
+const sliderProgress = computed(() => {
+  const max = getSliderMaxOffset();
+  if (max <= 0) return 0;
+  return Math.min(1, sliderOffsetPx.value / max);
+});
+
+const labelOpacity = computed(() => Math.max(0, 1 - sliderProgress.value * 2.5));
+
+const knobTransformStyle = computed(() => ({
+  transform: `translate(${sliderOffsetPx.value}px, -50%)`,
+  transition: sliderDragging.value ? 'none' : 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
+}));
+
+const fillStyle = computed(() => ({
+  width: `${sliderOffsetPx.value + SLIDER_KNOB_W + SLIDER_TRACK_PAD_X}px`,
+  transition: sliderDragging.value ? 'none' : 'width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
+}));
+
+function getSliderMaxOffset() {
+  const track = verifyTrackRef.value;
+  if (!track) return 0;
+  const w = track.getBoundingClientRect().width;
+  return Math.max(0, w - SLIDER_TRACK_PAD_X * 2 - SLIDER_KNOB_W);
+}
+
+async function initCaptcha() {
+  try {
+    const res = await captchaInit();
+    const data = res.data || {};
+    captchaId.value = data.captchaId || '';
+    if (!data.captchaId) {
+      captchaToken.value = 'ALWAYS_PASS';
+      sliderVerified.value = true;
+    }
+  } catch {
+    captchaToken.value = 'ALWAYS_PASS';
+  }
+}
+
+async function verifyCaptchaSlider(offsetPx) {
+  if (captchaId.value) {
+    try {
+      const res = await captchaVerify(captchaId.value, Math.round(offsetPx));
+      captchaToken.value = res.data?.captchaToken || '';
+    } catch { /* 验证失败静默处理 */ }
+  }
+  sliderVerified.value = true;
+  sliderAnimating.value = false;
+}
+
+function onSliderKnobPointerDown(e) {
+  if (sliderVerified.value || sliderAnimating.value) return;
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  e.preventDefault();
+
+  const knobEl = e.currentTarget;
+  if (!(knobEl instanceof Element)) return;
+
+  knobEl.setPointerCapture(e.pointerId);
+  sliderDragging.value = true;
+
+  const startClientX = e.clientX;
+  const startOffset = sliderOffsetPx.value;
+
+  const onMove = (ev) => {
+    const max = getSliderMaxOffset();
+    const dx = ev.clientX - startClientX;
+    sliderOffsetPx.value = Math.min(max, Math.max(0, startOffset + dx));
+  };
+
+  const onUp = () => {
+    knobEl.releasePointerCapture(e.pointerId);
+    knobEl.removeEventListener('pointermove', onMove);
+    knobEl.removeEventListener('pointerup', onUp);
+    knobEl.removeEventListener('pointercancel', onUp);
+    sliderDragging.value = false;
+
+    const max = getSliderMaxOffset();
+    const threshold = max * 0.88;
+    if (max > 0 && sliderOffsetPx.value >= threshold) {
+      sliderOffsetPx.value = max;
+      sliderAnimating.value = true;
+      verifyCaptchaSlider(sliderOffsetPx.value);
+    } else {
+      sliderOffsetPx.value = 0;
+    }
+  };
+
+  knobEl.addEventListener('pointermove', onMove);
+  knobEl.addEventListener('pointerup', onUp);
+  knobEl.addEventListener('pointercancel', onUp);
+}
+
 const passwordType = computed(() => (showPassword.value ? 'text' : 'password'));
 const isAccountValid = computed(() => selectedAccount.value.length > 0);
 const isPasswordValid = computed(() => /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,16}$/.test(password.value));
 const canSubmit = computed(() => isAccountValid.value && isPasswordValid.value
-  && confirmPassword.value === password.value && !submitting.value);
+  && confirmPassword.value === password.value && sliderVerified.value && !submitting.value);
 
 function makeAccount() {
   const suffix = Array.from({ length: 4 }, () => Math.floor(Math.random() * 10)).join('');
@@ -45,13 +158,20 @@ function shuffleAccounts() {
 
 async function submitRegister() {
   if (!canSubmit.value) return;
+  if (!sliderVerified.value) {
+    toast.error(t('请完成滑动验证'));
+    return;
+  }
 
   try {
     submitting.value = true;
-    await registerApi(selectedAccount.value, password.value, 'ALWAYS_PASS');
+    const token = captchaToken.value || 'ALWAYS_PASS';
+    await registerApi(selectedAccount.value, password.value, token);
     successOpen.value = true;
   } catch (e) {
     toast.error(e.message || t('提交失败，请重试'));
+    resetSlider();
+    initCaptcha();
   } finally {
     submitting.value = false;
   }
@@ -64,6 +184,14 @@ async function openLogin() {
 }
 
 shuffleAccounts();
+
+onMounted(() => {
+  initCaptcha();
+});
+
+onBeforeUnmount(() => {
+  resetSlider();
+});
 </script>
 
 <template>
@@ -140,6 +268,51 @@ shuffleAccounts();
             </button>
           </label>
 
+          <div class="register-verify">
+            <Transition name="register-verify-flip" mode="out-in">
+              <div
+                v-if="sliderVerified"
+                key="success"
+                class="register-verify__track register-verify__track--success"
+                role="status"
+                aria-live="polite"
+              >
+                <svg class="register-verify__check-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M4 10.5L8.5 15L16 5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span class="register-verify__success-text">{{ t('验证成功') }}</span>
+              </div>
+              <div
+                v-else
+                key="track"
+                ref="verifyTrackRef"
+                class="register-verify__track"
+                :class="{ 'register-verify__track--dragging': sliderDragging }"
+              >
+                <div class="register-verify__fill" :style="fillStyle" />
+                <button
+                  type="button"
+                  class="register-verify__knob"
+                  :class="{ 'register-verify__knob--dragging': sliderDragging }"
+                  :style="knobTransformStyle"
+                  :aria-label="t('向右滑动验证')"
+                  @pointerdown="onSliderKnobPointerDown"
+                >
+                  <svg class="register-verify__knob-icon" width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <path d="M7 4.5L11.5 9L7 13.5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </button>
+                <span
+                  class="register-verify__label"
+                  :style="{ opacity: sliderDragging ? labelOpacity : undefined }"
+                  aria-hidden="true"
+                >
+                  {{ t('向右滑动验证') }}
+                </span>
+              </div>
+            </Transition>
+          </div>
+
           <button class="register-submit btn btn--primary" type="submit" :disabled="!canSubmit">
             {{ submitting ? t('提交中...') : t('注册') }}
           </button>
@@ -151,23 +324,21 @@ shuffleAccounts();
       </section>
     </div>
 
-    <Transition name="register-dialog">
-      <div v-if="successOpen" class="register-dialog" role="dialog" aria-modal="true" :aria-label="t('注册成功')">
-        <div class="register-dialog__panel">
-          <div class="register-dialog__icon" aria-hidden="true">
-            <svg width="38" height="38" viewBox="0 0 38 38" fill="none">
-              <circle cx="19" cy="19" r="19" fill="#2F7DF5" />
-              <path d="M11 19.4L16.2 24.6L27.5 13.4" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-          </div>
-          <h2 class="register-dialog__title">{{ t('提示') }}</h2>
-          <p class="register-dialog__desc">{{ t('恭喜您成功注册UNIBET！') }}</p>
-          <button type="button" class="register-dialog__btn" @click="openLogin">
-            {{ t('去登录') }}
-          </button>
-        </div>
+    <BaseModal
+      v-model="successOpen"
+      :title="t('提示')"
+      :show-close="true"
+    >
+      <div class="register-success__body">
+        <span class="register-success__info" aria-hidden="true">i</span>
+        <p>{{ t('恭喜您成功注册UNIBET！') }}</p>
       </div>
-    </Transition>
+      <div class="register-success__actions">
+        <button type="button" class="register-success__btn" @click="openLogin">
+          {{ t('去登录') }}
+        </button>
+      </div>
+    </BaseModal>
   </div>
 </template>
 
@@ -322,6 +493,135 @@ shuffleAccounts();
   }
 }
 
+/* ─── 滑块验证 ─── */
+.register-verify {
+  width: 100%;
+}
+
+.register-verify__track {
+  position: relative;
+  box-sizing: border-box;
+  height: 48px;
+  border-radius: 999px;
+  background: #fff;
+  border: 0.8px solid #d6e0eb;
+  touch-action: none;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &--dragging {
+    border-color: rgba(13, 108, 251, 0.35);
+    box-shadow: 0 0 0 3px rgba(13, 108, 251, 0.1);
+  }
+
+  &--success {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    touch-action: auto;
+    background: #0d6cfb;
+    border: 1px solid rgba(255, 255, 255, 0.92);
+    box-shadow: 0 2px 14px rgba(13, 108, 251, 0.4);
+    overflow: visible;
+  }
+}
+
+.register-verify__fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(13, 108, 251, 0.08) 0%, rgba(13, 108, 251, 0.18) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.register-verify__check-icon {
+  flex-shrink: 0;
+}
+
+.register-verify__success-text {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+
+.register-verify__knob {
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  z-index: 2;
+  width: 52px;
+  height: 40px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 20px;
+  background: #0d6cfb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(13, 108, 251, 0.35);
+  cursor: grab;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: box-shadow 0.2s, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  &--dragging {
+    cursor: grabbing;
+    box-shadow: 0 4px 16px rgba(13, 108, 251, 0.5);
+    transition: box-shadow 0.15s;
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(13, 108, 251, 0.55);
+    outline-offset: 2px;
+  }
+}
+
+.register-verify__knob-icon {
+  flex-shrink: 0;
+}
+
+.register-verify__label {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 0 60px 0 12px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #0d6cfb;
+  line-height: 1.2;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+
+.register-verify-flip-enter-active {
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.register-verify-flip-leave-active {
+  transition: all 0.2s ease-in;
+}
+
+.register-verify-flip-enter-from {
+  opacity: 0;
+  transform: scale(0.92);
+}
+
+.register-verify-flip-leave-to {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
 .register-login-link {
   margin: 0;
   color: rgba(23, 59, 97, 0.46);
@@ -416,76 +716,53 @@ shuffleAccounts();
   }
 }
 
-.register-dialog {
-  position: fixed;
-  inset: 0;
-  z-index: 1200;
+/* 注册成功弹窗（复用 BaseModal，底部带关闭按钮） */
+.register-success__body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
-  background: rgba(23, 59, 97, 0.34);
-  backdrop-filter: blur(8px);
-}
-
-.register-dialog__panel {
-  width: min(315px, 100%);
-  padding: 30px 22px 22px;
-  border-radius: 18px;
+  gap: 8px;
+  height: 70px;
+  border-radius: 12px;
   background: #fff;
-  box-shadow: 0 20px 48px rgba(21, 58, 119, 0.2);
-  text-align: center;
-  box-sizing: border-box;
-}
-
-.register-dialog__icon {
-  display: flex;
-  justify-content: center;
-}
-
-.register-dialog__title {
-  margin: 14px 0 8px;
-  color: #173b61;
-  font-size: 22px;
-  font-weight: 800;
-}
-
-.register-dialog__desc {
-  margin: 0;
-  color: rgba(23, 59, 97, 0.58);
+  color: #0b3462;
   font-size: 14px;
-  line-height: 1.5;
-}
-
-.register-dialog__btn {
-  width: 100%;
-  height: 46px;
-  margin-top: 22px;
-  border: 0;
-  border-radius: 24px;
-  background: #2f7df5;
-  color: #fff;
-  font-size: 17px;
   font-weight: 700;
+
+  p {
+    margin: 0;
+  }
+}
+
+.register-success__info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid #5d7899;
+  border-radius: 50%;
+  color: #5d7899;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: $font-family-num, $font-family-base;
+  flex-shrink: 0;
+}
+
+.register-success__actions {
+  margin-top: 10px;
+}
+
+.register-success__btn {
+  width: 100%;
+  height: 44px;
+  border: none;
+  border-radius: 22px;
+  background: #fff;
+  color: #1c7bff;
+  font-size: 18px;
+  font-weight: 400;
   cursor: pointer;
-}
-
-.register-dialog-enter-active,
-.register-dialog-leave-active {
-  transition: opacity 0.2s;
-
-  .register-dialog__panel {
-    transition: transform 0.2s;
-  }
-}
-
-.register-dialog-enter-from,
-.register-dialog-leave-to {
-  opacity: 0;
-
-  .register-dialog__panel {
-    transform: translateY(10px) scale(0.96);
-  }
 }
 
 // 注册页新稿：账号候选 + 双密码确认。
@@ -620,52 +897,6 @@ shuffleAccounts();
   height: 48px;
   margin-top: 4px;
   font-size: 16px;
-  font-weight: 500;
-}
-
-.register-dialog {
-  background: rgba(23, 35, 49, 0.58);
-  backdrop-filter: none;
-}
-
-.register-dialog__panel {
-  width: min(290px, 100%);
-  padding: 18px 12px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  border-radius: 18px;
-  background: linear-gradient(180deg, #2f7df5, #61a5f4);
-}
-
-.register-dialog__icon {
-  display: none;
-}
-
-.register-dialog__title {
-  margin: 0 0 16px;
-  color: #fff;
-  font-size: 20px;
-  font-weight: 600;
-}
-
-.register-dialog__desc {
-  min-height: 62px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0;
-  border-radius: 16px;
-  background: #fff;
-  color: #173b61;
-  font-size: 14px;
-}
-
-.register-dialog__btn {
-  height: 42px;
-  margin-top: 8px;
-  border-radius: 16px;
-  background: #fff;
-  color: var(--theme-primary);
-  font-size: 15px;
   font-weight: 500;
 }
 

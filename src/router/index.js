@@ -19,31 +19,31 @@ const routes = [
     path: '/market',
     name: 'market',
     component: () => import('@/views/Market/index.vue'),
-    meta: { titleKey: '全部赛事' },
+    meta: { titleKey: '全部赛事', requiresAuth: true },
   },
   {
     path: '/market/search',
     name: 'market-search',
     component: () => import('@/views/Market/Search/index.vue'),
-    meta: { titleKey: '搜索', hideMobileTabBar: true },
+    meta: { titleKey: '搜索', hideMobileTabBar: true, requiresAuth: true },
   },
   {
     path: '/market/filter',
     name: 'market-filter',
     component: () => import('@/views/Market/Filter/index.vue'),
-    meta: { titleKey: '筛选联赛', hideMobileTabBar: true, hideMobileHeader: true },
+    meta: { titleKey: '筛选联赛', hideMobileTabBar: true, hideMobileHeader: true, requiresAuth: true },
   },
   {
     path: '/market/league/:league',
     name: 'market-league',
     component: () => import('@/views/Market/League/index.vue'),
-    meta: { titleKey: '联赛市场' },
+    meta: { titleKey: '联赛市场', requiresAuth: true },
   },
   {
     path: '/market/:id',
     name: 'market-detail',
     component: () => import('@/views/Market/Detail/index.vue'),
-    meta: { titleKey: '比赛详情' },
+    meta: { titleKey: '比赛详情', requiresAuth: true },
   },
   {
     path: '/trade/purchases',
@@ -54,7 +54,7 @@ const routes = [
   {
     path: '/finance',
     component: () => import('@/views/Finance/index.vue'),
-    meta: { titleKey: '交易账务', requiresAuth: true, guestPreview: true },
+    meta: { titleKey: '交易账务', requiresAuth: true },
     redirect: '/finance/records',
     children: [
       {
