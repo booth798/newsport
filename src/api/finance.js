@@ -108,9 +108,13 @@ export async function fetchRecords(params = {}) {
   return { code: 200, data: records, total: page.total };
 }
 
-/** 划转 */
+/** 会员互转：字段对齐安卓 POST api/wallet/transfer（toCustomerNo / amount / withdrawPassword） */
 export async function transfer(payload) {
-  return post('/wallet/transfer', payload, {
+  return post('/wallet/transfer', {
+    toCustomerNo: payload.toCustomerNo,
+    amount: payload.amount,
+    withdrawPassword: payload.withdrawPassword,
+  }, {
     headers: { 'Idempotency-Key': crypto.randomUUID() },
   });
 }

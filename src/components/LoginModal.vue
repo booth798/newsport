@@ -11,6 +11,7 @@ import iconContactSupportUrl from '@/assets/images/login/icon_login_service.svg?
 import { useAppStore } from '@/store/modules/app';
 import { useUserStore } from '@/store/modules/user';
 import { useToast } from '@/hooks/useToast';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { loginApi, registerApi, captchaInit, captchaVerify } from '@/api/user';
 
 const { t } = useI18n();
@@ -23,6 +24,9 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['close']);
+
+// 锁定背后滚动并补偿滚动条宽度，避免弹窗打开时页面横向跳动。
+useBodyScrollLock(() => props.visible);
 
 const account = ref('');
 const password = ref('');
@@ -63,15 +67,9 @@ watch(isLogin, () => {
   initCaptcha();
 });
 
-const lockScroll = (locked) => {
-  if (typeof document === 'undefined') return;
-  document.body.style.overflow = locked ? 'hidden' : '';
-};
-
 watch(
   () => props.visible,
   (open) => {
-    lockScroll(open);
     if (!open) {
       resetSlider();
     } else {
@@ -143,7 +141,6 @@ function onSliderKnobPointerDown(e) {
 
 onBeforeUnmount(() => {
   resetSlider();
-  lockScroll(false);
 });
 
 const canSubmit = computed(

@@ -1,9 +1,11 @@
 <script setup>
 import { computed, ref, watch, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { getImageUrl } from '@/utils/common'
-import { useAppStore } from '@/store/modules/app';
 import { storeToRefs } from 'pinia';
+
+import { getImageUrl } from '@/utils/common';
+import { useAppStore } from '@/store/modules/app';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -13,7 +15,8 @@ const props = defineProps({
   buttonText: { type: String, default: '' }, // 按钮文本 不传则不显示按钮
   actionDisabled: { type: Boolean, default: false }, // 按钮是否禁用
   showClose: { type: Boolean, default: true }, // 是否显示关闭图标
-  clickMaskToClose: { type: Boolean, default: false }, // 点击遮罩层是否关闭
+  // 默认允许点击遮罩关闭；强制确认类弹窗可显式传 false
+  clickMaskToClose: { type: Boolean, default: true },
 });
 
 const emit = defineEmits(['update:modelValue', 'confirm']);
@@ -21,6 +24,9 @@ const { t } = useI18n();
 
 const appStore = useAppStore();
 const { isMobile } = storeToRefs(appStore);
+
+// 锁定背后页面滚动，并用滚动条补偿避免顶栏/列表横向跳动。
+useBodyScrollLock(() => props.modelValue);
 
 // 移动端软键盘弹出时，visualViewport 会收缩；据此把弹窗约束在可见区域内，避免确认按钮错乱。
 const viewport = ref(null);
@@ -71,6 +77,9 @@ const rootStyle = computed(() => {
 });
 
 function close() { emit('update:modelValue', false); }
+function onBackdropClick() {
+  if (props.clickMaskToClose) close();
+}
 function confirm() { emit('confirm'); }
 </script>
 
@@ -78,8 +87,8 @@ function confirm() { emit('confirm'); }
   <Teleport to="body">
     <Transition name="base-modal-fade">
       <div v-if="props.modelValue" class="base-modal" role="dialog" aria-modal="true" :aria-label="props.title" :style="rootStyle">
-        <!-- 遮罩层 -->
-        <div class="base-modal__backdrop" aria-hidden="true" @click="clickMaskToClose ? close() : null" />
+        <!-- 遮罩层：默认点击空白关闭 -->
+        <div class="base-modal__backdrop" aria-hidden="true" @click="onBackdropClick" />
         <div class="base-modal__panel-wrap">
           <img v-if="props.showClose" class="base-modal__close-icon" :src="getImageUrl('common/modal_close_icon.svg')" :aria-label="t('关闭')" @click="close" >
           <div class="base-modal__frame">
