@@ -1,28 +1,67 @@
 <script setup>
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRoute } from 'vue-router';
-import { computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
 import AppSideNav from '@/components/AppSideNav.vue';
+import { fetchWithdrawMethods } from '@/api/finance';
 
 const { t } = useI18n();
 const route = useRoute();
+const router = useRouter();
 
 const tabs = [
   { key: '/finance/deposit', label: '充值', to: '/finance/deposit' },
   { key: '/finance/vip-transfer', label: '会员互转', to: '/finance/vip-transfer' },
-  { key: '/finance/withdraw', label: '银行卡提现', to: '/finance/withdraw' },
-  { key: '/finance/withdraw-chain', label: '区块链提现', to: '/finance/withdraw-chain' },
+  { key: '/finance/withdraw', label: '银行卡提现', to: '/finance/withdraw', method: 'bank_card' },
+  { key: '/finance/withdraw-chain', label: '区块链提现', to: '/finance/withdraw-chain', method: 'crypto' },
 ];
+const withdrawPaths = ['/finance/withdraw', '/finance/withdraw-chain'];
+const fallbackFinancePath = '/finance/records';
+
+// 提现方式默认放行，接口返回明确关闭后再隐藏对应入口，避免接口异常造成页面不可用。
+const withdrawMethods = ref({
+  crypto: true,
+  bank_card: true,
+});
+
+const availableTabs = computed(() => tabs.filter((tab) => !tab.method || withdrawMethods.value[tab.method] === true));
 // H5 将两种提现方式收纳在同一页面框架内，通过顶部页签切换具体表单。
-const withdrawTabs = tabs.filter((tab) =>
-  ['/finance/withdraw', '/finance/withdraw-chain'].includes(tab.to),
-);
+const withdrawTabs = computed(() => availableTabs.value.filter((tab) => withdrawPaths.includes(tab.to)));
 
 const activeTab = computed(() => route.path);
 const isVipTransfer = computed(() => route.name === 'finance-vip-transfer');
-const isWithdrawPage = computed(() => withdrawTabs.some((tab) => tab.to === route.path));
-const sidebarTabs = computed(() => tabs.map((tab) => ({ ...tab, label: t(tab.label) })));
+const isWithdrawRoute = computed(() => withdrawPaths.includes(route.path));
+const isWithdrawPage = computed(() => isWithdrawRoute.value && withdrawTabs.value.length > 1);
+const sidebarTabs = computed(() => availableTabs.value.map((tab) => ({ ...tab, label: t(tab.label) })));
+
+function normalizeWithdrawMethods(methods) {
+  return {
+    crypto: methods?.crypto === true,
+    bank_card: methods?.bank_card === true,
+  };
+}
+
+function ensureAvailableWithdrawRoute() {
+  if (!isWithdrawRoute.value || withdrawTabs.value.some((tab) => tab.to === route.path)) return;
+  const targetPath = withdrawTabs.value[0]?.to || fallbackFinancePath;
+  router.replace({ path: targetPath, query: route.query });
+}
+
+async function loadWithdrawMethods() {
+  try {
+    const res = await fetchWithdrawMethods();
+    withdrawMethods.value = normalizeWithdrawMethods(res?.data);
+  } catch {
+    // 开关接口失败时保留默认入口，页面自身仍可展示业务错误或继续提交校验。
+  }
+}
+
+watch([() => route.path, withdrawTabs], ensureAvailableWithdrawRoute);
+
+onMounted(() => {
+  loadWithdrawMethods();
+});
 </script>
 
 <template>
