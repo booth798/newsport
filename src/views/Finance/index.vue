@@ -1,19 +1,33 @@
 <script setup>
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRoute } from 'vue-router';
-import { computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
 import AppSideNav from '@/components/AppSideNav.vue';
+import { fetchWithdrawMethods } from '@/api/finance';
 
 const { t } = useI18n();
 const route = useRoute();
+const router = useRouter();
 
 const tabs = [
   { key: '/finance/deposit', label: '充值', to: '/finance/deposit' },
   { key: '/finance/vip-transfer', label: '会员互转', to: '/finance/vip-transfer' },
-  { key: '/finance/withdraw', label: '银行卡提现', to: '/finance/withdraw' },
-  { key: '/finance/withdraw-chain', label: '区块链提现', to: '/finance/withdraw-chain' },
+  { key: '/finance/withdraw', label: '银行卡提现', to: '/finance/withdraw', method: 'bank_card' },
+  { key: '/finance/withdraw-chain', label: '区块链提现', to: '/finance/withdraw-chain', method: 'crypto' },
 ];
+const withdrawPaths = ['/finance/withdraw', '/finance/withdraw-chain'];
+const fallbackFinancePath = '/finance/records';
+
+// 提现方式默认放行，接口返回明确关闭后再隐藏对应入口，避免接口异常造成页面不可用。
+const withdrawMethods = ref({
+  crypto: true,
+  bank_card: true,
+});
+
+const availableTabs = computed(() => tabs.filter((tab) => !tab.method || withdrawMethods.value[tab.method] === true));
+// H5 将两种提现方式收纳在同一页面框架内，通过顶部页签切换具体表单。
+const withdrawTabs = computed(() => availableTabs.value.filter((tab) => withdrawPaths.includes(tab.to)));
 
 const activeTab = computed(() => route.path);
 const isFinanceHome = computed(() => route.name === 'finance');
@@ -27,13 +41,13 @@ const sidebarTabs = computed(() => tabs.map((tab) => ({ ...tab, label: t(tab.lab
     <div class="finance-layout__inner">
       <AppSideNav :items="sidebarTabs" :active-key="activeTab" aria-label="finance" />
 
-      <nav class="finance-tabs" aria-label="finance">
+      <nav v-if="isWithdrawPage" class="finance-tabs" :aria-label="t('提现')">
         <RouterLink
-          v-for="tab in tabs"
+          v-for="tab in withdrawTabs"
           :key="tab.to"
-          :to="tab.to"
+          :to="{ path: tab.to, query: route.query }"
           class="finance-tab"
-          :class="{ active: activeTab === tab.to }"
+          :class="{ 'active btn--primary': activeTab === tab.to }"
         >
           {{ t(tab.label) }}
         </RouterLink>
@@ -95,7 +109,6 @@ const sidebarTabs = computed(() => tabs.map((tab) => ({ ...tab, label: t(tab.lab
 }
 
 .finance-tabs {
-  display: flex;
   align-items: center;
   justify-content: space-between;
 
@@ -104,7 +117,15 @@ const sidebarTabs = computed(() => tabs.map((tab) => ({ ...tab, label: t(tab.lab
   }
 
   @include mobile-only {
-    display: none;
+    box-sizing: border-box;
+    display: flex;
+    width: 100%;
+    margin-bottom: 14px;
+    padding: 5px;
+    border: 1px solid var(--auxiliary-1);
+    border-radius: $radius-pill;
+    background: var(--surface-card);
+    box-shadow: var(--shadow-card);
   }
 }
 
@@ -112,24 +133,18 @@ const sidebarTabs = computed(() => tabs.map((tab) => ({ ...tab, label: t(tab.lab
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 33.3333%;
-  max-width: 33.3333%;
+  flex: 0 0 50%;
+  max-width: 50%;
   min-width: 0;
   height: 38px;
   padding: 0 $spacing-sm;
   border-radius: $radius-pill;
   font-size: $font-size-base;
   color: var(--theme-primary);
-  text-decoration: none;
-  transition:
-    background 0.18s ease,
-    color 0.18s ease,
-    box-shadow 0.18s ease;
-  white-space: nowrap;
-  font-weight: 700;
+  font-weight: 500;
 
   @include mobile-only {
-    height: 34px;
+    height: 36px;
   }
 }
 

@@ -147,7 +147,13 @@ useWalletWs({
 
 <template>
   <Header v-if="!isBarePage && !hideMobileHeader" />
-  <main class="main-content" :class="{ 'main-content--bare': isBarePage }">
+  <main
+    class="main-content"
+    :class="{
+      'main-content--bare': isBarePage,
+      'main-content--without-mobile-tab': isMobile && hideMobileTabBar,
+    }"
+  >
     <RouterView v-slot="{ Component, route: viewRoute }">
       <Transition :name="transitionName" mode="out-in">
         <component :is="Component" :key="getRootRouteKey(viewRoute)" />
@@ -176,6 +182,12 @@ useWalletWs({
 
   @include mobile-only {
     padding-bottom: calc($mobile-tab-bar-offset + env(safe-area-inset-bottom, 0px));
+  }
+
+  &--without-mobile-tab {
+    @include mobile-only {
+      padding-bottom: 0;
+    }
   }
 
   &--bare {

@@ -11,8 +11,8 @@ import { getImageUrl } from '@/utils/common'
 import BaseInput from '@/components/BaseInput.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import MonthSelector from '@/components/MonthSelector.vue';
-import ProfileBindingModal from '@/views/Profile/components/ProfileBindingModal.vue';
 import WithdrawBankModal from './components/WithdrawBankModal.vue';
+import WithdrawBindingForm from './components/WithdrawBindingForm.vue';
 import WithdrawNoticeModal from './components/WithdrawNoticeModal.vue';
 import { fetchWithdrawList, submitWithdraw } from '@/api/finance';
 import { fetchBindings } from '@/api/user';
@@ -51,7 +51,7 @@ const submitting = ref(false);
 
 // 页面弹窗
 const bankModalOpen = ref(false);
-const bindingModalOpen = ref(false);
+const bindingFormOpen = ref(false);
 const noticeModalOpen = ref(false);
 
 // 提现记录
@@ -235,16 +235,13 @@ async function loadMore() {
 }
 
 function openBankModal() {
-  if (!bankCards.value.length) {
-    bindingModalOpen.value = true;
-    return;
-  }
+  // 无论是否已有银行卡，都先进入选择界面，由用户主动点击添加入口后再打开绑定表单。
   bankModalOpen.value = true;
 }
 
 function openAddBankCard() {
   bankModalOpen.value = false;
-  bindingModalOpen.value = true;
+  bindingFormOpen.value = true;
 }
 
 async function handleBankSaved(binding) {
@@ -339,7 +336,7 @@ onBeforeUnmount(() => {
             {{ selectedBank?.bankName || t('请先绑定银行卡') }}
           </span>
           <button type="button" class="bank-card__switch" @click="openBankModal">
-            {{ t('切换') }}
+            {{ t(selectedBank ? '切换' : '新增') }}
             <i aria-hidden="true" />
           </button>
         </div>
@@ -352,7 +349,7 @@ onBeforeUnmount(() => {
       <!-- 银行卡资料与提现表单 -->
       <form class="withdraw-form" @submit.prevent="handleSubmit">
         <button type="button" class="withdraw-notice" @click="noticeModalOpen = true">
-          <span class="withdraw-notice__icon" aria-hidden="true">i</span>
+          <img class="withdraw-notice__icon-img" :src="getImageUrl('common/icon_tips.svg')" alt="">
           <span>{{ t('注意事项') }}</span>
           <i class="withdraw-notice__arrow" aria-hidden="true" />
         </button>
@@ -454,7 +451,7 @@ onBeforeUnmount(() => {
 
     <WithdrawBankModal v-model="bankModalOpen" :bank-cards="bankCards" :selected-id="selectedBankId"
       @confirm="selectedBankId = String($event)" @add="openAddBankCard" />
-    <ProfileBindingModal v-model="bindingModalOpen" initial-tab="bank" @saved="handleBankSaved" />
+    <WithdrawBindingForm v-model="bindingFormOpen" type="bank" @saved="handleBankSaved" />
     <WithdrawNoticeModal v-model="noticeModalOpen" />
   </div>
 </template>
@@ -494,7 +491,6 @@ onBeforeUnmount(() => {
   width: 100%;
   max-width: 100%;
   color: var(--auxiliary-1);
-  box-shadow: 0 3px 10px rgba(13, 37, 78, 0.2);
   .bank-card__bg {
     position: absolute;
     top: 0;
@@ -519,7 +515,7 @@ onBeforeUnmount(() => {
   }
 
   @include mobile-only {
-    height: 174px;
+    height: 166px;
     padding: 28px 22px 24px;
   }
 }
@@ -655,7 +651,7 @@ onBeforeUnmount(() => {
   height: 40px;
   padding: 0 14px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 16px;
   background: rgba(251, 92, 13, 0.1);
   color: #fb5c0d;
   font-size: 13px;
@@ -663,19 +659,10 @@ onBeforeUnmount(() => {
   cursor: pointer;
 }
 
-.withdraw-notice__icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 15px;
-  height: 15px;
-  flex-shrink: 0;
-  border: 1px solid currentColor;
-  border-radius: 50%;
-  font-family: $font-family-num, $font-family-base;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
+.withdraw-notice__icon-img {
+  width: 20px;
+  height: 20px;
+  margin-right: 4px;
 }
 
 .withdraw-notice__arrow {

@@ -72,7 +72,8 @@ function handleLogout() {
   background: #fff;
 
   @include mobile-only {
-    margin-top: 0;
+    margin-top: 8px;
+    min-height: calc(100dvh - 160px);
   }
 }
 

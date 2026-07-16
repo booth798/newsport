@@ -10,12 +10,14 @@ const appStore = useAppStore();
 const { isMobile } = storeToRefs(appStore);
 
 const isProfileHome = computed(() => route.name === 'profile-home');
+const isMessagesPage = computed(() => route.name === 'profile-messages');
 const hideSidebarOnHome = computed(() => isProfileHome.value || isMobile.value);
 
 </script>
 
 <template>
-  <div class="profile-layout" :class="{ 'profile-layout--home': hideSidebarOnHome }">
+  <RouterView v-if="isMessagesPage" />
+  <div v-else class="profile-layout" :class="{ 'profile-layout--home': hideSidebarOnHome }">
     <div class="profile-layout__inner">
       <main
         class="profile-content"

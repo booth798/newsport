@@ -8,16 +8,20 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
+import { getImageUrl } from '@/utils/common'
 
 import BaseInput from '@/components/BaseInput.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import MonthSelector from '@/components/MonthSelector.vue';
 import WithdrawAddressModal from './components/WithdrawAddressModal.vue';
-import ProfileBindingModal from '@/views/Profile/components/ProfileBindingModal.vue';
+import WithdrawBindingForm from './components/WithdrawBindingForm.vue';
+import WithdrawNoticeModal from './components/WithdrawNoticeModal.vue';
+
 import { fetchWithdrawList, submitWithdraw } from '@/api/finance';
 import { fetchBindings } from '@/api/user';
 import { useToast } from '@/hooks/useToast';
 import { useUserStore } from '@/store/modules/user';
+import { useAppStore } from '@/store/modules/app';
 
 const PAGE_SIZE = 20;
 const FILTER_OPTIONS = [
@@ -32,7 +36,10 @@ const route = useRoute();
 const router = useRouter();
 const toast = useToast();
 const userStore = useUserStore();
+const appStore = useAppStore();
 const { loggedInAssetsFormatted } = storeToRefs(userStore);
+
+const { isMobile } = storeToRefs(appStore);
 
 // 表单
 const wallets = ref([]);
@@ -43,7 +50,8 @@ const submitting = ref(false);
 
 // 弹窗
 const addressModalOpen = ref(false);
-const bindingModalOpen = ref(false);
+const bindingFormOpen = ref(false);
+const noticeModalOpen = ref(false);
 
 // 记录
 const recordsLoading = ref(true);
@@ -142,24 +150,23 @@ function isCryptoBinding(b) {
 
 function normalizeWallet(b) {
   return {
-    id: b.id ?? b.bindingId ?? b.address,
+    id: String(b.id ?? b.bindingId ?? b.address ?? ''),
     chainType: b.chainType || b.network || b.walletType || 'TRC20',
     address: b.address || b.accountNo || '',
     isDefault: !!b.isDefault,
   };
 }
 
-async function loadWallets() {
+async function loadWallets(preferredId = '') {
   try {
     const res = await fetchBindings();
     const list = Array.isArray(res?.data) ? res.data : (res?.data?.records || []);
     wallets.value = list.filter(isCryptoBinding).map(normalizeWallet);
-    if (wallets.value.length) {
-      const def = wallets.value.find((w) => w.isDefault) || wallets.value[0];
-      selectedWalletId.value = def.id;
-    } else {
-      selectedWalletId.value = '';
-    }
+    const currentId = String(preferredId || selectedWalletId.value || '');
+    const selected = wallets.value.find((wallet) => wallet.id === currentId)
+      || wallets.value.find((wallet) => wallet.isDefault)
+      || wallets.value[0];
+    selectedWalletId.value = selected?.id || '';
   } catch {
     wallets.value = [];
   }
@@ -221,10 +228,7 @@ async function loadMore() {
 }
 
 function openAddressModal() {
-  if (!wallets.value.length) {
-    bindingModalOpen.value = true;
-    return;
-  }
+  // 无论是否已有地址，都先进入选择界面，由用户主动点击添加入口后再打开绑定表单。
   addressModalOpen.value = true;
 }
 
@@ -234,12 +238,12 @@ function handleAddressConfirm(id) {
 
 function openAddAddress() {
   addressModalOpen.value = false;
-  bindingModalOpen.value = true;
+  bindingFormOpen.value = true;
 }
 
-async function handleWalletSaved() {
-  // 新增地址后刷新列表并选中最新一条
-  await loadWallets();
+async function handleWalletSaved(binding) {
+  // 新增地址后刷新接口列表，并优先选中新绑定项。
+  await loadWallets(binding?.id);
 }
 
 function selectFilter(value) {
@@ -308,26 +312,29 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="wc-page">
-    <main class="wc-panel">
-      <!-- 钱包地址卡 -->
-      <section class="wc-wallet" aria-label="wallet">
+    <section class="wc-wallet" aria-label="wallet">
+      <img class="bank-card__bg" :src="getImageUrl(`profile/${isMobile ? 'h5' : 'pc'}_bank_bg.png`)" alt="">
+      <div class="wc-wallet__inner">
         <div class="wc-wallet__top">
           <span class="wc-wallet__chain">{{ selectedWallet ? selectedWallet.chainType : 'TRC20' }}</span>
           <span class="wc-wallet__type">（{{ t('钱包类型') }}）</span>
           <button type="button" class="wc-wallet__switch" @click="openAddressModal">
-            {{ t('切换') }}
+            {{ t(selectedWallet ? '切换' : '新增') }}
             <i aria-hidden="true"></i>
           </button>
         </div>
         <div class="wc-wallet__addr">
           {{ selectedWallet ? selectedWallet.address : t('请先添加提现地址') }}
         </div>
-      </section>
+      </div>
+    </section>
+    <main class="wc-panel">
+      <!-- 钱包地址卡 -->
 
       <!-- 提现表单 -->
       <form class="wc-form" @submit.prevent="handleSubmit">
-        <div class="wc-notice">
-          <span class="wc-notice__icon" aria-hidden="true">i</span>
+        <div class="wc-notice" @click="noticeModalOpen = true">
+          <img class="withdraw-notice__icon-img" :src="getImageUrl('common/icon_tips.svg')" alt="">
           <span class="wc-notice__text">{{ t('注意事项') }}</span>
           <i class="wc-notice__arrow" aria-hidden="true"></i>
         </div>
@@ -340,12 +347,8 @@ onBeforeUnmount(() => {
 
         <label class="wc-field">
           <span class="wc-field__label">{{ t('提款密码') }}</span>
-          <BaseInput
-            v-model="withdrawPassword"
-            type="password"
-            autocomplete="current-password"
-            :placeholder="t('请输入提款密码')"
-          />
+          <BaseInput v-model="withdrawPassword" type="password" autocomplete="current-password"
+            :placeholder="t('请输入提款密码')" />
         </label>
 
         <button class="wc-form__submit btn btn--primary" type="submit" :disabled="submitting">
@@ -373,23 +376,14 @@ onBeforeUnmount(() => {
             <div class="wc-summary__header">
               <span>{{ t('已完成总合计') }}</span>
               <div ref="filterRef" class="wc-filter">
-                <button
-                  type="button"
-                  class="wc-filter__trigger"
-                  :aria-expanded="filterOpen"
-                  @click.stop="filterOpen = !filterOpen"
-                >
+                <button type="button" class="wc-filter__trigger" :aria-expanded="filterOpen"
+                  @click.stop="filterOpen = !filterOpen">
                   {{ t(selectedFilterLabel) }}
                   <i aria-hidden="true"></i>
                 </button>
                 <div v-if="filterOpen" class="wc-filter__menu">
-                  <button
-                    v-for="option in FILTER_OPTIONS"
-                    :key="option.value"
-                    type="button"
-                    :class="{ active: selectedFilter === option.value }"
-                    @click="selectFilter(option.value)"
-                  >
+                  <button v-for="option in FILTER_OPTIONS" :key="option.value" type="button"
+                    :class="{ active: selectedFilter === option.value }" @click="selectFilter(option.value)">
                     {{ t(option.label) }}
                   </button>
                 </div>
@@ -423,13 +417,7 @@ onBeforeUnmount(() => {
             </dl>
           </article>
 
-          <button
-            v-if="hasMore"
-            type="button"
-            class="wc-more"
-            :disabled="loadingMore"
-            @click="loadMore"
-          >
+          <button v-if="hasMore" type="button" class="wc-more" :disabled="loadingMore" @click="loadMore">
             {{ loadingMore ? t('加载中') : t('加载更多') }}
           </button>
         </template>
@@ -437,20 +425,12 @@ onBeforeUnmount(() => {
     </main>
 
     <!-- 更换地址弹窗 -->
-    <WithdrawAddressModal
-      v-model="addressModalOpen"
-      :addresses="wallets"
-      :selected-id="selectedWalletId"
-      @confirm="handleAddressConfirm"
-      @add="openAddAddress"
-    />
+    <WithdrawAddressModal v-model="addressModalOpen" :addresses="wallets" :selected-id="selectedWalletId"
+      @confirm="handleAddressConfirm" @add="openAddAddress" />
 
-    <!-- 新增地址（复用个人中心绑定弹窗，默认区块链） -->
-    <ProfileBindingModal
-      v-model="bindingModalOpen"
-      initial-tab="wallet"
-      @saved="handleWalletSaved"
-    />
+    <!-- 新增地址：PC 使用弹窗，H5 使用独立全屏表单。 -->
+    <WithdrawBindingForm v-model="bindingFormOpen" type="wallet" @saved="handleWalletSaved" />
+    <WithdrawNoticeModal v-model="noticeModalOpen" />
   </div>
 </template>
 
@@ -474,6 +454,7 @@ onBeforeUnmount(() => {
     border-radius: 32px;
     background: var(--auxiliary-1);
     box-shadow: var(--shadow-card);
+    margin-top: 20px;
   }
 
   @include mobile-only {
@@ -487,19 +468,28 @@ onBeforeUnmount(() => {
   overflow: hidden;
   box-sizing: border-box;
   color: var(--auxiliary-1);
-  background:
-    linear-gradient(115deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 44%),
-    linear-gradient(90deg, rgba(28, 123, 255, 0.55), rgba(6, 25, 62, 0.98)),
-    #092856;
+
+  .bank-card__bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+  }
+
+  .wc-wallet__inner {
+    position: relative;
+  }
 
   @include web-only {
     padding: 22px 24px;
-    border-radius: 20px;
+    height: 200px;
   }
 
   @include mobile-only {
+    height: 166px;
     padding: 18px;
-    border-radius: 16px;
   }
 }
 
@@ -543,7 +533,6 @@ onBeforeUnmount(() => {
 }
 
 .wc-wallet__addr {
-  margin-top: 28px;
   overflow: hidden;
   font-family: $font-family-num, $font-family-base;
   font-size: 18px;
@@ -552,8 +541,12 @@ onBeforeUnmount(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
 
+  @include web-only {
+    margin-top: 100px;
+  }
+
   @include mobile-only {
-    margin-top: 22px;
+    margin-top: 80px;
     font-size: 15px;
   }
 }
@@ -565,7 +558,6 @@ onBeforeUnmount(() => {
 
   @include web-only {
     gap: 18px;
-    padding: 20px;
     border-radius: 20px;
   }
 
@@ -574,6 +566,7 @@ onBeforeUnmount(() => {
     padding: 16px;
     border-radius: 16px;
     background: var(--auxiliary-1);
+    margin-top: 8px;
   }
 }
 
@@ -583,25 +576,17 @@ onBeforeUnmount(() => {
   gap: 6px;
   height: 40px;
   padding: 0 14px;
-  border-radius: 12px;
+  border-radius: 16px;
   background: rgba(251, 92, 13, 0.1);
   color: #fb5c0d;
   font-size: 13px;
+  cursor: pointer;
 }
 
-.wc-notice__icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 15px;
-  height: 15px;
-  border: 1px solid currentColor;
-  border-radius: 50%;
-  font-family: $font-family-num, $font-family-base;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
-  flex-shrink: 0;
+.withdraw-notice__icon-img {
+  width: 20px;
+  height: 20px;
+  margin-right: 4px;
 }
 
 .wc-notice__arrow {
@@ -777,7 +762,9 @@ onBeforeUnmount(() => {
 }
 
 @keyframes wc-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .wc-retry {
@@ -854,7 +841,7 @@ onBeforeUnmount(() => {
     min-height: 48px;
     padding: 8px 0;
 
-    & + div {
+    &+div {
       border-top: 1px solid var(--theme-divider);
     }
   }
