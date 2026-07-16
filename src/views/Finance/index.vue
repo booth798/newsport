@@ -14,10 +14,14 @@ const tabs = [
   { key: '/finance/withdraw', label: '银行卡提现', to: '/finance/withdraw' },
   { key: '/finance/withdraw-chain', label: '区块链提现', to: '/finance/withdraw-chain' },
 ];
+// H5 将两种提现方式收纳在同一页面框架内，通过顶部页签切换具体表单。
+const withdrawTabs = tabs.filter((tab) =>
+  ['/finance/withdraw', '/finance/withdraw-chain'].includes(tab.to),
+);
 
 const activeTab = computed(() => route.path);
-const isFinanceHome = computed(() => route.name === 'finance');
 const isVipTransfer = computed(() => route.name === 'finance-vip-transfer');
+const isWithdrawPage = computed(() => withdrawTabs.some((tab) => tab.to === route.path));
 const sidebarTabs = computed(() => tabs.map((tab) => ({ ...tab, label: t(tab.label) })));
 </script>
 
@@ -26,13 +30,13 @@ const sidebarTabs = computed(() => tabs.map((tab) => ({ ...tab, label: t(tab.lab
     <div class="finance-layout__inner">
       <AppSideNav :items="sidebarTabs" :active-key="activeTab" aria-label="finance" />
 
-      <nav class="finance-tabs" aria-label="finance">
+      <nav v-if="isWithdrawPage" class="finance-tabs" :aria-label="t('提现')">
         <RouterLink
-          v-for="tab in tabs"
+          v-for="tab in withdrawTabs"
           :key="tab.to"
-          :to="tab.to"
+          :to="{ path: tab.to, query: route.query }"
           class="finance-tab"
-          :class="{ active: activeTab === tab.to }"
+          :class="{ 'active btn--primary': activeTab === tab.to }"
         >
           {{ t(tab.label) }}
         </RouterLink>
@@ -94,7 +98,6 @@ const sidebarTabs = computed(() => tabs.map((tab) => ({ ...tab, label: t(tab.lab
 }
 
 .finance-tabs {
-  display: flex;
   align-items: center;
   justify-content: space-between;
 
@@ -103,7 +106,15 @@ const sidebarTabs = computed(() => tabs.map((tab) => ({ ...tab, label: t(tab.lab
   }
 
   @include mobile-only {
-    display: none;
+    box-sizing: border-box;
+    display: flex;
+    width: 100%;
+    margin-bottom: 14px;
+    padding: 5px;
+    border: 1px solid var(--auxiliary-1);
+    border-radius: $radius-pill;
+    background: var(--surface-card);
+    box-shadow: var(--shadow-card);
   }
 }
 
@@ -111,24 +122,18 @@ const sidebarTabs = computed(() => tabs.map((tab) => ({ ...tab, label: t(tab.lab
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 33.3333%;
-  max-width: 33.3333%;
+  flex: 0 0 50%;
+  max-width: 50%;
   min-width: 0;
   height: 38px;
   padding: 0 $spacing-sm;
   border-radius: $radius-pill;
   font-size: $font-size-base;
   color: var(--theme-primary);
-  text-decoration: none;
-  transition:
-    background 0.18s ease,
-    color 0.18s ease,
-    box-shadow 0.18s ease;
-  white-space: nowrap;
-  font-weight: 700;
+  font-weight: 500;
 
   @include mobile-only {
-    height: 34px;
+    height: 36px;
   }
 }
 
