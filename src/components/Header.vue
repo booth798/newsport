@@ -397,7 +397,8 @@ watch(isLoggedIn, (loggedIn) => {
           <template v-if="isMonthFilterPage">
             <MonthSelector v-model="financeMonth" :aria-label="t('选择月份')" />
           </template>
-          <template v-else-if="isLoggedIn">
+          <!-- H5 比赛详情页右上角不展示客服/菜单按钮 -->
+          <template v-else-if="isLoggedIn && !isMarketDetailPage">
             <button type="button" class="header-mobile-btn" :aria-label="t('在线客服')" @click="appStore.openCustomerServiceConfirm">
               <img class="header-mobile-btn__service-img" :src="serviceIconUrl" alt="" />
             </button>
@@ -405,7 +406,7 @@ watch(isLoggedIn, (loggedIn) => {
               <img class="header-mobile-btn__img" :src="moreIconUrl" alt="" />
             </button>
           </template>
-          <template v-else>
+          <template v-else-if="!isMarketDetailPage">
             <button type="button" class="header-mobile-login-btn" @click="appStore.openLoginModal()">
               {{ t('登录') }}
             </button>
