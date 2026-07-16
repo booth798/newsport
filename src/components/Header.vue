@@ -746,11 +746,13 @@ watch(isLoggedIn, (loggedIn) => {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      height: 36px;
-      padding: 0 20px;
-      border: none;
-      border-radius: 18px;
-      background: linear-gradient(180deg, #3ba0ff 0%, #0d6cfb 100%);
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      padding: 0;
+      border: 1px solid #d6e0eb;
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 100%, #68b3fd 0%, #0d6cfb 100%);
       box-shadow: 0 4px 8px rgba(21, 58, 119, 0.12);
       color: #fff;
       font-size: 14px;
