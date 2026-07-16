@@ -263,6 +263,7 @@ export default {
   互转提示第二行: 'Successful transfers cannot be reversed',
   互转记录: 'Transfer records',
   选择月份: 'Select month',
+  日期选择: 'Select date',
   筛选类型: 'Filter type',
   加载更多: 'Load more',
   提款金额最低为100: 'The minimum withdrawal amount is 100',

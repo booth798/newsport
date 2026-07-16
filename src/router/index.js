@@ -81,13 +81,14 @@ const routes = [
         path: 'withdraw',
         name: 'finance-withdraw',
         component: () => import('@/views/Finance/Withdraw.vue'),
-        meta: { titleKey: '银行卡提现' },
+        // H5：返回顶栏 + 标题 + 右侧月份筛选，隐藏底部 Tab（对齐会员互转）。
+        meta: { titleKey: '银行卡提现', compactHeader: true, hideMobileTabBar: true },
       },
       {
         path: 'withdraw-chain',
         name: 'finance-withdraw-chain',
         component: () => import('@/views/Finance/WithdrawChain.vue'),
-        meta: { titleKey: '区块链提现' },
+        meta: { titleKey: '区块链提现', compactHeader: true, hideMobileTabBar: true },
       },
       {
         path: 'vip-transfer',
