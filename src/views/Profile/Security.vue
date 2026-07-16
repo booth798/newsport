@@ -1,10 +1,16 @@
 <script setup>
+/**
+ * 设置页（对齐 App SettingActivity）
+ * H5：自带返回顶栏 + 列表（安全设置/语言/关于我们/退出登录）
+ * PC：仍由 Overview 弹窗处理，本页主要服务 H5
+ */
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
 import { useAppStore } from '@/store/modules/app';
+import ProfileMobileHeader from '@/views/Profile/components/ProfileMobileHeader.vue';
 import ProfileSecurityModal from '@/views/Profile/components/ProfileSecurityModal.vue';
 import LanguageSettingModal from '@/views/Profile/components/LanguageSettingModal.vue';
 
@@ -21,8 +27,10 @@ function handleLogout() {
 </script>
 
 <template>
-  <div class="profile-security">
-    <section v-if="isMobile" class="settings-mobile-list" aria-label="settings">
+  <div class="profile-security" :class="{ 'profile-security--mobile': isMobile }">
+    <ProfileMobileHeader v-if="isMobile" :title="t('设置')" />
+
+    <section class="settings-mobile-list" aria-label="settings">
       <button type="button" class="settings-mobile-row" @click="showSecurityModal = true">
         <span>{{ t('安全设置') }}</span>
         <i aria-hidden="true" />
@@ -48,10 +56,24 @@ function handleLogout() {
 </template>
 
 <style lang="scss" scoped>
+@use '@/styles/tools.scss' as *;
+
+.profile-security--mobile {
+  min-height: 100dvh;
+  margin: -18px -8px 0;
+  padding: 0 8px 20px;
+  box-sizing: border-box;
+  background: #eaf1f9;
+}
+
 .settings-mobile-list {
   overflow: hidden;
-  border-radius: 12px;
-  background: rgba(234, 241, 249, 0.72);
+  border-radius: 16px;
+  background: #fff;
+
+  @include mobile-only {
+    margin-top: 0;
+  }
 }
 
 .settings-mobile-row {
@@ -59,7 +81,7 @@ function handleLogout() {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  height: 46px;
+  height: 48px;
   padding: 0 16px;
   border: none;
   border-bottom: 1px solid rgba(214, 224, 235, 0.42);
@@ -68,6 +90,7 @@ function handleLogout() {
   font-size: 14px;
   font-weight: 500;
   text-align: left;
+  cursor: pointer;
 
   &:last-child {
     border-bottom: none;
@@ -86,5 +109,6 @@ function handleLogout() {
   margin-left: auto;
   margin-right: 16px;
   color: #0b3462;
+  font-size: 12px;
 }
 </style>

@@ -37,9 +37,12 @@ const route = useRoute();
 const router = useRouter();
 const { locale, isMobile } = storeToRefs(appStore);
 const { isLoggedIn } = storeToRefs(userStore);
-const isBarePage = computed(() => Boolean(route.meta?.bare));
-const hideMobileTabBar = computed(() => Boolean(route.meta?.hideMobileTabBar));
-const hideMobileHeader = computed(() => isMobile.value && Boolean(route.meta?.hideMobileHeader));
+const isBarePage = computed(() => Boolean(route.meta?.bare) || route.matched.some((r) => r.meta?.bare));
+// 嵌套路由用 matched 判断，避免子路由 meta 未合入 route.meta。
+const hideMobileTabBar = computed(() => route.matched.some((r) => r.meta?.hideMobileTabBar));
+const hideMobileHeader = computed(
+  () => isMobile.value && route.matched.some((r) => r.meta?.hideMobileHeader),
+);
 
 const transitionName = ref('page-fade');
 

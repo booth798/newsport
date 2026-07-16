@@ -423,7 +423,6 @@ onMounted(loadData);
     border: 0;
     border-radius: 0;
     box-shadow: none;
-    background: linear-gradient(90deg, #307cfb, #d1defc);
   }
 }
 

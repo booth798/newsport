@@ -96,6 +96,8 @@ const routes = [
         // H5 使用页面自身的返回栏，PC 继续复用财务页公共头部与侧栏。
         meta: {
           titleKey: '会员互转',
+          // 从「我的」进入的二级页，H5 不展示底部 Tab。
+          hideMobileTabBar: true,
         },
       },
       {
@@ -122,25 +124,41 @@ const routes = [
         path: 'info',
         name: 'profile-info',
         component: () => import('@/views/Profile/Info.vue'),
-        meta: { titleKey: '个人资料' },
+        meta: { titleKey: '个人资料', hideMobileTabBar: true },
       },
       {
         path: 'messages',
         name: 'profile-messages',
         component: () => import('@/views/Profile/Messages.vue'),
-        meta: { titleKey: '消息中心' },
+        meta: { titleKey: '消息中心', hideMobileTabBar: true },
       },
       {
         path: 'verify',
         name: 'profile-verify',
         component: () => import('@/views/Profile/Verify.vue'),
-        meta: { titleKey: '实名认证' },
+        meta: { titleKey: '实名认证', hideMobileTabBar: true },
       },
       {
         path: 'security',
         name: 'profile-security',
         component: () => import('@/views/Profile/Security.vue'),
-        meta: { titleKey: '设置', hideMobileTabBar: true },
+        // H5 对齐 App SettingActivity：自带返回顶栏，隐藏全局头与底栏。
+        meta: {
+          titleKey: '设置',
+          hideMobileHeader: true,
+          hideMobileTabBar: true,
+        },
+      },
+      {
+        path: 'bindings',
+        name: 'profile-bindings',
+        component: () => import('@/views/Profile/Bindings.vue'),
+        // H5 对齐 App BindingListActivity：自带返回顶栏，隐藏全局头与底栏。
+        meta: {
+          titleKey: '绑定信息',
+          hideMobileHeader: true,
+          hideMobileTabBar: true,
+        },
       },
       {
         path: 'about',
@@ -163,6 +181,7 @@ const routes = [
           requiresAuth: true,
           guestPreview: true,
           hideMobileHeader: true,
+          hideMobileTabBar: true,
         },
       },
     ]
