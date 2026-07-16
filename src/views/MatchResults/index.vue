@@ -33,13 +33,6 @@ const beijingNow = ref('');
 let clockTimer = null;
 let refreshTimer = null;
 
-/** 已结束赛事的状态标识（兼容多种后端枚举） */
-const FINISHED_STATUS = new Set(['FINISHED', 'FT', 'ENDED', 'FULL_TIME', 'FULLTIME', 'COMPLETE', 'COMPLETED', 'CLOSED']);
-
-function isFinishedStatus(status) {
-  return FINISHED_STATUS.has(String(status || '').toUpperCase());
-}
-
 function kickoffTime(iso) {
   if (!iso) return '';
   try {
@@ -79,11 +72,9 @@ async function loadMatches() {
   try {
     error.value = false;
     if (!matches.value.length) loading.value = true;
-    const res = await fetchMatchList({ status: 'FINISHED', pageSize: 50 });
-    const records = res.data?.records || [];
-    // 后端未按 status 过滤时，前端再兜底筛一次已结束赛事。
-    const finished = records.filter((m) => isFinishedStatus(m.status));
-    matches.value = finished.length ? finished : records;
+    // 使用服务端 phase=finished 过滤已结束赛事（对齐安卓端 EventResultsActivity）。
+    const res = await fetchMatchList({ phase: 'finished', pageSize: 50 });
+    matches.value = res.data?.records || [];
   } catch {
     error.value = true;
     matches.value = [];

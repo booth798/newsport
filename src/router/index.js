@@ -25,7 +25,8 @@ const routes = [
     path: '/market/search',
     name: 'market-search',
     component: () => import('@/views/Market/Search/index.vue'),
-    meta: { titleKey: '搜索', hideMobileTabBar: true, requiresAuth: true },
+    // H5：页面自带紧凑头（返回+标题），隐藏全局移动端头避免双头；底部 Tab 保留（对齐设计稿）
+    meta: { titleKey: '搜索', hideMobileHeader: true, requiresAuth: true },
   },
   {
     path: '/market/filter',
@@ -64,6 +65,13 @@ const routes = [
     // 赛事结果页面自带返回栏与北京时间，使用 bare 隐藏全局头部。
     component: () => import('@/views/MatchResults/index.vue'),
     meta: { titleKey: '赛事结果', bare: true, requiresAuth: true, guestPreview: true },
+  },
+  {
+    path: '/upcoming-matches',
+    name: 'upcoming-matches',
+    // 未开赛页面自带返回栏与北京时间，使用 bare 隐藏全局头部。
+    component: () => import('@/views/UpcomingMatches/index.vue'),
+    meta: { titleKey: '未开赛', bare: true, requiresAuth: true, guestPreview: true },
   },
   {
     path: '/finance',

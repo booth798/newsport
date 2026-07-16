@@ -56,12 +56,17 @@ export async function fetchHotLeagues() {
   return get('/leagues/hot');
 }
 
-/** 比赛列表（分页 + 过滤） */
+/**
+ * 比赛列表（分页 + 过滤）
+ * phase：赛事阶段过滤，取值 all / live（进行中）/ upcoming（未开赛）/ finished（已结束），
+ *        对齐安卓端 MatchRepository.list 的 phase 参数，由服务端完成筛选。
+ */
 export async function fetchMatchList(params = {}) {
   const [res, leagueRes] = await Promise.all([
     get('/matches', {
       leagueId: params.leagueId,
       date: params.date,
+      phase: params.phase,
       status: params.status,
       hot: params.hot,
       pageNum: params.pageNum || 1,
@@ -133,7 +138,11 @@ export async function fetchMarketList() {
   return get('/markets/open');
 }
 
-/** 市场分页列表 */
+/**
+ * 市场分页列表
+ * period：盘口周期，市场页固定传 'FT'（全场），对齐安卓端 HomeRepository.markets，
+ *         避免半场盘口造成同一赛事重复。
+ */
 export async function fetchMarketListPaged(params = {}) {
   return get('/markets/list', {
     pageNum: params.pageNum || 1,
@@ -142,6 +151,7 @@ export async function fetchMarketListPaged(params = {}) {
     teamName: params.teamName,
     date: params.date,
     day: params.day,
+    period: params.period,
   });
 }
 
@@ -196,14 +206,28 @@ export async function fetchPoolYields(marketId) {
   return get(`/pools/${marketId}/yields`, undefined, { silent: true });
 }
 
-/** 比赛场次统计 */
+/**
+ * 比赛场次统计
+ * 返回各阶段场次数 { all, live, upcoming, finished }，可带 leagueId、date 过滤。
+ */
 export async function fetchMatchCounts(params = {}) {
-  return get('/matches/counts', params);
+  return get('/matches/counts', {
+    leagueId: params.leagueId,
+    date: params.date,
+  });
 }
 
-/** 市场分页列表统计 */
+/**
+ * 市场分页列表统计
+ * 返回 { all, today, tomorrow }；可带 league、teamName、period 过滤，
+ * 对齐安卓端 HomeRepository.marketCounts（市场页固定传 period='FT'）。
+ */
 export async function fetchMarketListCounts(params = {}) {
-  return get('/markets/list/counts', params);
+  return get('/markets/list/counts', {
+    league: params.league,
+    teamName: params.teamName,
+    period: params.period,
+  });
 }
 
 /** 系统公开配置 */

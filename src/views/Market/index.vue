@@ -6,15 +6,18 @@ import { storeToRefs } from 'pinia';
 
 import { fetchLeagueList, fetchMarketListPaged, fetchMarketListCounts } from '@/api/match';
 import { useAppStore } from '@/store/modules/app';
+import { useLeagueFilterStore } from '@/store/modules/leagueFilter';
 import EmptyState from '@/components/EmptyState.vue';
 import HomeMatchCard from '@/views/Home/components/HomeMatchCard.vue';
 
 import iconEventsUrl from '@/assets/images/events/icon_events.svg?url';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const router = useRouter();
 const appStore = useAppStore();
 const { isMobile } = storeToRefs(appStore);
+const filterStore = useLeagueFilterStore();
+const { selectedLeagues, isAllSelected } = storeToRefs(filterStore);
 
 const leagues = ref([]);
 const matches = ref([]);
@@ -22,32 +25,121 @@ const loading = ref(true);
 const loadingMore = ref(false);
 const error = ref(false);
 const searchQuery = ref('');
-const activeLeague = ref('全部');
+const activeLeague = ref('全部');      // 当前 PC 联赛 Tab 的 key（仅用于高亮）
+const activeLeagueValue = ref(null);   // 当前 PC 联赛 Tab 传给接口的 league 值（联赛名）
 
 const activeFilter = ref('all');
 const matchCounts = ref({ all: 0, today: 0, tomorrow: 0 });
 const pageNum = ref(1);
 const hasMore = ref(false);
 const PAGE_SIZE = 20;
+// 市场页仅展示全场盘口，对齐安卓端 period=FT（避免半场盘口造成同一赛事重复）。
+const MARKET_PERIOD = 'FT';
 
-const selectedLeagueNames = ref([]);
+/** 依据当前语言取联赛展示名（zh 用简称、en 用全称），用作 PC 联赛 Tab 的接口 league 过滤值。 */
+function leagueDisplayName(league) {
+  const name = (league.name || '').trim();
+  const shortName = (league.shortName || '').trim();
+  const isEn = String(locale.value || '').toLowerCase().startsWith('en');
+  return isEn ? (name || shortName) : (shortName || name);
+}
+
+/** 当前生效的联赛过滤列表（联赛名数组；无筛选时为 [null]），对齐安卓 leagueFilters()。 */
+function currentLeagueFilters() {
+  if (isMobile.value) {
+    // 移动端使用联赛筛选弹层（多选）；全选或未选均视为不加 league 过滤。
+    if (isAllSelected.value || selectedLeagues.value.length === 0) return [null];
+    return [...selectedLeagues.value];
+  }
+  // PC 端使用联赛 Tab（单选）。
+  return activeLeagueValue.value ? [activeLeagueValue.value] : [null];
+}
+
+function currentDay() {
+  return activeFilter.value === 'today' ? 'today'
+    : activeFilter.value === 'tomorrow' ? 'tomorrow' : 'all';
+}
+
+function computeHasMore(page, requestedPage) {
+  if (!page) return false;
+  const total = page.total;
+  const pages = page.pages;
+  const current = page.current || requestedPage;
+  const size = page.size || PAGE_SIZE;
+  const recordsLen = (page.records || []).length;
+  return pages != null
+    ? current < pages
+    : total != null
+      ? current * size < total
+      : recordsLen >= PAGE_SIZE;
+}
+
+/** 拉取市场列表（可翻页/追加）：按当前联赛过滤逐个请求后合并去重，对齐安卓 loadPage。 */
+async function loadMarkets(append) {
+  const day = currentDay();
+  const leagueList = currentLeagueFilters();
+  const page = append ? pageNum.value + 1 : 1;
+
+  const results = await Promise.all(
+    leagueList.map((lg) =>
+      fetchMarketListPaged({
+        pageNum: page,
+        pageSize: PAGE_SIZE,
+        day,
+        league: lg || undefined,
+        period: MARKET_PERIOD,
+      }).catch(() => null),
+    ),
+  );
+
+  const seen = new Set(append ? matches.value.map((m) => m._dedupeKey) : []);
+  const merged = [];
+  for (const res of results) {
+    for (const r of (res?.data?.records || [])) {
+      const norm = normalizeMarketRecord(r);
+      if (!seen.has(norm._dedupeKey)) {
+        seen.add(norm._dedupeKey);
+        merged.push(norm);
+      }
+    }
+  }
+
+  matches.value = append ? [...matches.value, ...merged] : merged;
+  pageNum.value = page;
+  // 多联赛合并结果各自分页游标不同，不支持前端翻页；仅单请求时依据分页信息判断。
+  hasMore.value = leagueList.length === 1 ? computeHasMore(results[0]?.data, page) : false;
+}
+
+/** 拉取各 Tab 场次统计（all/today/tomorrow），按联赛过滤求和，对齐安卓 marketCounts(period=FT)。 */
+async function loadCounts() {
+  const leagueList = currentLeagueFilters();
+  const results = await Promise.all(
+    leagueList.map((lg) =>
+      fetchMarketListCounts({ league: lg || undefined, period: MARKET_PERIOD }).catch(() => null),
+    ),
+  );
+  const sum = (key, fallbackKey) => results.reduce((acc, r) => {
+    const d = r?.data;
+    if (!d) return acc;
+    const v = d[key] ?? (fallbackKey ? d[fallbackKey] : 0) ?? 0;
+    return acc + Number(v || 0);
+  }, 0);
+  matchCounts.value = {
+    all: sum('all', 'total'),
+    today: sum('today'),
+    tomorrow: sum('tomorrow'),
+  };
+}
 
 async function loadInitial() {
   try {
     loading.value = true;
     error.value = false;
-
-    const [leagueRes, marketRes, countsRes] = await Promise.all([
-      fetchLeagueList().catch(() => ({ data: [] })),
-      fetchMarketListPaged({ pageSize: PAGE_SIZE, day: 'all' }).catch(() => null),
-      fetchMarketListCounts().catch(() => null),
-    ]);
-
+    pageNum.value = 1;
+    const leagueRes = await fetchLeagueList().catch(() => ({ data: [] }));
     leagues.value = leagueRes.data || [];
-    processMarketResponse(marketRes, false);
-    processCounts(countsRes);
+    await Promise.all([loadMarkets(false), loadCounts()]);
   } catch {
-    leagues.value = [];
     matches.value = [];
     error.value = true;
   } finally {
@@ -55,32 +147,19 @@ async function loadInitial() {
   }
 }
 
-function processMarketResponse(res, append) {
-  if (!res?.data) {
-    if (!append) matches.value = [];
-    return;
+/** 按当前筛选重新加载（保留 loading 态） */
+async function reload() {
+  try {
+    loading.value = true;
+    error.value = false;
+    pageNum.value = 1;
+    await Promise.all([loadMarkets(false), loadCounts()]);
+  } catch {
+    matches.value = [];
+    error.value = true;
+  } finally {
+    loading.value = false;
   }
-  const page = res.data;
-  const records = page.records || [];
-  const normalized = records.map(normalizeMarketRecord);
-
-  if (append) {
-    const existingIds = new Set(matches.value.map((m) => m._dedupeKey));
-    const newItems = normalized.filter((m) => !existingIds.has(m._dedupeKey));
-    matches.value = [...matches.value, ...newItems];
-  } else {
-    matches.value = normalized;
-  }
-
-  const total = page.total;
-  const pages = page.pages;
-  const current = page.current || pageNum.value;
-  const size = page.size || PAGE_SIZE;
-  hasMore.value = pages != null
-    ? current < pages
-    : total != null
-      ? current * size < total
-      : records.length >= PAGE_SIZE;
 }
 
 function normalizeMarketRecord(r) {
@@ -113,34 +192,23 @@ function normalizeMarketRecord(r) {
   };
 }
 
-function processCounts(res) {
-  if (!res?.data) return;
-  const d = res.data;
-  matchCounts.value = {
-    all: d.all ?? d.total ?? 0,
-    today: d.today ?? 0,
-    tomorrow: d.tomorrow ?? 0,
-  };
-}
-
 onMounted(loadInitial);
 
 const trimmedQuery = computed(() => searchQuery.value.trim());
 const hasQuery = computed(() => trimmedQuery.value.length > 0);
 
 const leagueTabs = computed(() => [
-  { key: '全部', label: '全部' },
+  { key: '全部', label: '全部', value: null },
   ...leagues.value.slice(0, isMobile.value ? 5 : 8).map((item) => ({
-    key: item.name || item.key,
+    key: item.name || item.key || item.id,
     label: item.shortName || item.name || item.key,
+    value: leagueDisplayName(item),
   })),
 ]);
 
 const filteredMatches = computed(() => {
   let list = matches.value;
-  if (activeLeague.value !== '全部' && !isMobile.value) {
-    list = list.filter((m) => m.league === activeLeague.value);
-  }
+  // 联赛过滤已由服务端 league 参数完成，这里只做搜索过滤。
   if (hasQuery.value) {
     const q = trimmedQuery.value.toLowerCase();
     list = list.filter((m) =>
@@ -150,76 +218,23 @@ const filteredMatches = computed(() => {
   return list;
 });
 
-function selectLeague(leagueKey) {
-  activeLeague.value = leagueKey;
-  pageNum.value = 1;
-  loadWithFilters();
-}
-
-async function loadWithFilters() {
-  try {
-    loading.value = true;
-    error.value = false;
-    pageNum.value = 1;
-
-    const dayParam = activeFilter.value === 'today' ? 'today'
-      : activeFilter.value === 'tomorrow' ? 'tomorrow' : 'all';
-    const leagueParam = activeLeague.value !== '全部' ? activeLeague.value : undefined;
-
-    if (selectedLeagueNames.value.length > 0) {
-      const results = await Promise.all(
-        selectedLeagueNames.value.map((name) =>
-          fetchMarketListPaged({ pageSize: PAGE_SIZE, day: dayParam, league: name }).catch(() => null),
-        ),
-      );
-      const allRecords = [];
-      const seen = new Set();
-      for (const res of results) {
-        for (const r of (res?.data?.records || [])) {
-          const key = r.marketId || `${r.matchId}:${r.period}`;
-          if (!seen.has(key)) {
-            seen.add(key);
-            allRecords.push(normalizeMarketRecord(r));
-          }
-        }
-      }
-      matches.value = allRecords;
-      hasMore.value = false;
-    } else {
-      const res = await fetchMarketListPaged({
-        pageSize: PAGE_SIZE,
-        day: dayParam,
-        league: leagueParam,
-      });
-      processMarketResponse(res, false);
-    }
-  } catch {
-    matches.value = [];
-    error.value = true;
-  } finally {
-    loading.value = false;
-  }
+function selectLeague(tab) {
+  if (activeLeague.value === tab.key) return;
+  activeLeague.value = tab.key;
+  activeLeagueValue.value = tab.value ?? null;
+  reload();
 }
 
 async function selectFilter(key) {
   if (activeFilter.value === key) return;
   activeFilter.value = key;
-  await loadWithFilters();
+  await reload();
 }
 
 function loadMore() {
   if (loadingMore.value || !hasMore.value) return;
   loadingMore.value = true;
-  const dayParam = activeFilter.value === 'today' ? 'today'
-    : activeFilter.value === 'tomorrow' ? 'tomorrow' : 'all';
-  const leagueParam = activeLeague.value !== '全部' ? activeLeague.value : undefined;
-  const nextPage = pageNum.value + 1;
-
-  fetchMarketListPaged({ pageNum: nextPage, pageSize: PAGE_SIZE, day: dayParam, league: leagueParam })
-    .then((res) => {
-      pageNum.value = nextPage;
-      processMarketResponse(res, true);
-    })
+  loadMarkets(true)
     .catch(() => {})
     .finally(() => { loadingMore.value = false; });
 }
@@ -238,15 +253,10 @@ const filterTags = computed(() => [
   { key: 'tomorrow', label: t('明日赛事'), count: matchCounts.value.tomorrow },
 ]);
 
-watch(selectedLeagueNames, () => {
-  loadWithFilters();
+// 移动端联赛筛选（来自筛选弹层）变化时重新加载。
+watch([selectedLeagues, isAllSelected], () => {
+  if (isMobile.value) reload();
 });
-
-function onFilterResult(names) {
-  selectedLeagueNames.value = names || [];
-}
-
-defineExpose({ onFilterResult });
 </script>
 
 <template>
@@ -310,7 +320,7 @@ defineExpose({ onFilterResult });
           type="button"
           class="market-leagues__tab"
           :class="{ 'market-leagues__tab--active': activeLeague === tab.key }"
-          @click="selectLeague(tab.key)"
+          @click="selectLeague(tab)"
         >
           {{ t(tab.label) }}
         </button>
@@ -435,7 +445,7 @@ defineExpose({ onFilterResult });
   &__filter-tag {
     flex: 0 0 auto;
     height: 32px;
-    padding: 0 12px;
+    padding: 0 16px;
     border: 0.8px solid #d6e0eb;
     border-radius: 48px;
     background: #fff;

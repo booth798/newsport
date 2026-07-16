@@ -98,11 +98,9 @@ async function loadMatches() {
   try {
     error.value = false;
     if (!matches.value.length) loading.value = true;
-    const res = await fetchMatchList({ status: 'LIVE', pageSize: 50 });
-    let records = res.data?.records || [];
-    // 后端未按 status 过滤时，前端再兜底筛一次进行中赛事。
-    const live = records.filter((m) => isLiveStatus(m.status));
-    matches.value = live.length ? live : records;
+    // 使用服务端 phase=live 过滤进行中赛事（对齐安卓端 LiveScoreActivity）。
+    const res = await fetchMatchList({ phase: 'live', pageSize: 50 });
+    matches.value = res.data?.records || [];
   } catch {
     error.value = true;
     matches.value = [];

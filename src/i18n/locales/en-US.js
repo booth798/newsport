@@ -126,6 +126,8 @@ export default {
   搜索: 'Search',
   搜索联赛: 'Search leagues',
   '搜索赛事、联赛、球队': 'Search matches, leagues, teams',
+  搜索球队名称: 'Search team name',
+  清空: 'Clear',
   热门搜索: 'Hot Searches',
   搜索历史: 'Search History',
   搜索到: 'Found',
