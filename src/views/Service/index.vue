@@ -11,6 +11,7 @@ import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
 import { useUserStore } from '@/store/modules/user';
+import { useAppStore } from '@/store/modules/app';
 import {
   useCustomerService,
   MessageDirection,
@@ -25,6 +26,7 @@ import avatarDefaultUrl from '@/assets/images/common/avatar_default.png?url';
 const { t } = useI18n();
 const router = useRouter();
 const userStore = useUserStore();
+const appStore = useAppStore();
 const { isLoggedIn } = storeToRefs(userStore);
 
 const {
@@ -185,6 +187,9 @@ function handleChatScroll() {
 
 /* ─── 初始化：进入页面自动连接 ─── */
 onMounted(() => {
+  // 客服页为独立整屏（bare + guestPreview），进入时关闭可能残留的登录相关弹窗，避免遮挡聊天界面。
+  appStore.closeLoginModal();
+  appStore.closeLoginConfirm();
   if (isLoggedIn.value) {
     connect();
   }
