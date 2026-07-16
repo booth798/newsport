@@ -4,6 +4,7 @@ import FloatingService from '@/components/FloatingService.vue';
 import LoginModal from '@/components/LoginModal.vue';
 import AppLogoutConfirm from '@/components/AppLogoutConfirm.vue';
 import AppCustomerServiceConfirm from '@/components/AppCustomerServiceConfirm.vue';
+import AppLoginConfirm from '@/components/AppLoginConfirm.vue';
 import AppForceLogoutAlert from '@/components/AppForceLogoutAlert.vue';
 import MobileTabBar from '@/components/MobileTabBar.vue';
 import GlobalToast from '@/components/GlobalToast.vue';
@@ -36,9 +37,12 @@ const route = useRoute();
 const router = useRouter();
 const { locale, isMobile } = storeToRefs(appStore);
 const { isLoggedIn } = storeToRefs(userStore);
-const isBarePage = computed(() => Boolean(route.meta?.bare));
-const hideMobileTabBar = computed(() => Boolean(route.meta?.hideMobileTabBar));
-const hideMobileHeader = computed(() => isMobile.value && Boolean(route.meta?.hideMobileHeader));
+const isBarePage = computed(() => Boolean(route.meta?.bare) || route.matched.some((r) => r.meta?.bare));
+// 嵌套路由用 matched 判断，避免子路由 meta 未合入 route.meta。
+const hideMobileTabBar = computed(() => route.matched.some((r) => r.meta?.hideMobileTabBar));
+const hideMobileHeader = computed(
+  () => isMobile.value && route.matched.some((r) => r.meta?.hideMobileHeader),
+);
 
 const transitionName = ref('page-fade');
 
@@ -155,6 +159,7 @@ useWalletWs({
   <LoginModal :visible="appStore.loginModalOpen" @close="appStore.closeLoginModal" />
   <AppLogoutConfirm />
   <AppCustomerServiceConfirm />
+  <AppLoginConfirm />
   <AppForceLogoutAlert />
   <GlobalToast ref="toastRef" />
   <GlobalLoading />

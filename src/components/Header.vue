@@ -27,6 +27,7 @@ import iconMy from '@/assets/images/menu/icon_my.svg';
 import iconPersonalProfile from '@/assets/images/menu/icon_personal_profile.svg';
 import iconPurchaseDetails from '@/assets/images/menu/icon_purchase_details.svg';
 import iconSettings from '@/assets/images/menu/icon_settings.svg';
+import profileHeaderSettingsIconUrl from '@/assets/images/profile/icon_profile_header_settings.svg?url';
 import iconTransactionRecords from '@/assets/images/menu/icon_transaction_records.svg';
 
 const { t } = useI18n();
@@ -281,7 +282,13 @@ watch(isLoggedIn, (loggedIn) => {
 </script>
 
 <template>
-  <div class="header" :class="{ 'header--market-detail': isCompactDetailHeader }">
+  <div
+    class="header"
+    :class="{
+      'header--market-detail': isCompactDetailHeader,
+      'header--vip-transfer': isMobile && isVipTransferPage,
+    }"
+  >
 
     <div class="card-primary norem" :class="{ 'card-primary--market-detail': isCompactDetailHeader }">
       <RouterLink
@@ -412,8 +419,12 @@ watch(isLoggedIn, (loggedIn) => {
             <span class="header-mobile-circle-btn__msg" aria-hidden="true"></span>
             <span v-if="unreadCount > 0" class="header-mobile-circle-btn__badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
           </button>
-          <RouterLink to="/profile/security" class="header-mobile-circle-btn" :aria-label="t('安全设置')">
-            <span class="header-mobile-circle-btn__gear" aria-hidden="true"></span>
+          <RouterLink
+            to="/profile/security"
+            class="header-mobile-circle-btn header-mobile-circle-btn--icon"
+            :aria-label="t('安全设置')"
+          >
+            <img class="header-mobile-circle-btn__img" :src="profileHeaderSettingsIconUrl" alt="" />
           </RouterLink>
         </template>
      
@@ -636,6 +647,15 @@ watch(isLoggedIn, (loggedIn) => {
       margin-left: auto;
     }
 
+    // 顶栏月份选择器：与设计稿一致的紧凑高度
+    &.header--vip-transfer :deep(.month-selector__trigger) {
+      height: 36px;
+      padding: 0 4px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #0b3462;
+    }
+
     .header-mobile-compact-title {
       position: absolute;
       left: 64px;
@@ -648,6 +668,11 @@ watch(isLoggedIn, (loggedIn) => {
       line-height: 1;
       text-align: center;
       pointer-events: none;
+    }
+
+    // 会员互转 H5：右侧月份选择器占位更宽，避免标题与日期重叠。
+    &.header--vip-transfer .header-mobile-compact-title {
+      right: 108px;
     }
 
     .header-mobile-avatar {
@@ -721,11 +746,13 @@ watch(isLoggedIn, (loggedIn) => {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      height: 36px;
-      padding: 0 20px;
-      border: none;
-      border-radius: 18px;
-      background: linear-gradient(180deg, #3ba0ff 0%, #0d6cfb 100%);
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      padding: 0;
+      border: 1px solid #d6e0eb;
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 100%, #68b3fd 0%, #0d6cfb 100%);
       box-shadow: 0 4px 8px rgba(21, 58, 119, 0.12);
       color: #fff;
       font-size: 14px;
@@ -778,6 +805,18 @@ watch(isLoggedIn, (loggedIn) => {
       }
     }
 
+    /* 设计稿自带圆形背景，不再叠加按钮渐变 */
+    .header-mobile-circle-btn--icon {
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .header-mobile-circle-btn__img {
+      display: block;
+      width: 36px;
+      height: 36px;
+    }
+
     .header-mobile-circle-btn__msg {
       border: 2px solid #fff;
       border-radius: 5px;
@@ -826,32 +865,6 @@ watch(isLoggedIn, (loggedIn) => {
       z-index: 1;
     }
 
-    .header-mobile-circle-btn__gear {
-      border: 2px solid #fff;
-      border-radius: 50%;
-
-      &::before {
-        content: '';
-        position: absolute;
-        inset: 5px;
-        border: 2px solid #fff;
-        border-radius: 50%;
-      }
-
-      &::after {
-        content: '';
-        position: absolute;
-        left: 50%;
-        top: -4px;
-        width: 4px;
-        height: 28px;
-        border-radius: 3px;
-        background:
-          linear-gradient(#fff, #fff) top / 100% 5px no-repeat,
-          linear-gradient(#fff, #fff) bottom / 100% 5px no-repeat;
-        transform: translateX(-50%) rotate(45deg);
-      }
-    }
   }
 
   @include web-only {

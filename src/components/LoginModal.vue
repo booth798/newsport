@@ -7,7 +7,7 @@ import iconLoginUserUrl from '@/assets/images/login/icon_login_user.svg?url';
 import iconLoginLockUrl from '@/assets/images/login/icon_login_lock.svg?url';
 import iconEyeClosedUrl from '@/assets/images/login/icon_login_eye_closed.svg?url';
 import iconEyeOpenUrl from '@/assets/images/login/icon_login_eye_open.svg?url';
-import iconContactSupportUrl from '@/assets/images/menu/icon_my_contact_support.svg?url';
+import iconContactSupportUrl from '@/assets/images/login/icon_login_service.svg?url';
 import { useAppStore } from '@/store/modules/app';
 import { useUserStore } from '@/store/modules/user';
 import { useToast } from '@/hooks/useToast';

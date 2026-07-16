@@ -238,14 +238,28 @@ function handleMenuClick(item) {
     return;
   }
   if (item.action === 'security') {
+    // H5 对齐 App：进入独立设置页；PC 保持弹窗。
+    if (isMobile.value) {
+      router.push('/profile/security');
+      return;
+    }
     showSecurityModal.value = true;
     return;
   }
   if (item.action === 'languageSetting') {
+    if (isMobile.value) {
+      router.push('/profile/security');
+      return;
+    }
     showLanguageSettingModal.value = true;
     return;
   }
   if (item.action === 'binding') {
+    // H5 对齐 App BindingListActivity；PC 保持绑定弹窗。
+    if (isMobile.value) {
+      router.push('/profile/bindings');
+      return;
+    }
     showBindingModal.value = true;
     return;
   }
@@ -281,12 +295,12 @@ function handleHeroClick() {
     openUserInfoModal();
     return;
   }
-  appStore.openLoginModal();
+  appStore.openLoginConfirm();
 }
 
 function handleRouteAction(path) {
   if (!isLoggedIn.value) {
-    appStore.openLoginModal();
+    appStore.openLoginConfirm();
     return;
   }
   router.push(path);
@@ -302,7 +316,7 @@ function handleMobileMenuClick(item) {
     return;
   }
   if (!isLoggedIn.value && item.action !== 'service') {
-    appStore.openLoginModal();
+    appStore.openLoginConfirm();
     return;
   }
   handleMenuClick(item);

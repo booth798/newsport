@@ -96,6 +96,9 @@ const routes = [
         // H5 使用页面自身的返回栏，PC 继续复用财务页公共头部与侧栏。
         meta: {
           titleKey: '会员互转',
+          // H5 二级页：返回 + 标题 + 右侧月份筛选（Header 内 MonthSelector）。
+          compactHeader: true,
+          hideMobileTabBar: true,
         },
       },
       {
@@ -110,7 +113,7 @@ const routes = [
     path: '/profile',
     name: 'profile',
     component: () => import('@/views/Profile/index.vue'),
-    meta: { titleKey: '我的', requiresAuth: true, guestPreview: true },
+    meta: { titleKey: '我的', requiresAuth: true },
     children: [
       {
         path: '',
@@ -122,25 +125,41 @@ const routes = [
         path: 'info',
         name: 'profile-info',
         component: () => import('@/views/Profile/Info.vue'),
-        meta: { titleKey: '个人资料' },
+        meta: { titleKey: '个人资料', hideMobileTabBar: true },
       },
       {
         path: 'messages',
         name: 'profile-messages',
         component: () => import('@/views/Profile/Messages.vue'),
-        meta: { titleKey: '消息中心' },
+        meta: { titleKey: '消息中心', hideMobileTabBar: true },
       },
       {
         path: 'verify',
         name: 'profile-verify',
         component: () => import('@/views/Profile/Verify.vue'),
-        meta: { titleKey: '实名认证' },
+        meta: { titleKey: '实名认证', hideMobileTabBar: true },
       },
       {
         path: 'security',
         name: 'profile-security',
         component: () => import('@/views/Profile/Security.vue'),
-        meta: { titleKey: '设置', hideMobileTabBar: true },
+        // H5 对齐 App SettingActivity：自带返回顶栏，隐藏全局头与底栏。
+        meta: {
+          titleKey: '设置',
+          hideMobileHeader: true,
+          hideMobileTabBar: true,
+        },
+      },
+      {
+        path: 'bindings',
+        name: 'profile-bindings',
+        component: () => import('@/views/Profile/Bindings.vue'),
+        // H5 对齐 App BindingListActivity：自带返回顶栏，隐藏全局头与底栏。
+        meta: {
+          titleKey: '绑定信息',
+          hideMobileHeader: true,
+          hideMobileTabBar: true,
+        },
       },
       {
         path: 'about',
@@ -163,6 +182,7 @@ const routes = [
           requiresAuth: true,
           guestPreview: true,
           hideMobileHeader: true,
+          hideMobileTabBar: true,
         },
       },
     ]
@@ -200,7 +220,8 @@ router.beforeEach(async (to) => {
     if (!userStore.isLoggedIn) {
       const { useAppStore } = await import('@/store/modules/app');
       const appStore = useAppStore();
-      appStore.openLoginModal();
+      // 未登录先进「请先登录」确认框，点登录后再打开登录弹窗。
+      appStore.openLoginConfirm();
       return { name: 'home' };
     }
   }

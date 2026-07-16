@@ -192,7 +192,7 @@ function defaultScoreRow(tab = 'fulltime') {
 function openBuySheet(row, tab = activeTab.value) {
   if (!row || row.suspended) return;
   if (!isLoggedIn.value) {
-    appStore.openLoginModal();
+    appStore.openLoginConfirm();
     return;
   }
   activeTab.value = tab;

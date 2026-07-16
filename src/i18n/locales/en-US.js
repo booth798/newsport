@@ -20,6 +20,12 @@ export default {
   规则说明: 'Rules',
   关于UNIBET: 'About UNIBET',
   设置: 'Settings',
+  管理: 'Manage',
+  删除: 'Delete',
+  删除绑定确认: 'Delete this binding?',
+  添加银行卡: 'Add bank card',
+  添加钱包地址: 'Add wallet address',
+  暂无绑定: 'No bindings yet',
   北京时间: 'Beijing Time',
 
   // Home
@@ -69,6 +75,7 @@ export default {
 
   // Login
   登录: 'Login',
+  请先登录: 'Please log in first',
   登入: 'Log in',
   注册会员: 'Register',
   换一批: 'Refresh',
