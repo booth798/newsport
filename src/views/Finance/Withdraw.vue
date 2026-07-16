@@ -11,8 +11,8 @@ import { getImageUrl } from '@/utils/common'
 import BaseInput from '@/components/BaseInput.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import MonthSelector from '@/components/MonthSelector.vue';
-import ProfileBindingModal from '@/views/Profile/components/ProfileBindingModal.vue';
 import WithdrawBankModal from './components/WithdrawBankModal.vue';
+import WithdrawBindingForm from './components/WithdrawBindingForm.vue';
 import WithdrawNoticeModal from './components/WithdrawNoticeModal.vue';
 import { fetchWithdrawList, submitWithdraw } from '@/api/finance';
 import { fetchBindings } from '@/api/user';
@@ -51,7 +51,7 @@ const submitting = ref(false);
 
 // 页面弹窗
 const bankModalOpen = ref(false);
-const bindingModalOpen = ref(false);
+const bindingFormOpen = ref(false);
 const noticeModalOpen = ref(false);
 
 // 提现记录
@@ -235,16 +235,13 @@ async function loadMore() {
 }
 
 function openBankModal() {
-  if (!bankCards.value.length) {
-    bindingModalOpen.value = true;
-    return;
-  }
+  // 无论是否已有银行卡，都先进入选择界面，由用户主动点击添加入口后再打开绑定表单。
   bankModalOpen.value = true;
 }
 
 function openAddBankCard() {
   bankModalOpen.value = false;
-  bindingModalOpen.value = true;
+  bindingFormOpen.value = true;
 }
 
 async function handleBankSaved(binding) {
@@ -339,7 +336,7 @@ onBeforeUnmount(() => {
             {{ selectedBank?.bankName || t('请先绑定银行卡') }}
           </span>
           <button type="button" class="bank-card__switch" @click="openBankModal">
-            {{ t('切换') }}
+            {{ t(selectedBank ? '切换' : '新增') }}
             <i aria-hidden="true" />
           </button>
         </div>
@@ -454,7 +451,7 @@ onBeforeUnmount(() => {
 
     <WithdrawBankModal v-model="bankModalOpen" :bank-cards="bankCards" :selected-id="selectedBankId"
       @confirm="selectedBankId = String($event)" @add="openAddBankCard" />
-    <ProfileBindingModal v-model="bindingModalOpen" initial-tab="bank" @saved="handleBankSaved" />
+    <WithdrawBindingForm v-model="bindingFormOpen" type="bank" @saved="handleBankSaved" />
     <WithdrawNoticeModal v-model="noticeModalOpen" />
   </div>
 </template>

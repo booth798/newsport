@@ -232,6 +232,7 @@ export default {
   添加其他银行卡: 'Add another bank card',
   请先绑定银行卡: 'Please bind a bank card first',
   更换地址: 'Change Address',
+  更换区块链: 'Change Blockchain',
   添加其他地址: 'Add another address',
   收款地址: 'Receiving address',
   已提现: 'Withdrawn',

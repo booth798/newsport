@@ -14,7 +14,7 @@ import BaseInput from '@/components/BaseInput.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import MonthSelector from '@/components/MonthSelector.vue';
 import WithdrawAddressModal from './components/WithdrawAddressModal.vue';
-import ProfileBindingModal from '@/views/Profile/components/ProfileBindingModal.vue';
+import WithdrawBindingForm from './components/WithdrawBindingForm.vue';
 import { fetchWithdrawList, submitWithdraw } from '@/api/finance';
 import { fetchBindings } from '@/api/user';
 import { useToast } from '@/hooks/useToast';
@@ -48,7 +48,7 @@ const submitting = ref(false);
 
 // 弹窗
 const addressModalOpen = ref(false);
-const bindingModalOpen = ref(false);
+const bindingFormOpen = ref(false);
 
 // 记录
 const recordsLoading = ref(true);
@@ -147,24 +147,23 @@ function isCryptoBinding(b) {
 
 function normalizeWallet(b) {
   return {
-    id: b.id ?? b.bindingId ?? b.address,
+    id: String(b.id ?? b.bindingId ?? b.address ?? ''),
     chainType: b.chainType || b.network || b.walletType || 'TRC20',
     address: b.address || b.accountNo || '',
     isDefault: !!b.isDefault,
   };
 }
 
-async function loadWallets() {
+async function loadWallets(preferredId = '') {
   try {
     const res = await fetchBindings();
     const list = Array.isArray(res?.data) ? res.data : (res?.data?.records || []);
     wallets.value = list.filter(isCryptoBinding).map(normalizeWallet);
-    if (wallets.value.length) {
-      const def = wallets.value.find((w) => w.isDefault) || wallets.value[0];
-      selectedWalletId.value = def.id;
-    } else {
-      selectedWalletId.value = '';
-    }
+    const currentId = String(preferredId || selectedWalletId.value || '');
+    const selected = wallets.value.find((wallet) => wallet.id === currentId)
+      || wallets.value.find((wallet) => wallet.isDefault)
+      || wallets.value[0];
+    selectedWalletId.value = selected?.id || '';
   } catch {
     wallets.value = [];
   }
@@ -226,10 +225,7 @@ async function loadMore() {
 }
 
 function openAddressModal() {
-  if (!wallets.value.length) {
-    bindingModalOpen.value = true;
-    return;
-  }
+  // 无论是否已有地址，都先进入选择界面，由用户主动点击添加入口后再打开绑定表单。
   addressModalOpen.value = true;
 }
 
@@ -239,12 +235,12 @@ function handleAddressConfirm(id) {
 
 function openAddAddress() {
   addressModalOpen.value = false;
-  bindingModalOpen.value = true;
+  bindingFormOpen.value = true;
 }
 
-async function handleWalletSaved() {
-  // 新增地址后刷新列表并选中最新一条
-  await loadWallets();
+async function handleWalletSaved(binding) {
+  // 新增地址后刷新接口列表，并优先选中新绑定项。
+  await loadWallets(binding?.id);
 }
 
 function selectFilter(value) {
@@ -320,7 +316,7 @@ onBeforeUnmount(() => {
           <span class="wc-wallet__chain">{{ selectedWallet ? selectedWallet.chainType : 'TRC20' }}</span>
           <span class="wc-wallet__type">（{{ t('钱包类型') }}）</span>
           <button type="button" class="wc-wallet__switch" @click="openAddressModal">
-            {{ t('切换') }}
+            {{ t(selectedWallet ? '切换' : '新增') }}
             <i aria-hidden="true"></i>
           </button>
         </div>
@@ -429,8 +425,8 @@ onBeforeUnmount(() => {
     <WithdrawAddressModal v-model="addressModalOpen" :addresses="wallets" :selected-id="selectedWalletId"
       @confirm="handleAddressConfirm" @add="openAddAddress" />
 
-    <!-- 新增地址（复用个人中心绑定弹窗，默认区块链） -->
-    <ProfileBindingModal v-model="bindingModalOpen" initial-tab="wallet" @saved="handleWalletSaved" />
+    <!-- 新增地址：PC 使用弹窗，H5 使用独立全屏表单。 -->
+    <WithdrawBindingForm v-model="bindingFormOpen" type="wallet" @saved="handleWalletSaved" />
   </div>
 </template>
 
