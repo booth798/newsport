@@ -294,21 +294,20 @@ onMounted(() => {
 
                     <!-- 其他类型 fallback -->
                     <p v-else class="service-msg__text">{{ msg.text }}</p>
-                  </div>
-
-                  <!-- 时间 + 发送状态 -->
-                  <div class="service-msg__meta">
-                    <span class="service-msg__time">{{ formatTime(msg.createdAt) }}</span>
-                    <!-- 发送失败标记 & 重试按钮 -->
-                    <button
-                      v-if="isSelf(msg) && isFailed(msg)"
-                      type="button"
-                      class="service-msg__retry"
-                      :title="msg.errorMessage || t('发送失败')"
-                      @click="handleRetry(msg)"
-                    >
-                      !
-                    </button>
+                    <!-- 时间 + 发送状态（放在消息气泡内） -->
+                    <div class="service-msg__meta">
+                      <span class="service-msg__time">{{ formatTime(msg.createdAt) }}</span>
+                      <!-- 发送失败标记 & 重试按钮 -->
+                      <button
+                        v-if="isSelf(msg) && isFailed(msg)"
+                        type="button"
+                        class="service-msg__retry"
+                        :title="msg.errorMessage || t('发送失败')"
+                        @click="handleRetry(msg)"
+                      >
+                        !
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -325,20 +324,6 @@ onMounted(() => {
 
         <!-- 底部输入区 -->
         <footer class="service-chat__footer">
-          <!-- 图片上传按钮 -->
-          <button
-            type="button"
-            class="service-image-btn"
-            :disabled="!isConnected"
-            :title="t('发送图片')"
-            @click="openImagePicker"
-          >
-            <svg viewBox="0 0 24 24" fill="none" width="24" height="24">
-              <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.5"/>
-              <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
-              <path d="M3 16l4.5-4.5a1 1 0 011.4 0L13 15.5l2-2a1 1 0 011.4 0L21 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </button>
           <input
             ref="imageInputRef"
             type="file"
@@ -347,23 +332,53 @@ onMounted(() => {
             @change="handleImageSelected"
           />
 
-          <textarea
-            v-model="inputText"
-            class="service-reply-input"
-            :placeholder="isConnected ? t('请输入消息...') : t('客服连接中，请稍候...')"
-            :disabled="!isConnected"
-            maxlength="2000"
-            rows="2"
-            @keydown.enter.exact.prevent="handleSend"
-          />
-          <button
-            type="button"
-            class="btn btn--primary service-reply-btn"
-            :disabled="!canSend"
-            @click="handleSend"
-          >
-            {{ t('发送') }}
-          </button>
+          <div class="service-reply-composer">
+            <textarea
+              v-model="inputText"
+              class="service-reply-input"
+              :placeholder="isConnected ? t('请输入消息...') : t('客服连接中，请稍候...')"
+              :disabled="!isConnected"
+              maxlength="2000"
+              rows="2"
+              @keydown.enter.exact.prevent="handleSend"
+            />
+
+            <div class="service-reply-toolbar">
+              <button
+                type="button"
+                class="service-emoji-btn"
+                :title="t('表情')"
+                :aria-label="t('表情')"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M12.0059 2.01758C17.5099 2.01781 21.9881 6.49598 21.9883 12L21.9736 12.5127C21.7058 17.7794 17.3379 21.9822 12.0059 21.9824C6.50166 21.9824 2.02359 17.5042 2.02344 12C2.02344 6.4957 6.50156 2.01758 12.0059 2.01758ZM12.0059 3.37891C7.25236 3.37891 3.38477 7.2465 3.38477 12L3.39551 12.4434C3.6272 16.9915 7.40114 20.6201 12.0059 20.6201L12.4492 20.6104C16.9973 20.3786 20.6258 16.6046 20.626 12L20.6162 11.5566C20.3922 7.15525 16.8506 3.61393 12.4492 3.38965L12.0059 3.37891ZM8.39453 13.1816C8.77797 13.1075 9.19423 13.2852 9.35156 13.7031H9.35254C9.81836 14.7706 10.8486 15.4678 12.0078 15.4678L12.2236 15.46C13.2989 15.3792 14.2561 14.7023 14.6592 13.708C14.8335 13.2706 15.3514 13.0563 15.7842 13.2295C16.2206 13.4048 16.4333 13.9235 16.2607 14.3564L16.2588 14.3594C15.5326 16.0709 13.8627 17.2029 12.0078 17.2031C10.1527 17.2031 8.4821 16.0711 7.75586 14.3594L7.75391 14.3564C7.58551 13.9338 7.74969 13.4084 8.23145 13.2295L8.39453 13.1816ZM9.16797 8.68262C9.73212 8.6828 10.2432 9.12666 10.2432 9.65527V10.4639C10.243 10.9924 9.73158 11.4363 9.16797 11.4365H8.8877C8.32831 11.4365 7.81168 11.0317 7.81152 10.4639V9.65527C7.81152 9.1265 8.32385 8.68262 8.8877 8.68262H9.16797ZM15.127 8.68262C15.6908 8.68262 16.2031 9.1265 16.2031 9.65527V10.4639C16.203 10.9925 15.6907 11.4365 15.127 11.4365H14.8467C14.2874 11.4364 13.7707 11.0315 13.7705 10.4639V9.65527C13.7705 9.1266 14.283 8.6828 14.8467 8.68262H15.127Z" fill="#0B3462"/>
+                </svg>
+              </button>
+
+              <!-- 图片上传按钮 -->
+              <button
+                type="button"
+                class="service-image-btn"
+                :disabled="!isConnected"
+                :title="t('发送图片')"
+                :aria-label="t('发送图片')"
+                @click="openImagePicker"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M19.9746 3.41016C20.9918 3.41016 21.8165 4.23491 21.8164 5.25195V18.75C21.8164 19.7671 20.9918 20.5917 19.9746 20.5918H4.02148C3.00432 20.5918 2.17969 19.7673 2.17969 18.75V5.25195C2.17969 4.23479 3.00444 3.41016 4.02148 3.41016H19.9746ZM15.8291 11.8018C14.3576 11.8018 12.6575 13.1378 11.0137 14.4297C9.39313 15.7037 7.86225 16.9062 6.43262 16.9062C5.20695 16.9062 4.14315 16.3591 3.40723 15.8379V18.751C3.40726 18.9138 3.47178 19.0704 3.58691 19.1855C3.70193 19.3004 3.85794 19.3651 4.02051 19.3652H19.9756C20.1381 19.3651 20.2942 19.3004 20.4092 19.1855C20.5243 19.0704 20.5888 18.9138 20.5889 18.751V14.1377L20.5791 14.1465C20.5461 14.1091 18.4588 11.8018 15.8291 11.8018ZM4.02051 4.6377C3.85784 4.63786 3.70197 4.70238 3.58691 4.81738C3.47185 4.9324 3.40745 5.0883 3.40723 5.25098V14.2471C3.81657 14.6427 5.02327 15.6787 6.43262 15.6787C7.43755 15.6785 8.86984 14.5524 10.2549 13.4639C12.0628 12.0429 13.9328 10.5732 15.8291 10.5732C17.8856 10.5733 19.5999 11.6672 20.5889 12.4785V5.25098C20.5888 5.08832 20.5242 4.93242 20.4092 4.81738C20.2942 4.70237 20.1382 4.63783 19.9756 4.6377H4.02051ZM7.27148 6.88672C8.63589 6.88672 9.74217 7.99291 9.74219 9.35742C9.74219 10.7219 8.6359 11.8281 7.27148 11.8281C5.90697 11.8281 4.80078 10.7219 4.80078 9.35742C4.80078 7.99292 5.90698 6.88673 7.27148 6.88672ZM7.28027 8.12012C6.60117 8.12032 6.05078 8.67133 6.05078 9.35059C6.05079 10.0298 6.60118 10.5809 7.28027 10.5811C7.95954 10.5811 8.51073 10.03 8.51074 9.35059C8.51074 8.6712 7.95977 8.12012 7.28027 8.12012Z" fill="#0B3462"/>
+                </svg>
+              </button>
+
+              <button
+                type="button"
+                class="btn btn--primary service-reply-btn"
+                :disabled="!canSend"
+                @click="handleSend"
+              >
+                {{ t('发送') }}
+              </button>
+            </div>
+          </div>
         </footer>
       </section>
     </div>
@@ -959,7 +974,7 @@ onMounted(() => {
   font-size: 11px;
 
   .service-msg--self & {
-    color: rgba(11, 52, 98, 0.35);
+    color: rgba(255, 255, 255, 0.72);
   }
 }
 
@@ -989,9 +1004,8 @@ onMounted(() => {
 
 .service-chat__footer {
   display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  background: #fff;
+  align-items: stretch;
+  background: var(--surface-card);
   flex-shrink: 0;
   box-sizing: border-box;
 
@@ -1000,6 +1014,7 @@ onMounted(() => {
     margin: 0 34px 20px;
     padding: 24px 18px 18px;
     border-radius: 18px;
+    background: #FFFFFF;
   }
 
   @include mobile-only {
@@ -1007,6 +1022,45 @@ onMounted(() => {
     padding: 13px 10px 10px 16px;
     border: 1px solid rgba(255, 255, 255, 0.9);
     border-radius: 14px;
+  }
+}
+
+.service-reply-composer {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.service-reply-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+}
+
+.service-emoji-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+
+  @include mobile-only {
+    width: 36px;
+    height: 36px;
   }
 }
 
@@ -1048,12 +1102,12 @@ onMounted(() => {
 .service-reply-input {
   flex: 1;
   min-width: 0;
-  height: 100%;
-  min-height: 58px;
-  padding: 0;
+  min-height: 0;
+  padding: 0 0 0 2px;
   border: 0;
   border-radius: 0;
   background: transparent;
+  background-color: transparent;
   color: var(--theme-text);
   font-size: $font-size-md;
   outline: none;
@@ -1063,11 +1117,19 @@ onMounted(() => {
 
   &::placeholder {
     color: rgba(23, 59, 97, 0.28);
+    opacity: 1;
+  }
+
+  @include mobile-only {
+    &::placeholder {
+      color: #C2C5CC;
+    }
   }
 }
 
 .service-reply-btn {
   flex-shrink: 0;
+  margin-left: auto;
   height: 34px;
   min-width: 58px;
   padding: 0 18px;

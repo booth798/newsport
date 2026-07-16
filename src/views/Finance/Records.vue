@@ -2,8 +2,6 @@
 import { onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
-import { ChevronDown, ChevronUp } from 'lucide-vue-next';
-import { storeToRefs } from 'pinia';
 
 import EmptyState from '@/components/EmptyState.vue';
 import { useUserStore } from '@/store/modules/user';
@@ -11,10 +9,8 @@ import { fetchLedgerSummary } from '@/api/finance';
 import { fetchOrderList, cancelOrder } from '@/api/order';
 import { useToast } from '@/hooks/useToast';
 import { resolveTeamLogoUrl } from '@/constants/teamLogos';
-import { useAppStore } from '@/store/modules/app';
 
 import leagueUclUrl from '@/assets/images/common/league_ucl.svg?url';
-import orderArenaBgUrl from '@/assets/images/finance/bg_order_arena.svg?url';
 import orderCopyIconUrl from '@/assets/images/finance/icon_order_copy.svg?url';
 import orderToggleIconUrl from '@/assets/images/finance/icon_order_toggle.svg?url';
 
@@ -22,8 +18,6 @@ const { t, locale } = useI18n();
 const router = useRouter();
 const toast = useToast();
 const userStore = useUserStore();
-const appStore = useAppStore();
-const { isMobile } = storeToRefs(appStore);
 
 const PAGE_SIZE = 20;
 
@@ -400,16 +394,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
         <div class="ord__panel">
           <!-- 对阵区：无比分时显示 VS -->
           <div class="ord__arena" :class="{ 'ord__arena--scored': order.parsedScore }">
-            <img
-              v-if="isMobile"
-              class="ord__arena-bg"
-              :src="orderArenaBgUrl"
-              width="327"
-              height="131"
-              alt=""
-              aria-hidden="true"
-            />
-            <div v-if="isMobile" class="ord__arena-inner">
+            <div class="ord__arena-inner">
               <div class="ord__team">
                 <img v-if="order.homeLogo" class="ord__team-logo" :src="order.homeLogo" alt="" width="44" height="44" @error="(e) => e.target.style.display='none'" />
                 <div class="ord__team-name">
@@ -436,27 +421,6 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
               </div>
             </div>
 
-            <div v-else class="ord__arena-inner ord__arena-inner--desktop">
-              <div class="ord__team">
-                <img v-if="order.homeLogo" class="ord__team-logo" :src="order.homeLogo" alt="" width="44" height="44" @error="(e) => e.target.style.display='none'" />
-                <div class="ord__team-name">
-                  {{ order.homeTeam }}
-                  <span class="ord__host-tag">{{ t('主') }}</span>
-                </div>
-              </div>
-              <div class="ord__score-area">
-                <template v-if="order.parsedScore">
-                  <span class="ord__score ord__score--desktop-home">{{ order.parsedScore.home }}</span>
-                  <span class="ord__score-separator">:</span>
-                  <span class="ord__score ord__score--desktop-away">{{ order.parsedScore.away }}</span>
-                </template>
-                <span v-else class="ord__vs">VS</span>
-              </div>
-              <div class="ord__team">
-                <img v-if="order.awayLogo" class="ord__team-logo" :src="order.awayLogo" alt="" width="44" height="44" @error="(e) => e.target.style.display='none'" />
-                <span class="ord__team-name">{{ order.awayTeam }}</span>
-              </div>
-            </div>
           </div>
 
           <div class="ord__money">
@@ -492,19 +456,9 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
               <span class="ord__detail-val">{{ order.detailAmountFormatted }}</span>
             </div>
 
-            <button
-              v-if="!isMobile && order.cancelable"
-              type="button"
-              class="ord__cancel"
-              :disabled="cancelingId === order.id"
-              @click.stop="handleCancel(order)"
-            >
-              {{ cancelingId === order.id ? t('取消中...') : t('取消订单') }}
-            </button>
           </div>
 
           <div
-            v-if="isMobile"
             class="ord__actions"
             :class="{ 'ord__actions--cancelable': order.cancelable && expandedId === order.id }"
           >
@@ -536,18 +490,6 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
               />
             </button>
           </div>
-
-          <button
-            v-else
-            type="button"
-            class="ord__toggle"
-            :aria-label="expandedId === order.id ? t('收起') : t('展开')"
-            :aria-expanded="expandedId === order.id"
-            @click="toggleExpand(order.id)"
-          >
-            <ChevronUp v-if="expandedId === order.id" :size="14" :stroke-width="1.8" aria-hidden="true" />
-            <ChevronDown v-else :size="14" :stroke-width="1.8" aria-hidden="true" />
-          </button>
         </div>
       </article>
 
@@ -793,7 +735,11 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
 .ord__panel {
   overflow: hidden;
   border-radius: 18px;
-  background: #fff;
+  background-color: #fff;
+  background-image: url('@/assets/images/finance/bg_order_arena.svg');
+  background-position: top center;
+  background-repeat: no-repeat;
+  background-size: 100% auto;
 }
 
 // --- 对阵区 ---
@@ -801,18 +747,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   position: relative;
   border-radius: 18px 18px 0 0;
   overflow: hidden;
-  background: #fff;
-}
-
-.ord__arena-bg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  display: block;
-  width: 100%;
-  height: 131px;
-  object-fit: fill;
-  pointer-events: none;
+  background: transparent;
 }
 
 .ord__arena-inner {
@@ -1077,146 +1012,21 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   }
 
   .fin-list {
-    gap: 8px;
+    display: block;
+    column-count: 2;
+    column-gap: 20px;
   }
 
   .ord {
-    padding: 12px;
-    background: #fff;
-    border: 0.8px solid rgba(255, 255, 255, 0.9);
-    box-shadow: 0 2px 12px rgba(21, 58, 118, 0.06);
+    display: inline-block;
+    width: 100%;
+    margin-bottom: 20px;
+    break-inside: avoid;
+    vertical-align: top;
   }
 
-  .ord__top {
-    gap: 6px;
-    min-height: 0;
-  }
-
-  .ord__divider {
-    margin: 10px 0;
-    background: #eaf1f9;
-  }
-
-  .ord__league {
-    min-height: 0;
-  }
-
-  .ord__panel {
-    overflow: visible;
-    border-radius: 0;
-    background: transparent;
-  }
-
-  .ord__arena {
-    border-radius: 16px;
-  }
-
-  .ord__arena-inner,
-  .ord__arena--scored .ord__arena-inner {
-    min-height: 80px;
-    padding: 12px 10px;
-    border-radius: 16px;
-    background-image: url('@/assets/images/events/bg_score.svg');
-    background-size: cover;
-  }
-
-  .ord__arena-inner--desktop {
-    align-items: center;
-  }
-
-  .ord__team {
-    gap: 4px;
-  }
-
-  .ord__team-logo {
-    padding: 0;
-    background: transparent;
-  }
-
-  .ord__team-name {
-    font-weight: 400;
-    line-height: normal;
-  }
-
-  .ord__score-area {
-    gap: 4px;
-    padding-top: 0;
-  }
-
-  .ord__score {
-    min-width: 28px;
-    width: auto;
-    height: 28px;
-    padding: 0 4px;
-    border-radius: 6px;
-    background-image: none;
-    font-size: 20px;
-    color: #fff;
-
-    &--desktop-home {
-      background: #1c7bff;
-    }
-
-    &--desktop-away {
-      background: #ff5722;
-    }
-  }
-
-  .ord__score-separator {
-    font-size: 24px;
-    font-weight: 700;
-    color: #1c7bff;
-  }
-
-  .ord__money {
-    margin: 0;
-    padding: 8px 12px;
-  }
-
-  .ord__money-row {
-    height: 32px;
-
-    &:not(:last-child) {
-      border-bottom: 0;
-    }
-  }
-
-  .ord__detail {
-    margin: 8px 0 0;
-    padding: 10px 12px;
-    border-radius: 12px;
-    background: #eaf1f9;
-  }
-
-  .ord__detail-row {
-    min-height: 30px;
-    padding: 4px 0;
-  }
-
-  .ord__detail-val {
-    text-align: right;
-
-    &--copy {
-      justify-content: flex-end;
-    }
-  }
-
-  .ord__cancel {
-    max-width: 120px;
-    height: 32px;
-    margin: 12px 0 0 auto;
-    border-color: #fb5c0d;
-    border-radius: 16px;
-    color: #fb5c0d;
-  }
-
-  .ord__toggle {
-    width: 28px;
-    height: 28px;
-    margin: 10px auto 0;
-    border: 0;
-    background: #eaf1f9;
-    color: #94a8c4;
+  .fin-list > .fin-state {
+    column-span: all;
   }
 }
 </style>
