@@ -946,6 +946,7 @@ function formatScoreLabel(score) {
         font-family: $font-family-base;
         font-weight: 400;
         text-align: right;
+        margin-right: 6px;
       }
     }
   }
