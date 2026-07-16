@@ -141,7 +141,7 @@ const routes = [
         path: 'messages',
         name: 'profile-messages',
         component: () => import('@/views/Profile/Messages.vue'),
-        meta: { titleKey: '消息中心', hideMobileTabBar: true },
+        meta: { titleKey: '消息中心', bare: true, hideMobileHeader: true, hideMobileTabBar: true },
       },
       {
         path: 'verify',
