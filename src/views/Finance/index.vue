@@ -24,16 +24,48 @@ const withdrawMethods = ref({
   crypto: true,
   bank_card: true,
 });
+const withdrawMethodsResolved = ref(false);
 
 const availableTabs = computed(() => tabs.filter((tab) => !tab.method || withdrawMethods.value[tab.method] === true));
 // H5 将两种提现方式收纳在同一页面框架内，通过顶部页签切换具体表单。
 const withdrawTabs = computed(() => availableTabs.value.filter((tab) => withdrawPaths.includes(tab.to)));
 
 const activeTab = computed(() => route.path);
-const isFinanceHome = computed(() => route.name === 'finance');
 // 会员互转 / 银行卡提现 / 区块链提现在 H5 隐藏底部 Tab，页面底部只保留安全区。
 const hidesMobileTabBar = computed(() => route.matched.some((r) => r.meta?.hideMobileTabBar));
-const sidebarTabs = computed(() => tabs.map((tab) => ({ ...tab, label: t(tab.label) })));
+const isWithdrawRoute = computed(() => withdrawPaths.includes(route.path));
+// 两种提现方式都开启时才显示切换 Tab；单一方式直接展示对应页面。
+const isWithdrawPage = computed(() => withdrawMethodsResolved.value && isWithdrawRoute.value && withdrawTabs.value.length > 1);
+const sidebarTabs = computed(() => availableTabs.value.map((tab) => ({ ...tab, label: t(tab.label) })));
+
+function normalizeWithdrawMethods(methods) {
+  return {
+    crypto: methods?.crypto === true,
+    bank_card: methods?.bank_card === true,
+  };
+}
+
+function ensureAvailableWithdrawRoute() {
+  if (!isWithdrawRoute.value || withdrawTabs.value.some((tab) => tab.to === route.path)) return;
+  const targetPath = withdrawTabs.value[0]?.to || fallbackFinancePath;
+  return router.replace({ path: targetPath, query: route.query });
+}
+
+async function loadWithdrawMethods() {
+  try {
+    const response = await fetchWithdrawMethods();
+    withdrawMethods.value = normalizeWithdrawMethods(response?.data);
+    await ensureAvailableWithdrawRoute();
+  } catch {
+    // 开关接口失败时保留默认两个入口，避免暂时性网络异常导致提现不可进入。
+  } finally {
+    withdrawMethodsResolved.value = true;
+  }
+}
+
+watch([() => route.path, withdrawTabs], ensureAvailableWithdrawRoute);
+
+onMounted(loadWithdrawMethods);
 </script>
 
 <template>
@@ -54,7 +86,8 @@ const sidebarTabs = computed(() => tabs.map((tab) => ({ ...tab, label: t(tab.lab
       </nav>
 
       <div class="finance-content">
-        <RouterView />
+        <!-- 提现入口先确认可用方式，避免短暂渲染已关闭的提现页面并触发其接口。 -->
+        <RouterView v-if="!isWithdrawRoute || withdrawMethodsResolved" />
       </div>
     </div>
   </div>

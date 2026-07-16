@@ -12,7 +12,7 @@ import { getImageUrl } from '@/utils/common';
 
 import ProfileUserInfoModal from '@/views/Profile/components/ProfileUserInfoModal.vue';
 import ProfileSecurityModal from '@/views/Profile/components/ProfileSecurityModal.vue';
-import ProfileBindingModal from '@/views/Profile/components/ProfileBindingModal.vue';
+import ProfileBindingManagerModal from '@/views/Profile/components/ProfileBindingManagerModal.vue';
 import LanguageSettingModal from '@/views/Profile/components/LanguageSettingModal.vue';
 import MessageCenterModal from '@/components/MessageCenterModal.vue';
 
@@ -514,7 +514,7 @@ onMounted(() => {
     <MessageCenterModal v-model="showMessageCenterModal" />
     <ProfileSecurityModal v-model="showSecurityModal" />
     <LanguageSettingModal v-model="showLanguageSettingModal" />
-    <ProfileBindingModal v-model="showBindingModal" />
+    <ProfileBindingManagerModal v-model="showBindingModal" />
   </div>
 </template>
 

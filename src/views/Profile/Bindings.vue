@@ -12,7 +12,7 @@ import { storeToRefs } from 'pinia';
 import { getImageUrl } from '@/utils/common';
 
 import BaseModal from '@/components/BaseModal.vue';
-import EmptyState from '@/components/EmptyState.vue';
+import BindingListPanel from '@/components/BindingListPanel.vue';
 import ProfileMobileHeader from '@/views/Profile/components/ProfileMobileHeader.vue';
 import ProfileBindingModal from '@/views/Profile/components/ProfileBindingModal.vue';
 import { fetchBindings, removeBinding, setDefaultBinding } from '@/api/user';
@@ -40,6 +40,17 @@ const deleteConfirmOpen = ref(false);
 const pendingDelete = ref(null);
 
 const currentList = computed(() => (activeTab.value === 'bank' ? bankList.value : walletList.value));
+const bindingTabs = computed(() => [
+  { key: 'bank', label: t('银行卡') },
+  ...(cryptoEnabled.value ? [{ key: 'wallet', label: t('区块链') }] : []),
+]);
+const displayItems = computed(() => currentList.value.map((item) => ({
+  id: bindingId(item),
+  primary: activeTab.value === 'bank' ? bankDisplayName(item) : walletChainType(item),
+  secondary: activeTab.value === 'wallet' ? walletAddressText(item) : '',
+  removeLabel: t('删除'),
+  raw: item,
+})));
 const hasBindings = computed(() => currentList.value.length > 0);
 const rightText = computed(() => {
   if (!hasBindings.value) return '';
@@ -159,10 +170,8 @@ function toggleManagement() {
   managementMode.value = !managementMode.value;
 }
 
-async function selectItem(item) {
-  if (managementMode.value) return;
-  const id = bindingId(item);
-  if (!id || id === selectedId.value) return;
+async function selectItem(id) {
+  if (managementMode.value || !id || id === selectedId.value) return;
   selectedId.value = id;
   try {
     await setDefaultBinding(bindingApiType(activeTab.value), id);
@@ -173,8 +182,9 @@ async function selectItem(item) {
 
 // 点击删除：先打开二次确认弹窗（对齐 Android CommonMyDialog）
 function requestDelete(item) {
-  if (!bindingId(item)) return;
-  pendingDelete.value = item;
+  const rawItem = item?.raw || item;
+  if (!bindingId(rawItem)) return;
+  pendingDelete.value = rawItem;
   deleteConfirmOpen.value = true;
 }
 
@@ -229,28 +239,6 @@ onMounted(() => {
     />
 
     <main class="bindings-panel">
-      <div class="bindings-tabs" :class="{ 'bindings-tabs--single': !cryptoEnabled }" role="tablist">
-        <button
-          type="button"
-          role="tab"
-          class="bindings-tabs__item"
-          :class="{ active: activeTab === 'bank' }"
-          @click="switchTab('bank')"
-        >
-          {{ t('银行卡') }}
-        </button>
-        <button
-          v-if="cryptoEnabled"
-          type="button"
-          role="tab"
-          class="bindings-tabs__item"
-          :class="{ active: activeTab === 'wallet' }"
-          @click="switchTab('wallet')"
-        >
-          {{ t('区块链') }}
-        </button>
-      </div>
-
       <div v-if="loading" class="bindings-state">
         <div class="bindings-spinner" />
         <span>{{ t('加载中') }}</span>
@@ -259,49 +247,21 @@ onMounted(() => {
         <span>{{ t('加载失败') }}</span>
         <button type="button" class="bindings-retry" @click="loadBindings">{{ t('重试') }}</button>
       </div>
-      <EmptyState v-else-if="!currentList.length" :text="t('暂无绑定')" :icon-size="96" />
-      <template v-if="!loading && !error">
-        <ul v-if="currentList.length" class="bindings-list">
-          <li
-            v-for="item in currentList"
-            :key="bindingId(item)"
-            class="bindings-item"
-            :class="{
-              'bindings-item--selected': !managementMode && selectedId === bindingId(item),
-              'bindings-item--manage': managementMode,
-              'bindings-item--wallet': activeTab === 'wallet',
-            }"
-          >
-            <button type="button" class="bindings-item__main" @click="selectItem(item)">
-              <template v-if="activeTab === 'wallet'">
-                <span class="bindings-item__name">{{ walletChainType(item) }}</span>
-                <span class="bindings-item__desc">{{ walletAddressText(item) }}</span>
-              </template>
-              <span v-else class="bindings-item__name">{{ bankDisplayName(item) }}</span>
-            </button>
-            <button
-              v-if="managementMode"
-              type="button"
-              class="bindings-item__action bindings-item__action--delete"
-              :aria-label="t('删除')"
-              @click="requestDelete(item)"
-            >
-              <span aria-hidden="true"></span>
-            </button>
-            <span
-              v-else
-              class="bindings-item__action"
-              :class="{ 'bindings-item__action--checked': selectedId === bindingId(item) }"
-              aria-hidden="true"
-            />
-          </li>
-        </ul>
-
-        <button v-if="!managementMode" type="button" class="bindings-add" @click="openAdd">
-          <img :src="getImageUrl('profile/add_address_icon.svg')" alt="">
-          {{ activeTab === 'bank' ? t('添加其他银行卡') : t('添加其他区块链') }}
-        </button>
-      </template>
+      <BindingListPanel
+        v-else
+        :tabs="bindingTabs"
+        :active-tab="activeTab"
+        :items="displayItems"
+        :selected-id="selectedId"
+        :removable="managementMode"
+        :add-text="activeTab === 'bank' ? t('添加其他银行卡') : t('添加其他区块链')"
+        @update:active-tab="switchTab"
+        @select="selectItem"
+        @remove="requestDelete"
+        @add="openAdd"
+      >
+        <template #add-icon><img :src="getImageUrl('profile/add_address_icon.svg')" alt=""></template>
+      </BindingListPanel>
     </main>
 
     <ProfileBindingModal
@@ -349,39 +309,12 @@ onMounted(() => {
 .bindings-panel {
   box-sizing: border-box;
   min-height: calc(100dvh - 88px);
-  padding: 12px;
   border-radius: 16px;
-  background: #fff;
-}
+  // 新增入口在 PC 使用浅蓝背景，H5 按设计保持白色。
+  --binding-list-add-bg: #e4f0fe;
 
-.bindings-tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  height: 48px;
-  margin-bottom: 12px;
-  padding: 6px 8px;
-  border-radius: 30px;
-  background: #eaf1f9;
-
-  // 区块链未开启时仅剩银行卡单 Tab，占满整行
-  &--single {
-    grid-template-columns: 1fr;
-  }
-}
-
-.bindings-tabs__item {
-  border: 0;
-  border-radius: 24px;
-  background: transparent;
-  color: #1c7bff;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-
-  &.active {
-    background: #1c7bff;
-    color: #fff;
+  @include mobile-only {
+    --binding-list-add-bg: #fff;
   }
 }
 
@@ -418,120 +351,6 @@ onMounted(() => {
   color: #1c7bff;
   font-size: 14px;
   cursor: pointer;
-}
-
-.bindings-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.bindings-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 54px;
-  padding: 0 18px;
-  border-radius: 16px;
-  background: #eaf1f9;
-
-  // 区块链项为两行（链类型 + 地址），高度对齐 App 的 80dp
-  &--wallet {
-    min-height: 80px;
-  }
-}
-
-.bindings-item__main {
-  display: flex;
-  flex: 1;
-  min-width: 0;
-  flex-direction: column;
-  gap: 4px;
-  padding: 12px 0;
-  border: 0;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-}
-
-.bindings-item__name {
-  display: block;
-  overflow: hidden;
-  color: #0b3462;
-  font-size: 16px;
-  font-weight: 500;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.bindings-item__desc {
-  display: block;
-  overflow: hidden;
-  color: rgba(11, 52, 98, 0.6);
-  font-size: 14px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.bindings-item__action {
-  flex-shrink: 0;
-  width: 22px;
-  height: 22px;
-  border: 1.5px solid #c3d4ea;
-  border-radius: 50%;
-  background: transparent;
-
-  // 选中态：蓝色实心 + 白色内环（对齐 App icon063 单选选中）
-  &--checked {
-    border-color: #1c7bff;
-    background: #1c7bff;
-    box-shadow: inset 0 0 0 4px #fff;
-  }
-
-  // 管理态：红色圆形减号删除按钮（对齐 App icon129）
-  &--delete {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    border: 0;
-    border-radius: 50%;
-    background: #ff2d2d;
-    cursor: pointer;
-
-    span {
-      width: 12px;
-      height: 2px;
-      border-radius: 1px;
-      background: #fff;
-    }
-  }
-}
-
-.bindings-add {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  height: 54px;
-  margin-top: 8px;
-  border: 0;
-  border-radius: 16px;
-  background: #eaf1f9;
-  color: #1c7bff;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.bindings-add__icon-img {
-  width: 16px;
-  height: 16px;
 }
 
 .bindings-delete-dialog__body {

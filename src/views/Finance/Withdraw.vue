@@ -331,7 +331,6 @@ onBeforeUnmount(() => {
       </div>
       <template v-else>
         <div class="bank-card__header">
-          <span class="bank-card__badge">中</span>
           <span class="bank-card__name">
             {{ selectedBank?.bankName || t('请先绑定银行卡') }}
           </span>
@@ -532,23 +531,8 @@ onBeforeUnmount(() => {
   gap: 10px;
 }
 
-.bank-card__badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 3px solid var(--auxiliary-1);
-  border-radius: 50%;
-  background: #d8232a;
-  color: var(--auxiliary-1);
-  font-size: 13px;
-  font-weight: 800;
-  line-height: 1;
-}
-
 .bank-card__name {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 500;
 }
 
