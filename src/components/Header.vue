@@ -658,6 +658,12 @@ watch(isLoggedIn, (loggedIn) => {
       color: #0b3462;
     }
 
+    // 月份筛选页：让 .card-primary 成为绝对定位标题的包含块，
+    // 避免标题相对含安全区内边距的 .header 定位而偏高，与右侧月份选择器错位（垂直居中对齐）。
+    &.header--vip-transfer .card-primary.norem {
+      position: relative;
+    }
+
     .header-mobile-compact-title {
       position: absolute;
       left: 64px;

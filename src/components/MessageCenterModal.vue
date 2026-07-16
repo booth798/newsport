@@ -1,12 +1,13 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 
 import { fetchMessages } from '@/api/user';
 import BaseModal from '@/components/BaseModal.vue';
 import EmptyState from '@/components/EmptyState.vue';
-import arrowMoreIcon from '@/assets/images/common/icon_arrow_more.svg';
+import iconSystemMessage from '@/assets/images/common/icon_announcement.svg';
+import iconServiceMessage from '@/assets/images/common/icon_profile_service.svg';
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -18,6 +19,40 @@ const router = useRouter();
 const messages = ref([]);
 const loading = ref(false);
 const error = ref(false);
+
+// 取第一个非空字段，与安卓 JsonObject.text(vararg keys) 行为对齐
+function pickText(source, ...keys) {
+  for (const key of keys) {
+    const value = source?.[key];
+    if (value != null && String(value).trim() !== '') return String(value);
+  }
+  return '';
+}
+
+// 客服消息判定，与安卓 isCustomerService() 的关键字匹配逻辑一致
+function isCustomerServiceMessage(source) {
+  const flag = pickText(source, 'category', 'source', 'type', 'typeName', 'subject').toLowerCase();
+  return (
+    flag.includes('客服')
+    || flag.includes('customer')
+    || flag.includes('service')
+    || ['cs', 'c_s', 'customer_service', 'customer-service'].includes(flag)
+  );
+}
+
+// 将后端原始消息归一化为安卓 MessageListItem 的字段结构
+const normalizedMessages = computed(() =>
+  messages.value
+    .map((message) => ({
+      id: pickText(message, 'id', 'messageId'),
+      title: pickText(message, 'title', 'typeName', 'subject'),
+      content: pickText(message, 'content', 'body', 'message'),
+      read: message?.read === true,
+      isCustomerService: isCustomerServiceMessage(message),
+    }))
+    // 与安卓一致：无有效 id 的消息直接丢弃
+    .filter((message) => message.id !== ''),
+);
 
 async function loadMessages() {
   try {
@@ -41,7 +76,7 @@ function openMessage(message) {
   close();
   router.push({
     name: 'profile-messages',
-    query: message.id == null ? undefined : { messageId: String(message.id) },
+    query: message.id ? { messageId: message.id } : undefined,
   });
 }
 
@@ -67,17 +102,25 @@ watch(
         <button type="button" class="message-center-modal__retry" @click="loadMessages">{{ t('重试') }}</button>
       </div>
 
-      <EmptyState v-else-if="messages.length === 0" :icon-size="96" />
+      <EmptyState v-else-if="normalizedMessages.length === 0" :icon-size="96" />
 
       <div v-else class="message-center-modal__list">
-        <button v-for="message in messages" :key="message.id" type="button" class="message-center-modal__item"
-          @click="openMessage(message)">
-          <span class="message-center-modal__icon" aria-hidden="true" />
-          <span class="message-center-modal__text">
-            <strong>{{ message.title || t(message.category || message.type || '系统消息') }}</strong>
-            <span>{{ message.content || message.summary || '' }}</span>
+        <button v-for="message in normalizedMessages" :key="message.id" type="button"
+          class="message-center-modal__item" @click="openMessage(message)">
+          <span class="message-center-modal__icon">
+            <img :src="message.isCustomerService ? iconServiceMessage : iconSystemMessage" alt="" width="48"
+              height="48" />
+            <span v-if="!message.read" class="message-center-modal__dot" aria-hidden="true" />
           </span>
-          <img :src="arrowMoreIcon" alt="" width="20" height="20" />
+          <span class="message-center-modal__text">
+            <strong>{{ message.title || t(message.isCustomerService ? '客服消息' : '系统消息') }}</strong>
+            <span>{{ message.content }}</span>
+          </span>
+          <svg class="message-center-modal__arrow" width="22" height="22" viewBox="0 0 22 22" fill="none"
+            aria-hidden="true">
+            <path d="M8.5 5.5 L14 11 L8.5 16.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
         </button>
       </div>
     </div>
@@ -127,30 +170,24 @@ watch(
     height: 48px;
     flex: 0 0 48px;
     margin-right: 14px;
+
+    img {
+      display: block;
+      width: 48px;
+      height: 48px;
+    }
+  }
+
+  // 未读红点，与安卓 item_message_view 的红点表现对齐（bg_dot_red / color_F03E30）
+  &__dot {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 9px;
+    height: 9px;
+    border: 1.5px solid #edf5ff;
     border-radius: 50%;
-    background: #fff;
-
-    &::before {
-      content: '';
-      position: absolute;
-      top: 15px;
-      left: 11px;
-      width: 26px;
-      height: 19px;
-      border-radius: 5px;
-      background: #b5c3d4;
-    }
-
-    &::after {
-      content: '';
-      position: absolute;
-      top: 22px;
-      left: 17px;
-      width: 14px;
-      height: 2px;
-      border-radius: 2px;
-      background: #fff;
-    }
+    background: #f03e30;
   }
 
   &__text {
@@ -180,9 +217,11 @@ watch(
     }
   }
 
-  &__item > img {
-    flex: 0 0 20px;
+  // 右侧箭头，对齐安卓 rightIv(icon060)；用主题色描边保证浅色背景下可见
+  &__arrow {
+    flex: 0 0 22px;
     margin-left: 12px;
+    color: #9fb2c9;
   }
 
   &__state {
