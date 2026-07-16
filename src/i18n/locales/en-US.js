@@ -69,6 +69,7 @@ export default {
 
   // Login
   登录: 'Login',
+  请先登录: 'Please log in first',
   登入: 'Log in',
   注册会员: 'Register',
   换一批: 'Refresh',

@@ -4,6 +4,7 @@ import FloatingService from '@/components/FloatingService.vue';
 import LoginModal from '@/components/LoginModal.vue';
 import AppLogoutConfirm from '@/components/AppLogoutConfirm.vue';
 import AppCustomerServiceConfirm from '@/components/AppCustomerServiceConfirm.vue';
+import AppLoginConfirm from '@/components/AppLoginConfirm.vue';
 import AppForceLogoutAlert from '@/components/AppForceLogoutAlert.vue';
 import MobileTabBar from '@/components/MobileTabBar.vue';
 import GlobalToast from '@/components/GlobalToast.vue';
@@ -155,6 +156,7 @@ useWalletWs({
   <LoginModal :visible="appStore.loginModalOpen" @close="appStore.closeLoginModal" />
   <AppLogoutConfirm />
   <AppCustomerServiceConfirm />
+  <AppLoginConfirm />
   <AppForceLogoutAlert />
   <GlobalToast ref="toastRef" />
   <GlobalLoading />

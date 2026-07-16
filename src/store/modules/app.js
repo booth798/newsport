@@ -15,6 +15,7 @@ export const useAppStore = defineStore('app', {
     loginModalOpen: false,
     logoutConfirmOpen: false,
     customerServiceConfirmOpen: false,
+    loginConfirmOpen: false,
     forceLogoutAlertOpen: false,
     publicConfig: {},
   }),
@@ -47,6 +48,13 @@ export const useAppStore = defineStore('app', {
     },
     closeLoginModal() {
       this.loginModalOpen = false;
+    },
+    // 未登录拦截：先弹「请先登录」确认框，用户点「登录」后再打开登录弹窗。
+    openLoginConfirm() {
+      this.loginConfirmOpen = true;
+    },
+    closeLoginConfirm() {
+      this.loginConfirmOpen = false;
     },
     openLogoutConfirm() {
       this.logoutConfirmOpen = true;

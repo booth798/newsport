@@ -281,12 +281,12 @@ function handleHeroClick() {
     openUserInfoModal();
     return;
   }
-  appStore.openLoginModal();
+  appStore.openLoginConfirm();
 }
 
 function handleRouteAction(path) {
   if (!isLoggedIn.value) {
-    appStore.openLoginModal();
+    appStore.openLoginConfirm();
     return;
   }
   router.push(path);
@@ -302,7 +302,7 @@ function handleMobileMenuClick(item) {
     return;
   }
   if (!isLoggedIn.value && item.action !== 'service') {
-    appStore.openLoginModal();
+    appStore.openLoginConfirm();
     return;
   }
   handleMenuClick(item);

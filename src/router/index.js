@@ -110,7 +110,7 @@ const routes = [
     path: '/profile',
     name: 'profile',
     component: () => import('@/views/Profile/index.vue'),
-    meta: { titleKey: '我的', requiresAuth: true, guestPreview: true },
+    meta: { titleKey: '我的', requiresAuth: true },
     children: [
       {
         path: '',
@@ -200,7 +200,8 @@ router.beforeEach(async (to) => {
     if (!userStore.isLoggedIn) {
       const { useAppStore } = await import('@/store/modules/app');
       const appStore = useAppStore();
-      appStore.openLoginModal();
+      // 未登录先进「请先登录」确认框，点登录后再打开登录弹窗。
+      appStore.openLoginConfirm();
       return { name: 'home' };
     }
   }
