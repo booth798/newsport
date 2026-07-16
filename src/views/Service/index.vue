@@ -193,16 +193,6 @@ onMounted(() => {
 
 <template>
   <div class="service-page">
-    <!-- 移动端状态栏占位 -->
-    <div class="service-statusbar" aria-hidden="true">
-      <span class="service-statusbar__time">9:41</span>
-      <span class="service-statusbar__icons">
-        <span class="service-statusbar__signal"></span>
-        <span class="service-statusbar__wifi"></span>
-        <span class="service-statusbar__battery"></span>
-      </span>
-    </div>
-
     <!-- 顶栏 -->
     <header class="service-topbar">
       <button type="button" class="service-topbar__back" :aria-label="t('返回')" @click="goBack">

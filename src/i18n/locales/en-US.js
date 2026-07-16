@@ -23,8 +23,12 @@ export default {
   管理: 'Manage',
   删除: 'Delete',
   删除绑定确认: 'Delete this binding?',
+  删除绑定确认带名称: 'Delete “{name}”?',
   添加银行卡: 'Add bank card',
   添加钱包地址: 'Add wallet address',
+  添加其他银行卡: 'Add Another Bank Card',
+  添加其他区块链: 'Add Another Blockchain',
+  区块链提现暂未开启: 'Blockchain withdrawal is not enabled',
   暂无绑定: 'No bindings yet',
   北京时间: 'Beijing Time',
 
