@@ -96,7 +96,8 @@ const routes = [
         // H5 使用页面自身的返回栏，PC 继续复用财务页公共头部与侧栏。
         meta: {
           titleKey: '会员互转',
-          // 从「我的」进入的二级页，H5 不展示底部 Tab。
+          // H5 二级页：返回 + 标题 + 右侧月份筛选（Header 内 MonthSelector）。
+          compactHeader: true,
           hideMobileTabBar: true,
         },
       },

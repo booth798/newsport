@@ -282,7 +282,13 @@ watch(isLoggedIn, (loggedIn) => {
 </script>
 
 <template>
-  <div class="header" :class="{ 'header--market-detail': isCompactDetailHeader }">
+  <div
+    class="header"
+    :class="{
+      'header--market-detail': isCompactDetailHeader,
+      'header--vip-transfer': isMobile && isVipTransferPage,
+    }"
+  >
 
     <div class="card-primary norem" :class="{ 'card-primary--market-detail': isCompactDetailHeader }">
       <RouterLink
@@ -641,6 +647,15 @@ watch(isLoggedIn, (loggedIn) => {
       margin-left: auto;
     }
 
+    // 顶栏月份选择器：与设计稿一致的紧凑高度
+    &.header--vip-transfer :deep(.month-selector__trigger) {
+      height: 36px;
+      padding: 0 4px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #0b3462;
+    }
+
     .header-mobile-compact-title {
       position: absolute;
       left: 64px;
@@ -653,6 +668,11 @@ watch(isLoggedIn, (loggedIn) => {
       line-height: 1;
       text-align: center;
       pointer-events: none;
+    }
+
+    // 会员互转 H5：右侧月份选择器占位更宽，避免标题与日期重叠。
+    &.header--vip-transfer .header-mobile-compact-title {
+      right: 108px;
     }
 
     .header-mobile-avatar {
