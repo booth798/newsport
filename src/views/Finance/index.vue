@@ -31,6 +31,8 @@ const availableTabs = computed(() => tabs.filter((tab) => !tab.method || withdra
 const withdrawTabs = computed(() => availableTabs.value.filter((tab) => withdrawPaths.includes(tab.to)));
 
 const activeTab = computed(() => route.path);
+// 当前是否处于提现相关页面（银行卡 / 区块链），H5 顶部展示两者切换页签。
+const isWithdrawPage = computed(() => withdrawPaths.includes(route.path));
 const isFinanceHome = computed(() => route.name === 'finance');
 // 会员互转 / 银行卡提现 / 区块链提现在 H5 隐藏底部 Tab，页面底部只保留安全区。
 const hidesMobileTabBar = computed(() => route.matched.some((r) => r.meta?.hideMobileTabBar));
