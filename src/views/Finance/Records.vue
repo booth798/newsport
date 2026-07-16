@@ -14,6 +14,7 @@ import { resolveTeamLogoUrl } from '@/constants/teamLogos';
 import { useAppStore } from '@/store/modules/app';
 
 import leagueUclUrl from '@/assets/images/common/league_ucl.svg?url';
+import orderArenaBgUrl from '@/assets/images/finance/bg_order_arena.svg?url';
 import orderCopyIconUrl from '@/assets/images/finance/icon_order_copy.svg?url';
 import orderToggleIconUrl from '@/assets/images/finance/icon_order_toggle.svg?url';
 
@@ -399,6 +400,15 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
         <div class="ord__panel">
           <!-- 对阵区：无比分时显示 VS -->
           <div class="ord__arena" :class="{ 'ord__arena--scored': order.parsedScore }">
+            <img
+              v-if="isMobile"
+              class="ord__arena-bg"
+              :src="orderArenaBgUrl"
+              width="327"
+              height="131"
+              alt=""
+              aria-hidden="true"
+            />
             <div v-if="isMobile" class="ord__arena-inner">
               <div class="ord__team">
                 <img v-if="order.homeLogo" class="ord__team-logo" :src="order.homeLogo" alt="" width="44" height="44" @error="(e) => e.target.style.display='none'" />
@@ -788,22 +798,33 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
 
 // --- 对阵区 ---
 .ord__arena {
+  position: relative;
   border-radius: 18px 18px 0 0;
   overflow: hidden;
+  background: #fff;
+}
+
+.ord__arena-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: 131px;
+  object-fit: fill;
+  pointer-events: none;
 }
 
 .ord__arena-inner {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: start;
   gap: 8px;
   min-height: 100px;
-  padding: 12px 0 10px;
-  background: #fff;
-  background-image: url('@/assets/images/finance/bg_order_arena.svg');
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 100% 131px;
+  padding: 12px 27px 10px;
+  background: transparent;
   border-radius: 18px 18px 0 0;
   box-sizing: border-box;
 }
