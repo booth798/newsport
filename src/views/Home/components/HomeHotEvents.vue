@@ -6,7 +6,7 @@ import { useI18n } from 'vue-i18n';
 import { useAppStore } from '@/store/modules/app';
 import EmptyState from '@/components/EmptyState.vue';
 import HomeMatchCard from './HomeMatchCard.vue';
-import { fetchHotMatches, fetchLeagueList } from '@/api/match';
+import { fetchHotMatches, fetchHotLeagues, fetchHomeLeagueMatches } from '@/api/match';
 
 import iconEventsUrl from '@/assets/images/events/icon_events.svg?url';
 import iconHotUrl from '@/assets/images/events/icon_hot.svg?url';
@@ -66,16 +66,41 @@ onMounted(async () => {
 
 async function loadLeagueTabs() {
   try {
-    const res = await fetchLeagueList();
-    const hotLeagues = (res.data || []).filter(l => l.hot);
-    // 使用联赛 id 作为 key，避免同名联赛（如 Serie A）导致 Tab 重复选中
+    // 对齐安卓首页：热门联赛 Tab 取自 /leagues/hot。
+    const res = await fetchHotLeagues();
+    const hotLeagues = res.data || [];
+    // 使用联赛 id 作为 key，避免同名联赛（如 Serie A）导致 Tab 重复选中；
+    // query 取联赛名（回退简称），用作 /markets/list 的 league 过滤值（对齐安卓 leagueQuery）。
     dynamicLeagueTabs.value = hotLeagues.map(l => ({
       key: l.id,
+      query: (l.name || '').trim() || (l.shortName || '').trim(),
       labelKey: `${l.shortName || l.name}赛事`,
       shortLabelKey: l.shortName || l.name,
       icon: l.logoUrl || iconEventsUrl,
     }));
   } catch { /* 静默 */ }
+}
+
+// 各联赛 Tab 的赛事数据缓存（key → 已归并赛事数组），避免重复请求。
+const leagueMatchesCache = ref({});
+const tabLoading = ref(false);
+const tabError = ref(false);
+
+/** 加载指定联赛 Tab 的赛事（force=true 时忽略缓存重新请求）。 */
+async function loadLeagueTab(key, force = false) {
+  if (!force && leagueMatchesCache.value[key]) return;
+  const tab = dynamicLeagueTabs.value.find((item) => item.key === key);
+  if (!tab || !tab.query) return;
+  try {
+    tabLoading.value = true;
+    tabError.value = false;
+    const res = await fetchHomeLeagueMatches(tab.query);
+    leagueMatchesCache.value = { ...leagueMatchesCache.value, [key]: res.data || [] };
+  } catch {
+    tabError.value = true;
+  } finally {
+    tabLoading.value = false;
+  }
 }
 
 const leagueTabs = computed(() => [
@@ -107,13 +132,23 @@ function scrollTabToCenter(key) {
 function selectTab(key) {
   activeLeague.value = key;
   scrollTabToCenter(key);
+  // 联赛 Tab：切换时按需请求该联赛盘口（对齐安卓首页联赛 Tab 拉取 /markets/list）。
+  if (key !== 'hot') loadLeagueTab(key);
 }
 
-// 按联赛 id 筛选比赛，保证同名联赛互不干扰
-const filteredMatches = computed(() => {
+// 当前展示的赛事：热门 Tab 用首页 hotMarkets；联赛 Tab 用该联赛请求结果。
+const displayMatches = computed(() => {
   if (activeLeague.value === 'hot') return matchList.value;
-  return matchList.value.filter((m) => m.leagueId === activeLeague.value);
+  return leagueMatchesCache.value[activeLeague.value] || [];
 });
+
+// 三态随当前 Tab 切换：热门 Tab 用首页加载态，联赛 Tab 用其独立加载态。
+const isLoading = computed(() =>
+  activeLeague.value === 'hot' ? loading.value : tabLoading.value,
+);
+const isError = computed(() =>
+  activeLeague.value === 'hot' ? error.value : tabError.value,
+);
 
 async function reload() {
   try {
@@ -126,6 +161,11 @@ async function reload() {
   } finally {
     loading.value = false;
   }
+}
+
+function retry() {
+  if (activeLeague.value === 'hot') reload();
+  else loadLeagueTab(activeLeague.value, true);
 }
 </script>
 
@@ -163,17 +203,17 @@ async function reload() {
       </RouterLink>
     </div>
 
-    <div v-if="loading" class="hot-events__loading">
+    <div v-if="isLoading" class="hot-events__loading">
       <div class="hot-events__spinner" />
       <span>{{ t('加载中') }}</span>
     </div>
-    <div v-else-if="error" class="hot-events__error">
+    <div v-else-if="isError" class="hot-events__error">
       <span>{{ t('加载失败') }}</span>
-      <button type="button" class="hot-events__retry" @click="reload">{{ t('重试') }}</button>
+      <button type="button" class="hot-events__retry" @click="retry">{{ t('重试') }}</button>
     </div>
-    <EmptyState v-else-if="!filteredMatches.length" />
+    <EmptyState v-else-if="!displayMatches.length" />
     <div v-else class="hot-events__grid">
-      <HomeMatchCard v-for="match in filteredMatches" :key="match.id" :match="match" />
+      <HomeMatchCard v-for="match in displayMatches" :key="match.id" :match="match" />
     </div>
   </section>
 </template>

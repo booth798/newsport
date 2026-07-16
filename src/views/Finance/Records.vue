@@ -2,6 +2,8 @@
 import { onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
+import { ChevronDown, ChevronUp } from 'lucide-vue-next';
+import { storeToRefs } from 'pinia';
 
 import EmptyState from '@/components/EmptyState.vue';
 import { useUserStore } from '@/store/modules/user';
@@ -9,11 +11,18 @@ import { fetchLedgerSummary } from '@/api/finance';
 import { fetchOrderList, cancelOrder } from '@/api/order';
 import { useToast } from '@/hooks/useToast';
 import { resolveTeamLogoUrl } from '@/constants/teamLogos';
+import { useAppStore } from '@/store/modules/app';
+
+import leagueUclUrl from '@/assets/images/common/league_ucl.svg?url';
+import orderCopyIconUrl from '@/assets/images/finance/icon_order_copy.svg?url';
+import orderToggleIconUrl from '@/assets/images/finance/icon_order_toggle.svg?url';
 
 const { t, locale } = useI18n();
 const router = useRouter();
 const toast = useToast();
 const userStore = useUserStore();
+const appStore = useAppStore();
+const { isMobile } = storeToRefs(appStore);
 
 const PAGE_SIZE = 20;
 
@@ -32,7 +41,7 @@ function formatMoney(val) {
   if (val == null || val === '') return '0.00';
   const n = Number(val);
   if (isNaN(n)) return String(val);
-  return Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return Math.abs(n).toFixed(2);
 }
 
 /**
@@ -54,8 +63,7 @@ function formatSummaryAmount(val, signMode = 'auto') {
     // 中文：3.2万；英文：32k
     if (String(locale.value).startsWith('zh')) {
       const wan = abs / 10000;
-      const text = wan % 1 === 0 ? String(wan) : wan.toFixed(1);
-      return `${sign}${text}${t('万')}`;
+      return `${sign}${wan.toFixed(1)}${t('万')}`;
     }
     const k = abs / 1000;
     const kText = k % 1 === 0 ? String(k) : k.toFixed(1);
@@ -99,6 +107,35 @@ function mapOrderState(status) {
   return 'unknown';
 }
 
+function statusLabelKey(state) {
+  if (state === 'processing') return '处理中';
+  if (state === 'completed') return '成功';
+  if (state === 'cancelled') return '已取消';
+  return '';
+}
+
+function resolveProfit(order, amount) {
+  const explicitProfit = order.profit
+    ?? order.netProfit
+    ?? order.estimatedProfit
+    ?? order.realizedProfit;
+  if (explicitProfit != null && Number.isFinite(Number(explicitProfit))) {
+    return Number(explicitProfit);
+  }
+
+  const payout = order.estimatedPayout ?? order.payout;
+  if (payout == null || !Number.isFinite(Number(payout))) return 0;
+
+  const payoutAmount = Number(payout);
+  // 后端历史字段同时存在“盈利额”和“含本金到账额”两种语义。
+  return amount > 0 && payoutAmount >= amount ? payoutAmount - amount : payoutAmount;
+}
+
+function resolveLeagueLogo(league, overrideUrl) {
+  if (overrideUrl) return overrideUrl;
+  return String(league).includes('欧冠') ? leagueUclUrl : '';
+}
+
 function parseMatchScore(scoreStr) {
   if (!scoreStr) return null;
   const parts = scoreStr.split(/[:\-]/);
@@ -124,12 +161,9 @@ function periodLabel(period) {
 function normalizeOrder(o) {
   const status = o.status || o.orderStatus || '';
   const state = mapOrderState(status);
-  const amount = Number(o.amount || o.orderAmount || 0);
-  // estimatedPayout / payout 为预计到账总额，盈利 = 总额 - 本金
-  const totalReturn = state === 'completed' && o.payout != null
-    ? Number(o.payout)
-    : Number(o.estimatedPayout ?? o.payout ?? 0);
-  const profit = Number.isFinite(totalReturn) ? totalReturn - amount : 0;
+  const amount = Number(o.transactionAmount ?? o.tradeAmount ?? o.totalAmount ?? o.amount ?? o.orderAmount ?? 0);
+  const detailAmount = Number(o.orderAmount ?? o.buyAmount ?? o.stakeAmount ?? o.principalAmount ?? o.amount ?? 0);
+  const profit = resolveProfit(o, amount);
 
   const league = o.leagueName || o.marketName || '';
   const leagueShort = o.leagueShortName || league;
@@ -160,13 +194,15 @@ function normalizeOrder(o) {
     id: o.id,
     status,
     state,
-    statusText: o.statusLabel || status,
+    statusText: o.statusLabel || '',
+    statusKey: statusLabelKey(state),
     amount,
     amountFormatted: formatMoney(amount),
+    detailAmountFormatted: formatMoney(detailAmount),
     profit,
     profitFormatted: `¥${formatMoney(profit)}`,
     league: leagueShort,
-    leagueLogo,
+    leagueLogo: resolveLeagueLogo(league, leagueLogo),
     homeTeam,
     awayTeam,
     homeLogo: resolveTeamLogoUrl(homeTeam, homeLogo),
@@ -239,6 +275,14 @@ function toggleExpand(id) {
   expandedId.value = expandedId.value === id ? null : id;
 }
 
+function isWinningSide(order, side) {
+  if (!order.parsedScore) return false;
+  const home = Number(order.parsedScore.home);
+  const away = Number(order.parsedScore.away);
+  if (!Number.isFinite(home) || !Number.isFinite(away)) return false;
+  return side === 'home' ? home > away : away > home;
+}
+
 async function handleCancel(order) {
   if (cancelingId.value) return;
   cancelingId.value = order.id;
@@ -264,7 +308,11 @@ function goToMarket() {
 }
 
 onMounted(() => {
-  if (userStore.isLoggedIn) loadPage(1);
+  if (userStore.isLoggedIn) {
+    loadPage(1);
+  } else {
+    loading.value = false;
+  }
 });
 
 watch(() => userStore.isLoggedIn, (loggedIn) => {
@@ -273,6 +321,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   } else {
     orders.value = [];
     summary.value = { totalIncome: 0, totalExpense: 0, netProfit: 0 };
+    loading.value = false;
   }
 });
 </script>
@@ -280,7 +329,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
 <template>
   <div class="records-page">
     <!-- 汇总头：收入加号、支出减号、净收益按正负；过万缩写为「万」 -->
-    <section class="fin-summary">
+    <section v-if="!loading && !error && orders.length" class="fin-summary">
       <div class="fin-summary__item">
         <span class="fin-summary__label">{{ t('总收入') }}</span>
         <span class="fin-summary__value fin-summary__value--income">{{ formatSummaryAmount(summary.totalIncome, 'plus') }}</span>
@@ -308,7 +357,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
     </div>
 
     <!-- Empty -->
-    <EmptyState v-else-if="!orders.length" :text="t('暂无记录')">
+    <EmptyState v-else-if="!orders.length" class="records-page__empty" :text="t('暂无记录')">
       <button type="button" class="fin-empty__btn" @click="goToMarket">{{ t('前往比赛') }}</button>
     </EmptyState>
 
@@ -325,10 +374,10 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
           <span class="ord__platform">{{ t('UNI BET平台') }}</span>
           <span v-if="order.kickoffFormatted" class="ord__kickoff">{{ order.kickoffFormatted }}</span>
           <span
-            v-if="order.statusText"
+            v-if="order.statusText || order.statusKey"
             class="ord__badge"
             :class="`ord__badge--${order.state}`"
-          >{{ order.statusText }}</span>
+          >{{ order.statusText || t(order.statusKey) }}</span>
         </div>
 
         <div class="ord__divider" />
@@ -336,91 +385,159 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
         <!-- 联赛 -->
         <div class="ord__league">
           <img
+            v-if="order.leagueLogo"
             class="ord__league-logo"
-            :src="order.leagueLogo || '/favicon.ico'"
+            :src="order.leagueLogo"
             alt=""
             width="24"
             height="24"
-            @error="(e) => e.target.src = '/favicon.ico'"
+            @error="(e) => e.target.style.display = 'none'"
           />
           <span class="ord__league-name">{{ order.league }}</span>
         </div>
 
-        <!-- 对阵区：无比分时显示 VS -->
-        <div class="ord__arena">
-          <div class="ord__arena-inner">
-            <div class="ord__team">
-              <img v-if="order.homeLogo" class="ord__team-logo" :src="order.homeLogo" alt="" width="44" height="44" @error="(e) => e.target.style.display='none'" />
-              <div class="ord__team-name">
-                {{ order.homeTeam }}
-                <span class="ord__host-tag">{{ t('主') }}</span>
+        <div class="ord__panel">
+          <!-- 对阵区：无比分时显示 VS -->
+          <div class="ord__arena" :class="{ 'ord__arena--scored': order.parsedScore }">
+            <div v-if="isMobile" class="ord__arena-inner">
+              <div class="ord__team">
+                <img v-if="order.homeLogo" class="ord__team-logo" :src="order.homeLogo" alt="" width="44" height="44" @error="(e) => e.target.style.display='none'" />
+                <div class="ord__team-name">
+                  {{ order.homeTeam }}
+                  <span class="ord__host-tag">{{ t('主') }}</span>
+                </div>
+                <span
+                  v-if="order.parsedScore"
+                  class="ord__score"
+                  :class="isWinningSide(order, 'home') ? 'ord__score--high' : 'ord__score--default'"
+                >{{ order.parsedScore.home }}</span>
+              </div>
+              <div class="ord__score-area">
+                <span class="ord__vs">VS</span>
+              </div>
+              <div class="ord__team">
+                <img v-if="order.awayLogo" class="ord__team-logo" :src="order.awayLogo" alt="" width="44" height="44" @error="(e) => e.target.style.display='none'" />
+                <span class="ord__team-name">{{ order.awayTeam }}</span>
+                <span
+                  v-if="order.parsedScore"
+                  class="ord__score"
+                  :class="isWinningSide(order, 'away') ? 'ord__score--high' : 'ord__score--default'"
+                >{{ order.parsedScore.away }}</span>
               </div>
             </div>
-            <div class="ord__score-area">
-              <template v-if="order.parsedScore">
-                <span class="ord__score ord__score--home">{{ order.parsedScore.home }}</span>
-                <span class="ord__vs">:</span>
-                <span class="ord__score ord__score--away">{{ order.parsedScore.away }}</span>
-              </template>
-              <span v-else class="ord__vs">VS</span>
-            </div>
-            <div class="ord__team">
-              <img v-if="order.awayLogo" class="ord__team-logo" :src="order.awayLogo" alt="" width="44" height="44" @error="(e) => e.target.style.display='none'" />
-              <span class="ord__team-name">{{ order.awayTeam }}</span>
-            </div>
-          </div>
-        </div>
 
-        <!-- 金额摘要：盈利 = estimatedPayout/payout − amount -->
-        <div class="ord__money">
-          <div class="ord__money-row">
-            <span class="ord__money-label">{{ t('交易金额') }}</span>
-            <span class="ord__money-val">{{ order.amountFormatted }}</span>
+            <div v-else class="ord__arena-inner ord__arena-inner--desktop">
+              <div class="ord__team">
+                <img v-if="order.homeLogo" class="ord__team-logo" :src="order.homeLogo" alt="" width="44" height="44" @error="(e) => e.target.style.display='none'" />
+                <div class="ord__team-name">
+                  {{ order.homeTeam }}
+                  <span class="ord__host-tag">{{ t('主') }}</span>
+                </div>
+              </div>
+              <div class="ord__score-area">
+                <template v-if="order.parsedScore">
+                  <span class="ord__score ord__score--desktop-home">{{ order.parsedScore.home }}</span>
+                  <span class="ord__score-separator">:</span>
+                  <span class="ord__score ord__score--desktop-away">{{ order.parsedScore.away }}</span>
+                </template>
+                <span v-else class="ord__vs">VS</span>
+              </div>
+              <div class="ord__team">
+                <img v-if="order.awayLogo" class="ord__team-logo" :src="order.awayLogo" alt="" width="44" height="44" @error="(e) => e.target.style.display='none'" />
+                <span class="ord__team-name">{{ order.awayTeam }}</span>
+              </div>
+            </div>
           </div>
-          <div class="ord__money-row">
-            <span class="ord__money-label">{{ t(order.profitLabel) }}</span>
-            <span class="ord__money-val ord__money-val--profit">{{ order.profitFormatted }}</span>
-          </div>
-        </div>
 
-        <!-- 展开详情 -->
-        <div v-if="expandedId === order.id" class="ord__detail">
-          <div class="ord__detail-row">
-            <span class="ord__detail-label">{{ t('订单号码') }}</span>
-            <span class="ord__detail-val ord__detail-val--copy" @click.stop="copyOrderNo(order.orderNo)">
-              {{ order.orderNo }}
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M10 3V2.5A1.5 1.5 0 008.5 1h-6A1.5 1.5 0 001 2.5v6A1.5 1.5 0 002.5 10H3" stroke="currentColor" stroke-width="1.2"/></svg>
-            </span>
+          <div class="ord__money">
+            <div class="ord__money-row">
+              <span class="ord__money-label">{{ t('交易金额') }}</span>
+              <span class="ord__money-val">{{ order.amountFormatted }}</span>
+            </div>
+            <div class="ord__money-row">
+              <span class="ord__money-label">{{ t(order.profitLabel) }}</span>
+              <span class="ord__money-val ord__money-val--profit">{{ order.profitFormatted }}</span>
+            </div>
           </div>
-          <div class="ord__detail-row">
-            <span class="ord__detail-label">{{ t('交易时间') }}</span>
-            <span class="ord__detail-val">{{ order.placedAtFormatted }}</span>
+
+          <!-- 展开详情 -->
+          <div v-if="expandedId === order.id" class="ord__detail">
+            <div class="ord__detail-row">
+              <span class="ord__detail-label">{{ t('订单号码') }}</span>
+              <button type="button" class="ord__detail-val ord__detail-val--copy" @click.stop="copyOrderNo(order.orderNo)">
+                <span>{{ order.orderNo }}</span>
+                <img class="ord__copy-icon" :src="orderCopyIconUrl" width="24" height="20" alt="" aria-hidden="true" />
+              </button>
+            </div>
+            <div class="ord__detail-row">
+              <span class="ord__detail-label">{{ t('交易时间') }}</span>
+              <span class="ord__detail-val">{{ order.placedAtFormatted }}</span>
+            </div>
+            <div v-if="order.marketLabel" class="ord__detail-row">
+              <span class="ord__detail-label">{{ t('市场') }}</span>
+              <span class="ord__detail-val">{{ order.marketLabel }}</span>
+            </div>
+            <div class="ord__detail-row">
+              <span class="ord__detail-label">{{ t('金额') }}</span>
+              <span class="ord__detail-val">{{ order.detailAmountFormatted }}</span>
+            </div>
+
+            <button
+              v-if="!isMobile && order.cancelable"
+              type="button"
+              class="ord__cancel"
+              :disabled="cancelingId === order.id"
+              @click.stop="handleCancel(order)"
+            >
+              {{ cancelingId === order.id ? t('取消中...') : t('取消订单') }}
+            </button>
           </div>
-          <div v-if="order.marketLabel" class="ord__detail-row">
-            <span class="ord__detail-label">{{ t('市场') }}</span>
-            <span class="ord__detail-val">{{ order.marketLabel }}</span>
-          </div>
-          <div class="ord__detail-row">
-            <span class="ord__detail-label">{{ t('金额') }}</span>
-            <span class="ord__detail-val">{{ order.amountFormatted }}</span>
+
+          <div
+            v-if="isMobile"
+            class="ord__actions"
+            :class="{ 'ord__actions--cancelable': order.cancelable && expandedId === order.id }"
+          >
+            <button
+              v-if="order.cancelable && expandedId === order.id"
+              type="button"
+              class="ord__cancel"
+              :disabled="cancelingId === order.id"
+              @click.stop="handleCancel(order)"
+            >
+              {{ cancelingId === order.id ? t('取消中...') : t('取消订单') }}
+            </button>
+
+            <button
+              type="button"
+              class="ord__toggle"
+              :aria-label="expandedId === order.id ? t('收起') : t('展开')"
+              :aria-expanded="expandedId === order.id"
+              @click="toggleExpand(order.id)"
+            >
+              <img
+                class="ord__toggle-icon"
+                :class="{ 'ord__toggle-icon--up': expandedId === order.id }"
+                :src="orderToggleIconUrl"
+                width="20"
+                height="20"
+                alt=""
+                aria-hidden="true"
+              />
+            </button>
           </div>
 
           <button
-            v-if="order.cancelable"
+            v-else
             type="button"
-            class="ord__cancel"
-            :disabled="cancelingId === order.id"
-            @click.stop="handleCancel(order)"
+            class="ord__toggle"
+            :aria-label="expandedId === order.id ? t('收起') : t('展开')"
+            :aria-expanded="expandedId === order.id"
+            @click="toggleExpand(order.id)"
           >
-            {{ cancelingId === order.id ? t('取消中...') : t('取消订单') }}
+            <ChevronUp v-if="expandedId === order.id" :size="14" :stroke-width="1.8" aria-hidden="true" />
+            <ChevronDown v-else :size="14" :stroke-width="1.8" aria-hidden="true" />
           </button>
-        </div>
-
-        <!-- 展开/收起：圆形箭头按钮 -->
-        <div class="ord__toggle" @click="toggleExpand(order.id)">
-          <span class="ord__chevron-btn" :aria-label="expandedId === order.id ? t('收起') : t('展开')">
-            <span class="ord__chevron" :class="{ 'ord__chevron--up': expandedId === order.id }" />
-          </span>
         </div>
       </article>
 
@@ -444,6 +561,21 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   max-width: 100%;
 }
 
+.records-page__empty {
+  min-height: calc(100dvh - 64px - #{$mobile-tab-bar-offset} - 32px);
+
+  @include mobile-only {
+    :deep(.empty-state__icon) {
+      transform: translateY(24px) scale(1.8);
+    }
+
+    :deep(.empty-state__text),
+    :deep(.empty-state__action) {
+      transform: translateY(24px);
+    }
+  }
+}
+
 // --- 汇总头（设计稿：白底容器 + 三块浅蓝卡） ---
 .fin-summary {
   display: flex;
@@ -454,6 +586,13 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   border: 0.8px solid #fff;
   box-shadow: 0 4px 16px rgba(21, 58, 118, 0.08);
   box-sizing: border-box;
+
+  @include mobile-only {
+    min-height: 90px;
+    background:
+      linear-gradient(180deg, rgba(28, 123, 255, 0.2) 0%, rgba(28, 123, 255, 0) 100%),
+      #fff;
+  }
 }
 
 .fin-summary__item {
@@ -464,7 +603,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   gap: 4px;
   padding: 10px 4px;
   border-radius: 10px;
-  background: #eaf1f9;
+  background: #dbe9fb;
   min-width: 0;
 }
 
@@ -537,10 +676,9 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
 .fin-load-more {
   height: 36px;
   padding: 0 24px;
-  border: 1px solid #e4f0fe;
-  border-radius: 18px;
-  background: #fff;
-  color: #1c7bff;
+  border: 0;
+  background: transparent;
+  color: #7b92ad;
   font-size: 13px;
   cursor: pointer;
 }
@@ -548,23 +686,23 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
 .fin-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 // --- 订单卡片（设计稿：白底圆角卡） ---
 .ord {
-  padding: 12px;
+  padding: 14px 16px 16px;
   border-radius: 16px;
-  background: #fff;
-  border: 0.8px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 0 2px 12px rgba(21, 58, 118, 0.06);
+  background: #eaf1f9;
+  border: 0.8px solid #fff;
   box-sizing: border-box;
 }
 
 .ord__top {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  min-height: 24px;
 }
 
 .ord__platform {
@@ -616,8 +754,8 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
 
 .ord__divider {
   height: 1px;
-  margin: 10px 0;
-  background: #eaf1f9;
+  margin: 6px 0 8px;
+  background: rgba(255, 255, 255, 0.9);
 }
 
 .ord__league {
@@ -625,6 +763,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   align-items: center;
   gap: 6px;
   margin-bottom: 8px;
+  min-height: 24px;
 }
 
 .ord__league-logo {
@@ -641,33 +780,43 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   color: #0b3462;
 }
 
+.ord__panel {
+  overflow: hidden;
+  border-radius: 18px;
+  background: #fff;
+}
+
 // --- 对阵区 ---
 .ord__arena {
-  border-radius: 16px;
+  border-radius: 18px 18px 0 0;
   overflow: hidden;
-  margin-bottom: 8px;
 }
 
 .ord__arena-inner {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: center;
+  align-items: start;
   gap: 8px;
-  min-height: 80px;
-  padding: 12px 10px;
+  min-height: 100px;
+  padding: 12px 0 10px;
   background: #fff;
-  background-image: url('@/assets/images/events/bg_score.svg');
+  background-image: url('@/assets/images/finance/bg_order_arena.svg');
   background-repeat: no-repeat;
   background-position: center;
-  background-size: cover;
-  border-radius: 16px;
+  background-size: 100% 131px;
+  border-radius: 18px 18px 0 0;
+  box-sizing: border-box;
+}
+
+.ord__arena--scored .ord__arena-inner {
+  min-height: 126px;
 }
 
 .ord__team {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 7px;
   min-width: 0;
 }
 
@@ -676,10 +825,15 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   height: 44px;
   border-radius: 50%;
   object-fit: contain;
+  box-sizing: border-box;
+  padding: 4px;
+  background: #fff;
 }
 
 .ord__team-name {
   font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
   color: #0b3462;
   text-align: center;
   overflow: hidden;
@@ -707,23 +861,34 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
 .ord__score-area {
   display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  padding-top: 22px;
 }
 
 .ord__score {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 28px;
-  height: 28px;
-  padding: 0 4px;
-  border-radius: 6px;
-  font-size: 20px;
+  width: 40px;
+  height: 29px;
+  padding: 0 5px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  font-family: $font-family-num, $font-family-base;
+  font-size: 18px;
   font-weight: 700;
-  color: #fff;
+  line-height: 1;
 
-  &--home { background: #1c7bff; }
-  &--away { background: #ff5722; }
+  &--default {
+    background-image: url('@/assets/images/events/bg_score_default.svg');
+    color: #0b3462;
+  }
+
+  &--high {
+    background-image: url('@/assets/images/events/bg_score_high.svg');
+    color: #fff;
+  }
 }
 
 .ord__vs {
@@ -737,7 +902,8 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   display: flex;
   flex-direction: column;
   gap: 0;
-  padding: 8px 12px;
+  margin: 0 12px;
+  padding: 0 12px;
   border-radius: 12px;
   background: #eaf1f9;
 }
@@ -746,7 +912,11 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 32px;
+  height: 44px;
+
+  &:not(:last-child) {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.9);
+  }
 }
 
 .ord__money-label {
@@ -765,10 +935,8 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
 
 // --- 展开详情 ---
 .ord__detail {
-  margin-top: 8px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: #eaf1f9;
+  margin: 8px 12px 0;
+  padding: 0 12px;
 }
 
 .ord__detail-row {
@@ -776,8 +944,8 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  min-height: 30px;
-  padding: 4px 0;
+  min-height: 28px;
+  padding: 0;
   font-size: 12px;
 
   &:not(:last-of-type) {
@@ -793,7 +961,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
 
 .ord__detail-val {
   flex: 1;
-  text-align: right;
+  text-align: left;
   font-size: 12px;
   font-weight: 500;
   color: #0b3462;
@@ -805,23 +973,32 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   &--copy {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 8px;
     cursor: pointer;
-    color: #1c7bff;
-    justify-content: flex-end;
+    justify-content: space-between;
+    padding: 0;
+    border: 0;
+    background: transparent;
   }
+}
+
+.ord__copy-icon {
+  display: block;
+  width: 24px;
+  height: 20px;
+  flex: 0 0 24px;
 }
 
 .ord__cancel {
   display: block;
   width: 100%;
-  max-width: 120px;
+  max-width: 88px;
   height: 32px;
-  margin: 12px 0 0 auto;
-  border: 1px solid #fb5c0d;
-  border-radius: 16px;
+  margin: 0;
+  border: 1px solid #ff2d2d;
+  border-radius: 32px;
   background: transparent;
-  color: #fb5c0d;
+  color: #ff2d2d;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -830,35 +1007,195 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
 }
 
 // --- 展开/收起 ---
+.ord__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 32px;
+  margin: 8px 10px 10px 12px;
+
+  &--cancelable {
+    justify-content: space-between;
+  }
+}
+
 .ord__toggle {
   display: flex;
+  align-items: center;
   justify-content: center;
-  padding-top: 10px;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
   cursor: pointer;
 }
 
-.ord__chevron-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #eaf1f9;
-}
-
-.ord__chevron {
-  width: 8px;
-  height: 8px;
-  margin-top: -3px;
-  border-right: 2px solid #94a8c4;
-  border-bottom: 2px solid #94a8c4;
-  transform: rotate(45deg);
-  transition: transform 0.15s;
+.ord__toggle-icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  transition: transform 0.15s ease;
 
   &--up {
-    margin-top: 3px;
-    transform: rotate(-135deg);
+    transform: rotate(180deg);
+  }
+}
+
+@include web-only {
+  .fin-summary__item {
+    background: #eaf1f9;
+  }
+
+  .fin-load-more {
+    border: 1px solid #e4f0fe;
+    border-radius: 18px;
+    background: #fff;
+    color: #1c7bff;
+  }
+
+  .fin-list {
+    gap: 8px;
+  }
+
+  .ord {
+    padding: 12px;
+    background: #fff;
+    border: 0.8px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 2px 12px rgba(21, 58, 118, 0.06);
+  }
+
+  .ord__top {
+    gap: 6px;
+    min-height: 0;
+  }
+
+  .ord__divider {
+    margin: 10px 0;
+    background: #eaf1f9;
+  }
+
+  .ord__league {
+    min-height: 0;
+  }
+
+  .ord__panel {
+    overflow: visible;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .ord__arena {
+    border-radius: 16px;
+  }
+
+  .ord__arena-inner,
+  .ord__arena--scored .ord__arena-inner {
+    min-height: 80px;
+    padding: 12px 10px;
+    border-radius: 16px;
+    background-image: url('@/assets/images/events/bg_score.svg');
+    background-size: cover;
+  }
+
+  .ord__arena-inner--desktop {
+    align-items: center;
+  }
+
+  .ord__team {
+    gap: 4px;
+  }
+
+  .ord__team-logo {
+    padding: 0;
+    background: transparent;
+  }
+
+  .ord__team-name {
+    font-weight: 400;
+    line-height: normal;
+  }
+
+  .ord__score-area {
+    gap: 4px;
+    padding-top: 0;
+  }
+
+  .ord__score {
+    min-width: 28px;
+    width: auto;
+    height: 28px;
+    padding: 0 4px;
+    border-radius: 6px;
+    background-image: none;
+    font-size: 20px;
+    color: #fff;
+
+    &--desktop-home {
+      background: #1c7bff;
+    }
+
+    &--desktop-away {
+      background: #ff5722;
+    }
+  }
+
+  .ord__score-separator {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1c7bff;
+  }
+
+  .ord__money {
+    margin: 0;
+    padding: 8px 12px;
+  }
+
+  .ord__money-row {
+    height: 32px;
+
+    &:not(:last-child) {
+      border-bottom: 0;
+    }
+  }
+
+  .ord__detail {
+    margin: 8px 0 0;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: #eaf1f9;
+  }
+
+  .ord__detail-row {
+    min-height: 30px;
+    padding: 4px 0;
+  }
+
+  .ord__detail-val {
+    text-align: right;
+
+    &--copy {
+      justify-content: flex-end;
+    }
+  }
+
+  .ord__cancel {
+    max-width: 120px;
+    height: 32px;
+    margin: 12px 0 0 auto;
+    border-color: #fb5c0d;
+    border-radius: 16px;
+    color: #fb5c0d;
+  }
+
+  .ord__toggle {
+    width: 28px;
+    height: 28px;
+    margin: 10px auto 0;
+    border: 0;
+    background: #eaf1f9;
+    color: #94a8c4;
   }
 }
 </style>

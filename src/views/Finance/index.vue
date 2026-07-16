@@ -30,42 +30,14 @@ const availableTabs = computed(() => tabs.filter((tab) => !tab.method || withdra
 const withdrawTabs = computed(() => availableTabs.value.filter((tab) => withdrawPaths.includes(tab.to)));
 
 const activeTab = computed(() => route.path);
-const isVipTransfer = computed(() => route.name === 'finance-vip-transfer');
-const isWithdrawRoute = computed(() => withdrawPaths.includes(route.path));
-const isWithdrawPage = computed(() => isWithdrawRoute.value && withdrawTabs.value.length > 1);
-const sidebarTabs = computed(() => availableTabs.value.map((tab) => ({ ...tab, label: t(tab.label) })));
-
-function normalizeWithdrawMethods(methods) {
-  return {
-    crypto: methods?.crypto === true,
-    bank_card: methods?.bank_card === true,
-  };
-}
-
-function ensureAvailableWithdrawRoute() {
-  if (!isWithdrawRoute.value || withdrawTabs.value.some((tab) => tab.to === route.path)) return;
-  const targetPath = withdrawTabs.value[0]?.to || fallbackFinancePath;
-  router.replace({ path: targetPath, query: route.query });
-}
-
-async function loadWithdrawMethods() {
-  try {
-    const res = await fetchWithdrawMethods();
-    withdrawMethods.value = normalizeWithdrawMethods(res?.data);
-  } catch {
-    // 开关接口失败时保留默认入口，页面自身仍可展示业务错误或继续提交校验。
-  }
-}
-
-watch([() => route.path, withdrawTabs], ensureAvailableWithdrawRoute);
-
-onMounted(() => {
-  loadWithdrawMethods();
-});
+const isFinanceHome = computed(() => route.name === 'finance');
+// 会员互转 / 银行卡提现 / 区块链提现在 H5 隐藏底部 Tab，页面底部只保留安全区。
+const hidesMobileTabBar = computed(() => route.matched.some((r) => r.meta?.hideMobileTabBar));
+const sidebarTabs = computed(() => tabs.map((tab) => ({ ...tab, label: t(tab.label) })));
 </script>
 
 <template>
-  <div class="finance-layout" :class="{ 'finance-layout--vip-transfer': isVipTransfer }">
+  <div class="finance-layout" :class="{ 'finance-layout--no-tabbar': hidesMobileTabBar }">
     <div class="finance-layout__inner">
       <AppSideNav :items="sidebarTabs" :active-key="activeTab" aria-label="finance" />
 
@@ -110,8 +82,8 @@ onMounted(() => {
   }
 }
 
-// 会员互转 H5 隐藏了全局底栏，页面底部只需保留安全区。
-.finance-layout--vip-transfer {
+// 隐藏底栏的财务二级页，页面底部只需保留安全区。
+.finance-layout--no-tabbar {
   @include mobile-only {
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + $spacing-lg);
   }

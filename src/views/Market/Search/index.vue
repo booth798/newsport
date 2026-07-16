@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
-import { fetchMatchList } from '@/api/match';
+import { fetchMarketListPaged } from '@/api/match';
 import { useAppStore } from '@/store/modules/app';
 import EmptyState from '@/components/EmptyState.vue';
 import HomeMatchCard from '@/views/Home/components/HomeMatchCard.vue';
@@ -67,10 +67,52 @@ const showInitial = computed(() => !hasSearched.value && !trimmedQuery.value);
 const showEmpty = computed(() => hasSearched.value && trimmedQuery.value && filteredMatches.value.length === 0);
 const showResults = computed(() => hasSearched.value && filteredMatches.value.length > 0);
 
+// 与市场列表页一致：/markets/list 记录含盘口 scores（赔率）与 kickoffAt（开赛倒数），
+// 映射出 topPools 供 HomeMatchCard 显示赔率，kickoffAt 供卡片计算实时倒数。
+function normalizeMarketRecord(r) {
+  return {
+    id: r.matchId || r.marketId || r.id,
+    _dedupeKey: r.marketId || `${r.matchId}:${r.period}`,
+    matchId: r.matchId,
+    marketId: r.marketId,
+    period: r.period,
+    league: r.leagueShortName || r.leagueName || '',
+    leagueId: r.leagueId,
+    leagueIcon: r.leagueLogoUrl || '',
+    homeTeam: r.homeTeamShortName || r.homeTeamName || '',
+    awayTeam: r.awayTeamShortName || r.awayTeamName || '',
+    homeTeamLogo: r.homeTeamLogoUrl || '',
+    awayTeamLogo: r.awayTeamLogoUrl || '',
+    kickoffAt: r.kickoffAt,
+    date: r.kickoffAt ? r.kickoffAt.split('T')[0] : '',
+    feeRate: r.feeRate,
+    displayPool: r.displayPool,
+    scores: r.scores || [],
+    topPools: (r.scores || []).slice(0, 3).map((s) => ({
+      score: s.score,
+      probability: s.yieldPct != null ? `${Number(s.yieldPct).toFixed(2)}%` : '--',
+      yieldPct: s.yieldPct,
+      poolAmount: s.poolAmount,
+      suspended: s.suspended,
+    })),
+  };
+}
+
 async function loadAllMatches() {
   try {
-    const res = await fetchMatchList({ pageSize: 100 });
-    allMatches.value = res?.data?.records ?? [];
+    const res = await fetchMarketListPaged({ pageSize: 100, day: 'all' });
+    const records = res?.data?.records ?? [];
+    // 同一场比赛可能有多个盘口（FT/HT），按 matchId 去重，只展示一张卡片
+    const seen = new Set();
+    const list = [];
+    for (const r of records) {
+      const norm = normalizeMarketRecord(r);
+      const key = norm.matchId || norm.id;
+      if (key == null || seen.has(key)) continue;
+      seen.add(key);
+      list.push(norm);
+    }
+    allMatches.value = list;
   } catch {
     allMatches.value = [];
   }
@@ -99,6 +141,12 @@ function onInputChange() {
   }
 }
 
+function clearInput() {
+  searchQuery.value = '';
+  hasSearched.value = false;
+  nextTick(() => searchInputRef.value?.focus());
+}
+
 function goBack() {
   router.back();
 }
@@ -115,8 +163,49 @@ onMounted(async () => {
 
 <template>
   <div class="search-page">
-    <!-- 导航栏 -->
-    <header class="search-page__header">
+    <!-- H5：紧凑头（返回 + 居中标题）+ 独立搜索框行（对齐设计稿） -->
+    <template v-if="isMobile">
+      <header class="search-page__m-header">
+        <button type="button" class="search-page__m-back" :aria-label="t('返回')" @click="goBack">
+          <img :src="iconNavBackMarketUrl" width="36" height="36" alt="" />
+        </button>
+        <span class="search-page__m-title">{{ t('搜索') }}</span>
+      </header>
+      <div class="search-page__m-search">
+        <label class="search-page__search-box">
+          <svg class="search-page__search-icon" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="8" cy="8" r="5.25" stroke="#94A8C4" stroke-width="1.2"/>
+            <path d="M12.5 12.5L16 16" stroke="#94A8C4" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+          <input
+            ref="searchInputRef"
+            v-model="searchQuery"
+            type="search"
+            class="search-page__search-input"
+            :placeholder="t('搜索球队名称')"
+            autocomplete="off"
+            enterkeyhint="search"
+            @keydown.enter.prevent="doSearch"
+            @input="onInputChange"
+          />
+          <button
+            v-if="searchQuery"
+            type="button"
+            class="search-page__m-clear"
+            :aria-label="t('清空')"
+            @click="clearInput"
+          >
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <circle cx="10" cy="10" r="8" fill="#C3CFDF"/>
+              <path d="M7.5 7.5l5 5M12.5 7.5l-5 5" stroke="#fff" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </label>
+      </div>
+    </template>
+
+    <!-- 桌面端：原导航栏（返回 + 搜索框 + 搜索按钮），保持不变 -->
+    <header v-else class="search-page__header">
       <div class="search-page__nav-bar">
         <button type="button" class="search-page__back" :aria-label="t('返回')" @click="goBack">
           <img :src="iconNavBackMarketUrl" width="36" height="36" alt="" />
@@ -223,6 +312,7 @@ onMounted(async () => {
   box-sizing: border-box;
 
   @include mobile-only {
+    padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: 30px;
   }
 
@@ -335,6 +425,87 @@ onMounted(async () => {
     color: #1c7bff;
     cursor: pointer;
     white-space: nowrap;
+  }
+
+  /* ── H5 紧凑头（返回 + 居中标题）+ 独立搜索框行 ── */
+  &__m-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    height: 52px;
+    margin: 8px 8px 0;
+    padding: 0 8px;
+    background: #eaf1f9;
+    border: 0.8px solid #fff;
+    border-radius: 30px;
+    box-sizing: border-box;
+  }
+
+  &__m-back {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+
+    img {
+      display: block;
+      width: 36px;
+      height: 36px;
+    }
+  }
+
+  &__m-title {
+    flex: 1;
+    min-width: 0;
+    margin-right: 36px; // 抵消返回按钮宽度，让标题视觉居中
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: #0b3462;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__m-search {
+    padding: 12px 12px 0;
+
+    .search-page__search-box {
+      height: 48px;
+      padding: 0 12px;
+      gap: 8px;
+      border-radius: 14px;
+      border-color: #d6e0eb;
+    }
+
+    .search-page__search-input {
+      font-size: 15px;
+    }
+  }
+
+  &__m-clear {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+
+    svg {
+      display: block;
+    }
   }
 
   &__state {

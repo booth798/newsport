@@ -1,4 +1,5 @@
 <script setup>
+import { computed, ref, watch, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getImageUrl } from '@/utils/common'
 import { useAppStore } from '@/store/modules/app';
@@ -21,6 +22,53 @@ const { t } = useI18n();
 const appStore = useAppStore();
 const { isMobile } = storeToRefs(appStore);
 
+// 移动端软键盘弹出时，visualViewport 会收缩；据此把弹窗约束在可见区域内，避免确认按钮错乱。
+const viewport = ref(null);
+
+function updateViewport() {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  viewport.value = { height: vv.height, offsetTop: vv.offsetTop };
+}
+
+function bindViewport() {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  updateViewport();
+  vv.addEventListener('resize', updateViewport);
+  vv.addEventListener('scroll', updateViewport);
+}
+
+function unbindViewport() {
+  const vv = window.visualViewport;
+  if (vv) {
+    vv.removeEventListener('resize', updateViewport);
+    vv.removeEventListener('scroll', updateViewport);
+  }
+  viewport.value = null;
+}
+
+// 仅在移动端弹窗打开时跟随可视视口，关闭或桌面端还原为整屏定位。
+watch(
+  () => props.modelValue,
+  (open) => {
+    if (open && isMobile.value) bindViewport();
+    else unbindViewport();
+  },
+  { immediate: true },
+);
+
+onBeforeUnmount(unbindViewport);
+
+// 用可视视口的高度与顶部偏移覆盖 fixed 定位，使弹窗始终居中显示在键盘上方。
+const rootStyle = computed(() => {
+  if (!isMobile.value || !viewport.value) return {};
+  return {
+    top: `${viewport.value.offsetTop}px`,
+    height: `${viewport.value.height}px`,
+    bottom: 'auto',
+  };
+});
 
 function close() { emit('update:modelValue', false); }
 function confirm() { emit('confirm'); }
@@ -29,7 +77,7 @@ function confirm() { emit('confirm'); }
 <template>
   <Teleport to="body">
     <Transition name="base-modal-fade">
-      <div v-if="props.modelValue" class="base-modal" role="dialog" aria-modal="true" :aria-label="props.title">
+      <div v-if="props.modelValue" class="base-modal" role="dialog" aria-modal="true" :aria-label="props.title" :style="rootStyle">
         <!-- 遮罩层 -->
         <div class="base-modal__backdrop" aria-hidden="true" @click="clickMaskToClose ? close() : null" />
         <div class="base-modal__panel-wrap">
@@ -157,6 +205,7 @@ function confirm() { emit('confirm'); }
     z-index: 1;
     display: flex;
     flex-direction: column;
+    flex: 1 1 auto;
     min-height: 0;
   }
 
@@ -201,7 +250,10 @@ function confirm() { emit('confirm'); }
   }
 
   &__content {
+    flex: 1 1 auto;
     min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   &__action {

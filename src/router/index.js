@@ -25,7 +25,8 @@ const routes = [
     path: '/market/search',
     name: 'market-search',
     component: () => import('@/views/Market/Search/index.vue'),
-    meta: { titleKey: '搜索', hideMobileTabBar: true, requiresAuth: true },
+    // H5：页面自带紧凑头（返回+标题），隐藏全局移动端头避免双头；底部 Tab 保留（对齐设计稿）
+    meta: { titleKey: '搜索', hideMobileHeader: true, requiresAuth: true },
   },
   {
     path: '/market/filter',
@@ -66,6 +67,13 @@ const routes = [
     meta: { titleKey: '赛事结果', bare: true, requiresAuth: true, guestPreview: true },
   },
   {
+    path: '/upcoming-matches',
+    name: 'upcoming-matches',
+    // 未开赛页面自带返回栏与北京时间，使用 bare 隐藏全局头部。
+    component: () => import('@/views/UpcomingMatches/index.vue'),
+    meta: { titleKey: '未开赛', bare: true, requiresAuth: true, guestPreview: true },
+  },
+  {
     path: '/finance',
     component: () => import('@/views/Finance/index.vue'),
     meta: { titleKey: '交易账务', requiresAuth: true },
@@ -75,19 +83,21 @@ const routes = [
         path: 'deposit',
         name: 'finance-deposit',
         component: () => import('@/views/Finance/Deposit.vue'),
-        meta: { titleKey: '充值' },
+        // H5：返回顶栏 + 标题 + 右侧月份筛选，隐藏底部 Tab。
+        meta: { titleKey: '充值', compactHeader: true, hideMobileTabBar: true },
       },
       {
         path: 'withdraw',
         name: 'finance-withdraw',
         component: () => import('@/views/Finance/Withdraw.vue'),
-        meta: { titleKey: '银行卡提现' },
+        // H5：返回顶栏 + 标题 + 右侧月份筛选，隐藏底部 Tab（对齐会员互转）。
+        meta: { titleKey: '银行卡提现', compactHeader: true, hideMobileTabBar: true },
       },
       {
         path: 'withdraw-chain',
         name: 'finance-withdraw-chain',
         component: () => import('@/views/Finance/WithdrawChain.vue'),
-        meta: { titleKey: '区块链提现' },
+        meta: { titleKey: '区块链提现', compactHeader: true, hideMobileTabBar: true },
       },
       {
         path: 'vip-transfer',

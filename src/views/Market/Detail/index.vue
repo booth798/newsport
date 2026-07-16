@@ -214,7 +214,10 @@ function closeBuySheet() {
 }
 
 function formatScoreLabel(score) {
-  return score.replace('-', ' - ');
+  const raw = String(score ?? '');
+  // 后端「OTHER」聚合比分展示为「其他」，对齐安卓端。
+  if (raw.toUpperCase() === 'OTHER') return t('其他');
+  return raw.replace('-', ' - ');
 }
 
 </script>
@@ -933,6 +936,8 @@ function formatScoreLabel(score) {
         font-family: $font-family-base;
         font-weight: 700;
         color: #1c7bff;
+        /* 比分与概率之间留出间隔 */
+        padding-left: 25px;
       }
     }
 
@@ -1020,6 +1025,8 @@ function formatScoreLabel(score) {
     &--prob {
       @include web-only {
         text-align: center;
+        /* 比分与概率之间留出间隔 */
+        padding-left: 24px;
       }
     }
   }
@@ -1166,6 +1173,8 @@ function formatScoreLabel(score) {
         font-family: $font-family-num;
         font-weight: 600;
         text-align: center;
+        /* 比分与概率之间留出间隔，与表头对齐 */
+        padding-left: 24px;
       }
     }
 

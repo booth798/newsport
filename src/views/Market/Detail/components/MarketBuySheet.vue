@@ -193,7 +193,10 @@ onBeforeUnmount(() => {
 });
 
 function formatScoreOption(score) {
-  return score.replace('-', ' - ');
+  const raw = String(score ?? '');
+  // 后端「OTHER」聚合比分展示为「其他」，对齐安卓端。
+  if (raw.toUpperCase() === 'OTHER') return t('其他');
+  return raw.replace('-', ' - ');
 }
 
 function setQuickAmount(val) {

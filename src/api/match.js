@@ -56,12 +56,31 @@ export async function fetchHotLeagues() {
   return get('/leagues/hot');
 }
 
-/** 比赛列表（分页 + 过滤） */
+/**
+ * 首页联赛 Tab 的赛事列表
+ * 对齐安卓首页联赛 Tab：请求 /markets/list?league=<联赛名>，再按「每场只保留一条盘口」归并。
+ */
+export async function fetchHomeLeagueMatches(leagueName) {
+  const res = await get('/markets/list', {
+    league: leagueName,
+    pageNum: 1,
+    pageSize: 20,
+  });
+  const records = res.data?.records || [];
+  return { code: 200, data: normalizeHomeMarkets(records) };
+}
+
+/**
+ * 比赛列表（分页 + 过滤）
+ * phase：赛事阶段过滤，取值 all / live（进行中）/ upcoming（未开赛）/ finished（已结束），
+ *        对齐安卓端 MatchRepository.list 的 phase 参数，由服务端完成筛选。
+ */
 export async function fetchMatchList(params = {}) {
   const [res, leagueRes] = await Promise.all([
     get('/matches', {
       leagueId: params.leagueId,
       date: params.date,
+      phase: params.phase,
       status: params.status,
       hot: params.hot,
       pageNum: params.pageNum || 1,
@@ -133,7 +152,11 @@ export async function fetchMarketList() {
   return get('/markets/open');
 }
 
-/** 市场分页列表 */
+/**
+ * 市场分页列表
+ * period：盘口周期，市场页固定传 'FT'（全场），对齐安卓端 HomeRepository.markets，
+ *         避免半场盘口造成同一赛事重复。
+ */
 export async function fetchMarketListPaged(params = {}) {
   return get('/markets/list', {
     pageNum: params.pageNum || 1,
@@ -142,6 +165,7 @@ export async function fetchMarketListPaged(params = {}) {
     teamName: params.teamName,
     date: params.date,
     day: params.day,
+    period: params.period,
   });
 }
 
@@ -196,14 +220,28 @@ export async function fetchPoolYields(marketId) {
   return get(`/pools/${marketId}/yields`, undefined, { silent: true });
 }
 
-/** 比赛场次统计 */
+/**
+ * 比赛场次统计
+ * 返回各阶段场次数 { all, live, upcoming, finished }，可带 leagueId、date 过滤。
+ */
 export async function fetchMatchCounts(params = {}) {
-  return get('/matches/counts', params);
+  return get('/matches/counts', {
+    leagueId: params.leagueId,
+    date: params.date,
+  });
 }
 
-/** 市场分页列表统计 */
+/**
+ * 市场分页列表统计
+ * 返回 { all, today, tomorrow }；可带 league、teamName、period 过滤，
+ * 对齐安卓端 HomeRepository.marketCounts（市场页固定传 period='FT'）。
+ */
 export async function fetchMarketListCounts(params = {}) {
-  return get('/markets/list/counts', params);
+  return get('/markets/list/counts', {
+    league: params.league,
+    teamName: params.teamName,
+    period: params.period,
+  });
 }
 
 /** 系统公开配置 */
@@ -276,11 +314,9 @@ export function normalizeHomeMarkets(hotMarkets) {
 function buildTopPools(m) {
   const raw = m.topPools || m.scores;
   if (!Array.isArray(raw) || !raw.length) return [];
-  const filtered = raw.filter((p) => p.score !== 'OTHER');
-  const sorted = [...filtered].sort(
-    (a, b) => Number(b.yieldPct || 0) - Number(a.yieldPct || 0),
-  );
-  return sorted.slice(0, 3).map((p) => ({
+  // 对齐安卓端首页（HomeTabPageAdapter：item.scores.take(3)）：
+  // 按后端返回的原始顺序取前 3 个比分（0:0 0:1 0:2 …），不按赔率重排。
+  return raw.slice(0, 3).map((p) => ({
     score: (p.score || '0:0').replace(':', '-'),
     probability: p.yieldPct != null ? `${Number(p.yieldPct).toFixed(2)}%` : '0.00%',
   }));

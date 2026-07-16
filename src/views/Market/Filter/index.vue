@@ -9,11 +9,19 @@ import { useAppStore } from '@/store/modules/app';
 import { useLeagueFilterStore } from '@/store/modules/leagueFilter';
 import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.svg?url';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const router = useRouter();
 const appStore = useAppStore();
 const filterStore = useLeagueFilterStore();
 const { isMobile } = storeToRefs(appStore);
+
+/** 依据当前语言取联赛展示名（zh 用简称、en 用全称），对齐安卓 localizedDisplayName，用作接口 league 过滤值。 */
+function leagueDisplayName(league) {
+  const name = (league.name || '').trim();
+  const shortName = (league.shortName || '').trim();
+  const isEn = String(locale.value || '').toLowerCase().startsWith('en');
+  return isEn ? (name || shortName) : (shortName || name);
+}
 
 const loading = ref(true);
 const error = ref(false);
@@ -53,11 +61,15 @@ const groupedLeagues = computed(() => {
   const hotList = allLeagues.value.filter((l) => l.hot);
   if (hotList.length) groups.set('☆', hotList);
 
-  const sorted = [...allLeagues.value].sort((a, b) => {
-    const na = a.shortName || a.name || '';
-    const nb = b.shortName || b.name || '';
-    return na.localeCompare(nb, 'zh-Hans-CN-u-co-pinyin');
-  });
+  // 热门联赛只出现在「☆」分组，不再重复进入字母分组（对齐安卓 MarketFilterActivity）。
+  const hotIds = new Set(hotList.map((l) => l.id));
+  const sorted = [...allLeagues.value]
+    .filter((l) => !hotIds.has(l.id))
+    .sort((a, b) => {
+      const na = a.shortName || a.name || '';
+      const nb = b.shortName || b.name || '';
+      return na.localeCompare(nb, 'zh-Hans-CN-u-co-pinyin');
+    });
 
   for (const league of sorted) {
     const name = league.shortName || league.name || '';
@@ -118,10 +130,13 @@ function goBack() {
 }
 
 function finish() {
-  filterStore.setSelection(
-    isSelectAll.value ? [] : [...selectedIds.value],
-    isSelectAll.value,
-  );
+  // 以联赛「展示名」回传（市场接口 league 过滤值）；全选时置空并标记全选。
+  const names = isSelectAll.value
+    ? []
+    : allLeagues.value
+      .filter((l) => selectedIds.value.has(l.id))
+      .map(leagueDisplayName);
+  filterStore.setSelection(names, isSelectAll.value);
   router.back();
 }
 
@@ -135,8 +150,14 @@ async function loadLeagues() {
     if (filterStore.isAllSelected) {
       selectedIds.value = new Set(allLeagues.value.map((l) => l.id));
       isSelectAll.value = true;
-    } else if (filterStore.selectedIds.length > 0) {
-      selectedIds.value = new Set(filterStore.selectedIds);
+    } else if (filterStore.selectedLeagues.length > 0) {
+      // 由已保存的联赛名反查对应 id，恢复选中态。
+      const nameSet = new Set(filterStore.selectedLeagues);
+      selectedIds.value = new Set(
+        allLeagues.value
+          .filter((l) => nameSet.has(leagueDisplayName(l)))
+          .map((l) => l.id),
+      );
       isSelectAll.value = false;
     } else {
       selectedIds.value = new Set();
@@ -179,7 +200,7 @@ onMounted(() => {
 
     <template v-else>
       <div class="filter-page__body">
-        <p class="filter-page__hint">
+        <p v-if="selectedCount > 0" class="filter-page__hint">
           {{ t('已选') }}（{{ selectedCount }}）
         </p>
 
@@ -200,14 +221,6 @@ onMounted(() => {
                 :class="{ 'filter-page__pill--selected': selectedIds.has(league.id) }"
                 @click="toggleLeague(league.id)"
               >
-                <img
-                  v-if="league.logoUrl"
-                  class="filter-page__pill-logo"
-                  :src="league.logoUrl"
-                  :alt="league.shortName || league.name"
-                  width="18"
-                  height="18"
-                />
                 <span>{{ league.shortName || league.name }}</span>
               </button>
             </div>
@@ -472,14 +485,6 @@ onMounted(() => {
       background: rgba(31, 124, 255, 0.2);
       color: #1c7bff;
     }
-  }
-
-  &__pill-logo {
-    flex-shrink: 0;
-    width: 18px;
-    height: 18px;
-    border-radius: 2px;
-    object-fit: contain;
   }
 
   &__sidebar {

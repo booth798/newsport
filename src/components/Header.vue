@@ -140,14 +140,16 @@ const isProfileSubPage = computed(
   () => route.path.startsWith('/profile') && !isProfileHomePage.value,
 );
 const isFinancePage = computed(() => route.path.startsWith('/finance'));
-const isVipTransferPage = computed(() => route.name === 'finance-vip-transfer');
-const vipTransferMonth = computed({
+// 带月份筛选的财务二级页：充值 / 会员互转 / 银行卡提现 / 区块链提现，H5 顶栏统一展示月份选择器。
+const MONTH_FILTER_ROUTES = ['finance-deposit', 'finance-vip-transfer', 'finance-withdraw', 'finance-withdraw-chain'];
+const isMonthFilterPage = computed(() => MONTH_FILTER_ROUTES.includes(route.name));
+const financeMonth = computed({
   get() {
     const month = Array.isArray(route.query.month) ? route.query.month[0] : route.query.month;
     return /^\d{4}-(0[1-9]|1[0-2])$/.test(month || '') ? month : getShanghaiCurrentMonth();
   },
   set(month) {
-    // 月份写入路由查询参数，让 Header 与互转记录共用同一筛选状态。
+    // 月份写入路由查询参数，让 Header 与记录列表共用同一筛选状态。
     router.replace({ query: { ...route.query, month } });
   },
 });
@@ -165,7 +167,7 @@ const compactTitle = computed(() => t(route.meta?.titleKey || '返回'));
 const isMobileMarketListHeader = computed(() => isMobile.value && isMarketListPage.value);
 const isMobileProfileHomeHeader = computed(() => isMobile.value && isProfileHomePage.value);
 const compactHeaderBackTo = computed(() => {
-  if (isVipTransferPage.value) {
+  if (isMonthFilterPage.value) {
     return '/profile';
   }
   if (isPurchaseDetailsPage.value) {
@@ -286,7 +288,7 @@ watch(isLoggedIn, (loggedIn) => {
     class="header"
     :class="{
       'header--market-detail': isCompactDetailHeader,
-      'header--vip-transfer': isMobile && isVipTransferPage,
+      'header--vip-transfer': isMobile && isMonthFilterPage,
     }"
   >
 
@@ -392,8 +394,8 @@ watch(isLoggedIn, (loggedIn) => {
       </div>
       <div v-if="isMobile && !isProfileSubPage" class="header-mobile-actions">
         <template v-if="isCompactDetailHeader">
-          <template v-if="isVipTransferPage">
-            <MonthSelector v-model="vipTransferMonth" :aria-label="t('选择月份')" />
+          <template v-if="isMonthFilterPage">
+            <MonthSelector v-model="financeMonth" :aria-label="t('选择月份')" />
           </template>
           <template v-else-if="isLoggedIn">
             <button type="button" class="header-mobile-btn" :aria-label="t('在线客服')" @click="appStore.openCustomerServiceConfirm">
@@ -1317,6 +1319,8 @@ watch(isLoggedIn, (loggedIn) => {
     }
 
     @include mobile-only {
+      // 作为绝对定位标题的包含块，避免标题相对含安全区内边距的 .header 定位而偏离返回栏垂直中线
+      position: relative;
       margin-top: 22px;
       justify-content: flex-start;
       gap: 0;
