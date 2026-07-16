@@ -8,9 +8,7 @@
 import { ref, computed, watch, nextTick, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
-import { storeToRefs } from 'pinia';
 
-import { useUserStore } from '@/store/modules/user';
 import { useAppStore } from '@/store/modules/app';
 import {
   useCustomerService,
@@ -25,9 +23,7 @@ import avatarDefaultUrl from '@/assets/images/common/avatar_default.png?url';
 
 const { t } = useI18n();
 const router = useRouter();
-const userStore = useUserStore();
 const appStore = useAppStore();
-const { isLoggedIn } = storeToRefs(userStore);
 
 const {
   messages,
@@ -190,9 +186,8 @@ onMounted(() => {
   // 客服页为独立整屏（bare + guestPreview），进入时关闭可能残留的登录相关弹窗，避免遮挡聊天界面。
   appStore.closeLoginModal();
   appStore.closeLoginConfirm();
-  if (isLoggedIn.value) {
-    connect();
-  }
+  // 未登录也自动连接客服（访客身份，对齐 Android guest 分支）
+  connect();
 });
 </script>
 

@@ -1319,6 +1319,8 @@ watch(isLoggedIn, (loggedIn) => {
     }
 
     @include mobile-only {
+      // 作为绝对定位标题的包含块，避免标题相对含安全区内边距的 .header 定位而偏离返回栏垂直中线
+      position: relative;
       margin-top: 22px;
       justify-content: flex-start;
       gap: 0;

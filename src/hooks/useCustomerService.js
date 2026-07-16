@@ -29,6 +29,28 @@ const AUTO_REPLY_INTERVAL_MS = 10 * 60 * 1_000;
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/bmp', 'image/webp'];
 
+// 访客身份：未登录时也允许连接客服（对齐 Android SportsOnlineServiceHost 的 guest 分支）。
+// 用持久化到 localStorage 的稳定随机 id 充当浏览器「设备指纹」，
+// 保证同一浏览器多次进入客服复用同一访客身份（历史消息可续接）。
+const KF_GUEST_ID_KEY = 'mysport:kf-guest-id';
+
+function resolveGuestKey() {
+  let id = '';
+  try {
+    id = localStorage.getItem(KF_GUEST_ID_KEY) || '';
+    if (!id) {
+      id = (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      localStorage.setItem(KF_GUEST_ID_KEY, id);
+    }
+  } catch {
+    // localStorage 不可用时退化为本次会话内的临时 id
+    id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+  return `guest:${id}`;
+}
+
 /* ─── 消息方向 & 内容类型 & 发送状态（对齐 Android 枚举） ─── */
 export const MessageDirection = Object.freeze({
   TO_OPERATOR: 'TO_OPERATOR',
@@ -75,6 +97,7 @@ export function useCustomerService() {
 
   /* ─── 内部状态 ─── */
   let visitorToken = null;
+  let visitorAccount = null;
   let receiveId = null;
   let kfBase = null;
   let entryLinkCode = null;
@@ -143,11 +166,11 @@ export function useCustomerService() {
       return;
     }
 
-    const customerId = userStore.customerId;
-    if (!customerId) {
-      fail('请先登录后再使用在线客服');
-      return;
-    }
+    // 未登录也允许连接：登录用 customerId，未登录用稳定访客 key（对齐 Android guest 分支）
+    const loggedIn = !!userStore.customerId;
+    const identityKey = loggedIn ? String(userStore.customerId) : resolveGuestKey();
+    const account = loggedIn ? String(userStore.customerId) : 'guest';
+    visitorAccount = account;
 
     isInitializing.value = true;
     errorMessage.value = '';
@@ -187,8 +210,8 @@ export function useCustomerService() {
         return;
       }
 
-      // 生成访客 token
-      visitorToken = await generateVisitorToken(String(customerId));
+      // 生成访客 token（登录=customerId，未登录=guest key）
+      visitorToken = await generateVisitorToken(identityKey);
       if (gen !== generation) return;
 
       if (__DEV__) console.log('[KF] 开始初始化', { kfBase, entryLinkCode, token: visitorToken.slice(0, 12) + '…' });
@@ -213,7 +236,7 @@ export function useCustomerService() {
       // 3. 建立 WebSocket
       const wsUrl = buildKfWebSocketUrl(kfBase);
       const avatar = userStore.customer?.avatarUrl || '';
-      const connectPayload = buildConnectFrame(String(customerId), avatar);
+      const connectPayload = buildConnectFrame(account, avatar);
 
       ws.connect(wsUrl, connectPayload);
     } catch (e) {
@@ -374,7 +397,7 @@ export function useCustomerService() {
 
     // 按 sender/receiver 字段与本地身份匹配
     const senderFields = ['sender', 'senderId', 'from', 'fromId', 'token', 'account'];
-    const visitorIds = [visitorToken, String(userStore.customerId)].filter(Boolean).map((s) => s.toLowerCase());
+    const visitorIds = [visitorToken, visitorAccount].filter(Boolean).map((s) => s.toLowerCase());
 
     for (const field of senderFields) {
       const val = (json[field] || extend?.[field] || '').toString().toLowerCase().trim();
