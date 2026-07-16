@@ -27,6 +27,7 @@ import iconMy from '@/assets/images/menu/icon_my.svg';
 import iconPersonalProfile from '@/assets/images/menu/icon_personal_profile.svg';
 import iconPurchaseDetails from '@/assets/images/menu/icon_purchase_details.svg';
 import iconSettings from '@/assets/images/menu/icon_settings.svg';
+import profileHeaderSettingsIconUrl from '@/assets/images/profile/icon_profile_header_settings.svg?url';
 import iconTransactionRecords from '@/assets/images/menu/icon_transaction_records.svg';
 
 const { t } = useI18n();
@@ -412,8 +413,12 @@ watch(isLoggedIn, (loggedIn) => {
             <span class="header-mobile-circle-btn__msg" aria-hidden="true"></span>
             <span v-if="unreadCount > 0" class="header-mobile-circle-btn__badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
           </button>
-          <RouterLink to="/profile/security" class="header-mobile-circle-btn" :aria-label="t('安全设置')">
-            <span class="header-mobile-circle-btn__gear" aria-hidden="true"></span>
+          <RouterLink
+            to="/profile/security"
+            class="header-mobile-circle-btn header-mobile-circle-btn--icon"
+            :aria-label="t('安全设置')"
+          >
+            <img class="header-mobile-circle-btn__img" :src="profileHeaderSettingsIconUrl" alt="" />
           </RouterLink>
         </template>
      
@@ -778,6 +783,18 @@ watch(isLoggedIn, (loggedIn) => {
       }
     }
 
+    /* 设计稿自带圆形背景，不再叠加按钮渐变 */
+    .header-mobile-circle-btn--icon {
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .header-mobile-circle-btn__img {
+      display: block;
+      width: 36px;
+      height: 36px;
+    }
+
     .header-mobile-circle-btn__msg {
       border: 2px solid #fff;
       border-radius: 5px;
@@ -826,32 +843,6 @@ watch(isLoggedIn, (loggedIn) => {
       z-index: 1;
     }
 
-    .header-mobile-circle-btn__gear {
-      border: 2px solid #fff;
-      border-radius: 50%;
-
-      &::before {
-        content: '';
-        position: absolute;
-        inset: 5px;
-        border: 2px solid #fff;
-        border-radius: 50%;
-      }
-
-      &::after {
-        content: '';
-        position: absolute;
-        left: 50%;
-        top: -4px;
-        width: 4px;
-        height: 28px;
-        border-radius: 3px;
-        background:
-          linear-gradient(#fff, #fff) top / 100% 5px no-repeat,
-          linear-gradient(#fff, #fff) bottom / 100% 5px no-repeat;
-        transform: translateX(-50%) rotate(45deg);
-      }
-    }
   }
 
   @include web-only {
