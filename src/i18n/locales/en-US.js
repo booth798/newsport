@@ -537,6 +537,7 @@ export default {
   已成交: 'Filled',
   已结算: 'Settled',
   处理中: 'Processing',
+  成功: 'Success',
   系统通知: 'System Notice',
   交易提醒: 'Trade Alert',
   赛事预告: 'Match Preview',
