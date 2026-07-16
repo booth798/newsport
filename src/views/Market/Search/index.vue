@@ -1,4 +1,9 @@
 <script setup>
+/**
+ * 市场搜索页：业务对齐安卓 MarketSearchActivity
+ * - 输入关键词后请求 GET /markets/list?teamName=&pageNum=1&pageSize=20
+ * - 空白关键词不请求；返回的 FT/HT 盘口原样展示（安卓搜索页不做 matchId 去重）
+ */
 import { computed, nextTick, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
@@ -6,72 +11,37 @@ import { storeToRefs } from 'pinia';
 
 import { fetchMarketListPaged } from '@/api/match';
 import { useAppStore } from '@/store/modules/app';
+import { useToast } from '@/hooks/useToast';
 import EmptyState from '@/components/EmptyState.vue';
 import HomeMatchCard from '@/views/Home/components/HomeMatchCard.vue';
 
 import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.svg?url';
 
+const PAGE_SIZE = 20;
+
 const { t } = useI18n();
 const router = useRouter();
+const toast = useToast();
 const appStore = useAppStore();
 const { isMobile } = storeToRefs(appStore);
 
 const searchInputRef = ref(null);
 const searchQuery = ref('');
-const allMatches = ref([]);
+const results = ref([]);
 const loading = ref(false);
 const hasSearched = ref(false);
+const searching = ref(false);
+let searchRequestSerial = 0;
 
-const HOT_KEYWORDS = ['欧冠', '英超', '西甲', '德甲', '意甲', '法甲'];
+const trimmedQuery = computed(() => searchQuery.value.trim());
+const showEmpty = computed(() => hasSearched.value && !loading.value && results.value.length === 0);
+const showResults = computed(() => hasSearched.value && !loading.value && results.value.length > 0);
 
-const SEARCH_HISTORY_KEY = 'mysport:search-history';
-const searchHistory = ref([]);
-
-function loadHistory() {
-  try {
-    const raw = localStorage.getItem(SEARCH_HISTORY_KEY);
-    searchHistory.value = raw ? JSON.parse(raw) : [];
-  } catch {
-    searchHistory.value = [];
-  }
-}
-
-function saveHistory(keyword) {
-  const kw = keyword.trim();
-  if (!kw) return;
-  const list = searchHistory.value.filter((h) => h !== kw);
-  list.unshift(kw);
-  searchHistory.value = list.slice(0, 10);
-  localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(searchHistory.value));
-}
-
-function clearHistory() {
-  searchHistory.value = [];
-  localStorage.removeItem(SEARCH_HISTORY_KEY);
-}
-
-const trimmedQuery = computed(() => searchQuery.value.trim().toLowerCase());
-
-const filteredMatches = computed(() => {
-  if (!trimmedQuery.value) return [];
-  return allMatches.value.filter((m) =>
-    [m.league, m.homeTeam, m.awayTeam, m.date]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase()
-      .includes(trimmedQuery.value),
-  );
-});
-
-const showInitial = computed(() => !hasSearched.value && !trimmedQuery.value);
-const showEmpty = computed(() => hasSearched.value && trimmedQuery.value && filteredMatches.value.length === 0);
-const showResults = computed(() => hasSearched.value && filteredMatches.value.length > 0);
-
-// 与市场列表页一致：/markets/list 记录含盘口 scores（赔率）与 kickoffAt（开赛倒数），
-// 映射出 topPools 供 HomeMatchCard 显示赔率，kickoffAt 供卡片计算实时倒数。
+// 与市场列表页一致：映射盘口 scores 与 kickoffAt，供 HomeMatchCard 展示。
 function normalizeMarketRecord(r) {
   return {
-    id: r.matchId || r.marketId || r.id,
+    // 列表项唯一标识用 marketId，避免同场 FT/HT 互相覆盖
+    id: r.marketId || `${r.matchId}:${r.period}` || r.id,
     _dedupeKey: r.marketId || `${r.matchId}:${r.period}`,
     matchId: r.matchId,
     marketId: r.marketId,
@@ -98,52 +68,56 @@ function normalizeMarketRecord(r) {
   };
 }
 
-async function loadAllMatches() {
+async function doSearch() {
+  const keyword = trimmedQuery.value;
+  // 与安卓一致：空白关键词不请求；进行中的搜索忽略重复触发。
+  if (!keyword || searching.value) return;
+
+  searching.value = true;
+  loading.value = true;
+  hasSearched.value = true;
+  const requestSerial = ++searchRequestSerial;
+
   try {
-    const res = await fetchMarketListPaged({ pageSize: 100, day: 'all' });
+    // 对齐安卓 HomeRepository.markets(page=1, size=20, teamName=keyword)
+    const res = await fetchMarketListPaged({
+      pageNum: 1,
+      pageSize: PAGE_SIZE,
+      teamName: keyword,
+    });
+    if (requestSerial !== searchRequestSerial) return;
     const records = res?.data?.records ?? [];
-    // 同一场比赛可能有多个盘口（FT/HT），按 matchId 去重，只展示一张卡片
-    const seen = new Set();
-    const list = [];
-    for (const r of records) {
-      const norm = normalizeMarketRecord(r);
-      const key = norm.matchId || norm.id;
-      if (key == null || seen.has(key)) continue;
-      seen.add(key);
-      list.push(norm);
+    // 搜索页对齐安卓：FT/HT 各算一条，不做 matchId 去重
+    results.value = records.map(normalizeMarketRecord);
+  } catch (error) {
+    if (requestSerial !== searchRequestSerial) return;
+    results.value = [];
+    toast.error(error?.message || t('加载失败'));
+  } finally {
+    if (requestSerial === searchRequestSerial) {
+      searching.value = false;
+      loading.value = false;
     }
-    allMatches.value = list;
-  } catch {
-    allMatches.value = [];
   }
 }
 
-function doSearch() {
-  const kw = searchQuery.value.trim();
-  if (!kw) return;
-  saveHistory(kw);
-  hasSearched.value = true;
-}
-
-function onHotKeyword(keyword) {
-  searchQuery.value = keyword;
-  doSearch();
-}
-
-function onHistoryKeyword(keyword) {
-  searchQuery.value = keyword;
-  doSearch();
-}
-
 function onInputChange() {
-  if (!searchQuery.value.trim()) {
+  if (!trimmedQuery.value) {
+    searchRequestSerial += 1;
     hasSearched.value = false;
+    results.value = [];
+    loading.value = false;
+    searching.value = false;
   }
 }
 
 function clearInput() {
+  searchRequestSerial += 1;
   searchQuery.value = '';
   hasSearched.value = false;
+  results.value = [];
+  loading.value = false;
+  searching.value = false;
   nextTick(() => searchInputRef.value?.focus());
 }
 
@@ -152,10 +126,6 @@ function goBack() {
 }
 
 onMounted(async () => {
-  loadHistory();
-  loading.value = true;
-  await loadAllMatches();
-  loading.value = false;
   await nextTick();
   searchInputRef.value?.focus();
 });
@@ -163,7 +133,7 @@ onMounted(async () => {
 
 <template>
   <div class="search-page">
-    <!-- H5：紧凑头（返回 + 居中标题）+ 独立搜索框行（对齐设计稿） -->
+    <!-- H5：紧凑头（返回 + 居中标题）+ 独立搜索框行 -->
     <template v-if="isMobile">
       <header class="search-page__m-header">
         <button type="button" class="search-page__m-back" :aria-label="t('返回')" @click="goBack">
@@ -204,7 +174,7 @@ onMounted(async () => {
       </div>
     </template>
 
-    <!-- 桌面端：原导航栏（返回 + 搜索框 + 搜索按钮），保持不变 -->
+    <!-- 桌面端：返回 + 搜索框 + 搜索按钮 -->
     <header v-else class="search-page__header">
       <div class="search-page__nav-bar">
         <button type="button" class="search-page__back" :aria-label="t('返回')" @click="goBack">
@@ -233,72 +203,26 @@ onMounted(async () => {
       </div>
     </header>
 
-    <!-- 加载中 -->
-    <div v-if="loading" class="search-page__state">
+    <div v-if="loading" class="search-page__state" role="status" :aria-label="t('加载中')">
       <div class="search-page__spinner" />
-      <span>{{ t('加载中') }}</span>
     </div>
 
-    <!-- 初始态：热门搜索 + 搜索历史 -->
-    <div v-else-if="showInitial" class="search-page__initial">
-      <section class="search-page__section">
-        <h3 class="search-page__section-title">{{ t('热门搜索') }}</h3>
-        <div class="search-page__tags">
-          <button
-            v-for="kw in HOT_KEYWORDS"
-            :key="kw"
-            type="button"
-            class="search-page__tag"
-            @click="onHotKeyword(kw)"
-          >
-            {{ kw }}
-          </button>
-        </div>
-      </section>
-
-      <section v-if="searchHistory.length" class="search-page__section">
-        <div class="search-page__section-head">
-          <h3 class="search-page__section-title">{{ t('搜索历史') }}</h3>
-          <button type="button" class="search-page__clear-btn" @click="clearHistory">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="M4 5h8v7.5a1.5 1.5 0 0 1-1.5 1.5h-5A1.5 1.5 0 0 1 4 12.5V5Z" stroke="#94A8C4" stroke-width="1"/>
-              <path d="M2.5 5h11M6 3h4" stroke="#94A8C4" stroke-width="1" stroke-linecap="round"/>
-            </svg>
-          </button>
-        </div>
-        <div class="search-page__tags">
-          <button
-            v-for="kw in searchHistory"
-            :key="kw"
-            type="button"
-            class="search-page__tag search-page__tag--history"
-            @click="onHistoryKeyword(kw)"
-          >
-            {{ kw }}
-          </button>
-        </div>
-      </section>
-    </div>
-
-    <!-- 搜索结果 -->
     <div v-else-if="showResults" class="search-page__results">
       <p class="search-page__result-count">
-        {{ t('搜索到') }} <strong>{{ filteredMatches.length }}</strong> {{ t('条相关赛事') }}
+        {{ t('搜索到') }} <strong>{{ results.length }}</strong> {{ t('条相关赛事') }}
       </p>
       <div class="search-page__grid">
         <HomeMatchCard
-          v-for="match in filteredMatches"
-          :key="match.id"
+          v-for="match in results"
+          :key="match._dedupeKey || match.id"
           :match="match"
         />
       </div>
     </div>
 
-    <!-- 无结果 -->
-    <EmptyState
-      v-else-if="showEmpty"
-      :text="t('没有相关内容，请重新尝试')"
-    />
+    <div v-else-if="showEmpty" class="search-page__empty">
+      <EmptyState :icon-size="96" :text="t('没有相关内容，请重新尝试')" />
+    </div>
   </div>
 </template>
 

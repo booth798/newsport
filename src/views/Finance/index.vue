@@ -13,8 +13,8 @@ const router = useRouter();
 const tabs = [
   { key: '/finance/deposit', label: '充值', to: '/finance/deposit' },
   { key: '/finance/vip-transfer', label: '会员互转', to: '/finance/vip-transfer' },
-  { key: '/finance/withdraw', label: '银行卡提现', to: '/finance/withdraw', method: 'bank_card' },
-  { key: '/finance/withdraw-chain', label: '区块链提现', to: '/finance/withdraw-chain', method: 'crypto' },
+  { key: '/finance/withdraw', label: '银行卡提现', shortLabel: '银行卡', to: '/finance/withdraw', method: 'bank_card' },
+  { key: '/finance/withdraw-chain', label: '区块链提现', shortLabel: '区块链', to: '/finance/withdraw-chain', method: 'crypto' },
 ];
 const withdrawPaths = ['/finance/withdraw', '/finance/withdraw-chain'];
 const fallbackFinancePath = '/finance/records';
@@ -31,6 +31,7 @@ const availableTabs = computed(() => tabs.filter((tab) => !tab.method || withdra
 const withdrawTabs = computed(() => availableTabs.value.filter((tab) => withdrawPaths.includes(tab.to)));
 
 const activeTab = computed(() => route.path);
+const isFinanceHome = computed(() => route.name === 'finance');
 // 会员互转 / 银行卡提现 / 区块链提现在 H5 隐藏底部 Tab，页面底部只保留安全区。
 const hidesMobileTabBar = computed(() => route.matched.some((r) => r.meta?.hideMobileTabBar));
 const isWithdrawRoute = computed(() => withdrawPaths.includes(route.path));
@@ -81,7 +82,7 @@ onMounted(loadWithdrawMethods);
           class="finance-tab"
           :class="{ 'active btn--primary': activeTab === tab.to }"
         >
-          {{ t(tab.label) }}
+          {{ t(tab.shortLabel || tab.label) }}
         </RouterLink>
       </nav>
 

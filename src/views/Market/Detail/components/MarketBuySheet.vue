@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
@@ -22,6 +22,7 @@ import iconBuySettingsGrayUrl from '@/assets/images/common/icon_buy_settings_gra
 import { useAppStore } from '@/store/modules/app';
 import { useUserStore } from '@/store/modules/user';
 import { resolveTeamLogoUrl } from '@/constants/teamLogos';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 const props = defineProps({
   visible: {
@@ -51,6 +52,9 @@ const userStore = useUserStore();
 const toast = useToast();
 const { isMobile } = storeToRefs(appStore);
 const { loggedInUserId, loggedInAssetsFormatted } = storeToRefs(userStore);
+
+// 买入弹层打开时锁定背后滚动，并用滚动条补偿避免页面其它元素横向跳动。
+useBodyScrollLock(() => props.visible);
 
 const buyType = ref('standard');
 const buyAmount = ref('');
@@ -147,11 +151,6 @@ const successAmount = ref('100.00');
 const successYield = ref('2.1');
 const successProfit = ref('2.00');
 
-const lockScroll = (locked) => {
-  if (typeof document === 'undefined') return;
-  document.body.style.overflow = locked ? 'hidden' : '';
-};
-
 async function refreshWalletBalance() {
   walletLoading.value = true;
   try {
@@ -172,7 +171,6 @@ async function loadPendingQuota() {
 watch(
   () => props.visible,
   (open) => {
-    lockScroll(open);
     if (open) {
       phase.value = 'form';
       buyType.value = 'standard';
@@ -187,10 +185,6 @@ watch(
     }
   },
 );
-
-onBeforeUnmount(() => {
-  lockScroll(false);
-});
 
 function formatScoreOption(score) {
   const raw = String(score ?? '');

@@ -162,7 +162,7 @@ const bankCardMenuItem = { label: '绑定信息', icon: iconProfileBindinfo, act
 const serviceMenuItem = { label: '联系客服', icon: iconProfileService, action: 'service' };
 const securityMenuItem = { label: '安全设置', icon: iconProfileSecurity, action: 'security' };
 const vipBenefitsMenuItem = { label: 'VIP权益', icon: iconVipBenefits, action: 'vipBenefits' };
-const vipTransferMenuItem = { label: 'VIP互转', icon: iconVipTransfer, action: 'vipTransfer' };
+const vipTransferMenuItem = { label: '会员互转', icon: iconVipTransfer, action: 'vipTransfer' };
 const languageSettingMenuItem = { label: '语言设置', icon: iconLanguageSetting, action: 'languageSetting' };
 const logoutMenuItem = { label: '退出登录', icon: iconProfileLogout, action: 'logout' };
 
@@ -277,7 +277,7 @@ function handleMenuClick(item) {
     return;
   }
   if (item.action === 'vipTransfer') {
-    // VIP 互转在 PC 与 H5 共用同一个财务路由，由页面内部响应式适配。
+    // 会员互转在 PC 与 H5 共用同一个财务路由，由页面内部响应式适配。
     router.push({ name: 'finance-vip-transfer' });
     return;
   }

@@ -24,6 +24,9 @@ import { useUserStore } from '@/store/modules/user';
 import { useAppStore } from '@/store/modules/app';
 
 const PAGE_SIZE = 20;
+// 与安卓 WithdrawActivity 一致：链上提现同样最低 100，密码 6-20 位字母数字。
+const MIN_WITHDRAW_AMOUNT = 100;
+const WITHDRAW_PASSWORD_PATTERN = /^[a-zA-Z0-9]{6,20}$/;
 const FILTER_OPTIONS = [
   { value: 'all', label: '全部' },
   { value: 'completed', label: '已提现' },
@@ -261,8 +264,10 @@ async function handleSubmit() {
     toast.error(t('请先添加提现地址'));
     return;
   }
-  const val = Number(amount.value);
-  if (!String(amount.value).trim()) {
+  const amountText = String(amount.value ?? '').replaceAll(',', '').trim();
+  const val = Number(amountText);
+  const password = withdrawPassword.value.trim();
+  if (!amountText) {
     toast.error(t('请输入金额'));
     return;
   }
@@ -270,24 +275,31 @@ async function handleSubmit() {
     toast.error(t('金额必须大于零'));
     return;
   }
-  if (!withdrawPassword.value.trim()) {
+  if (val < MIN_WITHDRAW_AMOUNT) {
+    toast.error(t('提款金额最低为100'));
+    return;
+  }
+  if (!password) {
     toast.error(t('请输入提款密码'));
+    return;
+  }
+  if (!WITHDRAW_PASSWORD_PATTERN.test(password)) {
+    toast.error(t('提现密码格式提示'));
     return;
   }
   try {
     submitting.value = true;
+    // 传参对齐安卓：bindingType=crypto / bindingId / amount / withdrawPassword
     await submitWithdraw({
-      amount: val,
-      withdrawPassword: withdrawPassword.value,
-      method: selectedWallet.value.chainType,
-      chainType: selectedWallet.value.chainType,
+      bindingType: 'crypto',
       bindingId: selectedWallet.value.id,
-      toAddress: selectedWallet.value.address,
+      amount: val,
+      withdrawPassword: password,
     });
-    toast.success(t('操作成功'));
+    toast.success(t('提款申请已提交'));
     amount.value = '';
     withdrawPassword.value = '';
-    await loadRecords();
+    await Promise.allSettled([loadRecords(), userStore.refreshUserBalance()]);
   } catch (e) {
     toast.error(e?.message || t('提交失败请重试'));
   } finally {
@@ -341,7 +353,7 @@ onBeforeUnmount(() => {
 
         <label class="wc-field">
           <span class="wc-field__label">{{ t('提款金额') }}</span>
-          <BaseInput v-model="amount" inputmode="decimal" autocomplete="off" placeholder="0.00" />
+          <BaseInput v-model="amount" inputmode="decimal" autocomplete="off" :placeholder="t('最低提款金额为100')" />
           <small class="wc-field__hint">{{ t('余额') }}：<b>{{ displayBalance }} CNY</b></small>
         </label>
 

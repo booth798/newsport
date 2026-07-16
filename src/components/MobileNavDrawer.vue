@@ -6,7 +6,7 @@
  * - 折叠分组：市场、会员服务、我的权益
  * - 底部联络客服
  */
-import { ref, watch, onBeforeUnmount } from 'vue';
+import { ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 
@@ -33,6 +33,7 @@ import iconContact from '@/assets/images/menu/icon_my_contact_support.svg';
 
 import { useAppStore } from '@/store/modules/app';
 import { useToast } from '@/hooks/useToast';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 const props = defineProps({
   modelValue: {
@@ -53,6 +54,9 @@ const route = useRoute();
 const router = useRouter();
 const appStore = useAppStore();
 const toast = useToast();
+
+// 抽屉打开时锁定背后滚动，关闭后恢复，避免影响页面其它元素布局。
+useBodyScrollLock(() => props.modelValue);
 
 /** 快捷入口：设计稿 2×2 */
 const quickLinks = [
@@ -106,19 +110,6 @@ function close() {
   emit('update:modelValue', false);
 }
 
-function lockScroll(locked) {
-  if (typeof document === 'undefined') return;
-  document.body.style.overflow = locked ? 'hidden' : '';
-}
-
-watch(
-  () => props.modelValue,
-  (open) => {
-    lockScroll(open);
-  },
-  { immediate: true },
-);
-
 // 路由变化时自动关闭抽屉，避免跳转后仍遮挡页面
 watch(
   () => route.fullPath,
@@ -126,10 +117,6 @@ watch(
     if (props.modelValue) close();
   },
 );
-
-onBeforeUnmount(() => {
-  lockScroll(false);
-});
 
 function isLinkActive(item) {
   const to = item.to;

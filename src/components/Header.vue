@@ -397,7 +397,8 @@ watch(isLoggedIn, (loggedIn) => {
           <template v-if="isMonthFilterPage">
             <MonthSelector v-model="financeMonth" :aria-label="t('选择月份')" />
           </template>
-          <template v-else-if="isLoggedIn">
+          <!-- H5 比赛详情页右上角不展示客服/菜单按钮 -->
+          <template v-else-if="isLoggedIn && !isMarketDetailPage">
             <button type="button" class="header-mobile-btn" :aria-label="t('在线客服')" @click="appStore.openCustomerServiceConfirm">
               <img class="header-mobile-btn__service-img" :src="serviceIconUrl" alt="" />
             </button>
@@ -405,7 +406,7 @@ watch(isLoggedIn, (loggedIn) => {
               <img class="header-mobile-btn__img" :src="moreIconUrl" alt="" />
             </button>
           </template>
-          <template v-else>
+          <template v-else-if="!isMarketDetailPage">
             <button type="button" class="header-mobile-login-btn" @click="appStore.openLoginModal()">
               {{ t('登录') }}
             </button>
@@ -656,6 +657,12 @@ watch(isLoggedIn, (loggedIn) => {
       font-size: 14px;
       font-weight: 500;
       color: #0b3462;
+    }
+
+    // 月份筛选页：让 .card-primary 成为绝对定位标题的包含块，
+    // 避免标题相对含安全区内边距的 .header 定位而偏高，与右侧月份选择器错位（垂直居中对齐）。
+    &.header--vip-transfer .card-primary.norem {
+      position: relative;
     }
 
     .header-mobile-compact-title {

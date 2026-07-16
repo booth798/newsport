@@ -7,12 +7,16 @@ import { storeToRefs } from 'pinia';
 import BaseInput from '@/components/BaseInput.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import MonthSelector from '@/components/MonthSelector.vue';
-import { fetchTransferRecords, transfer } from '@/api/finance';
+import { fetchBalance, fetchTransferRecords, transfer } from '@/api/finance';
 import { useToast } from '@/hooks/useToast';
 import { useUserStore } from '@/store/modules/user';
 
-import { getImageUrl } from '@/utils/common'
+import { getImageUrl } from '@/utils/common';
+
 const PAGE_SIZE = 20;
+// 与安卓 MemberTransferActivity 一致：金额下限 1，提现密码 6-20 位字母数字。
+const MIN_TRANSFER_AMOUNT = 1;
+const WITHDRAW_PASSWORD_PATTERN = /^[a-zA-Z0-9]{6,20}$/;
 const FILTER_OPTIONS = [
   { value: 'all', label: '全部' },
   { value: 'out', label: '会员转出' },
@@ -56,13 +60,15 @@ const selectedFilterLabel = computed(
   () => FILTER_OPTIONS.find((option) => option.value === selectedType.value)?.label || '全部',
 );
 const balanceAmount = computed(() => {
-  // 余额统一读取用户 store 的展示字段，并转换为表单校验所需数值。
+  // 余额展示读取用户 store；提交前不在前端拦截余额不足，交由后端校验（对齐安卓）。
   const value = Number(String(loggedInAssetsFormatted.value ?? 0).replaceAll(',', ''));
   return Number.isFinite(value) ? value : 0;
 });
 const displayBalance = computed(() => formatMoney(balanceAmount.value));
 
 onMounted(() => {
+  // 与安卓一致：进入页面先刷新钱包余额，再拉互转记录。
+  refreshWalletBalance();
   loadPage();
   document.addEventListener('click', handleFilterOutsideClick);
 });
@@ -76,9 +82,23 @@ watch(selectedMonth, () => {
   refreshRecords();
 });
 
-// 余额由用户 store 提供，页面只请求互转记录。
-async function loadPage() {
-  loading.value = true;
+async function refreshWalletBalance() {
+  try {
+    const res = await fetchBalance();
+    const nextBalance = res.data?.available ?? res.data?.balance;
+    if (nextBalance != null) {
+      userStore.updateUserProfile({ balance: nextBalance });
+    }
+  } catch {
+    // 余额刷新失败不阻断页面，记录列表仍可正常加载。
+  }
+}
+
+async function loadPage({ silent = false } = {}) {
+  // 首次进入展示轻量 loading；筛选/提交后的刷新静默更新，避免整块「加载中」闪屏。
+  if (!silent) {
+    loading.value = true;
+  }
   error.value = false;
   try {
     const recordsRes = await fetchTransferRecords(buildRecordParams(1));
@@ -156,55 +176,59 @@ function formatDateTime(value) {
 }
 
 async function handleSubmit() {
-  const transferAmount = Number(amount.value);
-  if (!accountId.value.trim()) {
+  // 校验与请求体字段对齐安卓 MemberTransferActivity.validateTransfer / transfer。
+  const account = accountId.value.trim();
+  const amountText = String(amount.value ?? '').replaceAll(',', '').trim();
+  const password = withdrawPassword.value.trim();
+  const transferAmount = Number(amountText);
+
+  if (!account) {
     toast.error(t('请输入对方账户ID'));
     return;
   }
-  if (!Number.isFinite(transferAmount) || transferAmount < 1 || !/^\d+(\.\d{1,2})?$/.test(amount.value)) {
+  if (
+    !Number.isFinite(transferAmount)
+    || transferAmount < MIN_TRANSFER_AMOUNT
+    || amountText.startsWith('-')
+    || !/^\d+(\.\d{1,2})?$/.test(amountText)
+  ) {
     toast.error(t('互转金额格式提示'));
     return;
   }
-  if (transferAmount > balanceAmount.value) {
-    toast.error(t('余额不足'));
+  if (!password) {
+    toast.error(t('请输入提款密码'));
     return;
   }
-  if (!withdrawPassword.value.trim()) {
-    toast.error(t('请输入提款密码'));
+  if (!WITHDRAW_PASSWORD_PATTERN.test(password)) {
+    toast.error(t('提现密码格式提示'));
     return;
   }
 
   try {
     submitting.value = true;
-    const response = await transfer({
-      toCustomerNo: accountId.value.trim(),
+    // 传参与安卓一致：toCustomerNo / amount / withdrawPassword，并带 Idempotency-Key。
+    await transfer({
+      toCustomerNo: account,
       amount: transferAmount,
-      withdrawPassword: withdrawPassword.value,
+      withdrawPassword: password,
     });
-    // 即时到账后用接口返回余额回写用户 store，保持全站余额同步。
-    if (response?.data?.balance != null) {
-      userStore.updateUserProfile({ balance: response.data.balance });
-    }
-    toast.success(t('转账成功'));
+    toast.success(t('转账申请已提交'));
     accountId.value = '';
     amount.value = '';
     withdrawPassword.value = '';
-    await loadPage();
-  } catch {
-    toast.error(t('提交失败请重试'));
+    // 与安卓一致：成功后重新拉取钱包余额，再静默刷新互转记录。
+    await refreshWalletBalance();
+    await loadPage({ silent: true });
+  } catch (error) {
+    toast.error(error?.message || t('提交失败请重试'));
   } finally {
     submitting.value = false;
   }
 }
 
 async function refreshRecords() {
-  try {
-    error.value = false;
-    const response = await fetchTransferRecords(buildRecordParams(1));
-    applyRecordResponse(response, false);
-  } catch {
-    error.value = true;
-  }
+  // 切换月份/筛选时静默刷新，保留当前列表，避免大块「加载中」文案。
+  await loadPage({ silent: true });
 }
 
 function selectRecordType(type) {
@@ -245,7 +269,7 @@ async function loadMore() {
         <div class="vip-transfer-notice">
           <img :src="getImageUrl('common/icon_tips.svg')">
           <div class="vip-transfer-notice__content">
-            <strong>{{ t('注意事项') }}</strong>
+            <strong>{{ t('温馨提示') }}</strong>
             <p>{{ t('互转提示第一行') }}<br />{{ t('互转提示第二行') }}</p>
           </div>
         </div>
@@ -266,7 +290,7 @@ async function loadMore() {
         <label class="vip-transfer-field">
           <span>{{ t('提款密码') }}</span>
           <BaseInput v-model="withdrawPassword" type="password" autocomplete="current-password"
-            :placeholder="t('请输入密码')" />
+            :placeholder="t('请输入提款密码')" />
         </label>
 
         <button class="vip-transfer-form__submit btn btn--primary" type="submit" :disabled="submitting">
@@ -279,10 +303,12 @@ async function loadMore() {
           <MonthSelector v-model="selectedMonth" :aria-label="t('选择月份')" />
         </div>
 
-        <div v-if="loading" class="vip-transfer-state">{{ t('加载中') }}</div>
+        <div v-if="loading" class="vip-transfer-state" role="status" :aria-label="t('加载中')">
+          <span class="vip-transfer-spinner" aria-hidden="true" />
+        </div>
         <div v-else-if="error" class="vip-transfer-state">
           <span>{{ t('加载失败') }}</span>
-          <button type="button" class="btn btn--primary" @click="loadPage">{{ t('重试') }}</button>
+          <button type="button" class="btn btn--primary" @click="loadPage()">{{ t('重试') }}</button>
         </div>
         <template v-else>
           <div class="vip-transfer-summary">
@@ -476,6 +502,30 @@ async function loadMore() {
   @include mobile-only {
     margin-top: 8px;
   }
+}
+
+.vip-transfer-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 120px;
+  color: #7b92ad;
+  font-size: 14px;
+}
+
+.vip-transfer-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #e4f0fe;
+  border-top-color: #1c7bff;
+  border-radius: 50%;
+  animation: vip-transfer-spin 0.8s linear infinite;
+}
+
+@keyframes vip-transfer-spin {
+  to { transform: rotate(360deg); }
 }
 
 .vip-transfer-records__toolbar {

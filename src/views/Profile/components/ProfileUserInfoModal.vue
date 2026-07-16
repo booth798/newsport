@@ -98,6 +98,11 @@ async function handleSave() {
     toast.error(t('请输入昵称'));
     return;
   }
+  // 与安卓一致：昵称长度 1-20
+  if (trimmedNickname.length > 20) {
+    toast.error(t('昵称长度不能超过20位'));
+    return;
+  }
 
   try {
     submitting.value = true;
@@ -140,7 +145,7 @@ async function handleSave() {
         <div class="profile-user-info-sheet__panel-head">
           <label class="profile-user-info-sheet__panel-title" for="profile-user-info-nickname">{{ t('昵称') }}</label>
         </div>
-        <BaseInput id="profile-user-info-nickname" v-model="formNickname" maxlength="32" :placeholder="t('请输入昵称')" />
+        <BaseInput id="profile-user-info-nickname" v-model="formNickname" maxlength="20" :placeholder="t('请输入昵称')" />
       </div>
     </div>
   </BaseModal>

@@ -21,6 +21,9 @@ import { useUserStore } from '@/store/modules/user';
 import { useAppStore } from '@/store/modules/app';
 
 const PAGE_SIZE = 20;
+// 与安卓 WithdrawActivity 一致：最低提现 100，提现密码 6-20 位字母数字。
+const MIN_WITHDRAW_AMOUNT = 100;
+const WITHDRAW_PASSWORD_PATTERN = /^[a-zA-Z0-9]{6,20}$/;
 const FILTER_OPTIONS = [
   { value: 'all', label: '全部' },
   { value: 'completed', label: '已提现' },
@@ -45,8 +48,6 @@ const bindingsLoading = ref(true);
 const bindingsError = ref(false);
 const amount = ref('');
 const withdrawPassword = ref('');
-const captchaToken = ref('');
-const otpCode = ref('');
 const submitting = ref(false);
 
 // 页面弹窗
@@ -265,8 +266,10 @@ async function handleSubmit() {
     return;
   }
 
-  const value = Number(amount.value);
-  if (!String(amount.value).trim()) {
+  const amountText = String(amount.value ?? '').replaceAll(',', '').trim();
+  const value = Number(amountText);
+  const password = withdrawPassword.value.trim();
+  if (!amountText) {
     toast.error(t('请输入金额'));
     return;
   }
@@ -274,27 +277,29 @@ async function handleSubmit() {
     toast.error(t('金额必须大于零'));
     return;
   }
-  if (value < 100) {
+  if (value < MIN_WITHDRAW_AMOUNT) {
     toast.error(t('提款金额最低为100'));
     return;
   }
-  if (!withdrawPassword.value.trim()) {
+  if (!password) {
     toast.error(t('请输入提款密码'));
+    return;
+  }
+  if (!WITHDRAW_PASSWORD_PATTERN.test(password)) {
+    toast.error(t('提现密码格式提示'));
     return;
   }
 
   try {
     submitting.value = true;
-    // 按提现接口契约提交绑定类型与绑定 ID，验证码字段当前为空时仍保留参数。
+    // 传参对齐安卓：bindingType / bindingId / amount / withdrawPassword
     await submitWithdraw({
       bindingType: 'bank_card',
       bindingId: selectedBank.value.id,
       amount: value,
-      withdrawPassword: withdrawPassword.value,
-      captchaToken: captchaToken.value,
-      otpCode: otpCode.value,
+      withdrawPassword: password,
     });
-    toast.success(t('操作成功'));
+    toast.success(t('提款申请已提交'));
     amount.value = '';
     withdrawPassword.value = '';
     // 提交已成功时，后续刷新失败不应被误报为提现失败。

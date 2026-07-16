@@ -5,7 +5,7 @@
  * 使用独立 /kf 模块的 HTTP + WebSocket 协议，
  * 替代原先的工单 REST API + 轮询方案。
  */
-import { ref, computed, watch, nextTick, onMounted } from 'vue';
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 
@@ -48,6 +48,69 @@ const isSending = computed(() => false); // 发送为异步非阻塞，无需 lo
 const canSend = computed(
   () => inputText.value.trim() && isConnected.value,
 );
+
+/* ─── 表情面板 ─── */
+const INPUT_MAX_LENGTH = 2000;
+// 常用 Unicode 表情（跨端可正常显示，作为文本发送）
+const EMOJIS = [
+  '😀', '😁', '😂', '🤣', '😊', '😍', '😘', '😜',
+  '😎', '🤔', '😅', '😳', '😭', '😡', '😱', '😴',
+  '👍', '👎', '👏', '🙏', '💪', '🤝', '👌', '✌️',
+  '❤️', '💔', '💰', '🎉', '🔥', '⚽', '🏆', '⭐',
+  '😉', '😇', '🙄', '😏', '😬', '😢', '😤', '🤗',
+  '🥳', '😌', '😔', '🤩', '😋', '😐', '🤨', '🙃',
+];
+const showEmojiPanel = ref(false);
+const emojiBtnRef = ref(null);
+const emojiPanelRef = ref(null);
+const replyInputRef = ref(null);
+
+function toggleEmojiPanel() {
+  if (!isConnected.value) return;
+  showEmojiPanel.value = !showEmojiPanel.value;
+}
+
+function closeEmojiPanel() {
+  showEmojiPanel.value = false;
+}
+
+function insertEmoji(emoji) {
+  const el = replyInputRef.value;
+  const cur = inputText.value;
+  // 超出长度上限则不再插入
+  if (cur.length + emoji.length > INPUT_MAX_LENGTH) return;
+  if (el && typeof el.selectionStart === 'number') {
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    inputText.value = cur.slice(0, start) + emoji + cur.slice(end);
+    nextTick(() => {
+      el.focus();
+      const pos = start + emoji.length;
+      el.setSelectionRange(pos, pos);
+    });
+  } else {
+    inputText.value = cur + emoji;
+  }
+}
+
+// 点击面板与表情按钮以外区域时关闭表情面板
+function handleDocumentClick(e) {
+  if (!showEmojiPanel.value) return;
+  const panel = emojiPanelRef.value;
+  const btn = emojiBtnRef.value;
+  if (panel && panel.contains(e.target)) return;
+  if (btn && btn.contains(e.target)) return;
+  closeEmojiPanel();
+}
+
+watch(showEmojiPanel, (open) => {
+  if (open) document.addEventListener('click', handleDocumentClick);
+  else document.removeEventListener('click', handleDocumentClick);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleDocumentClick);
+});
 
 /* ─── 消息列表滚动 ─── */
 const messagesEndRef = ref(null);
@@ -98,6 +161,7 @@ function handleSend() {
   if (!text) return;
   sendText(text);
   inputText.value = '';
+  closeEmojiPanel();
   nextTick(scrollToBottom);
 }
 
@@ -334,6 +398,7 @@ onMounted(() => {
 
           <div class="service-reply-composer">
             <textarea
+              ref="replyInputRef"
               v-model="inputText"
               class="service-reply-input"
               :placeholder="isConnected ? t('请输入消息...') : t('客服连接中，请稍候...')"
@@ -344,11 +409,28 @@ onMounted(() => {
             />
 
             <div class="service-reply-toolbar">
+              <!-- 表情面板 -->
+              <div v-if="showEmojiPanel" ref="emojiPanelRef" class="service-emoji-panel">
+                <button
+                  v-for="emoji in EMOJIS"
+                  :key="emoji"
+                  type="button"
+                  class="service-emoji-panel__item"
+                  @click="insertEmoji(emoji)"
+                >
+                  {{ emoji }}
+                </button>
+              </div>
+
               <button
+                ref="emojiBtnRef"
                 type="button"
                 class="service-emoji-btn"
+                :class="{ 'service-emoji-btn--active': showEmojiPanel }"
+                :disabled="!isConnected"
                 :title="t('表情')"
                 :aria-label="t('表情')"
+                @click="toggleEmojiPanel"
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                   <path d="M12.0059 2.01758C17.5099 2.01781 21.9881 6.49598 21.9883 12L21.9736 12.5127C21.7058 17.7794 17.3379 21.9822 12.0059 21.9824C6.50166 21.9824 2.02359 17.5042 2.02344 12C2.02344 6.4957 6.50156 2.01758 12.0059 2.01758ZM12.0059 3.37891C7.25236 3.37891 3.38477 7.2465 3.38477 12L3.39551 12.4434C3.6272 16.9915 7.40114 20.6201 12.0059 20.6201L12.4492 20.6104C16.9973 20.3786 20.6258 16.6046 20.626 12L20.6162 11.5566C20.3922 7.15525 16.8506 3.61393 12.4492 3.38965L12.0059 3.37891ZM8.39453 13.1816C8.77797 13.1075 9.19423 13.2852 9.35156 13.7031H9.35254C9.81836 14.7706 10.8486 15.4678 12.0078 15.4678L12.2236 15.46C13.2989 15.3792 14.2561 14.7023 14.6592 13.708C14.8335 13.2706 15.3514 13.0563 15.7842 13.2295C16.2206 13.4048 16.4333 13.9235 16.2607 14.3564L16.2588 14.3594C15.5326 16.0709 13.8627 17.2029 12.0078 17.2031C10.1527 17.2031 8.4821 16.0711 7.75586 14.3594L7.75391 14.3564C7.58551 13.9338 7.74969 13.4084 8.23145 13.2295L8.39453 13.1816ZM9.16797 8.68262C9.73212 8.6828 10.2432 9.12666 10.2432 9.65527V10.4639C10.243 10.9924 9.73158 11.4363 9.16797 11.4365H8.8877C8.32831 11.4365 7.81168 11.0317 7.81152 10.4639V9.65527C7.81152 9.1265 8.32385 8.68262 8.8877 8.68262H9.16797ZM15.127 8.68262C15.6908 8.68262 16.2031 9.1265 16.2031 9.65527V10.4639C16.203 10.9925 15.6907 11.4365 15.127 11.4365H14.8467C14.2874 11.4364 13.7707 11.0315 13.7705 10.4639V9.65527C13.7705 9.1266 14.283 8.6828 14.8467 8.68262H15.127Z" fill="#0B3462"/>
@@ -1026,6 +1108,7 @@ onMounted(() => {
 }
 
 .service-reply-composer {
+  position: relative;
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -1038,6 +1121,56 @@ onMounted(() => {
   align-items: center;
   gap: 4px;
   min-height: 36px;
+}
+
+/* ─── 表情面板 ─── */
+
+.service-emoji-panel {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 2px;
+  width: min(360px, 100%);
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 10px;
+  border: 1px solid rgba(21, 58, 119, 0.12);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(21, 58, 119, 0.16);
+  box-sizing: border-box;
+
+  @include mobile-only {
+    grid-template-columns: repeat(7, 1fr);
+    max-height: 168px;
+  }
+}
+
+.service-emoji-panel__item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover {
+    background: rgba(31, 124, 255, 0.1);
+  }
+
+  @include mobile-only {
+    font-size: 20px;
+  }
 }
 
 .service-emoji-btn {
@@ -1054,8 +1187,17 @@ onMounted(() => {
   cursor: pointer;
   transition: background 0.2s;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: rgba(0, 0, 0, 0.04);
+  }
+
+  &--active {
+    background: rgba(31, 124, 255, 0.12);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 
   @include mobile-only {

@@ -22,6 +22,7 @@ function confirm() {
     :model-value="forceLogoutAlertOpen"
     :title="t('提示')"
     :show-close="false"
+    :click-mask-to-close="false"
     @update:model-value="confirm"
   >
     <div class="force-logout-dialog__body">

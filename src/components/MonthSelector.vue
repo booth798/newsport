@@ -326,6 +326,7 @@ watch(
 .month-selector {
   position: relative;
   z-index: 20;
+  display: flex;
 }
 
 .month-selector__trigger {

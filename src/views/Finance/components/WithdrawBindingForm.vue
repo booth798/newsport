@@ -69,7 +69,8 @@ function selectOption(option) {
 async function submitBankCard() {
   if (!holderName.value.trim()) { toast.error(t('请输入持卡人姓名')); return null; }
   if (!bankName.value) { toast.error(t('请选择银行')); return null; }
-  if (bankAccount.value.trim().length < 13) { toast.error(t('请输入有效卡号')); return null; }
+  // 卡号对齐 OpenAPI BankCardBindReq：15-19 位数字
+  if (!/^\d{15,19}$/.test(bankAccount.value.trim())) { toast.error(t('请输入有效卡号')); return null; }
   if (!branchName.value.trim()) { toast.error(t('请输入支行名称')); return null; }
 
   const response = await addBankCard({
@@ -77,7 +78,8 @@ async function submitBankCard() {
     accountNo: bankAccount.value.trim(),
     accountNoConfirm: bankAccount.value.trim(),
     bankName: bankName.value,
-    branchName: branchName.value.trim(),
+    // 字段名对齐安卓 / OpenAPI：branch（非 branchName）
+    branch: branchName.value.trim(),
   });
   return response?.data;
 }
@@ -94,7 +96,8 @@ async function submitWallet() {
   const response = await addWallet({
     chainType: walletType.value,
     address: walletAddress.value.trim(),
-    addressConfirm: walletAddress.value.trim(),
+    addressConfirm: walletConfirmAddress.value.trim(),
+    alias: '',
   });
   return response?.data;
 }
