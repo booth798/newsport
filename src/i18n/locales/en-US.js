@@ -460,6 +460,7 @@ export default {
   正在连接客服: 'Connecting to support',
   正在重新连接: 'Reconnecting',
   连接失败: 'Connection failed',
+  表情: 'Emoji',
   发送图片: 'Send image',
   发送失败: 'Send failed',
   '客服连接中，请稍候...': 'Connecting to support, please wait...',
