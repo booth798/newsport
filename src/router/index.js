@@ -75,7 +75,8 @@ const routes = [
         path: 'deposit',
         name: 'finance-deposit',
         component: () => import('@/views/Finance/Deposit.vue'),
-        meta: { titleKey: '充值' },
+        // H5：返回顶栏 + 标题 + 右侧月份筛选，隐藏底部 Tab。
+        meta: { titleKey: '充值', compactHeader: true, hideMobileTabBar: true },
       },
       {
         path: 'withdraw',

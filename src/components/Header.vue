@@ -140,8 +140,8 @@ const isProfileSubPage = computed(
   () => route.path.startsWith('/profile') && !isProfileHomePage.value,
 );
 const isFinancePage = computed(() => route.path.startsWith('/finance'));
-// 带月份筛选的财务二级页：会员互转 / 银行卡提现 / 区块链提现，H5 顶栏统一展示月份选择器。
-const MONTH_FILTER_ROUTES = ['finance-vip-transfer', 'finance-withdraw', 'finance-withdraw-chain'];
+// 带月份筛选的财务二级页：充值 / 会员互转 / 银行卡提现 / 区块链提现，H5 顶栏统一展示月份选择器。
+const MONTH_FILTER_ROUTES = ['finance-deposit', 'finance-vip-transfer', 'finance-withdraw', 'finance-withdraw-chain'];
 const isMonthFilterPage = computed(() => MONTH_FILTER_ROUTES.includes(route.name));
 const financeMonth = computed({
   get() {
