@@ -42,6 +42,22 @@ export function buildKfImageUrl(rawBase, relativePath) {
 }
 
 /**
+ * 解析客服 HTTP/WS 基础地址（对齐 Android customerServiceBase）。
+ * 优先取 customer-service.url 的 origin，缺失时回退主 API 域名。
+ */
+export function resolveKfBase(csUrl, fallbackApiBase) {
+  return extractKfBase(csUrl) || extractKfBase(fallbackApiBase);
+}
+
+/**
+ * 解析 getConfig.json 的 id 参数（对齐 Android initialLinkCode）。
+ * 优先 customer-service.linkcode，兼容旧版从 URL query 或纯字符串解析。
+ */
+export function resolveEntryLinkCode(linkCodeRaw, csUrlRaw) {
+  return extractEntryLinkCode(linkCodeRaw) || extractEntryLinkCode(csUrlRaw);
+}
+
+/**
  * 从公开配置 URL 中提取客服入口 linkCode（query 参数 code/id/linkCode/tenant 或纯字符串）。
  * 对齐 Android extractCustomerServiceEntryLinkCode。
  */

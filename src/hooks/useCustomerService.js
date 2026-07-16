@@ -10,15 +10,15 @@ import { useUserStore } from '@/store/modules/user';
 import { useAppStore } from '@/store/modules/app';
 import {
   generateVisitorToken,
-  extractKfBase,
-  extractEntryLinkCode,
+  resolveKfBase,
+  resolveEntryLinkCode,
   kfInitVisitor,
   kfGetConfig,
   kfUploadImage,
   buildKfWebSocketUrl,
   buildKfImageUrl,
-  normalizeKfBase,
 } from '@/api/kf';
+import { SITE_CONFIG } from '@/config/site';
 import { useKfWebSocket, KfConnectionState } from './useKfWebSocket';
 
 const __DEV__ = import.meta.env.DEV;
@@ -159,21 +159,23 @@ export function useCustomerService() {
       if (gen !== generation) return;
 
       // 对齐 Android SportsOnlineServiceHost + resolveEntryLinkCode：
-      // 1. 从公开配置提取客服 URL（支持 4 种键名，见 app.js csUrl getter）
-      // 2. 解析出 base（origin）和 entryLinkCode（query 参数 code/id/linkCode/tenant 或纯字符串）
-      // 3. base / entryLinkCode 解析失败时强制刷新一次公开配置再试
+      // 1. kfBase：customer-service.url 的 origin，缺失时回退主 API 域名
+      // 2. entryLinkCode：优先 customer-service.linkcode，兼容旧版从 URL 解析
+      // 3. 解析失败时强制刷新一次公开配置再试
       // 4. 所有 HTTP 和 WebSocket 均直连 kfBase（不走本地代理）
       let csUrl = appStore.csUrl;
-      kfBase = extractKfBase(csUrl);
-      entryLinkCode = extractEntryLinkCode(csUrl);
+      let csLinkCode = appStore.csLinkCode;
+      kfBase = resolveKfBase(csUrl, SITE_CONFIG.apiBaseUrl);
+      entryLinkCode = resolveEntryLinkCode(csLinkCode, csUrl);
 
       // 兜底：配置为空或解析失败时，强制拉一次公开配置
       if (!kfBase || !entryLinkCode) {
         await appStore.loadPublicConfig({ force: true });
         if (gen !== generation) return;
         csUrl = appStore.csUrl;
-        if (!kfBase) kfBase = extractKfBase(csUrl);
-        if (!entryLinkCode) entryLinkCode = extractEntryLinkCode(csUrl);
+        csLinkCode = appStore.csLinkCode;
+        if (!kfBase) kfBase = resolveKfBase(csUrl, SITE_CONFIG.apiBaseUrl);
+        if (!entryLinkCode) entryLinkCode = resolveEntryLinkCode(csLinkCode, csUrl);
       }
 
       if (!kfBase) {

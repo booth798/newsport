@@ -28,6 +28,13 @@ export const useAppStore = defineStore('app', {
       || state.publicConfig['customer_service_url']
       || state.publicConfig['customer.service.url']
       || '',
+    // 对齐 Android customer-service.linkcode：getConfig.json 的 id 参数来源
+    csLinkCode: (state) =>
+      state.publicConfig['customer-service.linkcode']
+      || state.publicConfig['customerServiceLinkCode']
+      || state.publicConfig['customer_service_linkcode']
+      || state.publicConfig['customer.service.linkcode']
+      || '',
     csHours: (state) => state.publicConfig['customer-service.hours'] || '',
     csQQ: (state) => state.publicConfig['customer-service.qq'] || '',
     csEmail: (state) => state.publicConfig['customer-service.email'] || '',
