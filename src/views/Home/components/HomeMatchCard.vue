@@ -109,9 +109,9 @@ const detailMatchDate = computed(() => {
 });
 
 const DEFAULT_POOLS = [
-  { score: '1-0', probability: '--' },
-  { score: '0-1', probability: '--' },
-  { score: '1-1', probability: '--' },
+  { score: '0:0', probability: '--' },
+  { score: '0:1', probability: '--' },
+  { score: '0:2', probability: '--' },
 ];
 
 const topPools = computed(() => {
@@ -119,6 +119,11 @@ const topPools = computed(() => {
   if (Array.isArray(pools) && pools.length) return pools.slice(0, 3);
   return DEFAULT_POOLS;
 });
+
+/** 比分展示统一为安卓端的冒号格式（如 0:0）；仅影响显示，不改用于跳转的原始 pool.score。 */
+function formatPoolScore(score) {
+  return String(score ?? '').replace('-', ':');
+}
 </script>
 
 <template>
@@ -268,7 +273,7 @@ const topPools = computed(() => {
                   @click="onOddsPillClick(pool, $event)"
                   @keydown.enter.prevent="onOddsPillClick(pool, $event)"
                 >
-                  <span class="match-card__odds-pill-score">{{ pool.score }}</span>
+                  <span class="match-card__odds-pill-score">{{ formatPoolScore(pool.score) }}</span>
                   <span class="match-card__odds-pill-prob">{{ pool.probability }}</span>
                 </div>
               </div>
@@ -404,7 +409,7 @@ const topPools = computed(() => {
                   @click="onOddsPillClick(pool, $event)"
                   @keydown.enter.prevent="onOddsPillClick(pool, $event)"
                 >
-                  <span class="match-card__odds-pill-score">{{ pool.score }}</span>
+                  <span class="match-card__odds-pill-score">{{ formatPoolScore(pool.score) }}</span>
                   <span class="match-card__odds-pill-prob">{{ pool.probability }}</span>
                 </div>
               </div>

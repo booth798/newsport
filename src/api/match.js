@@ -57,6 +57,20 @@ export async function fetchHotLeagues() {
 }
 
 /**
+ * 首页联赛 Tab 的赛事列表
+ * 对齐安卓首页联赛 Tab：请求 /markets/list?league=<联赛名>，再按「每场只保留一条盘口」归并。
+ */
+export async function fetchHomeLeagueMatches(leagueName) {
+  const res = await get('/markets/list', {
+    league: leagueName,
+    pageNum: 1,
+    pageSize: 20,
+  });
+  const records = res.data?.records || [];
+  return { code: 200, data: normalizeHomeMarkets(records) };
+}
+
+/**
  * 比赛列表（分页 + 过滤）
  * phase：赛事阶段过滤，取值 all / live（进行中）/ upcoming（未开赛）/ finished（已结束），
  *        对齐安卓端 MatchRepository.list 的 phase 参数，由服务端完成筛选。
