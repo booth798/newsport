@@ -301,6 +301,8 @@ export default {
   总额度释义: 'Total amount = Main wallet + Locked wallet.',
   等级升降说明: 'Level Adjustment',
   等级升降说明内容: 'Your level is recalculated from your total balance after completed deposits, withdrawals, or member transfers. All member thresholds are reviewed daily at 12:30 PM.',
+  其他说明: 'Other',
+  其他说明说明内容: 'In the VIP level, each level has a corresponding number of withdrawals. When you reach the VIP level, you can enjoy the corresponding number of withdrawals.',
   实名认证: 'Verification',
   安全设置: 'Security',
   语言设置: 'Language',

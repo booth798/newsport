@@ -258,6 +258,10 @@ onMounted(loadData);
             <h2>{{ t('等级升降说明') }}</h2>
             <p>{{ t('等级升降说明内容') }}</p>
           </div>
+          <div>
+            <h2>{{ t('其他说明') }}</h2>
+            <p>{{ t('其他说明说明内容') }}</p>
+          </div>
         </section>
 
         <template v-else>
@@ -876,6 +880,7 @@ onMounted(loadData);
 .vip-level-notes {
   h2 {
     color: #1c7bff;
+    font-weight: 400;
   }
 
   p {
