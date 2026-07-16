@@ -8,6 +8,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
+import { getImageUrl } from '@/utils/common'
 
 import BaseInput from '@/components/BaseInput.vue';
 import EmptyState from '@/components/EmptyState.vue';
@@ -18,6 +19,7 @@ import { fetchWithdrawList, submitWithdraw } from '@/api/finance';
 import { fetchBindings } from '@/api/user';
 import { useToast } from '@/hooks/useToast';
 import { useUserStore } from '@/store/modules/user';
+import { useAppStore } from '@/store/modules/app';
 
 const PAGE_SIZE = 20;
 const FILTER_OPTIONS = [
@@ -32,7 +34,10 @@ const route = useRoute();
 const router = useRouter();
 const toast = useToast();
 const userStore = useUserStore();
+const appStore = useAppStore();
 const { loggedInAssetsFormatted } = storeToRefs(userStore);
+
+const { isMobile } = storeToRefs(appStore);
 
 // 表单
 const wallets = ref([]);
@@ -308,9 +313,9 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="wc-page">
-    <main class="wc-panel">
-      <!-- 钱包地址卡 -->
-      <section class="wc-wallet" aria-label="wallet">
+    <section class="wc-wallet" aria-label="wallet">
+      <img class="bank-card__bg" :src="getImageUrl(`profile/${isMobile ? 'h5' : 'pc'}_bank_bg.png`)" alt="">
+      <div class="wc-wallet__inner">
         <div class="wc-wallet__top">
           <span class="wc-wallet__chain">{{ selectedWallet ? selectedWallet.chainType : 'TRC20' }}</span>
           <span class="wc-wallet__type">（{{ t('钱包类型') }}）</span>
@@ -322,7 +327,10 @@ onBeforeUnmount(() => {
         <div class="wc-wallet__addr">
           {{ selectedWallet ? selectedWallet.address : t('请先添加提现地址') }}
         </div>
-      </section>
+      </div>
+    </section>
+    <main class="wc-panel">
+      <!-- 钱包地址卡 -->
 
       <!-- 提现表单 -->
       <form class="wc-form" @submit.prevent="handleSubmit">
@@ -340,12 +348,8 @@ onBeforeUnmount(() => {
 
         <label class="wc-field">
           <span class="wc-field__label">{{ t('提款密码') }}</span>
-          <BaseInput
-            v-model="withdrawPassword"
-            type="password"
-            autocomplete="current-password"
-            :placeholder="t('请输入提款密码')"
-          />
+          <BaseInput v-model="withdrawPassword" type="password" autocomplete="current-password"
+            :placeholder="t('请输入提款密码')" />
         </label>
 
         <button class="wc-form__submit btn btn--primary" type="submit" :disabled="submitting">
@@ -373,23 +377,14 @@ onBeforeUnmount(() => {
             <div class="wc-summary__header">
               <span>{{ t('已完成总合计') }}</span>
               <div ref="filterRef" class="wc-filter">
-                <button
-                  type="button"
-                  class="wc-filter__trigger"
-                  :aria-expanded="filterOpen"
-                  @click.stop="filterOpen = !filterOpen"
-                >
+                <button type="button" class="wc-filter__trigger" :aria-expanded="filterOpen"
+                  @click.stop="filterOpen = !filterOpen">
                   {{ t(selectedFilterLabel) }}
                   <i aria-hidden="true"></i>
                 </button>
                 <div v-if="filterOpen" class="wc-filter__menu">
-                  <button
-                    v-for="option in FILTER_OPTIONS"
-                    :key="option.value"
-                    type="button"
-                    :class="{ active: selectedFilter === option.value }"
-                    @click="selectFilter(option.value)"
-                  >
+                  <button v-for="option in FILTER_OPTIONS" :key="option.value" type="button"
+                    :class="{ active: selectedFilter === option.value }" @click="selectFilter(option.value)">
                     {{ t(option.label) }}
                   </button>
                 </div>
@@ -423,13 +418,7 @@ onBeforeUnmount(() => {
             </dl>
           </article>
 
-          <button
-            v-if="hasMore"
-            type="button"
-            class="wc-more"
-            :disabled="loadingMore"
-            @click="loadMore"
-          >
+          <button v-if="hasMore" type="button" class="wc-more" :disabled="loadingMore" @click="loadMore">
             {{ loadingMore ? t('加载中') : t('加载更多') }}
           </button>
         </template>
@@ -437,20 +426,11 @@ onBeforeUnmount(() => {
     </main>
 
     <!-- 更换地址弹窗 -->
-    <WithdrawAddressModal
-      v-model="addressModalOpen"
-      :addresses="wallets"
-      :selected-id="selectedWalletId"
-      @confirm="handleAddressConfirm"
-      @add="openAddAddress"
-    />
+    <WithdrawAddressModal v-model="addressModalOpen" :addresses="wallets" :selected-id="selectedWalletId"
+      @confirm="handleAddressConfirm" @add="openAddAddress" />
 
     <!-- 新增地址（复用个人中心绑定弹窗，默认区块链） -->
-    <ProfileBindingModal
-      v-model="bindingModalOpen"
-      initial-tab="wallet"
-      @saved="handleWalletSaved"
-    />
+    <ProfileBindingModal v-model="bindingModalOpen" initial-tab="wallet" @saved="handleWalletSaved" />
   </div>
 </template>
 
@@ -487,19 +467,28 @@ onBeforeUnmount(() => {
   overflow: hidden;
   box-sizing: border-box;
   color: var(--auxiliary-1);
-  background:
-    linear-gradient(115deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 44%),
-    linear-gradient(90deg, rgba(28, 123, 255, 0.55), rgba(6, 25, 62, 0.98)),
-    #092856;
+
+  .bank-card__bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+  }
+
+  .wc-wallet__inner {
+    position: relative;
+  }
 
   @include web-only {
     padding: 22px 24px;
-    border-radius: 20px;
+    height: 200px;
   }
 
   @include mobile-only {
+    height: 166px;
     padding: 18px;
-    border-radius: 16px;
   }
 }
 
@@ -543,7 +532,6 @@ onBeforeUnmount(() => {
 }
 
 .wc-wallet__addr {
-  margin-top: 28px;
   overflow: hidden;
   font-family: $font-family-num, $font-family-base;
   font-size: 18px;
@@ -552,8 +540,12 @@ onBeforeUnmount(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
 
+  @include web-only {
+    margin-top: 100px;
+  }
+
   @include mobile-only {
-    margin-top: 22px;
+    margin-top: 80px;
     font-size: 15px;
   }
 }
@@ -565,8 +557,8 @@ onBeforeUnmount(() => {
 
   @include web-only {
     gap: 18px;
-    padding: 20px;
     border-radius: 20px;
+    margin-top: 20px;
   }
 
   @include mobile-only {
@@ -574,6 +566,7 @@ onBeforeUnmount(() => {
     padding: 16px;
     border-radius: 16px;
     background: var(--auxiliary-1);
+    margin-top: 8px;
   }
 }
 
@@ -777,7 +770,9 @@ onBeforeUnmount(() => {
 }
 
 @keyframes wc-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .wc-retry {
@@ -854,7 +849,7 @@ onBeforeUnmount(() => {
     min-height: 48px;
     padding: 8px 0;
 
-    & + div {
+    &+div {
       border-top: 1px solid var(--theme-divider);
     }
   }

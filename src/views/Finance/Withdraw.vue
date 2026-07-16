@@ -519,7 +519,7 @@ onBeforeUnmount(() => {
   }
 
   @include mobile-only {
-    height: 174px;
+    height: 166px;
     padding: 28px 22px 24px;
   }
 }
