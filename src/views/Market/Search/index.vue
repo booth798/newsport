@@ -239,7 +239,8 @@ onMounted(async () => {
       <span>{{ t('加载中') }}</span>
     </div>
 
-    <!-- 初始态：热门搜索 + 搜索历史 -->
+    <!-- 初始态（热门搜索 + 搜索历史）已按需隐藏，对齐安卓搜索页（无初始内容） -->
+    <!--
     <div v-else-if="showInitial" class="search-page__initial">
       <section class="search-page__section">
         <h3 class="search-page__section-title">{{ t('热门搜索') }}</h3>
@@ -279,6 +280,7 @@ onMounted(async () => {
         </div>
       </section>
     </div>
+    -->
 
     <!-- 搜索结果 -->
     <div v-else-if="showResults" class="search-page__results">
