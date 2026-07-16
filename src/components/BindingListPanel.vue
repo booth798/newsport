@@ -3,6 +3,10 @@
  * 收款绑定列表：统一银行卡/区块链 Tab、选择态、移除态和新增入口。
  * 接口请求、删除确认和保存动作由业务父组件处理。
  */
+import checkboxCheckedUrl from '@/assets/images/common/icon_checkbox_checked.svg?url';
+import checkboxUncheckedUrl from '@/assets/images/common/icon_checkbox_unchecked.svg?url';
+import addressRemoveUrl from '@/assets/images/common/address_remove_icon.svg?url';
+
 defineProps({
   tabs: { type: Array, default: () => [] },
   activeTab: { type: String, default: '' },
@@ -39,10 +43,11 @@ const emit = defineEmits(['update:activeTab', 'select', 'remove', 'add']);
 
         <button v-if="removable" type="button" class="binding-list-panel__remove" :aria-label="item.removeLabel"
           @click="emit('remove', item)">
-          <span aria-hidden="true" />
+          <img :src="addressRemoveUrl" alt="" aria-hidden="true" />
         </button>
-        <span v-else-if="selectable" class="binding-list-panel__radio"
-          :class="{ 'binding-list-panel__radio--active': String(selectedId) === String(item.id) }" aria-hidden="true" />
+        <img v-else-if="selectable" class="binding-list-panel__radio"
+          :src="String(selectedId) === String(item.id) ? checkboxCheckedUrl : checkboxUncheckedUrl"
+          alt="" aria-hidden="true" />
       </div>
 
       <button type="button" class="binding-list-panel__add" @click="emit('add')">
@@ -151,50 +156,29 @@ const emit = defineEmits(['update:activeTab', 'select', 'remove', 'add']);
   font-size: 12px;
 }
 
-.binding-list-panel__radio,
-.binding-list-panel__remove {
-  width: 22px;
-  height: 22px;
-  flex-shrink: 0;
-  border-radius: 50%;
-}
-
 .binding-list-panel__radio {
-  position: relative;
-  border: 1.5px solid #8da6c2;
-}
-
-.binding-list-panel__radio--active {
-  border-color: var(--theme-primary);
-}
-
-.binding-list-panel__radio--active::after {
-  position: absolute;
-  top: 3px;
-  left: 6px;
-  width: 5px;
-  height: 9px;
-  border-right: 1.5px solid var(--theme-primary);
-  border-bottom: 1.5px solid var(--theme-primary);
-  content: '';
-  transform: rotate(45deg);
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
 }
 
 .binding-list-panel__remove {
   display: inline-flex;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
   align-items: center;
   justify-content: center;
   padding: 0;
-  border: 1.5px solid #ff2d2d;
-  background: #fff;
+  border: 0;
+  background: transparent;
   cursor: pointer;
 }
 
-.binding-list-panel__remove span {
-  width: 10px;
-  height: 1.5px;
-  border-radius: 1px;
-  background: #ff2d2d;
+.binding-list-panel__remove img {
+  display: block;
+  width: 32px;
+  height: 32px;
 }
 
 .binding-list-panel__add {
