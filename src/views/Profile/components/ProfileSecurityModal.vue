@@ -80,7 +80,16 @@ async function handleSave() {
     return;
   }
   if (!newPassword.trim()) { toast.error(t('请输入新密码')); return; }
-  if (newPassword.length < 6) { toast.error(t('密码长度至少6位')); return; }
+  // 登录密码对齐安卓：长度 6-32；提现密码对齐：6-20 位字母数字
+  if (activeSection.value === 'login') {
+    if (newPassword.length < 6 || newPassword.length > 32) {
+      toast.error(t('登录密码长度应为6-32位'));
+      return;
+    }
+  } else if (!/^[a-zA-Z0-9]{6,20}$/.test(newPassword)) {
+    toast.error(t('提现密码格式提示'));
+    return;
+  }
   if (!confirm.trim()) { toast.error(t('请确认新密码')); return; }
   if (newPassword !== confirm) { toast.error(t('两次密码输入不一致')); return; }
 

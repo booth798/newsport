@@ -76,14 +76,20 @@ async function handleFileChange(event) {
 }
 
 async function handleSave() {
-  if (!nickname.value.trim()) {
+  const trimmed = nickname.value.trim();
+  if (!trimmed) {
     toast.error(t('请输入昵称'));
+    return;
+  }
+  // 与安卓一致：昵称长度 1-20
+  if (trimmed.length > 20) {
+    toast.error(t('昵称长度不能超过20位'));
     return;
   }
   try {
     submitting.value = true;
-    await updateNickname(nickname.value.trim());
-    userStore.updateUserProfile({ nickname: nickname.value.trim() });
+    await updateNickname(trimmed);
+    userStore.updateUserProfile({ nickname: trimmed });
     toast.success(t('操作成功'));
   } catch (e) {
     toast.error(e.message || t('提交失败，请重试'));
@@ -116,7 +122,7 @@ async function handleSave() {
 
       <div class="info-row">
         <span class="info-label">{{ t('昵称') }}</span>
-        <input v-model="nickname" class="info-input" maxlength="32" :placeholder="t('请输入昵称')" />
+        <input v-model="nickname" class="info-input" maxlength="20" :placeholder="t('请输入昵称')" />
       </div>
 
       <div v-if="phone" class="info-row">

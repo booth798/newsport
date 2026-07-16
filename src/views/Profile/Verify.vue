@@ -49,13 +49,14 @@ async function handleSubmit() {
     submitting.value = true;
     await submitVerification({
       idType: 'mainland_id',
-      realName: realName.value,
-      idCardNo: idNumber.value,
+      realName: realName.value.trim(),
+      idCardNo: idNumber.value.trim(),
     });
-    status.value = 'verified';
-    toast.success(t('操作成功'));
-  } catch {
-    toast.error(t('提交失败，请重试'));
+    // 对齐安卓：提交后进入审核中，而非直接视为已通过
+    status.value = 'pending';
+    toast.success(t('实名认证已提交'));
+  } catch (error) {
+    toast.error(error?.message || t('提交失败，请重试'));
   } finally {
     submitting.value = false;
   }
