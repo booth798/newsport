@@ -35,6 +35,14 @@ watch(
   },
 );
 
+watch(
+  () => props.selectedId,
+  (selectedId) => {
+    // 新增成功刷新列表后，同步选中新绑定项，同时保持当前选择页不关闭。
+    if (props.modelValue) tempId.value = String(selectedId ?? '');
+  },
+);
+
 function close() {
   emit('update:modelValue', false);
 }
@@ -100,7 +108,8 @@ function add() {
 .selection-page {
   position: fixed;
   inset: 0;
-  z-index: 1400;
+  // 低于 BaseModal（1200），使新增绑定弹窗可叠加显示并在关闭后返回本页。
+  z-index: 1100;
   box-sizing: border-box;
   overflow-y: auto;
   padding: calc(8px + env(safe-area-inset-top, 0px)) 8px calc(24px + env(safe-area-inset-bottom, 0px));

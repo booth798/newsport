@@ -13,8 +13,8 @@ import { getImageUrl } from '@/utils/common';
 
 import BaseModal from '@/components/BaseModal.vue';
 import BindingListPanel from '@/components/BindingListPanel.vue';
+import WithdrawBindingForm from '@/views/Finance/components/WithdrawBindingForm.vue';
 import ProfileMobileHeader from '@/views/Profile/components/ProfileMobileHeader.vue';
-import ProfileBindingModal from '@/views/Profile/components/ProfileBindingModal.vue';
 import { fetchBindings, removeBinding, setDefaultBinding } from '@/api/user';
 import { fetchWithdrawMethods } from '@/api/finance';
 import { useToast } from '@/hooks/useToast';
@@ -264,9 +264,10 @@ onMounted(() => {
       </BindingListPanel>
     </main>
 
-    <ProfileBindingModal
+    <!-- H5 绑定列表新增时复用提现绑定表单，与 PC 一致使用公共弹窗展示。 -->
+    <WithdrawBindingForm
       v-model="bindingModalOpen"
-      :initial-tab="activeTab === 'wallet' ? 'wallet' : 'bank'"
+      :type="activeTab === 'wallet' ? 'wallet' : 'bank'"
       @saved="handleBindingSaved"
     />
 

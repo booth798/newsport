@@ -240,7 +240,7 @@ function handleAddressConfirm(id) {
 }
 
 function openAddAddress() {
-  addressModalOpen.value = false;
+  // 保留地址选择层，绑定弹窗关闭后继续回到原选择状态。
   bindingFormOpen.value = true;
 }
 
@@ -440,7 +440,7 @@ onBeforeUnmount(() => {
     <WithdrawAddressModal v-model="addressModalOpen" :addresses="wallets" :selected-id="selectedWalletId"
       @confirm="handleAddressConfirm" @add="openAddAddress" />
 
-    <!-- 新增地址：PC 使用弹窗，H5 使用独立全屏表单。 -->
+    <!-- 新增地址统一使用公共弹窗，并叠加在地址选择层上方。 -->
     <WithdrawBindingForm v-model="bindingFormOpen" type="wallet" @saved="handleWalletSaved" />
     <WithdrawNoticeModal v-model="noticeModalOpen" />
   </div>

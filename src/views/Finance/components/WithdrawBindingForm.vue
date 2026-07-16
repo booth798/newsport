@@ -1,19 +1,16 @@
 <script setup>
 /**
- * 提现页新增收款方式：PC 使用蓝色公共弹窗，H5 使用全屏表单页面。
- * 组件只负责当前提现类型，保存成功后将新绑定项回传父页面刷新并选中。
+ * 新增收款方式统一使用公共弹窗，按传入类型展示银行卡或区块链表单。
+ * 保存成功后将新绑定项回传父页面刷新并选中。
  */
 import { computed, ref, watch } from 'vue';
-import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 
 import BaseInput from '@/components/BaseInput.vue';
 import BaseModal from '@/components/BaseModal.vue';
-import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.svg?url';
 import iconTipsUrl from '@/assets/images/common/icon_tips.svg?url';
 import { addBankCard, addWallet } from '@/api/user';
 import { useToast } from '@/hooks/useToast';
-import { useAppStore } from '@/store/modules/app';
 
 const BANK_OPTIONS = ['中国银行', '中国工商银行', '中国农业银行', '中国建设银行', '交通银行', '招商银行'];
 const WALLET_OPTIONS = ['TRC20', 'ERC20'];
@@ -26,9 +23,6 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'saved']);
 const { t } = useI18n();
 const toast = useToast();
-const appStore = useAppStore();
-const { isMobile } = storeToRefs(appStore);
-
 const holderName = ref('');
 const bankName = ref('');
 const bankAccount = ref('');
@@ -40,7 +34,6 @@ const selectOpen = ref(false);
 const submitting = ref(false);
 
 const isBank = computed(() => props.type === 'bank');
-const title = computed(() => (isBank.value ? t('添加银行卡') : t('添加钱包地址')));
 const options = computed(() => (isBank.value ? BANK_OPTIONS : WALLET_OPTIONS));
 const selectedValue = computed(() => (isBank.value ? bankName.value : walletType.value));
 const selectPlaceholder = computed(() => (isBank.value ? t('请选择银行') : t('请选择钱包类型')));
@@ -127,62 +120,50 @@ watch(
 </script>
 
 <template>
-  <Teleport v-if="isMobile" to="body">
-    <div v-if="props.modelValue" class="binding-page" role="dialog" aria-modal="true" :aria-label="title">
-      <header class="binding-page__header">
-        <button type="button" class="binding-page__back" :aria-label="t('返回')" @click="close">
-          <img :src="iconNavBackMarketUrl" alt="" />
-        </button>
-        <h2>{{ title }}</h2>
-        <span aria-hidden="true" />
-      </header>
-      <main class="binding-page__content">
-        <form class="binding-form" @submit.prevent="submit">
-          <div class="binding-form__tip">
-            <strong><img :src="iconTipsUrl" alt="" />{{ t('温馨提示') }}</strong>
-            <span v-if="isBank">{{ t('银行卡绑定温馨提示') }}</span>
-            <template v-else>
-              <span>{{ t('区块链绑定提示1') }}</span>
-              <span>{{ t('区块链绑定提示2') }}</span>
-              <span>{{ t('区块链绑定提示3') }}</span>
-            </template>
-          </div>
-
-          <template v-if="isBank">
-            <label class="binding-field"><span>{{ t('银行户名') }} <b>*</b></span><BaseInput v-model="holderName" :placeholder="t('请输入姓名')" /></label>
-            <div class="binding-field"><span>{{ t('银行名称') }} <b>*</b></span><div class="binding-select" :class="{ open: selectOpen }"><button type="button" @click="selectOpen = !selectOpen"><span :class="{ placeholder: !selectedValue }">{{ selectedValue || selectPlaceholder }}</span><i aria-hidden="true" /></button><div v-if="selectOpen" class="binding-select__options"><button v-for="option in options" :key="option" type="button" @click="selectOption(option)">{{ t(option) }}</button></div></div></div>
-            <label class="binding-field"><span>{{ t('银行帐户') }} <b>*</b></span><BaseInput v-model="bankAccount" inputmode="numeric" :placeholder="t('请输入银行账户')" /></label>
-            <label class="binding-field"><span>{{ t('支行名称') }} <b>*</b></span><BaseInput v-model="branchName" :placeholder="t('请输入支行名称')" /></label>
-          </template>
-          <template v-else>
-            <div class="binding-field"><span>{{ t('钱包类型') }} <b>*</b></span><div class="binding-select" :class="{ open: selectOpen }"><button type="button" @click="selectOpen = !selectOpen"><span :class="{ placeholder: !selectedValue }">{{ selectedValue || selectPlaceholder }}</span><i aria-hidden="true" /></button><div v-if="selectOpen" class="binding-select__options"><button v-for="option in options" :key="option" type="button" @click="selectOption(option)">{{ option }}</button></div></div></div>
-            <label class="binding-field"><span>{{ t('钱包地址') }} <b>*</b></span><BaseInput v-model="walletAddress" :placeholder="t('请输入钱包地址')" /></label>
-            <label class="binding-field"><span>{{ t('确认钱包地址') }} <b>*</b></span><BaseInput v-model="walletConfirmAddress" :placeholder="t('请再次输入钱包地址')" /></label>
-          </template>
-          <button type="submit" class="binding-form__submit btn btn--primary" :disabled="submitting">{{ submitting ? t('加载中') : t('确认') }}</button>
-        </form>
-      </main>
-    </div>
-  </Teleport>
-
-  <BaseModal v-else :model-value="props.modelValue" :title="t('绑定信息-提现')" :button-text="submitting ? t('加载中') : t('确认')" :action-disabled="submitting" @update:model-value="emit('update:modelValue', $event)" @confirm="submit">
+  <BaseModal :model-value="props.modelValue" :title="t('绑定信息-提现')" :button-text="submitting ? t('加载中') : t('确认')"
+    :action-disabled="submitting" @update:model-value="emit('update:modelValue', $event)" @confirm="submit">
     <div class="binding-modal">
       <div class="binding-form">
         <div class="binding-form__tip">
           <strong><img :src="iconTipsUrl" alt="" />{{ t('温馨提示') }}</strong>
           <span v-if="isBank">{{ t('银行卡绑定温馨提示') }}</span>
-          <template v-else><span>{{ t('区块链绑定提示1') }}</span><span>{{ t('区块链绑定提示2') }}</span><span>{{ t('区块链绑定提示3') }}</span></template>
+          <template v-else><span>{{ t('区块链绑定提示1') }}</span><span>{{ t('区块链绑定提示2') }}</span><span>{{ t('区块链绑定提示3')
+              }}</span></template>
         </div>
         <template v-if="isBank">
-          <label class="binding-field"><span>{{ t('银行户名') }} <b>*</b></span><BaseInput v-model="holderName" :placeholder="t('请输入姓名')" /></label>
-          <div class="binding-field"><span>{{ t('银行名称') }} <b>*</b></span><div class="binding-select" :class="{ open: selectOpen }"><button type="button" @click="selectOpen = !selectOpen"><span :class="{ placeholder: !selectedValue }">{{ selectedValue || selectPlaceholder }}</span><i aria-hidden="true" /></button><div v-if="selectOpen" class="binding-select__options"><button v-for="option in options" :key="option" type="button" @click="selectOption(option)">{{ t(option) }}</button></div></div></div>
-          <label class="binding-field"><span>{{ t('银行帐户') }} <b>*</b></span><BaseInput v-model="bankAccount" inputmode="numeric" :placeholder="t('请输入银行账户')" /></label>
-          <label class="binding-field"><span>{{ t('支行名称') }} <b>*</b></span><BaseInput v-model="branchName" :placeholder="t('请输入支行名称')" /></label>
+          <label class="binding-field"><span>{{ t('银行户名') }} <b>*</b></span>
+            <BaseInput v-model="holderName" :placeholder="t('请输入姓名')" />
+          </label>
+          <div class="binding-field"><span>{{ t('银行名称') }} <b>*</b></span>
+            <div class="binding-select" :class="{ open: selectOpen }"><button type="button"
+                @click="selectOpen = !selectOpen"><span :class="{ placeholder: !selectedValue }">{{ selectedValue ||
+                  selectPlaceholder }}</span><i aria-hidden="true" /></button>
+              <div v-if="selectOpen" class="binding-select__options"><button v-for="option in options" :key="option"
+                  type="button" @click="selectOption(option)">{{ t(option) }}</button></div>
+            </div>
+          </div>
+          <label class="binding-field"><span>{{ t('银行帐户') }} <b>*</b></span>
+            <BaseInput v-model="bankAccount" inputmode="numeric" :placeholder="t('请输入银行账户')" />
+          </label>
+          <label class="binding-field"><span>{{ t('支行名称') }} <b>*</b></span>
+            <BaseInput v-model="branchName" :placeholder="t('请输入支行名称')" />
+          </label>
         </template>
         <template v-else>
-          <div class="binding-field"><span>{{ t('钱包类型') }} <b>*</b></span><div class="binding-select" :class="{ open: selectOpen }"><button type="button" @click="selectOpen = !selectOpen"><span :class="{ placeholder: !selectedValue }">{{ selectedValue || selectPlaceholder }}</span><i aria-hidden="true" /></button><div v-if="selectOpen" class="binding-select__options"><button v-for="option in options" :key="option" type="button" @click="selectOption(option)">{{ option }}</button></div></div></div>
-          <label class="binding-field"><span>{{ t('钱包地址') }} <b>*</b></span><BaseInput v-model="walletAddress" :placeholder="t('请输入钱包地址')" /></label>
-          <label class="binding-field"><span>{{ t('确认钱包地址') }} <b>*</b></span><BaseInput v-model="walletConfirmAddress" :placeholder="t('请再次输入钱包地址')" /></label>
+          <div class="binding-field"><span>{{ t('钱包类型') }} <b>*</b></span>
+            <div class="binding-select" :class="{ open: selectOpen }"><button type="button"
+                @click="selectOpen = !selectOpen"><span :class="{ placeholder: !selectedValue }">{{ selectedValue ||
+                  selectPlaceholder }}</span><i aria-hidden="true" /></button>
+              <div v-if="selectOpen" class="binding-select__options"><button v-for="option in options" :key="option"
+                  type="button" @click="selectOption(option)">{{ option }}</button></div>
+            </div>
+          </div>
+          <label class="binding-field"><span>{{ t('钱包地址') }} <b>*</b></span>
+            <BaseInput v-model="walletAddress" :placeholder="t('请输入钱包地址')" />
+          </label>
+          <label class="binding-field"><span>{{ t('确认钱包地址') }} <b>*</b></span>
+            <BaseInput v-model="walletConfirmAddress" :placeholder="t('请再次输入钱包地址')" />
+          </label>
         </template>
       </div>
     </div>
@@ -192,29 +173,151 @@ watch(
 <style lang="scss" scoped>
 @use '@/styles/tools.scss' as *;
 
-.binding-page { position: fixed; inset: 0; z-index: 1500; box-sizing: border-box; overflow-y: auto; padding: calc(8px + env(safe-area-inset-top, 0px)) 8px calc(20px + env(safe-area-inset-bottom, 0px)); background: #eaf1f9; color: var(--theme-text); }
-.binding-page__header { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; height: 48px; padding: 0 8px; border: 1px solid #fff; border-radius: 30px; }
-.binding-page__header h2 { margin: 0; font-size: 14px; font-weight: 500; text-align: center; }
-.binding-page__back { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; border: 0; background: transparent; }
-.binding-page__back img { width: 36px; height: 36px; }
-.binding-page__content { padding-top: 10px; }
-.binding-modal { padding-top: 2px; }
-.binding-form { padding: 16px; border-radius: 20px; background: #fff; }
-.binding-modal .binding-form { margin-top: 2px; }
-.binding-form__tip { display: flex; flex-direction: column; gap: 5px; margin-bottom: 16px; padding: 12px; border-radius: 14px; background: rgba(251, 92, 13, 0.1); }
-.binding-form__tip strong { display: flex; align-items: center; gap: 4px; color: #fb5c0d; font-size: 14px; font-weight: 400; }
-.binding-form__tip img { width: 16px; height: 16px; }
-.binding-form__tip span { padding-left: 20px; color: rgba(11, 52, 98, 0.5); font-size: 12px; }
-.binding-field { position: relative; display: flex; flex-direction: column; gap: 7px; margin-bottom: 13px; }
-.binding-field > span { color: rgba(11, 52, 98, 0.5); font-size: 14px; }
-.binding-field b { color: #ff2d2d; font-weight: 400; }
-.binding-select { position: relative; z-index: 2; }
-.binding-select.open { z-index: 5; }
-.binding-select > button { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 44px; padding: 0 14px; border: 1px solid var(--theme-divider); border-radius: 12px; background: #fff; color: var(--theme-text); font-size: 14px; text-align: left; }
-.binding-select .placeholder { color: rgba(11, 52, 98, 0.5); }
-.binding-select i { width: 8px; height: 8px; border-right: 1.5px solid var(--theme-primary); border-bottom: 1.5px solid var(--theme-primary); transform: rotate(45deg); }
-.binding-select__options { position: absolute; top: calc(100% - 1px); right: 0; left: 0; max-height: 190px; overflow-y: auto; border: 1px solid #dce9f8; border-radius: 0 0 14px 14px; background: #fff; box-shadow: 0 6px 12px rgba(11, 52, 98, 0.14); }
-.binding-select__options button { display: block; width: 100%; min-height: 44px; padding: 0 14px; border: 0; background: #fff; color: var(--theme-text); text-align: left; }
-.binding-form__submit { width: 100%; min-height: 44px; margin-top: 8px; border-radius: 24px; }
-@include web-only { .binding-form { padding: 18px 16px 8px; } .binding-field > span, .binding-select > button, .binding-select__options button { font-size: 16px; } }
+.binding-modal {
+  padding-top: 2px;
+}
+
+.binding-form {
+  padding: 16px;
+  border-radius: 20px;
+  background: #fff;
+}
+
+.binding-modal .binding-form {
+  margin-top: 2px;
+}
+
+.binding-form__tip {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 16px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(251, 92, 13, 0.1);
+}
+
+.binding-form__tip strong {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #fb5c0d;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.binding-form__tip img {
+  width: 16px;
+  height: 16px;
+}
+
+.binding-form__tip span {
+  padding-left: 20px;
+  color: rgba(11, 52, 98, 0.5);
+  font-size: 12px;
+}
+
+.binding-field {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-bottom: 13px;
+}
+
+.binding-field>span {
+  color: rgba(11, 52, 98, 0.5);
+  font-size: 14px;
+}
+
+.binding-field b {
+  color: #ff2d2d;
+  font-weight: 400;
+}
+
+.binding-select {
+  position: relative;
+  z-index: 2;
+}
+
+.binding-select.open {
+  z-index: 5;
+}
+
+.binding-select>button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--theme-divider);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--theme-text);
+  font-size: 14px;
+  text-align: left;
+}
+
+.binding-select .placeholder {
+  color: rgba(11, 52, 98, 0.5);
+}
+
+.binding-select i {
+  width: 8px;
+  height: 8px;
+  border-right: 1.5px solid var(--theme-primary);
+  border-bottom: 1.5px solid var(--theme-primary);
+  transform: rotate(45deg);
+}
+
+.binding-select__options {
+  position: absolute;
+  top: calc(100% - 1px);
+  right: 0;
+  left: 0;
+  max-height: 190px;
+  overflow-y: auto;
+  border: 1px solid #dce9f8;
+  border-radius: 0 0 14px 14px;
+  background: #fff;
+  box-shadow: 0 6px 12px rgba(11, 52, 98, 0.14);
+}
+
+.binding-select__options button {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  background: #fff;
+  color: var(--theme-text);
+  text-align: left;
+}
+
+.binding-form__submit {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 8px;
+  border-radius: 24px;
+}
+
+@include web-only {
+  .binding-form {
+    padding: 18px 16px 8px;
+  }
+
+  .binding-field>span,
+  .binding-select>button,
+  .binding-select__options button {
+    font-size: 16px;
+  }
+}
+@include mobile-only {
+  .binding-field>span,
+  .binding-select>button,
+  .binding-select__options button {
+    font-size: 14px;
+  }
+}
 </style>

@@ -241,7 +241,7 @@ function openBankModal() {
 }
 
 function openAddBankCard() {
-  bankModalOpen.value = false;
+  // 保留银行卡选择层，绑定弹窗关闭后继续回到原选择状态。
   bindingFormOpen.value = true;
 }
 
