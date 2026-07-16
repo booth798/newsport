@@ -6,6 +6,7 @@
 import { ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
+import { getImageUrl } from '@/utils/common';
 
 import BaseModal from '@/components/BaseModal.vue';
 import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.svg?url';
@@ -82,7 +83,7 @@ function add() {
         </button>
 
         <button type="button" class="selection-add" @click="add">
-          <span aria-hidden="true">+</span>
+          <img :src="getImageUrl('profile/add_address_icon.svg')" alt="">
           {{ props.addText }}
         </button>
       </main>
@@ -115,7 +116,7 @@ function add() {
       </button>
 
       <button type="button" class="selection-add" @click="add">
-        <span aria-hidden="true">+</span>
+        <img :src="getImageUrl('profile/add_address_icon.svg')" alt="">
         {{ props.addText }}
       </button>
     </div>
@@ -287,15 +288,9 @@ function add() {
   font-weight: 500;
   cursor: pointer;
 
-  span {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 17px;
-    height: 17px;
-    border: 1px solid currentColor;
-    border-radius: 50%;
-    line-height: 1;
+  img {
+    width: 16px;
+    height: 16px;
   }
 }
 

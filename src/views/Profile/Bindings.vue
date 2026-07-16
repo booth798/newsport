@@ -9,6 +9,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
+import { getImageUrl } from '@/utils/common';
 
 import BaseModal from '@/components/BaseModal.vue';
 import EmptyState from '@/components/EmptyState.vue';
@@ -297,7 +298,7 @@ onMounted(() => {
         </ul>
 
         <button v-if="!managementMode" type="button" class="bindings-add" @click="openAdd">
-          <span class="bindings-add__plus" aria-hidden="true">+</span>
+          <img :src="getImageUrl('profile/add_address_icon.svg')" alt="">
           {{ activeTab === 'bank' ? t('添加其他银行卡') : t('添加其他区块链') }}
         </button>
       </template>
@@ -528,14 +529,9 @@ onMounted(() => {
   cursor: pointer;
 }
 
-.bindings-add__plus {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.bindings-add__icon-img {
   width: 16px;
   height: 16px;
-  font-size: 18px;
-  line-height: 1;
 }
 
 .bindings-delete-dialog__body {

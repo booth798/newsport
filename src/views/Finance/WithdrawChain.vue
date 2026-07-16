@@ -15,6 +15,8 @@ import EmptyState from '@/components/EmptyState.vue';
 import MonthSelector from '@/components/MonthSelector.vue';
 import WithdrawAddressModal from './components/WithdrawAddressModal.vue';
 import WithdrawBindingForm from './components/WithdrawBindingForm.vue';
+import WithdrawNoticeModal from './components/WithdrawNoticeModal.vue';
+
 import { fetchWithdrawList, submitWithdraw } from '@/api/finance';
 import { fetchBindings } from '@/api/user';
 import { useToast } from '@/hooks/useToast';
@@ -49,6 +51,7 @@ const submitting = ref(false);
 // 弹窗
 const addressModalOpen = ref(false);
 const bindingFormOpen = ref(false);
+const noticeModalOpen = ref(false);
 
 // 记录
 const recordsLoading = ref(true);
@@ -330,8 +333,8 @@ onBeforeUnmount(() => {
 
       <!-- 提现表单 -->
       <form class="wc-form" @submit.prevent="handleSubmit">
-        <div class="wc-notice">
-          <span class="wc-notice__icon" aria-hidden="true">i</span>
+        <div class="wc-notice" @click="noticeModalOpen = true">
+          <img class="withdraw-notice__icon-img" :src="getImageUrl('common/icon_tips.svg')" alt="">
           <span class="wc-notice__text">{{ t('注意事项') }}</span>
           <i class="wc-notice__arrow" aria-hidden="true"></i>
         </div>
@@ -427,6 +430,7 @@ onBeforeUnmount(() => {
 
     <!-- 新增地址：PC 使用弹窗，H5 使用独立全屏表单。 -->
     <WithdrawBindingForm v-model="bindingFormOpen" type="wallet" @saved="handleWalletSaved" />
+    <WithdrawNoticeModal v-model="noticeModalOpen" />
   </div>
 </template>
 
@@ -450,6 +454,7 @@ onBeforeUnmount(() => {
     border-radius: 32px;
     background: var(--auxiliary-1);
     box-shadow: var(--shadow-card);
+    margin-top: 20px;
   }
 
   @include mobile-only {
@@ -554,7 +559,6 @@ onBeforeUnmount(() => {
   @include web-only {
     gap: 18px;
     border-radius: 20px;
-    margin-top: 20px;
   }
 
   @include mobile-only {
@@ -572,25 +576,17 @@ onBeforeUnmount(() => {
   gap: 6px;
   height: 40px;
   padding: 0 14px;
-  border-radius: 12px;
+  border-radius: 16px;
   background: rgba(251, 92, 13, 0.1);
   color: #fb5c0d;
   font-size: 13px;
+  cursor: pointer;
 }
 
-.wc-notice__icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 15px;
-  height: 15px;
-  border: 1px solid currentColor;
-  border-radius: 50%;
-  font-family: $font-family-num, $font-family-base;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
-  flex-shrink: 0;
+.withdraw-notice__icon-img {
+  width: 20px;
+  height: 20px;
+  margin-right: 4px;
 }
 
 .wc-notice__arrow {
