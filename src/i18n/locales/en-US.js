@@ -215,6 +215,9 @@ export default {
   银行卡提现: 'Bank Card Withdrawal',
   区块链提现: 'Crypto Withdrawal',
   切换: 'Switch',
+  更换银行卡: 'Change Bank Card',
+  添加其他银行卡: 'Add another bank card',
+  请先绑定银行卡: 'Please bind a bank card first',
   更换地址: 'Change Address',
   添加其他地址: 'Add another address',
   收款地址: 'Receiving address',
@@ -251,6 +254,12 @@ export default {
   选择月份: 'Select month',
   筛选类型: 'Filter type',
   加载更多: 'Load more',
+  提款金额最低为100: 'The minimum withdrawal amount is 100',
+  最低提款金额为100: 'The minimum withdrawal amount is 100',
+  提现注意事项1: 'After all fee-free withdrawals have been used, a 5% fee applies. Fees are transparent and funds arrive promptly.',
+  提现注意事项2: 'Please carefully verify your bound payment information. The platform is not responsible for losses caused by incorrect binding information.',
+  提现注意事项3: 'If funds have not arrived within three days after withdrawal, contact online support promptly. Late requests cannot be reviewed.',
+  提现注意事项4: 'If money laundering, cash-out activity, or abnormal transactions are detected, the platform may terminate the account and freeze related funds to ensure transaction security and compliance.',
 
   // Profile
   我的: 'My',

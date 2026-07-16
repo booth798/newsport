@@ -567,7 +567,6 @@ onBeforeUnmount(() => {
     gap: 18px;
     padding: 20px;
     border-radius: 20px;
-    background: var(--surface-card);
   }
 
   @include mobile-only {
