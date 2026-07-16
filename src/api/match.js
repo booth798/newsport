@@ -314,11 +314,9 @@ export function normalizeHomeMarkets(hotMarkets) {
 function buildTopPools(m) {
   const raw = m.topPools || m.scores;
   if (!Array.isArray(raw) || !raw.length) return [];
-  const filtered = raw.filter((p) => p.score !== 'OTHER');
-  const sorted = [...filtered].sort(
-    (a, b) => Number(b.yieldPct || 0) - Number(a.yieldPct || 0),
-  );
-  return sorted.slice(0, 3).map((p) => ({
+  // 对齐安卓端首页（HomeTabPageAdapter：item.scores.take(3)）：
+  // 按后端返回的原始顺序取前 3 个比分（0:0 0:1 0:2 …），不按赔率重排。
+  return raw.slice(0, 3).map((p) => ({
     score: (p.score || '0:0').replace(':', '-'),
     probability: p.yieldPct != null ? `${Number(p.yieldPct).toFixed(2)}%` : '0.00%',
   }));
