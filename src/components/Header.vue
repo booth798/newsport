@@ -291,7 +291,6 @@ watch(isLoggedIn, (loggedIn) => {
       'header--vip-transfer': isMobile && isMonthFilterPage,
     }"
   >
-
     <div class="card-primary norem" :class="{ 'card-primary--market-detail': isCompactDetailHeader }">
       <RouterLink
         v-if="isMobile && isCompactDetailHeader"

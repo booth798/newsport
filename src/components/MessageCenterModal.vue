@@ -7,7 +7,7 @@ import { fetchMessages } from '@/api/user';
 import BaseModal from '@/components/BaseModal.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import iconSystemMessage from '@/assets/images/common/icon_announcement.svg';
-import iconServiceMessage from '@/assets/images/common/icon_profile_service.svg';
+import clean_all_read_icon from '@/assets/images/profile/clean_all_read_icon.svg';
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -91,37 +91,39 @@ watch(
 <template>
   <BaseModal :model-value="props.modelValue" :title="t('消息中心')" :description="t('查看您的系统消息')"
     @update:model-value="emit('update:modelValue', $event)">
+    <img class="message-center-modal__clean-all-read-icon" :src="clean_all_read_icon" alt="" width="48"/>
     <div class="message-center-modal">
-      <div v-if="loading" class="message-center-modal__state">
-        <span class="message-center-modal__spinner" aria-hidden="true" />
-        <span>{{ t('加载中') }}</span>
-      </div>
-
-      <div v-else-if="error" class="message-center-modal__state">
-        <span>{{ t('加载失败') }}</span>
-        <button type="button" class="message-center-modal__retry" @click="loadMessages">{{ t('重试') }}</button>
-      </div>
-
-      <EmptyState v-else-if="normalizedMessages.length === 0" :icon-size="96" />
-
-      <div v-else class="message-center-modal__list">
-        <button v-for="message in normalizedMessages" :key="message.id" type="button"
-          class="message-center-modal__item" @click="openMessage(message)">
-          <span class="message-center-modal__icon">
-            <img :src="message.isCustomerService ? iconServiceMessage : iconSystemMessage" alt="" width="48"
-              height="48" />
-            <span v-if="!message.read" class="message-center-modal__dot" aria-hidden="true" />
-          </span>
-          <span class="message-center-modal__text">
-            <strong>{{ message.title || t(message.isCustomerService ? '客服消息' : '系统消息') }}</strong>
-            <span>{{ message.content }}</span>
-          </span>
-          <svg class="message-center-modal__arrow" width="22" height="22" viewBox="0 0 22 22" fill="none"
-            aria-hidden="true">
-            <path d="M8.5 5.5 L14 11 L8.5 16.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
-              stroke-linejoin="round" />
-          </svg>
-        </button>
+      <div class="message-center-modal__content">
+        <div v-if="loading" class="message-center-modal__state">
+          <span class="message-center-modal__spinner" aria-hidden="true" />
+          <span>{{ t('加载中') }}</span>
+        </div>
+  
+        <div v-else-if="error" class="message-center-modal__state">
+          <span>{{ t('加载失败') }}</span>
+          <button type="button" class="message-center-modal__retry" @click="loadMessages">{{ t('重试') }}</button>
+        </div>
+  
+        <EmptyState v-else-if="normalizedMessages.length === 0" :icon-size="96" />
+  
+        <div v-else class="message-center-modal__list">
+          <div v-for="message in normalizedMessages" :key="message.id"
+            class="message-center-modal__item" @click="openMessage(message)">
+            <span class="message-center-modal__icon">
+              <img :src="iconSystemMessage" />
+              <span v-if="!message.read" class="message-center-modal__dot" aria-hidden="true" />
+            </span>
+            <span class="message-center-modal__text">
+              <strong>{{ message.title || t(message.isCustomerService ? '客服消息' : '系统消息') }}</strong>
+              <span>{{ message.content }}</span>
+            </span>
+            <svg class="message-center-modal__arrow" width="20" height="20" viewBox="0 0 22 22" fill="none"
+              aria-hidden="true">
+              <path d="M8.5 5.5 L14 11 L8.5 16.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+          </div>
+        </div>
       </div>
     </div>
   </BaseModal>
@@ -133,13 +135,40 @@ watch(
 .message-center-modal {
   min-height: 360px;
   max-height: min(54dvh, 500px);
-  overflow-y: auto;
-  padding: 10px 20px;
   border-radius: 20px;
-  background: #edf5ff;
+  background: #FFFFFF;
 
   @include web-only {
-    min-height: 420px;
+    height: 413px;
+    padding: 18px 20px;
+  }
+  @include mobile-only {
+    height: 343px;
+    padding: 16px 12px;
+  }
+
+  &__content {
+    background: #EAF1F9;
+    border-radius: 16px;
+    height: 100%;
+    overflow-y: auto;
+    &::-webkit-scrollbar {
+      display: none;
+    }
+    @include mobile-only {
+      padding: 0 12px;
+    }
+    @include web-only {
+      padding: 0 20px;
+    }
+  }
+
+  &__clean-all-read-icon {
+    position: absolute;
+    top: 12px;
+    right: 0;
+    width: 32px;
+    cursor: pointer;
   }
 
   &__list {
@@ -150,42 +179,39 @@ watch(
   &__item {
     display: flex;
     align-items: center;
-    min-width: 0;
-    padding: 16px 0;
-    border: 0;
-    border-bottom: 1px solid #d7e4f2;
-    background: transparent;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.7);
     color: #174274;
     cursor: pointer;
     text-align: left;
-
-    &:last-child {
-      border-bottom: 0;
+    cursor: pointer;
+    @include mobile-only {
+      height: 54px;
+    }
+    @include web-only {
+      height: 64px;
     }
   }
 
   &__icon {
     position: relative;
-    width: 48px;
-    height: 48px;
-    flex: 0 0 48px;
-    margin-right: 14px;
+    width: 34px;
+    height: 34px;
+    margin-right: 10px;
 
     img {
       display: block;
-      width: 48px;
-      height: 48px;
+      width: 34px;
+      height: 34px;
     }
   }
 
   // 未读红点，与安卓 item_message_view 的红点表现对齐（bg_dot_red / color_F03E30）
   &__dot {
     position: absolute;
-    top: 2px;
-    right: 2px;
-    width: 9px;
-    height: 9px;
-    border: 1.5px solid #edf5ff;
+    top: 0;
+    right: 0;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
     background: #f03e30;
   }
@@ -195,7 +221,13 @@ watch(
     min-width: 0;
     flex: 1;
     flex-direction: column;
-    gap: 4px;
+
+    @include mobile-only {
+      font-size: 12px;
+    }
+    @include web-only {
+      font-size: 14px;
+    }
 
     strong,
     span {
@@ -205,15 +237,14 @@ watch(
     }
 
     strong {
-      font-size: 16px;
-      font-weight: 600;
+      font-weight: 500;
       line-height: 1.4;
     }
 
     span {
       color: #7790ae;
-      font-size: 15px;
       line-height: 1.4;
+      font-weight: 300;
     }
   }
 
