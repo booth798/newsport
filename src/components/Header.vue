@@ -4,8 +4,6 @@ import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
-import navCollapsedIcon from '@/assets/images/common/icon_nav_collapsed.svg';
-import navExpandedIcon from '@/assets/images/common/icon_nav_expanded.svg';
 import logoUrl from '@/assets/images/common/logo_nav.svg';
 import navbarHomeIcon from '@/assets/images/common/navbar_home.svg';
 import navbarHomeMutedIcon from '@/assets/images/common/navbar_home_muted.svg';
@@ -42,7 +40,6 @@ const { isLoggedIn, loggedInUserId, loggedInAssetsFormatted, loggedInAvatarUrl }
 // PC 用户条头像：优先用户真实头像，无则回退默认图。
 const displayAvatarUrl = computed(() => loggedInAvatarUrl.value || avatarDefaultUrl);
 
-const hoverOpenKey = ref(null);
 const mobileDrawerOpen = ref(false);
 const messageCenterOpen = ref(false);
 const unreadCount = ref(0);
@@ -82,11 +79,12 @@ const navMenus = {
 };
 
 const navbarList = [
-  { kind: 'plain', labelKey: '首页', key: 'home', width: 104, to: '/' },
-  { kind: 'dropdown', labelKey: '市场', key: 'market', width: 104, to: '/market', menuKey: 'market' },
-  { kind: 'dropdown', labelKey: '交易账务', key: 'trade', width: 124, to: '/finance/deposit', menuKey: 'trade' },
-  { kind: 'dropdown', labelKey: '会员权益', key: 'myBenefit', width: 124, to: '/profile', menuKey: 'myBenefit' },
-  { kind: 'plain', labelKey: '关于我们', key: 'about', width: 124, to: '/profile/about' },
+  { labelKey: '首页', key: 'home', width: 104, to: '/' },
+  // PC 顶栏按设计稿改为纯文字入口，不再展示下拉与箭头（H5 侧栏菜单不受影响）
+  { labelKey: '市场', key: 'market', width: 104, to: '/market' },
+  { labelKey: '交易账务', key: 'trade', width: 124, to: '/finance/deposit' },
+  { labelKey: '会员权益', key: 'myBenefit', width: 124, to: '/profile' },
+  { labelKey: '关于我们', key: 'about', width: 124, to: '/profile/about' },
 ];
 
 const isNavActive = (item) => {
@@ -101,33 +99,6 @@ const isNavActive = (item) => {
   if (item.key === 'trade') return route.path.startsWith('/finance') || route.name === 'trade-purchases';
   if (item.key === 'myBenefit') return route.path.startsWith('/profile') && route.name !== 'profile-about';
   if (item.key === 'about') return route.name === 'profile-about';
-  return false;
-};
-
-const isNavEntryActive = (item) => hoverOpenKey.value === item.key || isNavActive(item);
-
-const navArrowSrc = (item) => (hoverOpenKey.value === item.key ? navExpandedIcon : navCollapsedIcon);
-
-const isSubmenuLinkActive = (sub) => {
-  const to = sub.to;
-  if (typeof to === 'object' && to != null && 'path' in to) {
-    const hash = to.hash ?? '';
-    return route.path === to.path && (route.hash || '') === hash;
-  }
-  if (to === '/market') {
-    return (
-      route.name === 'market' ||
-      route.name === 'market-league' ||
-      route.name === 'market-detail'
-    );
-  }
-  if (to === '/trade/purchases') return route.name === 'trade-purchases';
-  if (to === '/finance/deposit') return route.name === 'finance-deposit';
-  if (to === '/finance/records') return route.name === 'finance-records';
-  if (to === '/profile') return route.name === 'profile' || route.name === 'profile-home';
-  if (to === '/profile/info') return route.name === 'profile-info';
-  if (to === '/profile/security') return route.name === 'profile-security';
-  if (to === '/') return false;
   return false;
 };
 
@@ -323,75 +294,29 @@ watch(isLoggedIn, (loggedIn) => {
       <img v-else-if="!isMobile" class="logo" :src="logoUrl" alt="logo" />
 
       <div class="navbar" v-if="!isMobile && !isCompactDetailHeader">
-        <template v-for="item in navbarList" :key="item.key">
-          <RouterLink
-            v-if="item.kind === 'plain'"
-            :to="item.to"
-            custom
-            v-slot="{ navigate, href }"
-          >
-            <a
-              :href="href"
-              class="navbar-item"
-              :class="{
-                active: isNavActive(item),
-                'navbar-item--plain': item.key === 'home',
-              }"
-              :style="{ width: `${item.width}px` }"
-              @click="navigate"
-            >
-              <img
-                v-if="item.key === 'home'"
-                class="navbar-item-icon"
-                :src="isNavActive(item) ? navbarHomeIcon : navbarHomeMutedIcon"
-                alt=""
-              />
-              <span class="navbar-item__label">{{ t(item.labelKey) }}</span>
-            </a>
-          </RouterLink>
-
-          <div
-            v-else
-            class="navbar-item-wrap"
+        <RouterLink
+          v-for="item in navbarList"
+          :key="item.key"
+          :to="item.to"
+          custom
+          v-slot="{ navigate, href }"
+        >
+          <a
+            :href="href"
+            class="navbar-item navbar-item--plain"
+            :class="{ active: isNavActive(item) }"
             :style="{ width: `${item.width}px` }"
-            @mouseenter="hoverOpenKey = item.key"
-            @mouseleave="hoverOpenKey = null"
+            @click="navigate"
           >
-            <RouterLink :to="item.to" custom v-slot="{ navigate, href }">
-              <a
-                :href="href"
-                class="navbar-item"
-                :class="{ active: isNavEntryActive(item) }"
-                @click="navigate"
-              >
-                <span class="navbar-item__label">{{ t(item.labelKey) }}</span>
-                <img class="arrow-icon" :src="navArrowSrc(item)" alt="" />
-              </a>
-            </RouterLink>
-            <div v-show="hoverOpenKey === item.key" class="navbar-dropdown-shell">
-              <div class="navbar-dropdown" role="menu">
-                <RouterLink
-                  v-for="sub in navMenus[item.menuKey]"
-                  :key="sub.labelKey"
-                  :to="sub.to"
-                  custom
-                  v-slot="{ navigate, href }"
-                >
-                  <a
-                    :href="href"
-                    class="navbar-dropdown__row"
-                    :class="{ 'is-active': isSubmenuLinkActive(sub) }"
-                    role="menuitem"
-                    @click="navigate"
-                  >
-                    <img class="navbar-dropdown__icon" :src="sub.icon" alt="" />
-                    <span class="navbar-dropdown__label">{{ t(sub.labelKey) }}</span>
-                  </a>
-                </RouterLink>
-              </div>
-            </div>
-          </div>
-        </template>
+            <img
+              v-if="item.key === 'home'"
+              class="navbar-item-icon"
+              :src="isNavActive(item) ? navbarHomeIcon : navbarHomeMutedIcon"
+              alt=""
+            />
+            <span class="navbar-item__label">{{ t(item.labelKey) }}</span>
+          </a>
+        </RouterLink>
       </div>
       <div v-if="isMobile && !isProfileSubPage" class="header-mobile-actions">
         <template v-if="isCompactDetailHeader">
@@ -872,95 +797,13 @@ watch(isLoggedIn, (loggedIn) => {
         object-fit: contain;
       }
 
-      .navbar {
+        .navbar {
         display: flex;
         align-items: center;
         margin-left: 20px;
         position: relative;
         z-index: 2;
         overflow: visible;
-
-        .navbar-item-wrap {
-          position: relative;
-          flex-shrink: 0;
-          display: flex;
-          flex-direction: column;
-          align-items: stretch;
-        }
-
-        .navbar-dropdown-shell {
-          position: absolute;
-          top: 100%;
-          left: 50%;
-          transform: translateX(-50%);
-          /* 透明热区：衔接主按钮与面板，避免经过缝隙时触发 mouseleave 关掉菜单 */
-          padding-top: 10px;
-          z-index: 20;
-        }
-
-        .navbar-dropdown {
-          position: relative;
-          left: auto;
-          top: auto;
-          transform: none;
-          min-width: 220px;
-          padding: 6px;
-          box-sizing: border-box;
-          background: var(--auxiliary-1);
-          border-radius: 16px;
-          border: 0.8px solid var(--border-light);
-          box-shadow: var(--shadow-card);
-        }
-
-        .navbar-dropdown__row {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          box-sizing: border-box;
-          min-height: 40px;
-          height: 40px;
-          padding: 0 12px;
-          border-radius: 12px;
-          text-decoration: none;
-          color: #171e24;
-          font-size: 15px;
-          font-weight: 400;
-          line-height: 1;
-          cursor: pointer;
-          transition:
-            background-color 0.15s ease,
-            color 0.15s ease;
-
-          &:hover {
-            background: var(--surface-tint);
-            color: var(--theme-primary);
-          }
-
-          &.is-active {
-            background: rgba(230, 240, 255, 0.85);
-            color: var(--theme-primary);
-            font-weight: 500;
-          }
-
-          &:focus-visible {
-            outline: 2px solid var(--theme-primary);
-            outline-offset: 0;
-            border-radius: 12px;
-          }
-        }
-
-        .navbar-dropdown__icon {
-          width: 20px;
-          height: 20px;
-          flex-shrink: 0;
-          display: block;
-          object-fit: contain;
-        }
-
-        .navbar-dropdown__label {
-          flex: 1;
-          min-width: 0;
-        }
 
         .navbar-item {
           display: inline-flex;
@@ -1000,15 +843,6 @@ watch(isLoggedIn, (loggedIn) => {
             flex-shrink: 0;
             display: block;
             line-height: 0;
-          }
-
-          .arrow-icon {
-            width: 14px;
-            height: 14px;
-            flex-shrink: 0;
-            display: block;
-            line-height: 0;
-            transform: translateY(1px);
           }
 
           &.active {
