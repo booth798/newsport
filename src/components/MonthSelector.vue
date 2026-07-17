@@ -1,4 +1,10 @@
 <script setup>
+/**
+ * 月份 / 日期选择器
+ * - 默认：仅年月（v-model='YYYY-MM'），对齐账务页筛选
+ * - includeDay：年月日（v-model='YYYY-MM-DD'），对齐安卓 DateSelectDialog(includeDay=true)
+ * 弹窗样式复用现有 BaseModal 滚轮交互。
+ */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
@@ -15,10 +21,20 @@ const props = defineProps({
     type: String,
     default: '',
   },
-  // 可选月份窗口（含当前月往前的月份数量），默认近 24 个月
+  /** 可选月份窗口（含当前月往前的月份数量），默认近 24 个月；仅 includeDay=false 时生效 */
   monthsBack: {
     type: Number,
     default: 23,
+  },
+  /** 为 true 时增加「日」列，v-model 为 YYYY-MM-DD（对齐安卓 includeDay） */
+  includeDay: {
+    type: Boolean,
+    default: false,
+  },
+  /** includeDay 时年份可选范围：当前年前后各 yearRange 年（对齐安卓 YEAR_RANGE=10） */
+  yearRange: {
+    type: Number,
+    default: 10,
   },
 });
 
@@ -31,20 +47,37 @@ const ITEM_HEIGHT = 44; // 滚轮单项高度，与样式保持一致
 
 const rootRef = ref(null);
 const menuRef = ref(null);
-const open = ref(false); // 桌面端下拉
+const open = ref(false); // 桌面端下拉（仅年月模式）
 
-// 移动端滚轮弹窗
+// 滚轮弹窗
 const pickerOpen = ref(false);
 const yearColRef = ref(null);
 const monthColRef = ref(null);
+const dayColRef = ref(null);
 const draftYear = ref(0);
 const draftMonth = ref(1);
+const draftDay = ref(1);
 let yearScrollTimer = null;
 let monthScrollTimer = null;
+let dayScrollTimer = null;
 let programmaticScroll = false;
 
-// 当前上海时区月份边界
-const currentMonthStr = computed(() => getShanghaiCurrentMonth());
+const shanghaiToday = computed(() => {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const pick = (type) => Number(parts.find((part) => part.type === type)?.value || 0);
+  return { year: pick('year'), month: pick('month'), day: pick('day') };
+});
+
+// 当前上海时区月份边界（仅年月模式）
+const currentMonthStr = computed(() => {
+  const { year, month } = shanghaiToday.value;
+  return `${year}-${pad2(month)}`;
+});
 const bounds = computed(() => {
   const [cy, cm] = currentMonthStr.value.split('-').map(Number);
   const earliest = new Date(Date.UTC(cy, cm - 1 - props.monthsBack, 1));
@@ -56,18 +89,34 @@ const bounds = computed(() => {
   };
 });
 
-// 年份列：最早年份 → 当前年份
+// 年份列：年月模式用 earliest→current；选日模式用 ±yearRange
 const yearOptions = computed(() => {
+  if (props.includeDay) {
+    const cy = shanghaiToday.value.year;
+    const start = cy - props.yearRange;
+    const end = cy + props.yearRange;
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  }
   const { earliestYear, curYear } = bounds.value;
   return Array.from({ length: curYear - earliestYear + 1 }, (_, i) => earliestYear + i);
 });
 const monthOptions = Array.from({ length: 12 }, (_, i) => i + 1);
+const dayOptions = computed(() => {
+  const days = daysInMonth(draftYear.value, draftMonth.value);
+  return Array.from({ length: days }, (_, i) => i + 1);
+});
 
-const selectedLabel = computed(() => formatMonth(props.modelValue));
+const selectedLabel = computed(() => (
+  props.includeDay ? formatDateLabel(props.modelValue) : formatMonth(props.modelValue)
+));
 const yearUnit = computed(() => (locale.value.startsWith('zh') ? '年' : ''));
 const monthUnit = computed(() => (locale.value.startsWith('zh') ? '月' : ''));
+const dayUnit = computed(() => (locale.value.startsWith('zh') ? '日' : ''));
+const triggerAriaLabel = computed(() => (
+  props.ariaLabel || (props.includeDay ? t('日期选择') : t('选择月份'))
+));
 
-// 桌面端下拉的月份列表（近 12 个月，升序）
+// 桌面端下拉的月份列表（近 12 个月，升序；仅年月模式）
 const dropdownOptions = computed(() => {
   const { curYear, curMonth } = bounds.value;
   return Array.from({ length: 12 }, (_, index) => {
@@ -86,16 +135,15 @@ onBeforeUnmount(() => {
   document.removeEventListener('click', handleOutsideClick);
   clearTimeout(yearScrollTimer);
   clearTimeout(monthScrollTimer);
+  clearTimeout(dayScrollTimer);
 });
 
-function getShanghaiCurrentMonth() {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Shanghai',
-    year: 'numeric',
-    month: '2-digit',
-  }).formatToParts(new Date());
-  const pick = (type) => parts.find((part) => part.type === type)?.value || '';
-  return `${pick('year')}-${pick('month')}`;
+function pad2(n) {
+  return String(n).padStart(2, '0');
+}
+
+function daysInMonth(year, month) {
+  return new Date(year, month, 0).getDate();
 }
 
 function formatMonth(value) {
@@ -108,12 +156,20 @@ function formatMonth(value) {
   }).format(new Date(Date.UTC(year, month - 1, 1)));
 }
 
-function pad2(n) {
-  return String(n).padStart(2, '0');
+function formatDateLabel(value) {
+  const { year, month, day } = parseDateValue(value);
+  const date = new Date(year, month - 1, day);
+  const isEn = String(locale.value).startsWith('en');
+  return new Intl.DateTimeFormat(isEn ? 'en-US' : 'zh-CN', {
+    year: 'numeric',
+    month: isEn ? 'long' : 'numeric',
+    day: 'numeric',
+    weekday: 'short',
+  }).format(date);
 }
 
 // 将 year-month 限制在允许范围内，返回 'YYYY-MM'
-function clampValue(year, month) {
+function clampMonthValue(year, month) {
   const { curYear, curMonth, earliestYear, earliestMonth } = bounds.value;
   let value = `${year}-${pad2(month)}`;
   const max = `${curYear}-${pad2(curMonth)}`;
@@ -123,16 +179,22 @@ function clampValue(year, month) {
   return value;
 }
 
-/* ─── 触发交互：移动端开滚轮，桌面端开下拉 ─── */
+function toDateValue(year, month, day) {
+  const maxDay = daysInMonth(year, month);
+  const safeDay = Math.min(day, maxDay);
+  return `${year}-${pad2(month)}-${pad2(safeDay)}`;
+}
+
+/* ─── 触发交互：选日模式始终滚轮；年月模式移动端滚轮 / 桌面下拉 ─── */
 async function handleTriggerClick() {
-  if (isMobile.value) {
+  if (props.includeDay || isMobile.value) {
     openPicker();
   } else {
     await toggleMenu();
   }
 }
 
-/* ─── 桌面下拉 ─── */
+/* ─── 桌面下拉（仅年月） ─── */
 async function toggleMenu() {
   open.value = !open.value;
   if (!open.value) return;
@@ -153,22 +215,42 @@ function handleOutsideClick(event) {
   }
 }
 
-/* ─── 移动端滚轮弹窗 ─── */
-async function openPicker() {
-  const [y, m] = clampValue(...parseValue(props.modelValue)).split('-').map(Number);
-  draftYear.value = y;
-  draftMonth.value = m;
-  pickerOpen.value = true;
-  await nextTick();
-  // 弹窗渲染后把当前选中项滚动到中间
-  scrollColumnToIndex(yearColRef.value, yearIndex());
-  scrollColumnToIndex(monthColRef.value, draftMonth.value - 1);
-}
-
-function parseValue(value) {
+/* ─── 滚轮弹窗 ─── */
+function parseMonthValue(value) {
   const [y, m] = String(value).split('-').map(Number);
   const { curYear, curMonth } = bounds.value;
   return [y || curYear, m || curMonth];
+}
+
+function parseDateValue(value) {
+  const [y, m, d] = String(value || '').split('-').map(Number);
+  const t = shanghaiToday.value;
+  return {
+    year: y || t.year,
+    month: m || t.month,
+    day: d || t.day,
+  };
+}
+
+async function openPicker() {
+  if (props.includeDay) {
+    const { year, month, day } = parseDateValue(props.modelValue);
+    draftYear.value = year;
+    draftMonth.value = month;
+    draftDay.value = Math.min(day, daysInMonth(year, month));
+  } else {
+    const [y, m] = clampMonthValue(...parseMonthValue(props.modelValue)).split('-').map(Number);
+    draftYear.value = y;
+    draftMonth.value = m;
+    draftDay.value = 1;
+  }
+  pickerOpen.value = true;
+  await nextTick();
+  scrollColumnToIndex(yearColRef.value, yearIndex());
+  scrollColumnToIndex(monthColRef.value, draftMonth.value - 1);
+  if (props.includeDay) {
+    scrollColumnToIndex(dayColRef.value, draftDay.value - 1);
+  }
 }
 
 function closePicker() {
@@ -176,19 +258,26 @@ function closePicker() {
 }
 
 function confirmPicker() {
-  emit('update:modelValue', clampValue(draftYear.value, draftMonth.value));
+  if (props.includeDay) {
+    emit('update:modelValue', toDateValue(draftYear.value, draftMonth.value, draftDay.value));
+  } else {
+    emit('update:modelValue', clampMonthValue(draftYear.value, draftMonth.value));
+  }
   pickerOpen.value = false;
 }
 
 function yearIndex() {
   const idx = yearOptions.value.indexOf(draftYear.value);
-  return idx >= 0 ? idx : yearOptions.value.length - 1;
+  if (idx >= 0) return idx;
+  return props.includeDay
+    ? Math.floor(yearOptions.value.length / 2)
+    : yearOptions.value.length - 1;
 }
 
 function scrollColumnToIndex(el, index) {
   if (!el) return;
   programmaticScroll = true;
-  el.scrollTop = index * ITEM_HEIGHT;
+  el.scrollTop = Math.max(0, index) * ITEM_HEIGHT;
   // 释放标记，避免把这次程序化滚动当成用户滚动
   window.requestAnimationFrame(() => {
     programmaticScroll = false;
@@ -203,8 +292,8 @@ function onYearScroll() {
     if (!el) return;
     const index = Math.max(0, Math.min(yearOptions.value.length - 1, Math.round(el.scrollTop / ITEM_HEIGHT)));
     draftYear.value = yearOptions.value[index];
-    // 年份变化后，若与月份组合超出范围则回拉月份
-    clampDraftMonth();
+    if (props.includeDay) clampDraftDay();
+    else clampDraftMonth();
   }, 90);
 }
 
@@ -216,13 +305,26 @@ function onMonthScroll() {
     if (!el) return;
     const index = Math.max(0, Math.min(11, Math.round(el.scrollTop / ITEM_HEIGHT)));
     draftMonth.value = index + 1;
-    clampDraftMonth();
+    if (props.includeDay) clampDraftDay();
+    else clampDraftMonth();
   }, 90);
 }
 
-// 若草稿月份超出允许范围，回拉到合法月份并同步滚轮位置
+function onDayScroll() {
+  if (programmaticScroll) return;
+  clearTimeout(dayScrollTimer);
+  dayScrollTimer = setTimeout(() => {
+    const el = dayColRef.value;
+    if (!el) return;
+    const maxIdx = dayOptions.value.length - 1;
+    const index = Math.max(0, Math.min(maxIdx, Math.round(el.scrollTop / ITEM_HEIGHT)));
+    draftDay.value = dayOptions.value[index];
+  }, 90);
+}
+
+// 若草稿月份超出允许范围，回拉到合法月份并同步滚轮位置（仅年月模式）
 function clampDraftMonth() {
-  const clamped = clampValue(draftYear.value, draftMonth.value);
+  const clamped = clampMonthValue(draftYear.value, draftMonth.value);
   const [cy, cm] = clamped.split('-').map(Number);
   if (cy !== draftYear.value) {
     draftYear.value = cy;
@@ -231,6 +333,15 @@ function clampDraftMonth() {
   if (cm !== draftMonth.value) {
     draftMonth.value = cm;
     scrollColumnToIndex(monthColRef.value, cm - 1);
+  }
+}
+
+/** 选日模式：年/月变化后校正日不超过当月最大日 */
+function clampDraftDay() {
+  const max = daysInMonth(draftYear.value, draftMonth.value);
+  if (draftDay.value > max) {
+    draftDay.value = max;
+    scrollColumnToIndex(dayColRef.value, draftDay.value - 1);
   }
 }
 
@@ -248,7 +359,7 @@ watch(
     <button
       type="button"
       class="month-selector__trigger"
-      :aria-label="ariaLabel || t('选择月份')"
+      :aria-label="triggerAriaLabel"
       :aria-expanded="open || pickerOpen"
       @click.stop="handleTriggerClick"
     >
@@ -256,8 +367,8 @@ watch(
       <i aria-hidden="true"></i>
     </button>
 
-    <!-- 桌面端：下拉列表 -->
-    <div v-if="open && !isMobile" ref="menuRef" class="month-selector__menu" role="listbox">
+    <!-- 桌面端：下拉列表（仅年月模式） -->
+    <div v-if="open && !isMobile && !includeDay" ref="menuRef" class="month-selector__menu" role="listbox">
       <button
         v-for="option in dropdownOptions"
         :key="option.value"
@@ -272,7 +383,7 @@ watch(
       </button>
     </div>
 
-    <!-- 移动端：滚轮选择弹窗（对齐 App 日期选择） -->
+    <!-- 滚轮选择弹窗（对齐 App DateSelectDialog） -->
     <BaseModal
       :model-value="pickerOpen"
       :title="t('日期选择')"
@@ -280,7 +391,10 @@ watch(
       @update:model-value="closePicker"
     >
       <div class="month-picker">
-        <div class="month-picker__wheels">
+        <div
+          class="month-picker__wheels"
+          :class="{ 'month-picker__wheels--with-day': includeDay }"
+        >
           <div class="month-picker__highlight" aria-hidden="true"></div>
           <div ref="yearColRef" class="month-picker__col" @scroll="onYearScroll">
             <div class="month-picker__pad" aria-hidden="true"></div>
@@ -303,6 +417,23 @@ watch(
               :class="{ active: month === draftMonth }"
             >
               {{ month }}{{ monthUnit }}
+            </div>
+            <div class="month-picker__pad" aria-hidden="true"></div>
+          </div>
+          <div
+            v-if="includeDay"
+            ref="dayColRef"
+            class="month-picker__col"
+            @scroll="onDayScroll"
+          >
+            <div class="month-picker__pad" aria-hidden="true"></div>
+            <div
+              v-for="day in dayOptions"
+              :key="day"
+              class="month-picker__item"
+              :class="{ active: day === draftDay }"
+            >
+              {{ day }}{{ dayUnit }}
             </div>
             <div class="month-picker__pad" aria-hidden="true"></div>
           </div>
@@ -396,7 +527,7 @@ watch(
   }
 }
 
-/* ─── 移动端滚轮选择 ─── */
+/* ─── 滚轮选择 ─── */
 .month-picker {
   padding: 8px 0 4px;
   border-radius: 16px;
@@ -408,6 +539,10 @@ watch(
   display: grid;
   grid-template-columns: 1fr 1fr;
   height: 220px; // 5 行 * 44px
+
+  &--with-day {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
 }
 
 .month-picker__highlight {

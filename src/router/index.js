@@ -25,7 +25,7 @@ const routes = [
     path: '/market/search',
     name: 'market-search',
     component: () => import('@/views/Market/Search/index.vue'),
-    // H5：页面自带紧凑头（返回+标题），隐藏全局移动端头避免双头；底部 Tab 保留（对齐设计稿）
+    // H5：自带紧凑头；赛事结果搜索（mode=match）额外藏底部 Tab（见 App.vue）
     meta: { titleKey: '搜索', hideMobileHeader: true, requiresAuth: true },
   },
   {

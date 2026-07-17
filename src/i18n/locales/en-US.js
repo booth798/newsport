@@ -551,6 +551,7 @@ export default {
   开户银行: 'Bank',
   进行中: 'In Progress',
   已结束: 'Finished',
+  完场: 'FT',
   已成交: 'Filled',
   已结算: 'Settled',
   处理中: 'Processing',

@@ -39,7 +39,11 @@ const { locale, isMobile } = storeToRefs(appStore);
 const { isLoggedIn } = storeToRefs(userStore);
 const isBarePage = computed(() => Boolean(route.meta?.bare) || route.matched.some((r) => r.meta?.bare));
 // 嵌套路由用 matched 判断，避免子路由 meta 未合入 route.meta。
-const hideMobileTabBar = computed(() => route.matched.some((r) => r.meta?.hideMobileTabBar));
+// 赛事结果搜索（mode=match）无底部 Tab，对齐安卓 MarketSearchActivity 全屏。
+const hideMobileTabBar = computed(() => {
+  if (route.matched.some((r) => r.meta?.hideMobileTabBar)) return true;
+  return route.name === 'market-search' && String(route.query.mode || '') === 'match';
+});
 const hideMobileHeader = computed(
   () => isMobile.value && route.matched.some((r) => r.meta?.hideMobileHeader),
 );

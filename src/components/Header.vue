@@ -17,6 +17,7 @@ import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.sv
 import MobileNavDrawer from '@/components/MobileNavDrawer.vue';
 import MessageCenterModal from '@/components/MessageCenterModal.vue';
 import MonthSelector from '@/components/MonthSelector.vue';
+import AppSearchButton from '@/components/AppSearchButton.vue';
 import { useAppStore } from '@/store/modules/app';
 import { useUserStore } from '@/store/modules/user';
 import { fetchUnreadCount } from '@/api/user';
@@ -413,9 +414,7 @@ watch(isLoggedIn, (loggedIn) => {
           </template>
         </template>
         <template v-else-if="isMobileMarketListHeader">
-          <button type="button" class="header-mobile-search" :aria-label="t('搜索')" @click="openMarketSearch">
-            <span aria-hidden="true"></span>
-          </button>
+          <AppSearchButton @click="openMarketSearch" />
         </template>
         <template v-else-if="isMobileProfileHomeHeader">
           <button type="button" class="header-mobile-circle-btn" :aria-label="t('消息中心')" @click="messageCenterOpen = true">
@@ -768,27 +767,6 @@ watch(isLoggedIn, (loggedIn) => {
       font-weight: 600;
       cursor: pointer;
       white-space: nowrap;
-    }
-
-    .header-mobile-search {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      width: 44px;
-      height: 44px;
-      padding: 0;
-      border: 0;
-      border-radius: 50%;
-      background: linear-gradient(180deg, #1f7cff 0%, #0d6cfb 100%);
-      box-shadow: 0 4px 8px rgba(21, 58, 119, 0.12);
-      cursor: pointer;
-
-      span {
-        width: 22px;
-        height: 22px;
-        background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 22 22' fill='none'%3E%3Ccircle cx='9.5' cy='9.5' r='6.5' stroke='white' stroke-width='2'/%3E%3Cpath d='M14.5 14.5L20 20' stroke='white' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
-      }
     }
 
     .header-mobile-circle-btn {
