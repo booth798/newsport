@@ -84,7 +84,8 @@ const navbarList = [
   { labelKey: '市场', key: 'market', width: 104, to: '/market' },
   // PC 交易账务入口对齐设计稿：进入订单记录页（状态侧栏 + 汇总 + 两列卡）
   { labelKey: '交易账务', key: 'trade', width: 124, to: '/finance/records' },
-  { labelKey: '会员权益', key: 'myBenefit', width: 124, to: '/profile' },
+  // PC 顶栏「会员权益」进入权益页（H5 侧栏菜单不受影响）
+  { labelKey: '会员权益', key: 'myBenefit', width: 124, to: '/profile/vipBenefits' },
   { labelKey: '关于我们', key: 'about', width: 124, to: '/profile/about' },
 ];
 
@@ -98,7 +99,7 @@ const isNavActive = (item) => {
     );
   }
   if (item.key === 'trade') return route.path.startsWith('/finance') || route.name === 'trade-purchases';
-  if (item.key === 'myBenefit') return route.path.startsWith('/profile') && route.name !== 'profile-about';
+  if (item.key === 'myBenefit') return route.name === 'vip-benefits';
   if (item.key === 'about') return route.name === 'profile-about';
   return false;
 };
