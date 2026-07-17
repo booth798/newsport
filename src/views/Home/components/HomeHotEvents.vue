@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 
 import { useAppStore } from '@/store/modules/app';
+import { useUserStore } from '@/store/modules/user';
 import EmptyState from '@/components/EmptyState.vue';
 import HomeMatchCard from './HomeMatchCard.vue';
 import {
@@ -20,7 +21,9 @@ import iconMoreUrl from '@/assets/images/events/icon_more.svg?url';
 
 const { t } = useI18n();
 const appStore = useAppStore();
+const userStore = useUserStore();
 const { isMobile } = storeToRefs(appStore);
+const { isLoggedIn } = storeToRefs(userStore);
 
 const props = defineProps({
   /** /api/home 的 hotMarkets 原始盘口，对齐安卓 cachedHotMarkets */
@@ -161,6 +164,11 @@ function scrollTabToCenter(key) {
 }
 
 function selectTab(key) {
+  // 对齐安卓：未登录点击非「热门」Tab 时拦截，弹出「请先登录」确认框
+  if (key !== 'hot' && !isLoggedIn.value) {
+    appStore.openLoginConfirm();
+    return;
+  }
   activeLeague.value = key;
   scrollTabToCenter(key);
   if (key !== 'hot') loadLeagueTab(key);
