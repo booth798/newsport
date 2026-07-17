@@ -110,6 +110,16 @@ const profitPercent = computed(() => {
   return String(raw).replace(/%$/, '') || '6.99';
 });
 
+/** 弹窗公式区展示用收益率：对齐安卓 OddsFormatter.format，HALF_UP 两位 */
+const profitPercentDisplay = computed(() => {
+  const numeric = Number(profitPercent.value);
+  if (!Number.isFinite(numeric)) return '--';
+  return numeric.toFixed(2);
+});
+
+// 与安卓 BuyDialog 一致：结果页本地回退预估收益时手续费固定 5%。
+const TRANSACTION_FEE_RATE = 0.05;
+
 const feeRateDisplay = computed(() => {
   const rate = props.row?.feeRate ?? props.match?.feeRate;
   if (rate == null) return '';
@@ -118,23 +128,75 @@ const feeRateDisplay = computed(() => {
   return `-${display}%`;
 });
 
-const scoreLabel = computed(() => {
-  const s = props.row?.score ?? '0-0';
-  return s.replace('-', ' - ');
-});
+const scoreLabel = computed(() => formatScoreOption(props.row?.score ?? '0-0'));
 
 const marketScopeKey = computed(() => (props.marketTab === 'halftime' ? '半场' : '全场'));
 
-const matchDateDisplay = computed(() => {
-  const raw = props.match.date ?? '';
-  if (/^\d{4}-/.test(raw)) return raw;
-  return `2026-${raw}`;
-});
+const matchDateDisplay = computed(() => formatKickoffDisplay(
+  props.match.kickoffAt || props.match.date || '',
+));
+
+/** 金额：en-US 千分位 + 两位小数，对齐安卓 AppTools.formatAmount */
+function formatMoneyAmount(value) {
+  const amount = Number(String(value ?? '').replace(/,/g, '').replace(/[¥+\s]/g, ''));
+  if (!Number.isFinite(amount)) return '0.00';
+  return amount.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+/** 收益率：HALF_UP 两位后加 %，对齐安卓 OddsFormatter.formatPercentText */
+function formatYieldPercent(raw) {
+  const text = String(raw ?? '').trim();
+  if (!text) return '';
+  return text.split('~').map((part) => {
+    const numeric = Number(String(part).trim().replace(/%$/, ''));
+    if (!Number.isFinite(numeric)) return String(part).trim();
+    return `${numeric.toFixed(2)}%`;
+  }).join(' ~ ');
+}
+
+/** 开赛时间：ISO 转 `yyyy-MM-dd HH:mm`，对齐安卓 toDisplayTime */
+function formatKickoffDisplay(raw) {
+  const text = String(raw ?? '').trim();
+  if (!text) return '';
+  if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}/.test(text)) {
+    return text
+      .replace('T', ' ')
+      .replace(/\.\d+/, '')
+      .replace(/([+-]\d{2}:\d{2}|Z)$/, '')
+      .slice(0, 16);
+  }
+  if (/^\d{4}-/.test(text)) return text.slice(0, 16);
+  return text;
+}
+
+function pickOrderText(order, ...keys) {
+  for (const key of keys) {
+    const value = order?.[key];
+    if (value != null && String(value).trim() !== '') return String(value);
+  }
+  return '';
+}
+
+/**
+ * 本地预估收益对齐安卓 recalculateProfit：
+ * profit = amount * yield%(两位) / 100 * (1 - 0.05)
+ */
+function calcNetProfit(amount, yieldPct) {
+  const amt = Number(amount);
+  const yieldRate = Number(Number(yieldPct).toFixed(2));
+  if (!Number.isFinite(amt) || amt <= 0 || !Number.isFinite(yieldRate)) return '0.00';
+  const gross = amt * yieldRate / 100;
+  const profit = gross - gross * TRANSACTION_FEE_RATE;
+  return formatMoneyAmount(profit);
+}
 
 const estimatedProfit = computed(() => {
   const amt = Number(buyAmount.value);
   if (!Number.isFinite(amt) || amt <= 0) return '0.00';
-  return (amt * Number(profitPercent.value) / 100).toFixed(2);
+  return calcNetProfit(amt, profitPercent.value);
 });
 
 const estimatedProfitRange = computed(() => {
@@ -143,19 +205,73 @@ const estimatedProfitRange = computed(() => {
   const min = Number(profitMin.value);
   const max = Number(profitMax.value);
   if (min <= 0 && max <= 0) return '--';
-  return `${(amt * min / 100).toFixed(2)} ~ ${(amt * max / 100).toFixed(2)}`;
+  // 预约区间对齐安卓：不扣手续费
+  return `${formatMoneyAmount(amt * min / 100)} ~ ${formatMoneyAmount(amt * max / 100)}`;
 });
 
-const successOrderNo = ref('NO.B01774853483511738');
-const successAmount = ref('100.00');
-const successYield = ref('2.1');
-const successProfit = ref('2.00');
+const successOrderNo = ref('');
+const successLeague = ref('');
+const successKickoff = ref('');
+const successScore = ref('');
+const successPeriodLabel = ref('');
+const successAmount = ref('0.00');
+const successYield = ref('0.00%');
+const successProfit = ref('0.00');
+
+function buildSuccessPayload(order, amount) {
+  // 字段优先级对齐安卓 BuyDialog.buildResultPayload
+  const yieldRaw = pickOrderText(
+    order,
+    'yieldAtBuy',
+    'yieldPct',
+    'expectedYield',
+    'yield',
+    'profitRate',
+  ) || (
+    [pickOrderText(order, 'yieldMin'), pickOrderText(order, 'yieldMax')]
+      .filter(Boolean)
+      .join(' ~ ')
+  ) || profitPercent.value;
+
+  const profitRaw = pickOrderText(
+    order,
+    'estimatedPayout',
+    'expectedProfit',
+    'profit',
+    'payout',
+    'returnAmount',
+  ) || calcNetProfit(amount, yieldRaw.split('~')[0]);
+
+  const scoreRaw = pickOrderText(order, 'score', 'selectedScore')
+    || props.row?.scoreRaw
+    || props.row?.score
+    || '0-0';
+
+  successOrderNo.value = pickOrderText(order, 'orderNo', 'orderId', 'id');
+  successLeague.value = pickOrderText(order, 'leagueName', 'leagueShortName', 'matchName')
+    || props.match.league
+    || '';
+  successKickoff.value = formatKickoffDisplay(
+    pickOrderText(order, 'matchKickoffAt', 'kickoffAt', 'matchTime', 'startTime')
+    || props.match.kickoffAt
+    || props.match.date
+    || '',
+  );
+  successScore.value = formatScoreOption(scoreRaw.replace(/:/g, '-'));
+  successPeriodLabel.value = t(marketScopeKey.value);
+  successAmount.value = formatMoneyAmount(
+    pickOrderText(order, 'amount', 'orderAmount') || amount,
+  );
+  successYield.value = formatYieldPercent(yieldRaw);
+  successProfit.value = formatMoneyAmount(profitRaw);
+}
 
 async function refreshWalletBalance() {
   walletLoading.value = true;
   try {
     const res = await fetchBalance();
-    walletBalance.value = res.data?.available ?? res.data?.balance ?? null;
+    // 主钱包字段优先级对齐安卓：balance ?: available
+    walletBalance.value = res.data?.balance ?? res.data?.available ?? null;
     userStore.updateUserProfile({ balance: walletBalance.value });
   } catch { /* non-critical */ }
   finally { walletLoading.value = false; }
@@ -273,10 +389,8 @@ async function confirmBuy() {
     }
 
     const order = res.data || {};
-    successAmount.value = amt.toFixed(2);
-    successYield.value = profitPercent.value;
-    successProfit.value = order.estimatedPayout ?? order.payout ?? (amt * Number(profitPercent.value) / 100).toFixed(2);
-    successOrderNo.value = order.orderNo || order.id || '';
+    // 成功弹窗字段组装对齐安卓 BuyResultDialog / buildResultPayload
+    buildSuccessPayload(order, amt);
     phase.value = 'success';
   } catch (e) {
     const errCode = e?.code || e?.response?.data?.code;
@@ -353,11 +467,11 @@ function onBackdropKeydown(e) {
           </div>
           <div class="buy-sheet__success-field">
             <span class="buy-sheet__success-label">{{ t('联盟') }}</span>
-            <span class="buy-sheet__success-val">{{ match.league }}</span>
+            <span class="buy-sheet__success-val">{{ successLeague }}</span>
           </div>
           <div class="buy-sheet__success-field">
             <span class="buy-sheet__success-label">{{ t('开赛时间') }}</span>
-            <span class="buy-sheet__success-val">{{ matchDateDisplay }}</span>
+            <span class="buy-sheet__success-val">{{ successKickoff }}</span>
           </div>
           <div class="buy-sheet__success-field buy-sheet__success-field--teams">
             <span class="buy-sheet__success-label">{{ t('赛事') }}</span>
@@ -377,7 +491,8 @@ function onBackdropKeydown(e) {
           </div>
           <div class="buy-sheet__success-field">
             <span class="buy-sheet__success-label">{{ t('选项') }}</span>
-            <span class="buy-sheet__success-val">{{ t('选项') }} {{ scoreLabel }} ({{ t(marketScopeKey) }})</span>
+            <!-- 对齐安卓：选项 0-1 （全场） -->
+            <span class="buy-sheet__success-val">{{ t('选项') }} {{ successScore }} （{{ successPeriodLabel }}）</span>
           </div>
 
           <div class="buy-sheet__success-summary">
@@ -386,12 +501,14 @@ function onBackdropKeydown(e) {
               <span class="buy-sheet__success-summary-val buy-sheet__success-summary-val--profit">¥ {{ successAmount }}</span>
             </div>
             <div class="buy-sheet__success-summary-row">
-              <span class="buy-sheet__success-summary-label">{{ t('收益率') }}%</span>
-              <span class="buy-sheet__success-summary-val buy-sheet__success-summary-val--rate">x {{ successYield }}%</span>
+              <!-- i18n「收益率」已含 %，勿再追加，避免出现「收益率%%」 -->
+              <span class="buy-sheet__success-summary-label">{{ t('收益率') }}</span>
+              <span class="buy-sheet__success-summary-val buy-sheet__success-summary-val--rate">x {{ successYield }}</span>
             </div>
             <div class="buy-sheet__success-summary-row">
               <span class="buy-sheet__success-summary-label">{{ t('预估收益') }}</span>
-              <span class="buy-sheet__success-summary-val buy-sheet__success-summary-val--profit">+ ¥ {{ successProfit }}</span>
+              <!-- 对齐安卓前缀「+ 金额」，数值本身不再叠 ¥ -->
+              <span class="buy-sheet__success-summary-val buy-sheet__success-summary-val--profit">+ {{ successProfit }}</span>
             </div>
           </div>
 
@@ -469,7 +586,7 @@ function onBackdropKeydown(e) {
               class="buy-sheet__amount-input buy-sheet__amount-input--full"
               :placeholder="t('输入金额')"
             />
-            <span class="buy-sheet__formula-suffix">x {{ profitPercent }}% =</span>
+            <span class="buy-sheet__formula-suffix">x {{ profitPercentDisplay }}% =</span>
             <span class="buy-sheet__formula-result">{{ estimatedProfit }}</span>
           </div>
           <p v-if="feeRateDisplay" class="buy-sheet__fee">{{ t('手续费') }}{{ feeRateDisplay }}</p>

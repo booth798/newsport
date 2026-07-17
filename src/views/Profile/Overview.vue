@@ -93,9 +93,12 @@ const displayBalance = computed(
 const mobileDisplayName = computed(() => (isLoggedIn.value ? displayName.value : '登录'));
 const mobileDisplayMemberId = computed(() => (isLoggedIn.value ? displayMemberId.value : ''));
 const mobileVipLevel = computed(() => (isLoggedIn.value ? overview.value.vipLevel : 0));
+// 主钱包 / 锁定钱包对齐安卓：主钱包 = balance ?: available（store 已归一），锁定 = frozen。
 const mobileBalance = computed(() => (isLoggedIn.value ? displayBalance.value : '0.00'));
-const mobileMainWallet = computed(() => (isLoggedIn.value ? displayBalance.value : '0'));
-const mobileLockedWallet = computed(() => (isLoggedIn.value ? (overview.value._wallet?.frozen || '0.00') : '0'));
+const mobileMainWallet = computed(() => (isLoggedIn.value ? displayBalance.value : '0.00'));
+const mobileLockedWallet = computed(() => (
+  isLoggedIn.value ? (overview.value.frozenBalance || '0.00') : '0.00'
+));
 
 // VIP 等级轨道：H5 / PC 共用同一套等级窗口和当前点位计算。
 // 5 张轨道图分别对应：当前等级在第 1/2/3/4/5 个点位。
@@ -189,13 +192,14 @@ const mobileMenuItems = computed(() => {
     : [serviceMenuItem, vipBenefitsMenuItem];
 });
 
-// 数据请求
+// 数据请求：资料 + 钱包分拆，钱包与刷新按钮共用 refreshUserBalance（对齐安卓 MineFragment）。
 async function loadOverview() {
   if (!isLoggedIn.value) return;
   try {
     loading.value = true;
     await Promise.all([
       userStore.loadUserProfile(),
+      userStore.refreshUserBalance(),
       loadUnreadCount(),
     ]);
   } catch {

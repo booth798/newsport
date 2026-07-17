@@ -155,19 +155,17 @@ export async function resetPassword(account, code, newPassword) {
   return bootstrapRequest('/auth/reset', { account, code, newPassword });
 }
 
-/** 获取个人中心原始资料，展示字段统一由用户 store 转换 */
+/** 获取个人中心原始资料（客户 + 统计）；钱包对齐安卓单独走 GET /wallet */
 export async function fetchProfileSummary() {
-  const [meRes, statsRes, walletRes] = await Promise.all([
+  const [meRes, statsRes] = await Promise.all([
     get('/customer/me'),
     get('/customer/me/stats').catch(() => ({ data: {} })),
-    get('/wallet').catch(() => ({ data: {} })),
   ]);
   return {
     code: meRes.code,
     data: {
       customer: meRes.data || {},
       stats: statsRes.data || {},
-      wallet: walletRes.data || {},
     },
   };
 }

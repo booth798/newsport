@@ -20,6 +20,8 @@ const toast = useToast();
 const userStore = useUserStore();
 
 const PAGE_SIZE = 20;
+/** 对齐安卓 FinanceOverviewAdapter：下单后 5 分钟内才显示取消按钮 */
+const CANCEL_WINDOW_MS = 5 * 60 * 1000;
 
 const orders = ref([]);
 const loading = ref(true);
@@ -42,17 +44,20 @@ function formatMoney(val) {
 /**
  * 汇总头金额：带正负号，过万用「万」缩写（对齐设计稿）
  * @param val 数值
- * @param {'auto'|'plus'|'minus'} signMode auto 按正负；plus/minus 强制符号（支出列固定用减号）
+ * @param {'auto'|'plus'|'minus'} signMode auto 按正负；plus/minus 强制符号（支出列固定用减号；为 0 时不带符号）
  */
 function formatSummaryAmount(val, signMode = 'auto') {
   const n = Number(val);
   if (!Number.isFinite(n)) return '0.00';
   const abs = Math.abs(n);
   let sign = '';
-  if (signMode === 'plus') sign = '+ ';
-  else if (signMode === 'minus') sign = '- ';
-  else if (n > 0) sign = '+ ';
-  else if (n < 0) sign = '- ';
+  // 支出/收入为 0 时不显示正负号，避免出现「- 0.00」
+  if (abs !== 0) {
+    if (signMode === 'plus') sign = '+ ';
+    else if (signMode === 'minus') sign = '- ';
+    else if (n > 0) sign = '+ ';
+    else if (n < 0) sign = '- ';
+  }
 
   if (abs >= 10000) {
     // 中文：3.2万；英文：32k
@@ -168,7 +173,13 @@ function normalizeOrder(o) {
   const homeLogo = o.homeTeamLogoUrl || o.homeTeamLogo || o.homeLogoUrl || '';
   const awayLogo = o.awayTeamLogoUrl || o.awayTeamLogo || o.awayLogoUrl || '';
   const kickoff = o.matchKickoffAt || o.kickoffAt || o.matchTime || '';
-  const placedAt = o.placedAt || o.createdAt || '';
+  // 交易时间字段对齐安卓 FinanceFragment：placedAt / createdAt / createTime
+  const placedAt = o.placedAt || o.createdAt || o.createTime || '';
+  const placedAtMillis = (() => {
+    if (!placedAt) return null;
+    const ms = Date.parse(placedAt);
+    return Number.isFinite(ms) ? ms : null;
+  })();
   const score = o.score || '';
   const yieldAtBuy = o.yieldAtBuy || o.yieldPct || o.yield || '';
   const matchScore = o.matchScore || '';
@@ -204,6 +215,7 @@ function normalizeOrder(o) {
     awayLogo: resolveTeamLogoUrl(awayTeam, awayLogo),
     kickoffFormatted: formatKickoff(kickoff),
     placedAtFormatted: formatFullDateTime(placedAt),
+    placedAtMillis,
     matchScore,
     parsedScore,
     marketLabel,
@@ -212,6 +224,13 @@ function normalizeOrder(o) {
     profitLabel: state === 'completed' ? '盈利' : '预估盈利',
     _raw: o,
   };
+}
+
+/** 对齐安卓 isWithinCancelWindow：展开 + 处理中 + 下单 5 分钟内才显示取消 */
+function canShowCancel(order) {
+  if (!order?.cancelable || expandedId.value !== order.id) return false;
+  if (order.placedAtMillis == null) return false;
+  return Math.abs(Date.now() - order.placedAtMillis) <= CANCEL_WINDOW_MS;
 }
 
 async function loadPage(page, append = false) {
@@ -460,10 +479,10 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
 
           <div
             class="ord__actions"
-            :class="{ 'ord__actions--cancelable': order.cancelable && expandedId === order.id }"
+            :class="{ 'ord__actions--cancelable': canShowCancel(order) }"
           >
             <button
-              v-if="order.cancelable && expandedId === order.id"
+              v-if="canShowCancel(order)"
               type="button"
               class="ord__cancel"
               :disabled="cancelingId === order.id"
