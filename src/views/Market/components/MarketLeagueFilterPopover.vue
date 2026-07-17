@@ -6,11 +6,11 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
+import { Circle, CircleCheckBig } from 'lucide-vue-next';
 
 import { fetchLeagueList, fetchMarketListCounts } from '@/api/match';
 import { useLeagueFilterStore } from '@/store/modules/leagueFilter';
-import iconCheckedUrl from '@/assets/images/common/icon_checkbox_checked.svg?url';
-import iconUncheckedUrl from '@/assets/images/common/icon_checkbox_unchecked.svg?url';
+import leagueFilterBackgroundUrl from '@/assets/images/common/league_filter_popover_bg.png';
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -262,6 +262,7 @@ onBeforeUnmount(() => {
     class="league-filter-pop"
     role="dialog"
     :aria-label="t('筛选联赛')"
+    :style="{ backgroundImage: `url(${leagueFilterBackgroundUrl})` }"
   >
     <div v-if="loading" class="league-filter-pop__state">
       <div class="league-filter-pop__spinner" />
@@ -292,12 +293,19 @@ onBeforeUnmount(() => {
               :class="{ 'league-filter-pop__pill--selected': selectedIds.has(league.id) }"
               @click="toggleLeague(league.id)"
             >
-              <img
+              <CircleCheckBig
+                v-if="selectedIds.has(league.id)"
                 class="league-filter-pop__pill-check"
-                :src="selectedIds.has(league.id) ? iconCheckedUrl : iconUncheckedUrl"
-                width="18"
-                height="18"
-                alt=""
+                :size="18"
+                :stroke-width="1.8"
+                aria-hidden="true"
+              />
+              <Circle
+                v-else
+                class="league-filter-pop__pill-check league-filter-pop__pill-check--empty"
+                :size="18"
+                :stroke-width="1.4"
+                aria-hidden="true"
               />
               <span class="league-filter-pop__pill-label">{{ league.shortName || league.name }}</span>
             </button>
@@ -313,12 +321,19 @@ onBeforeUnmount(() => {
             :class="{ 'league-filter-pop__mode--active': isSelectAll }"
             @click="onSelectAll"
           >
-            <img
+            <CircleCheckBig
+              v-if="isSelectAll"
               class="league-filter-pop__mode-icon"
-              :src="isSelectAll ? iconCheckedUrl : iconUncheckedUrl"
-              width="18"
-              height="18"
-              alt=""
+              :size="18"
+              :stroke-width="1.8"
+              aria-hidden="true"
+            />
+            <Circle
+              v-else
+              class="league-filter-pop__mode-icon league-filter-pop__mode-icon--empty"
+              :size="18"
+              :stroke-width="1.4"
+              aria-hidden="true"
             />
             <span>{{ t('全选') }}</span>
           </button>
@@ -328,12 +343,19 @@ onBeforeUnmount(() => {
             :class="{ 'league-filter-pop__mode--active': !isSelectAll }"
             @click="onSelectCustom"
           >
-            <img
+            <CircleCheckBig
+              v-if="!isSelectAll"
               class="league-filter-pop__mode-icon"
-              :src="!isSelectAll ? iconCheckedUrl : iconUncheckedUrl"
-              width="18"
-              height="18"
-              alt=""
+              :size="18"
+              :stroke-width="1.8"
+              aria-hidden="true"
+            />
+            <Circle
+              v-else
+              class="league-filter-pop__mode-icon league-filter-pop__mode-icon--empty"
+              :size="18"
+              :stroke-width="1.4"
+              aria-hidden="true"
             />
             <span>{{ t('自选') }}</span>
           </button>
@@ -361,19 +383,19 @@ onBeforeUnmount(() => {
 
 .league-filter-pop {
   position: absolute;
-  top: calc(100% + 10px);
-  left: 0;
+  top: calc(100% + 8px);
+  left: -40px;
   z-index: 30;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  width: min(920px, calc(100vw - 48px));
-  max-height: min(520px, calc(100vh - 200px));
-  padding: 20px 20px 16px;
-  border-radius: 24px;
-  background: #fff;
-  border: 1px solid #e8eef6;
-  box-shadow: 0 12px 40px rgba(21, 58, 119, 0.16);
+  width: 416px;
+  height: 530px;
+  padding: 42px 18px 58px;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  filter: drop-shadow(0 6px 20px rgba(21, 58, 119, 0.18));
 }
 
 .league-filter-pop__state {
@@ -382,7 +404,8 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  min-height: 200px;
+  flex: 1;
+  min-height: 0;
   color: #0b3462;
   font-size: 14px;
 }
@@ -409,25 +432,29 @@ onBeforeUnmount(() => {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding-right: 4px;
-  scrollbar-width: thin;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .league-filter-pop__group + .league-filter-pop__group {
-  margin-top: 18px;
+  margin-top: 20px;
 }
 
 .league-filter-pop__group-label {
   margin: 0 0 10px;
-  font-size: 14px;
+  font-size: 16px;
+  line-height: 24px;
   font-weight: 500;
   color: #0b3462;
 }
 
 .league-filter-pop__grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .league-filter-pop__pill {
@@ -435,28 +462,31 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 6px;
   min-width: 0;
-  height: 36px;
+  height: 34px;
   padding: 0 10px;
-  border: 1px solid #e4eef8;
-  border-radius: 10px;
+  border: 0;
+  border-radius: 6px;
   background: #fff;
   color: #0b3462;
   font-size: 14px;
   font-weight: 400;
   cursor: pointer;
   transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
+    box-shadow 0.15s ease,
     color 0.15s ease;
 
   &:hover {
-    border-color: rgba(28, 123, 255, 0.45);
+    box-shadow: inset 0 0 0 1px rgba(28, 123, 255, 0.35);
   }
 
   &--selected {
-    border-color: rgba(28, 123, 255, 0.35);
-    background: rgba(28, 123, 255, 0.08);
-    color: #1c7bff;
+    background: #fff;
+    color: #0b3462;
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(28, 123, 255, 0.45);
+    outline-offset: 1px;
   }
 }
 
@@ -465,6 +495,13 @@ onBeforeUnmount(() => {
   display: block;
   width: 18px;
   height: 18px;
+  color: #fff;
+  fill: #1c7bff;
+
+  &--empty {
+    color: rgba(11, 52, 98, 0.5);
+    fill: none;
+  }
 }
 
 .league-filter-pop__pill-label {
@@ -475,19 +512,24 @@ onBeforeUnmount(() => {
 }
 
 .league-filter-pop__footer {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  left: 2px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin-top: 16px;
-  padding-top: 14px;
-  border-top: 1px solid #eef3f9;
+  gap: 12px;
+  height: 56px;
+  padding: 0 16px;
+  border-radius: 0 0 14px 14px;
+  background: #fff;
 }
 
 .league-filter-pop__modes {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 22px;
 }
 
 .league-filter-pop__mode {
@@ -497,8 +539,8 @@ onBeforeUnmount(() => {
   padding: 0;
   border: none;
   background: transparent;
-  color: rgba(11, 52, 98, 0.55);
-  font-size: 14px;
+  color: #0b3462;
+  font-size: 16px;
   cursor: pointer;
 
   &--active {
@@ -511,26 +553,33 @@ onBeforeUnmount(() => {
   display: block;
   width: 18px;
   height: 18px;
+  color: #fff;
+  fill: #1c7bff;
+
+  &--empty {
+    color: rgba(11, 52, 98, 0.5);
+    fill: none;
+  }
 }
 
 .league-filter-pop__actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .league-filter-pop__confirm {
-  min-width: 120px;
-  height: 40px;
-  padding: 0 20px;
-  border: none;
-  border-radius: 999px;
-  background: #1c7bff;
-  color: #fff;
-  font-size: 15px;
-  font-weight: 500;
+  width: 108px;
+  height: 36px;
+  padding: 0 8px;
+  border: 1px solid #1c7bff;
+  border-radius: 8px;
+  background: #fff;
+  color: #1c7bff;
+  font-size: 16px;
+  font-weight: 400;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(28, 123, 255, 0.28);
+  white-space: nowrap;
 
   &:disabled {
     opacity: 0.72;
@@ -539,14 +588,14 @@ onBeforeUnmount(() => {
 }
 
 .league-filter-pop__cancel {
-  min-width: 88px;
-  height: 40px;
-  padding: 0 18px;
+  width: 88px;
+  height: 36px;
+  padding: 0 8px;
   border: 1px solid #ff2d2d;
-  border-radius: 999px;
+  border-radius: 8px;
   background: #fff;
   color: #ff2d2d;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 400;
   cursor: pointer;
 }
