@@ -9,7 +9,8 @@ import { defineStore } from 'pinia';
 export const useLeagueFilterStore = defineStore('leagueFilter', {
   state: () => ({
     selectedLeagues: [],
-    isAllSelected: false,
+    // 默认全选（不过滤）；与「自选且一项未选」区分开
+    isAllSelected: true,
   }),
   actions: {
     setSelection(leagues, isAll) {

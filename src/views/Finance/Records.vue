@@ -1,9 +1,12 @@
 <script setup>
-import { onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
+import { storeToRefs } from 'pinia';
 
+import AppSideNav from '@/components/AppSideNav.vue';
 import EmptyState from '@/components/EmptyState.vue';
+import { useAppStore } from '@/store/modules/app';
 import { useUserStore } from '@/store/modules/user';
 import { fetchLedgerSummary } from '@/api/finance';
 import { fetchOrderList, cancelOrder } from '@/api/order';
@@ -18,10 +21,19 @@ const { t, locale } = useI18n();
 const router = useRouter();
 const toast = useToast();
 const userStore = useUserStore();
+const { isMobile } = storeToRefs(useAppStore());
 
 const PAGE_SIZE = 20;
 /** 对齐安卓 FinanceOverviewAdapter：下单后 5 分钟内才显示取消按钮 */
 const CANCEL_WINDOW_MS = 5 * 60 * 1000;
+
+/** PC 侧栏状态筛选 → 接口 status 多值（空表示不过滤） */
+const STATUS_FILTER_MAP = {
+  all: undefined,
+  completed: ['WON', 'LOST', 'REFUNDED'],
+  processing: ['PENDING_MATCH', 'PLACED'],
+  cancelled: ['CANCELLED'],
+};
 
 const orders = ref([]);
 const loading = ref(true);
@@ -33,6 +45,22 @@ const hasMore = ref(false);
 const summary = ref({ totalIncome: 0, totalExpense: 0, netProfit: 0 });
 const expandedId = ref(null);
 const cancelingId = ref(null);
+/** PC 侧栏：全部 / 成功 / 处理中 / 已取消（H5 不展示侧栏，始终按「全部」拉取） */
+const statusFilter = ref('all');
+
+const statusNavItems = computed(() => [
+  { key: 'all', label: t('全部') },
+  { key: 'completed', label: t('成功') },
+  { key: 'processing', label: t('处理中') },
+  { key: 'cancelled', label: t('已取消') },
+]);
+
+/** PC 无订单也展示汇总三卡；H5 仍仅在有列表时展示 */
+const showSummary = computed(() => {
+  if (loading.value || error.value) return false;
+  if (!isMobile.value) return true;
+  return orders.value.length > 0;
+});
 
 function formatMoney(val) {
   if (val == null || val === '') return '0.00';
@@ -239,7 +267,8 @@ async function loadPage(page, append = false) {
     else loadingMore.value = true;
     error.value = false;
 
-    const promises = [fetchOrderList({ pageNum: page, pageSize: PAGE_SIZE })];
+    const status = STATUS_FILTER_MAP[statusFilter.value];
+    const promises = [fetchOrderList({ pageNum: page, pageSize: PAGE_SIZE, status })];
     if (page === 1) promises.push(fetchLedgerSummary().catch(() => null));
 
     const [orderRes, summaryRes] = await Promise.all(promises);
@@ -283,6 +312,14 @@ async function loadPage(page, append = false) {
 function loadMore() {
   if (loadingMore.value || !hasMore.value) return;
   loadPage(pageNum.value + 1, true);
+}
+
+/** PC 侧栏切换状态筛选并重新拉列表 */
+function onStatusSelect(key) {
+  if (statusFilter.value === key) return;
+  statusFilter.value = key;
+  expandedId.value = null;
+  loadPage(1);
 }
 
 function toggleExpand(id) {
@@ -342,180 +379,190 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
 
 <template>
   <div class="records-page">
-    <!-- 汇总头：收入加号、支出减号、净收益按正负；过万缩写为「万」 -->
-    <section v-if="!loading && !error && orders.length" class="fin-summary">
-      <div class="fin-summary__item">
-        <span class="fin-summary__label">{{ t('总收入') }}</span>
-        <span class="fin-summary__value fin-summary__value--income">{{ formatSummaryAmount(summary.totalIncome, 'plus') }}</span>
-      </div>
-      <div class="fin-summary__item">
-        <span class="fin-summary__label">{{ t('总支出') }}</span>
-        <span class="fin-summary__value fin-summary__value--expense">{{ formatSummaryAmount(summary.totalExpense, 'minus') }}</span>
-      </div>
-      <div class="fin-summary__item">
-        <span class="fin-summary__label">{{ t('净收益') }}</span>
-        <span class="fin-summary__value fin-summary__value--profit">{{ formatSummaryAmount(summary.netProfit) }}</span>
-      </div>
-    </section>
+    <!-- PC：状态筛选侧栏（AppSideNav 在 mobile 下自隐藏，H5 布局不变） -->
+    <AppSideNav
+      :items="statusNavItems"
+      :active-key="statusFilter"
+      aria-label="order-status"
+      @select="onStatusSelect"
+    />
 
-    <!-- Loading -->
-    <div v-if="loading" class="fin-state">
-      <div class="fin-spinner" />
-      <span>{{ t('加载中') }}</span>
-    </div>
-
-    <!-- Error -->
-    <div v-else-if="error" class="fin-state">
-      <span>{{ t('加载失败') }}</span>
-      <button type="button" class="fin-retry" @click="loadPage(1)">{{ t('重试') }}</button>
-    </div>
-
-    <!-- Empty -->
-    <EmptyState v-else-if="!orders.length" class="records-page__empty" :text="t('暂无记录')">
-      <button type="button" class="fin-empty__btn" @click="goToMarket">{{ t('前往比赛') }}</button>
-    </EmptyState>
-
-    <!-- 订单列表 -->
-    <div v-else class="fin-list">
-      <article
-        v-for="order in orders"
-        :key="order.id"
-        class="ord"
-        :class="{ 'ord--expanded': expandedId === order.id }"
-      >
-        <!-- 顶栏：平台 + 开赛时间 + 状态 -->
-        <div class="ord__top">
-          <span class="ord__platform">{{ t('UNI BET平台') }}</span>
-          <span v-if="order.kickoffFormatted" class="ord__kickoff">{{ order.kickoffFormatted }}</span>
-          <span
-            v-if="order.statusText || order.statusKey"
-            class="ord__badge"
-            :class="`ord__badge--${order.state}`"
-          >{{ order.statusText || t(order.statusKey) }}</span>
+    <div class="records-page__main">
+      <!-- 汇总头：收入加号、支出减号、净收益按正负；过万缩写为「万」；PC 无数据也展示 -->
+      <section v-if="showSummary" class="fin-summary">
+        <div class="fin-summary__item">
+          <span class="fin-summary__label">{{ t('总收入') }}</span>
+          <span class="fin-summary__value fin-summary__value--income">{{ formatSummaryAmount(summary.totalIncome, 'plus') }}</span>
         </div>
-
-        <div class="ord__divider" />
-
-        <!-- 联赛 -->
-        <div class="ord__league">
-          <img
-            v-if="order.leagueLogo"
-            class="ord__league-logo"
-            :src="order.leagueLogo"
-            alt=""
-            width="24"
-            height="24"
-            @error="(e) => e.target.style.display = 'none'"
-          />
-          <span class="ord__league-name">{{ order.league }}</span>
+        <div class="fin-summary__item">
+          <span class="fin-summary__label">{{ t('总支出') }}</span>
+          <span class="fin-summary__value fin-summary__value--expense">{{ formatSummaryAmount(summary.totalExpense, 'minus') }}</span>
         </div>
+        <div class="fin-summary__item">
+          <span class="fin-summary__label">{{ t('净收益') }}</span>
+          <span class="fin-summary__value fin-summary__value--profit">{{ formatSummaryAmount(summary.netProfit) }}</span>
+        </div>
+      </section>
 
-        <div class="ord__panel">
-          <!-- 对阵区：无比分时显示 VS -->
-          <div class="ord__arena" :class="{ 'ord__arena--scored': order.parsedScore }">
-            <div class="ord__arena-inner">
-              <div class="ord__team">
-                <img v-if="order.homeLogo" class="ord__team-logo" :src="order.homeLogo" alt="" width="44" height="44" @error="(e) => e.target.style.display='none'" />
-                <div class="ord__team-name">
-                  {{ order.homeTeam }}
-                  <span class="ord__host-tag">{{ t('主') }}</span>
+      <!-- Loading -->
+      <div v-if="loading" class="fin-state">
+        <div class="fin-spinner" />
+        <span>{{ t('加载中') }}</span>
+      </div>
+
+      <!-- Error -->
+      <div v-else-if="error" class="fin-state">
+        <span>{{ t('加载失败') }}</span>
+        <button type="button" class="fin-retry" @click="loadPage(1)">{{ t('重试') }}</button>
+      </div>
+
+      <!-- Empty -->
+      <EmptyState v-else-if="!orders.length" class="records-page__empty" :text="t('暂无记录')">
+        <button type="button" class="fin-empty__btn" @click="goToMarket">{{ t('前往比赛') }}</button>
+      </EmptyState>
+
+      <!-- 订单列表：PC 两列网格，H5 单列 -->
+      <div v-else class="fin-list">
+        <article
+          v-for="order in orders"
+          :key="order.id"
+          class="ord"
+          :class="{ 'ord--expanded': expandedId === order.id }"
+        >
+          <!-- 顶栏：平台 + 开赛时间 + 状态 -->
+          <div class="ord__top">
+            <span class="ord__platform">{{ t('UNI BET平台') }}</span>
+            <span v-if="order.kickoffFormatted" class="ord__kickoff">{{ order.kickoffFormatted }}</span>
+            <span
+              v-if="order.statusText || order.statusKey"
+              class="ord__badge"
+              :class="`ord__badge--${order.state}`"
+            >{{ order.statusText || t(order.statusKey) }}</span>
+          </div>
+
+          <div class="ord__divider" />
+
+          <!-- 联赛 -->
+          <div class="ord__league">
+            <img
+              v-if="order.leagueLogo"
+              class="ord__league-logo"
+              :src="order.leagueLogo"
+              alt=""
+              width="24"
+              height="24"
+              @error="(e) => e.target.style.display = 'none'"
+            />
+            <span class="ord__league-name">{{ order.league }}</span>
+          </div>
+
+          <div class="ord__panel">
+            <!-- 对阵区：无比分时显示 VS -->
+            <div class="ord__arena" :class="{ 'ord__arena--scored': order.parsedScore }">
+              <div class="ord__arena-inner">
+                <div class="ord__team">
+                  <img v-if="order.homeLogo" class="ord__team-logo" :src="order.homeLogo" alt="" width="44" height="44" @error="(e) => e.target.style.display='none'" />
+                  <div class="ord__team-name">
+                    {{ order.homeTeam }}
+                    <span class="ord__host-tag">{{ t('主') }}</span>
+                  </div>
+                  <span
+                    v-if="order.parsedScore"
+                    class="ord__score"
+                    :class="isWinningSide(order, 'home') ? 'ord__score--high' : 'ord__score--default'"
+                  >{{ order.parsedScore.home }}</span>
                 </div>
-                <span
-                  v-if="order.parsedScore"
-                  class="ord__score"
-                  :class="isWinningSide(order, 'home') ? 'ord__score--high' : 'ord__score--default'"
-                >{{ order.parsedScore.home }}</span>
+                <div class="ord__score-area">
+                  <span class="ord__vs">VS</span>
+                </div>
+                <div class="ord__team">
+                  <img v-if="order.awayLogo" class="ord__team-logo" :src="order.awayLogo" alt="" width="44" height="44" @error="(e) => e.target.style.display='none'" />
+                  <span class="ord__team-name">{{ order.awayTeam }}</span>
+                  <span
+                    v-if="order.parsedScore"
+                    class="ord__score"
+                    :class="isWinningSide(order, 'away') ? 'ord__score--high' : 'ord__score--default'"
+                  >{{ order.parsedScore.away }}</span>
+                </div>
               </div>
-              <div class="ord__score-area">
-                <span class="ord__vs">VS</span>
+
+            </div>
+
+            <div class="ord__money">
+              <div class="ord__money-row">
+                <span class="ord__money-label">{{ t('交易金额') }}</span>
+                <span class="ord__money-val">{{ order.amountFormatted }}</span>
               </div>
-              <div class="ord__team">
-                <img v-if="order.awayLogo" class="ord__team-logo" :src="order.awayLogo" alt="" width="44" height="44" @error="(e) => e.target.style.display='none'" />
-                <span class="ord__team-name">{{ order.awayTeam }}</span>
-                <span
-                  v-if="order.parsedScore"
-                  class="ord__score"
-                  :class="isWinningSide(order, 'away') ? 'ord__score--high' : 'ord__score--default'"
-                >{{ order.parsedScore.away }}</span>
+              <div class="ord__money-row">
+                <span class="ord__money-label">{{ t(order.profitLabel) }}</span>
+                <span class="ord__money-val ord__money-val--profit">{{ order.profitFormatted }}</span>
               </div>
             </div>
 
-          </div>
+            <!-- 展开详情 -->
+            <div v-if="expandedId === order.id" class="ord__detail">
+              <div class="ord__detail-row">
+                <span class="ord__detail-label">{{ t('订单号码') }}</span>
+                <button type="button" class="ord__detail-val ord__detail-val--copy" @click.stop="copyOrderNo(order.orderNo)">
+                  <span>{{ order.orderNo }}</span>
+                  <img class="ord__copy-icon" :src="orderCopyIconUrl" width="24" height="20" alt="" aria-hidden="true" />
+                </button>
+              </div>
+              <div class="ord__detail-row">
+                <span class="ord__detail-label">{{ t('交易时间') }}</span>
+                <span class="ord__detail-val">{{ order.placedAtFormatted }}</span>
+              </div>
+              <div v-if="order.marketLabel" class="ord__detail-row">
+                <span class="ord__detail-label">{{ t('市场') }}</span>
+                <span class="ord__detail-val">{{ order.marketLabel }}</span>
+              </div>
+              <div class="ord__detail-row">
+                <span class="ord__detail-label">{{ t('金额') }}</span>
+                <span class="ord__detail-val">{{ order.detailAmountFormatted }}</span>
+              </div>
 
-          <div class="ord__money">
-            <div class="ord__money-row">
-              <span class="ord__money-label">{{ t('交易金额') }}</span>
-              <span class="ord__money-val">{{ order.amountFormatted }}</span>
             </div>
-            <div class="ord__money-row">
-              <span class="ord__money-label">{{ t(order.profitLabel) }}</span>
-              <span class="ord__money-val ord__money-val--profit">{{ order.profitFormatted }}</span>
-            </div>
-          </div>
 
-          <!-- 展开详情 -->
-          <div v-if="expandedId === order.id" class="ord__detail">
-            <div class="ord__detail-row">
-              <span class="ord__detail-label">{{ t('订单号码') }}</span>
-              <button type="button" class="ord__detail-val ord__detail-val--copy" @click.stop="copyOrderNo(order.orderNo)">
-                <span>{{ order.orderNo }}</span>
-                <img class="ord__copy-icon" :src="orderCopyIconUrl" width="24" height="20" alt="" aria-hidden="true" />
+            <div
+              class="ord__actions"
+              :class="{ 'ord__actions--cancelable': canShowCancel(order) }"
+            >
+              <button
+                v-if="canShowCancel(order)"
+                type="button"
+                class="ord__cancel"
+                :disabled="cancelingId === order.id"
+                @click.stop="handleCancel(order)"
+              >
+                {{ cancelingId === order.id ? t('取消中...') : t('取消订单') }}
+              </button>
+
+              <button
+                type="button"
+                class="ord__toggle"
+                :aria-label="expandedId === order.id ? t('收起') : t('展开')"
+                :aria-expanded="expandedId === order.id"
+                @click="toggleExpand(order.id)"
+              >
+                <img
+                  class="ord__toggle-icon"
+                  :class="{ 'ord__toggle-icon--up': expandedId === order.id }"
+                  :src="orderToggleIconUrl"
+                  width="20"
+                  height="20"
+                  alt=""
+                  aria-hidden="true"
+                />
               </button>
             </div>
-            <div class="ord__detail-row">
-              <span class="ord__detail-label">{{ t('交易时间') }}</span>
-              <span class="ord__detail-val">{{ order.placedAtFormatted }}</span>
-            </div>
-            <div v-if="order.marketLabel" class="ord__detail-row">
-              <span class="ord__detail-label">{{ t('市场') }}</span>
-              <span class="ord__detail-val">{{ order.marketLabel }}</span>
-            </div>
-            <div class="ord__detail-row">
-              <span class="ord__detail-label">{{ t('金额') }}</span>
-              <span class="ord__detail-val">{{ order.detailAmountFormatted }}</span>
-            </div>
-
           </div>
+        </article>
 
-          <div
-            class="ord__actions"
-            :class="{ 'ord__actions--cancelable': canShowCancel(order) }"
-          >
-            <button
-              v-if="canShowCancel(order)"
-              type="button"
-              class="ord__cancel"
-              :disabled="cancelingId === order.id"
-              @click.stop="handleCancel(order)"
-            >
-              {{ cancelingId === order.id ? t('取消中...') : t('取消订单') }}
-            </button>
-
-            <button
-              type="button"
-              class="ord__toggle"
-              :aria-label="expandedId === order.id ? t('收起') : t('展开')"
-              :aria-expanded="expandedId === order.id"
-              @click="toggleExpand(order.id)"
-            >
-              <img
-                class="ord__toggle-icon"
-                :class="{ 'ord__toggle-icon--up': expandedId === order.id }"
-                :src="orderToggleIconUrl"
-                width="20"
-                height="20"
-                alt=""
-                aria-hidden="true"
-              />
-            </button>
-          </div>
+        <!-- 加载更多：PC 网格中占满整行 -->
+        <div v-if="hasMore" class="fin-list__more fin-state" style="min-height: 60px">
+          <button v-if="!loadingMore" type="button" class="fin-load-more" @click="loadMore">{{ t('加载更多') }}</button>
+          <div v-else class="fin-spinner" />
         </div>
-      </article>
-
-      <!-- 加载更多 -->
-      <div v-if="hasMore" class="fin-state" style="min-height: 60px">
-        <button v-if="!loadingMore" type="button" class="fin-load-more" @click="loadMore">{{ t('加载更多') }}</button>
-        <div v-else class="fin-spinner" />
       </div>
     </div>
   </div>
@@ -530,6 +577,26 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   gap: 8px;
   width: 100%;
   max-width: 100%;
+
+  // PC：左侧状态筛选 + 右侧汇总/两列订单（对齐设计稿 157:6418）
+  @include web-only {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: $spacing-xl;
+  }
+}
+
+.records-page__main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+
+  @include web-only {
+    flex: 1 1 auto;
+    gap: 12px;
+  }
 }
 
 .records-page__empty {
@@ -558,6 +625,12 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   box-shadow: 0 4px 16px rgba(21, 58, 118, 0.08);
   box-sizing: border-box;
 
+  @include web-only {
+    gap: 10px;
+    padding: 14px 16px;
+    border-radius: 20px;
+  }
+
   @include mobile-only {
     min-height: 90px;
     background:
@@ -576,6 +649,12 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   border-radius: 10px;
   background: #dbe9fb;
   min-width: 0;
+
+  @include web-only {
+    padding: 12px 8px;
+    border-radius: 12px;
+    gap: 6px;
+  }
 }
 
 .fin-summary__label {
@@ -658,6 +737,19 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   display: flex;
   flex-direction: column;
   gap: 10px;
+
+  // PC：订单卡两列网格
+  @include web-only {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 16px;
+  }
+}
+
+.fin-list__more {
+  @include web-only {
+    grid-column: 1 / -1;
+  }
 }
 
 // --- 订单卡片（设计稿：白底圆角卡） ---

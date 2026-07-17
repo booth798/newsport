@@ -82,7 +82,8 @@ const navbarList = [
   { labelKey: '首页', key: 'home', width: 104, to: '/' },
   // PC 顶栏按设计稿改为纯文字入口，不再展示下拉与箭头（H5 侧栏菜单不受影响）
   { labelKey: '市场', key: 'market', width: 104, to: '/market' },
-  { labelKey: '交易账务', key: 'trade', width: 124, to: '/finance/deposit' },
+  // PC 交易账务入口对齐设计稿：进入订单记录页（状态侧栏 + 汇总 + 两列卡）
+  { labelKey: '交易账务', key: 'trade', width: 124, to: '/finance/records' },
   { labelKey: '会员权益', key: 'myBenefit', width: 124, to: '/profile' },
   { labelKey: '关于我们', key: 'about', width: 124, to: '/profile/about' },
 ];
@@ -125,7 +126,10 @@ const financeMonth = computed({
     router.replace({ query: { ...route.query, month } });
   },
 });
-const isFinanceCompact = computed(() => isFinancePage.value && !isMobile.value);
+// PC 交易账务主入口（records）与市场一样用完整顶栏导航；仅充值/提现等子页走紧凑返回顶栏。
+const isFinanceCompact = computed(
+  () => isFinancePage.value && !isMobile.value && route.name !== 'finance-records',
+);
 const isCompactDetailHeader = computed(
   () =>
     isMarketLeaguePage.value ||
