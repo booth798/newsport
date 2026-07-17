@@ -4,29 +4,28 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
-import { fetchLeagueList, fetchMarketListPaged, fetchMarketListCounts } from '@/api/match';
+import { fetchMarketListPaged, fetchMarketListCounts } from '@/api/match';
 import { useAppStore } from '@/store/modules/app';
 import { useLeagueFilterStore } from '@/store/modules/leagueFilter';
 import EmptyState from '@/components/EmptyState.vue';
 import HomeMatchCard from '@/views/Home/components/HomeMatchCard.vue';
+import MarketLeagueFilterPopover from './components/MarketLeagueFilterPopover.vue';
 
-import iconEventsUrl from '@/assets/images/events/icon_events.svg?url';
-
-const { t, locale } = useI18n();
+const { t } = useI18n();
 const router = useRouter();
 const appStore = useAppStore();
 const { isMobile } = storeToRefs(appStore);
 const filterStore = useLeagueFilterStore();
 const { selectedLeagues, isAllSelected } = storeToRefs(filterStore);
 
-const leagues = ref([]);
 const matches = ref([]);
 const loading = ref(true);
 const loadingMore = ref(false);
 const error = ref(false);
 const searchQuery = ref('');
-const activeLeague = ref('全部');      // 当前 PC 联赛 Tab 的 key（仅用于高亮）
-const activeLeagueValue = ref(null);   // 当前 PC 联赛 Tab 传给接口的 league 值（联赛名）
+const trimmedQuery = computed(() => searchQuery.value.trim());
+/** PC 联赛筛选弹层开关（H5 仍跳转筛选页） */
+const filterPanelOpen = ref(false);
 
 const activeFilter = ref('all');
 const matchCounts = ref({ all: 0, today: 0, tomorrow: 0 });
@@ -36,23 +35,15 @@ const PAGE_SIZE = 20;
 // 市场页仅展示全场盘口，对齐安卓端 period=FT（避免半场盘口造成同一赛事重复）。
 const MARKET_PERIOD = 'FT';
 
-/** 依据当前语言取联赛展示名（zh 用简称、en 用全称），用作 PC 联赛 Tab 的接口 league 过滤值。 */
-function leagueDisplayName(league) {
-  const name = (league.name || '').trim();
-  const shortName = (league.shortName || '').trim();
-  const isEn = String(locale.value || '').toLowerCase().startsWith('en');
-  return isEn ? (name || shortName) : (shortName || name);
-}
-
-/** 当前生效的联赛过滤列表（联赛名数组；无筛选时为 [null]），对齐安卓 leagueFilters()。 */
+/** 当前生效的联赛过滤列表。
+ * - 全选：返回 [null]（不加 league 参数）
+ * - 自选有勾选：返回联赛名数组
+ * - 全部不选：返回 []（列表为空）
+ */
 function currentLeagueFilters() {
-  if (isMobile.value) {
-    // 移动端使用联赛筛选弹层（多选）；全选或未选均视为不加 league 过滤。
-    if (isAllSelected.value || selectedLeagues.value.length === 0) return [null];
-    return [...selectedLeagues.value];
-  }
-  // PC 端使用联赛 Tab（单选）。
-  return activeLeagueValue.value ? [activeLeagueValue.value] : [null];
+  if (isAllSelected.value) return [null];
+  if (selectedLeagues.value.length === 0) return [];
+  return [...selectedLeagues.value];
 }
 
 function currentDay() {
@@ -79,6 +70,16 @@ async function loadMarkets(append) {
   const day = currentDay();
   const leagueList = currentLeagueFilters();
   const page = append ? pageNum.value + 1 : 1;
+  // PC/H5 球队搜索统一走服务端 teamName，并固定全场 period=FT
+  const teamName = trimmedQuery.value || undefined;
+
+  // 全部不选：不发请求，直接空列表
+  if (leagueList.length === 0) {
+    matches.value = append ? matches.value : [];
+    pageNum.value = page;
+    hasMore.value = false;
+    return;
+  }
 
   const results = await Promise.all(
     leagueList.map((lg) =>
@@ -88,6 +89,7 @@ async function loadMarkets(append) {
         day,
         league: lg || undefined,
         period: MARKET_PERIOD,
+        teamName,
       }).catch(() => null),
     ),
   );
@@ -113,6 +115,10 @@ async function loadMarkets(append) {
 /** 拉取各 Tab 场次统计（all/today/tomorrow），按联赛过滤求和，对齐安卓 marketCounts(period=FT)。 */
 async function loadCounts() {
   const leagueList = currentLeagueFilters();
+  if (leagueList.length === 0) {
+    matchCounts.value = { all: 0, today: 0, tomorrow: 0 };
+    return;
+  }
   const results = await Promise.all(
     leagueList.map((lg) =>
       fetchMarketListCounts({ league: lg || undefined, period: MARKET_PERIOD }).catch(() => null),
@@ -136,8 +142,6 @@ async function loadInitial() {
     loading.value = true;
     error.value = false;
     pageNum.value = 1;
-    const leagueRes = await fetchLeagueList().catch(() => ({ data: [] }));
-    leagues.value = leagueRes.data || [];
     await Promise.all([loadMarkets(false), loadCounts()]);
   } catch {
     matches.value = [];
@@ -194,35 +198,20 @@ function normalizeMarketRecord(r) {
 
 onMounted(loadInitial);
 
-const trimmedQuery = computed(() => searchQuery.value.trim());
-const hasQuery = computed(() => trimmedQuery.value.length > 0);
-
-const leagueTabs = computed(() => [
-  { key: '全部', label: '全部', value: null },
-  ...leagues.value.slice(0, isMobile.value ? 5 : 8).map((item) => ({
-    key: item.name || item.key || item.id,
-    label: item.shortName || item.name || item.key,
-    value: leagueDisplayName(item),
-  })),
-]);
-
-const filteredMatches = computed(() => {
-  let list = matches.value;
-  // 联赛过滤已由服务端 league 参数完成，这里只做搜索过滤。
-  if (hasQuery.value) {
-    const q = trimmedQuery.value.toLowerCase();
-    list = list.filter((m) =>
-      [m.league, m.homeTeam, m.awayTeam, m.date].filter(Boolean).join(' ').toLowerCase().includes(q),
-    );
-  }
-  return list;
-});
-
-function selectLeague(tab) {
-  if (activeLeague.value === tab.key) return;
-  activeLeague.value = tab.key;
-  activeLeagueValue.value = tab.value ?? null;
+/**
+ * PC 搜索对齐 H5 搜索页：回车触发服务端 teamName 查询；
+ * 清空关键词后恢复当前筛选下的完整列表（不再做本地字符串过滤）。
+ */
+function onSearchEnter(e) {
+  e?.preventDefault?.();
+  if (!trimmedQuery.value) return;
   reload();
+}
+
+function onSearchInput() {
+  if (!trimmedQuery.value) {
+    reload();
+  }
 }
 
 async function selectFilter(key) {
@@ -240,11 +229,12 @@ function loadMore() {
 }
 
 function goToLeagueFilter() {
-  router.push('/market/filter');
-}
-
-function goToSearch() {
-  router.push('/market/search');
+  // PC：打开 Figma 样式筛选弹层；H5：进入筛选页（不改动）
+  if (isMobile.value) {
+    router.push('/market/filter');
+    return;
+  }
+  filterPanelOpen.value = !filterPanelOpen.value;
 }
 
 const filterTags = computed(() => [
@@ -253,41 +243,64 @@ const filterTags = computed(() => [
   { key: 'tomorrow', label: t('明日赛事'), count: matchCounts.value.tomorrow },
 ]);
 
-// 移动端联赛筛选（来自筛选弹层）变化时重新加载。
+// 联赛筛选（筛选页写入 store）变化时重新加载，PC/H5 共用。
 watch([selectedLeagues, isAllSelected], () => {
-  if (isMobile.value) reload();
+  reload();
 });
 </script>
 
 <template>
   <div class="market-leagues">
     <section class="market-leagues__panel" aria-labelledby="market-leagues-title">
-      <!-- PC 标题 + 搜索 -->
-      <header v-if="!isMobile" class="market-leagues__head">
-        <div class="market-leagues__title-wrap">
-          <img
-            class="market-leagues__title-icon"
-            :src="iconEventsUrl"
-            width="48"
-            height="48"
-            alt=""
-            aria-hidden="true"
-          />
-          <h2 id="market-leagues-title" class="market-leagues__title">{{ t('全部赛事') }}</h2>
+      <h2 id="market-leagues-title" class="visually-hidden">{{ t('全部赛事') }}</h2>
+
+      <!-- PC 工具栏：筛选 + 日期间 Tab + 搜索（对齐 Figma 截图，复用 H5 筛选能力） -->
+      <div v-if="!isMobile" class="market-leagues__toolbar">
+        <div class="market-leagues__filter-bar market-leagues__filter-bar--pc">
+          <div class="market-leagues__filter-anchor">
+            <button
+              type="button"
+              class="market-leagues__filter-btn"
+              :class="{ 'market-leagues__filter-btn--open': filterPanelOpen }"
+              data-league-filter-trigger
+              :aria-label="t('联赛筛选')"
+              :aria-expanded="filterPanelOpen"
+              @click="goToLeagueFilter"
+            >
+              <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <rect x="0.5" y="0.5" width="39" height="39" rx="19.5" stroke="#1C7BFF" stroke-width="1"/>
+                <path d="M25.154 21.538H29.769M29.769 26.154H25.154M25.154 30.769H29.769M9.231 9.231H29.744L22.051 19.259V33.846L16.069 31.111V19.259L9.231 9.231Z" stroke="#1C7BFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            <MarketLeagueFilterPopover v-model="filterPanelOpen" />
+          </div>
+          <button
+            v-for="tag in filterTags"
+            :key="tag.key"
+            type="button"
+            class="market-leagues__filter-tag"
+            :class="{ 'market-leagues__filter-tag--active': activeFilter === tag.key }"
+            @click="selectFilter(tag.key)"
+          >
+            {{ tag.label }}({{ tag.count }})
+          </button>
         </div>
-        <label class="market-leagues__search" :aria-label="t('搜索')">
+        <label class="market-leagues__search" :aria-label="t('搜索球队名称')">
           <span class="market-leagues__search-icon" aria-hidden="true" />
           <input
             v-model="searchQuery"
             type="search"
             class="market-leagues__search-input"
-            :placeholder="t('搜索')"
+            :placeholder="t('搜索球队名称')"
             autocomplete="off"
+            enterkeyhint="search"
+            @keydown.enter.prevent="onSearchEnter"
+            @input="onSearchInput"
           />
         </label>
-      </header>
+      </div>
 
-      <!-- H5 筛选栏 -->
+      <!-- H5 筛选栏（保持原样，不改动） -->
       <div v-if="isMobile" class="market-leagues__filter-bar">
         <button
           type="button"
@@ -312,20 +325,6 @@ watch([selectedLeagues, isAllSelected], () => {
         </button>
       </div>
 
-      <!-- PC 联赛 Tab -->
-      <div v-if="!isMobile" class="market-leagues__tabs">
-        <button
-          v-for="tab in leagueTabs"
-          :key="tab.key"
-          type="button"
-          class="market-leagues__tab"
-          :class="{ 'market-leagues__tab--active': activeLeague === tab.key }"
-          @click="selectLeague(tab)"
-        >
-          {{ t(tab.label) }}
-        </button>
-      </div>
-
       <!-- 状态 -->
       <div v-if="loading" class="market-leagues__state">
         <div class="market-leagues__spinner" />
@@ -336,14 +335,14 @@ watch([selectedLeagues, isAllSelected], () => {
         <button type="button" class="market-leagues__retry" @click="loadInitial">{{ t('重试') }}</button>
       </div>
       <EmptyState
-        v-else-if="filteredMatches.length === 0"
+        v-else-if="matches.length === 0"
         :text="t('暂无相关赛事')"
       />
 
       <!-- 列表 -->
       <div v-else class="market-leagues__grid">
         <HomeMatchCard
-          v-for="match in filteredMatches"
+          v-for="match in matches"
           :key="match._dedupeKey || match.id"
           :match="match"
         />
@@ -362,6 +361,18 @@ watch([selectedLeagues, isAllSelected], () => {
 
 <style lang="scss" scoped>
 @use '@/styles/tools.scss' as *;
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 
 .market-leagues {
   @include container;
@@ -388,8 +399,10 @@ watch([selectedLeagues, isAllSelected], () => {
     box-shadow: var(--shadow-card);
 
     @include web-only {
+      position: relative;
+      overflow: visible;
       border-radius: 50px;
-      padding: 40px 24px;
+      padding: 32px 24px 40px;
       box-shadow: 0 4px 8px 0 rgba(21, 58, 119, 0.18);
     }
 
@@ -402,19 +415,16 @@ watch([selectedLeagues, isAllSelected], () => {
     }
   }
 
-  &__head {
+  // PC：左侧筛选 + 右侧搜索（对齐截图）
+  &__toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 24px;
-    margin-bottom: 32px;
-
-    @include mobile-only {
-      flex-direction: row;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
+    gap: 20px;
+    margin-bottom: 28px;
+    position: relative;
+    z-index: 5;
+    overflow: visible;
   }
 
   &__filter-bar {
@@ -427,6 +437,15 @@ watch([selectedLeagues, isAllSelected], () => {
     scrollbar-width: none;
 
     &::-webkit-scrollbar { display: none; }
+
+    &--pc {
+      flex: 1;
+      min-width: 0;
+      gap: 10px;
+      margin-bottom: 0;
+      padding-bottom: 0;
+      overflow: visible;
+    }
   }
 
   &__filter-btn {
@@ -440,6 +459,16 @@ watch([selectedLeagues, isAllSelected], () => {
     border: none;
     background: transparent;
     cursor: pointer;
+
+    @include web-only {
+      width: 40px;
+      height: 40px;
+    }
+  }
+
+  &__filter-anchor {
+    position: relative;
+    flex: 0 0 auto;
   }
 
   &__filter-tag {
@@ -463,87 +492,27 @@ watch([selectedLeagues, isAllSelected], () => {
       color: #fff;
       font-weight: 500;
     }
-  }
 
-  &__tabs {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    overflow-x: auto;
-    padding-bottom: 2px;
-    margin-bottom: 18px;
-    scrollbar-width: none;
+    // PC 日期间 Tab：对齐截图更大字号与高度
+    @include web-only {
+      height: 40px;
+      padding: 0 20px;
+      border: 1px solid #d6e0eb;
+      font-size: 16px;
+      color: #1c7bff;
+      box-shadow: 0 3px 8px rgba(21, 58, 119, 0.1);
 
-    &::-webkit-scrollbar { display: none; }
+      &:not(.market-leagues__filter-tag--active) {
+        background: #fff;
+        border-color: rgba(28, 123, 255, 0.35);
+      }
 
-    @include web-only { margin-bottom: 24px; }
-  }
-
-  &__tab {
-    flex: 0 0 auto;
-    height: 34px;
-    padding: 0 18px;
-    border: 1px solid #d6e0eb;
-    border-radius: $radius-pill;
-    background: #fff;
-    color: rgba(11, 52, 98, 0.72);
-    font-size: $font-size-md;
-    font-weight: 600;
-    cursor: pointer;
-
-    &--active {
-      border-color: var(--theme-primary);
-      background: var(--theme-primary);
-      color: #fff;
-      box-shadow: var(--shadow-primary-btn);
-    }
-
-    @include mobile-only {
-      height: 30px;
-      padding: 0 14px;
-      font-size: $font-size-sm;
-    }
-  }
-
-  &__title-wrap {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-  }
-
-  &__title-icon {
-    flex-shrink: 0;
-    display: block;
-    width: 48px;
-    height: 48px;
-    object-fit: contain;
-
-    @include mobile-only {
-      width: 28px;
-      height: 28px;
-    }
-  }
-
-  &__title {
-    margin: 0;
-    font-family: $font-family-base;
-    font-size: 34px;
-    font-weight: 700;
-    line-height: 1;
-    letter-spacing: 0;
-    background: radial-gradient(circle at 50% 100%, #68b3fd, #0d6cfb);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: transparent;
-
-    @include mobile-only {
-      font-size: 18px;
-      font-weight: 700;
-      -webkit-text-fill-color: var(--theme-primary);
-      color: var(--theme-primary);
-      background: none;
+      &--active {
+        border-color: #1c7bff;
+        background: #1c7bff;
+        color: #fff;
+        font-weight: 500;
+      }
     }
   }
 
@@ -552,7 +521,7 @@ watch([selectedLeagues, isAllSelected], () => {
     align-items: center;
     gap: 8px;
     flex-shrink: 0;
-    width: 220px;
+    width: 280px;
     max-width: 100%;
     height: 44px;
     padding: 0 16px;
@@ -561,9 +530,10 @@ watch([selectedLeagues, isAllSelected], () => {
     background: #fff;
     box-sizing: border-box;
     cursor: text;
+    box-shadow: 0 3px 8px rgba(21, 58, 119, 0.08);
 
-    @include mobile-only {
-      width: 100%;
+    @include web-only {
+      width: 320px;
       height: 40px;
     }
 

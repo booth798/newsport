@@ -1,12 +1,19 @@
 <script setup>
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 
 import { useAppStore } from '@/store/modules/app';
+import { useUserStore } from '@/store/modules/user';
 import EmptyState from '@/components/EmptyState.vue';
 import HomeMatchCard from './HomeMatchCard.vue';
-import { fetchHotMatches, fetchHotLeagues, fetchHomeLeagueMatches } from '@/api/match';
+import {
+  fetchHomeHotMarketPage,
+  fetchHomeLeagueMatches,
+  normalizeHomeMarkets,
+  homeTabHasNextPage,
+  HOME_TAB_PAGE_SIZE,
+} from '@/api/match';
 
 import iconEventsUrl from '@/assets/images/events/icon_events.svg?url';
 import iconHotUrl from '@/assets/images/events/icon_hot.svg?url';
@@ -14,74 +21,101 @@ import iconMoreUrl from '@/assets/images/events/icon_more.svg?url';
 
 const { t } = useI18n();
 const appStore = useAppStore();
+const userStore = useUserStore();
 const { isMobile } = storeToRefs(appStore);
+const { isLoggedIn } = storeToRefs(userStore);
 
 const props = defineProps({
-  preloadedMatches: { type: Array, default: () => [] },
+  /** /api/home 的 hotMarkets 原始盘口，对齐安卓 cachedHotMarkets */
+  preloadedHotMarkets: { type: Array, default: () => [] },
+  /** 来自 /api/leagues/hot，由父组件与 /home 并行拉取（对齐安卓） */
+  hotLeagues: { type: Array, default: () => [] },
+  /** 父组件首页请求是否已结束 */
+  homeReady: { type: Boolean, default: false },
 });
 
 const matchList = ref([]);
+/** 热门 Tab 累积的原始盘口（翻页后再次 onePerEvent） */
+const rawHotMarkets = ref([]);
+const hotPageNum = ref(1);
+const hotHasMore = ref(false);
+const hotLoadingMore = ref(false);
 const loading = ref(true);
 const error = ref(false);
 
+/** 热门 Tab：缓存为空或翻页时请求 /markets/list（对齐安卓 HomeTabPageFragment） */
+async function loadHotFromMarketsList(pageNum = 1, append = false) {
+  if (append) {
+    if (hotLoadingMore.value || !hotHasMore.value) return;
+    hotLoadingMore.value = true;
+  } else {
+    loading.value = true;
+    error.value = false;
+  }
+  try {
+    const res = await fetchHomeHotMarketPage(pageNum);
+    const pageRecords = res.records || [];
+    const merged = append ? [...rawHotMarkets.value, ...pageRecords] : pageRecords;
+    rawHotMarkets.value = merged;
+    matchList.value = normalizeHomeMarkets(merged);
+    hotPageNum.value = pageNum;
+    hotHasMore.value = homeTabHasNextPage(res.page, pageRecords.length, pageNum);
+    error.value = false;
+  } catch {
+    if (!append) {
+      error.value = true;
+      matchList.value = [];
+    }
+  } finally {
+    loading.value = false;
+    hotLoadingMore.value = false;
+  }
+}
+
+// 对齐安卓：优先用 /home 的 cachedHotMarkets；为空则拉 /markets/list
 watch(
-  () => props.preloadedMatches,
-  (val) => {
-    if (val && val.length) {
-      matchList.value = val;
+  () => [props.preloadedHotMarkets, props.homeReady],
+  ([raw, ready]) => {
+    if (!ready) return;
+    if (Array.isArray(raw) && raw.length) {
+      rawHotMarkets.value = raw;
+      matchList.value = normalizeHomeMarkets(raw);
+      hotPageNum.value = 1;
+      // 安卓：hasMorePages = cachedHotMarkets.size >= PAGE_SIZE
+      hotHasMore.value = raw.length >= HOME_TAB_PAGE_SIZE;
       loading.value = false;
       error.value = false;
+      return;
     }
+    loadHotFromMarketsList(1, false);
   },
   { immediate: true },
 );
 
-const dynamicLeagueTabs = ref([]);
-
-onMounted(async () => {
-  if (matchList.value.length) {
-    loading.value = false;
-    loadLeagueTabs();
-    return;
-  }
-  // 父组件通过 /api/home 提供 preloadedMatches，watcher 会即时更新 UI。
-  // 给父组件数据一个到达窗口，避免请求不存在的 /matches/hot。
-  await new Promise((r) => setTimeout(r, 3000));
-  if (matchList.value.length) {
-    loadLeagueTabs();
-    return;
-  }
-  try {
-    loading.value = true;
-    error.value = false;
-    const res = await fetchHotMatches();
-    matchList.value = res.data || [];
-  } catch {
-    error.value = true;
-  } finally {
-    loading.value = false;
-  }
-  loadLeagueTabs();
-});
-
-async function loadLeagueTabs() {
-  try {
-    // 对齐安卓首页：热门联赛 Tab 取自 /leagues/hot。
-    const res = await fetchHotLeagues();
-    const hotLeagues = res.data || [];
-    // 使用联赛 id 作为 key，避免同名联赛（如 Serie A）导致 Tab 重复选中；
-    // query 取联赛名（回退简称），用作 /markets/list 的 league 过滤值（对齐安卓 leagueQuery）。
-    dynamicLeagueTabs.value = hotLeagues.map(l => ({
-      key: l.id,
-      query: (l.name || '').trim() || (l.shortName || '').trim(),
-      labelKey: `${l.shortName || l.name}赛事`,
-      shortLabelKey: l.shortName || l.name,
-      icon: l.logoUrl || iconEventsUrl,
-    }));
-  } catch { /* 静默 */ }
+function loadMoreHot() {
+  loadHotFromMarketsList(hotPageNum.value + 1, true);
 }
 
-// 各联赛 Tab 的赛事数据缓存（key → 已归并赛事数组），避免重复请求。
+/** 将 /leagues/hot 转为 Tab：id 作 key，name 作 /markets/list 的 league 过滤值 */
+function mapHotLeagueTabs(leagues) {
+  return (leagues || []).map((l) => ({
+    key: l.id,
+    query: (l.name || '').trim() || (l.shortName || '').trim(),
+    labelKey: `${l.shortName || l.name}赛事`,
+    shortLabelKey: l.shortName || l.name,
+    icon: l.logoUrl || iconEventsUrl,
+  }));
+}
+
+const dynamicLeagueTabs = ref(mapHotLeagueTabs(props.hotLeagues));
+
+watch(
+  () => props.hotLeagues,
+  (leagues) => {
+    dynamicLeagueTabs.value = mapHotLeagueTabs(leagues);
+  },
+);
+
 const leagueMatchesCache = ref({});
 const tabLoading = ref(false);
 const tabError = ref(false);
@@ -130,19 +164,21 @@ function scrollTabToCenter(key) {
 }
 
 function selectTab(key) {
+  // 对齐安卓：未登录点击非「热门」Tab 时拦截，弹出「请先登录」确认框
+  if (key !== 'hot' && !isLoggedIn.value) {
+    appStore.openLoginConfirm();
+    return;
+  }
   activeLeague.value = key;
   scrollTabToCenter(key);
-  // 联赛 Tab：切换时按需请求该联赛盘口（对齐安卓首页联赛 Tab 拉取 /markets/list）。
   if (key !== 'hot') loadLeagueTab(key);
 }
 
-// 当前展示的赛事：热门 Tab 用首页 hotMarkets；联赛 Tab 用该联赛请求结果。
 const displayMatches = computed(() => {
   if (activeLeague.value === 'hot') return matchList.value;
   return leagueMatchesCache.value[activeLeague.value] || [];
 });
 
-// 三态随当前 Tab 切换：热门 Tab 用首页加载态，联赛 Tab 用其独立加载态。
 const isLoading = computed(() =>
   activeLeague.value === 'hot' ? loading.value : tabLoading.value,
 );
@@ -151,16 +187,8 @@ const isError = computed(() =>
 );
 
 async function reload() {
-  try {
-    loading.value = true;
-    error.value = false;
-    const res = await fetchHotMatches();
-    matchList.value = res.data || [];
-  } catch {
-    error.value = true;
-  } finally {
-    loading.value = false;
-  }
+  // 对齐安卓 requestRefreshFromParent → markets/list 第 1 页
+  await loadHotFromMarketsList(1, false);
 }
 
 function retry() {
@@ -212,9 +240,25 @@ function retry() {
       <button type="button" class="hot-events__retry" @click="retry">{{ t('重试') }}</button>
     </div>
     <EmptyState v-else-if="!displayMatches.length" />
-    <div v-else class="hot-events__grid">
-      <HomeMatchCard v-for="match in displayMatches" :key="match.id" :match="match" />
-    </div>
+    <template v-else>
+      <div class="hot-events__grid">
+        <HomeMatchCard v-for="match in displayMatches" :key="match.id" :match="match" />
+      </div>
+      <!-- 热门 Tab 加载更多：对齐安卓分页 pageSize=20 -->
+      <div
+        v-if="activeLeague === 'hot' && hotHasMore"
+        class="hot-events__more-wrap"
+      >
+        <button
+          type="button"
+          class="hot-events__load-more"
+          :disabled="hotLoadingMore"
+          @click="loadMoreHot"
+        >
+          {{ hotLoadingMore ? t('加载中') : t('加载更多') }}
+        </button>
+      </div>
+    </template>
   </section>
 </template>
 
@@ -610,6 +654,34 @@ function retry() {
     @include mobile-only {
       grid-template-columns: 1fr;
       gap: 10px;
+    }
+  }
+
+  &__more-wrap {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+  }
+
+  &__load-more {
+    min-width: 120px;
+    padding: 10px 24px;
+    border-radius: $radius-pill;
+    border: 1.5px solid var(--theme-primary);
+    background: transparent;
+    color: var(--theme-primary);
+    font-size: $font-size-md;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover:not(:disabled) {
+      background: var(--theme-primary);
+      color: #fff;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
   }
 }

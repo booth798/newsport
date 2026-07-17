@@ -85,7 +85,8 @@ watch(selectedMonth, () => {
 async function refreshWalletBalance() {
   try {
     const res = await fetchBalance();
-    const nextBalance = res.data?.available ?? res.data?.balance;
+    // 主钱包字段优先级对齐安卓：balance ?: available
+    const nextBalance = res.data?.balance ?? res.data?.available;
     if (nextBalance != null) {
       userStore.updateUserProfile({ balance: nextBalance });
     }

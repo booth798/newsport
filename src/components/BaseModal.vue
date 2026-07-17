@@ -6,6 +6,7 @@ import { storeToRefs } from 'pinia';
 import { getImageUrl } from '@/utils/common';
 import { useAppStore } from '@/store/modules/app';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { useModalLayer } from '@/hooks/useModalLayer';
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -27,6 +28,9 @@ const { isMobile } = storeToRefs(appStore);
 
 // 锁定背后页面滚动，并用滚动条补偿避免顶栏/列表横向跳动。
 useBodyScrollLock(() => props.modelValue);
+
+// 叠层：后打开的弹窗自动抬升 z-index（更换银行卡 → 添加其他银行等）
+const { zIndex } = useModalLayer(() => props.modelValue);
 
 // 移动端软键盘弹出时，visualViewport 会收缩；据此把弹窗约束在可见区域内，避免确认按钮错乱。
 const viewport = ref(null);
@@ -66,10 +70,12 @@ watch(
 
 onBeforeUnmount(unbindViewport);
 
-// 用可视视口的高度与顶部偏移覆盖 fixed 定位，使弹窗始终居中显示在键盘上方。
+// 用可视视口的高度与顶部偏移覆盖 fixed 定位，使弹窗始终居中显示在键盘上方；并叠加动态 z-index。
 const rootStyle = computed(() => {
-  if (!isMobile.value || !viewport.value) return {};
+  const style = { zIndex: zIndex.value };
+  if (!isMobile.value || !viewport.value) return style;
   return {
+    ...style,
     top: `${viewport.value.offsetTop}px`,
     height: `${viewport.value.height}px`,
     bottom: 'auto',
@@ -124,6 +130,7 @@ function confirm() { emit('confirm'); }
 .base-modal {
   position: fixed;
   inset: 0;
+  /* 具体数值由 useModalLayer 动态写入，保证后开弹窗层级更高 */
   z-index: 1200;
   display: flex;
   align-items: center;

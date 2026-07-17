@@ -24,6 +24,15 @@ const appStore = useAppStore();
 const userStore = useUserStore();
 const { userProfile } = storeToRefs(userStore);
 const withdrawPasswordSet = computed(() => userProfile.value?.withdrawPasswordSet === true);
+const withdrawTabLabel = computed(() => (
+  // 未设置过提现密码时 tab 显示「设置」；已设置则显示「修改」（对齐安卓首次设置场景）
+  withdrawPasswordSet.value ? t('修改提现密码') : t('设置提现密码')
+));
+const confirmButtonText = computed(() => {
+  if (submitting.value) return t('加载中');
+  if (activeSection.value === 'withdraw' && !withdrawPasswordSet.value) return t('确认设置');
+  return t('确认修改');
+});
 
 const activeSection = ref('login');
 const submitting = ref(false);
@@ -118,9 +127,9 @@ watch(
   () => props.modelValue,
   async (visible) => {
     if (visible) {
-      // 打开弹窗前确保读取到提现密码设置状态，避免首次设置误展示旧密码输入框。
+      // 打开弹窗强制刷新，确保 withdrawPasswordSet 与后端一致，避免误显示「修改」。
       try {
-        await userStore.loadUserProfile();
+        await userStore.loadUserProfile({ force: true });
       } catch {
         // 保留当前表单；请求失败时不阻断用户修改登录密码。
       }
@@ -135,7 +144,7 @@ watch(
   <BaseModal
     :model-value="props.modelValue"
     :title="t('安全设置')"
-    :button-text="submitting ? t('加载中') : t('确认修改')"
+    :button-text="confirmButtonText"
     :action-disabled="submitting"
     @update:model-value="emit('update:modelValue', $event)"
     @confirm="handleSave"
@@ -146,7 +155,7 @@ watch(
           {{ t('修改登入密码') }}
         </button>
         <button type="button" :class="{ 'btn--primary active': activeSection === 'withdraw' }" @click="activeSection = 'withdraw'">
-          {{ t('修改提现密码') }}
+          {{ withdrawTabLabel }}
         </button>
       </div>
 
@@ -187,8 +196,12 @@ watch(
             </BaseInput>
           </label>
           <label class="profile-security-modal__field">
-            <span>{{ t('新提现密码') }} <b>*</b></span>
-            <BaseInput v-model="withdrawNew" :type="passwordInputType('withdrawNew')" :placeholder="t('请输入新提现密码占位')">
+            <span>{{ t(withdrawPasswordSet ? '新提现密码' : '提现密码') }} <b>*</b></span>
+            <BaseInput
+              v-model="withdrawNew"
+              :type="passwordInputType('withdrawNew')"
+              :placeholder="t(withdrawPasswordSet ? '请输入新提现密码占位' : '请输入提现密码占位')"
+            >
               <template #suffix><img class="eye-icon" :aria-label="t('显示密码')" :src="passwordIcon('withdrawNew')" @click="togglePasswordVisible('withdrawNew')" /></template>
             </BaseInput>
           </label>

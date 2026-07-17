@@ -56,18 +56,60 @@ export async function fetchHotLeagues() {
   return get('/leagues/hot');
 }
 
+/** 首页 Tab 分页大小，对齐安卓 HomeTabPageFragment.PAGE_SIZE */
+export const HOME_TAB_PAGE_SIZE = 20;
+
 /**
  * 首页联赛 Tab 的赛事列表
- * 对齐安卓首页联赛 Tab：请求 /markets/list?league=<联赛名>，再按「每场只保留一条盘口」归并。
+ * 对齐安卓首页联赛 Tab：请求 /markets/list?league=<联赛名>&pageSize=20，再按 onePerEvent 归并。
  */
-export async function fetchHomeLeagueMatches(leagueName) {
+export async function fetchHomeLeagueMatches(leagueName, pageNum = 1) {
   const res = await get('/markets/list', {
     league: leagueName,
-    pageNum: 1,
-    pageSize: 20,
+    pageNum,
+    pageSize: HOME_TAB_PAGE_SIZE,
   });
   const records = res.data?.records || [];
-  return { code: 200, data: normalizeHomeMarkets(records) };
+  return {
+    code: 200,
+    data: normalizeHomeMarkets(records),
+    records,
+    page: res.data,
+  };
+}
+
+/**
+ * 首页「热门」Tab：无 league 过滤的盘口列表（pageSize=20）
+ * 对齐安卓 HomeTabPageFragment 在 cachedHotMarkets 为空或翻页时走的 HomeRepository.markets。
+ */
+export async function fetchHomeHotMarketPage(pageNum = 1) {
+  const res = await get('/markets/list', {
+    pageNum,
+    pageSize: HOME_TAB_PAGE_SIZE,
+  });
+  const records = res.data?.records || [];
+  return {
+    code: 200,
+    data: normalizeHomeMarkets(records),
+    records,
+    page: res.data,
+  };
+}
+
+/**
+ * 是否还有下一页（对齐安卓 HomeTabPageFragment.hasNextPage）
+ * @param {object|null} page 分页元信息
+ * @param {number} loadedCount 本页原始 records 条数
+ * @param {number} requestedPage 请求的页码
+ */
+export function homeTabHasNextPage(page, loadedCount, requestedPage) {
+  if (!page) return loadedCount >= HOME_TAB_PAGE_SIZE;
+  const current = page.current || requestedPage;
+  const size = page.size || HOME_TAB_PAGE_SIZE;
+  const total = page.total;
+  if (total != null) return current * size < total;
+  if (page.pages != null) return current < page.pages;
+  return loadedCount >= HOME_TAB_PAGE_SIZE;
 }
 
 /**
@@ -280,35 +322,50 @@ function normalizeMatch(m) {
   };
 }
 
-/** 将 /api/home hotMarkets（market 维度）聚合为 match 维度列表 */
+/**
+ * 将盘口列表按「每场赛事一条」归并，对齐安卓 MarketEventReducer.onePerEvent：
+ * - 优先保留全场（FT）盘口，否则取该赛事第一条
+ * - 不累加各时段池金额（使用选中盘口自身的 displayPool）
+ */
 export function normalizeHomeMarkets(hotMarkets) {
   if (!Array.isArray(hotMarkets) || !hotMarkets.length) return [];
-  const matchMap = new Map();
+
+  const groups = new Map();
   for (const mk of hotMarkets) {
-    const mid = mk.matchId;
-    if (!mid) continue;
-    if (!matchMap.has(mid)) {
-      matchMap.set(mid, { markets: [], base: mk });
-    }
-    matchMap.get(mid).markets.push(mk);
+    const key = homeEventKey(mk);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(mk);
   }
 
-  return Array.from(matchMap.values()).map(({ markets, base }) => {
-    const ftMarket = markets.find((m) => m.period === 'FT') || base;
-    const totalPool = markets.reduce(
-      (sum, m) => sum + Number(m.displayPool || m.totalPool || 0),
-      0,
-    );
-
-    const merged = {
-      ...base,
-      id: base.matchId,
-      displayPool: String(totalPool.toFixed(2)),
-      scores: ftMarket.scores || base.scores,
-      topPools: ftMarket.scores || base.scores,
-    };
-    return normalizeMatch(merged);
+  return Array.from(groups.values()).map((eventRecords) => {
+    const picked =
+      eventRecords.find((m) => isFullTimePeriod(m.period)) || eventRecords[0];
+    return normalizeMatch({
+      ...picked,
+      id: picked.matchId || picked.marketId || picked.id,
+      scores: picked.scores,
+      topPools: picked.scores || picked.topPools,
+    });
   });
+}
+
+/** 安卓 MarketEventReducer.eventKey：优先 matchId，否则联赛+开赛+主客队 */
+function homeEventKey(item) {
+  const matchId = String(item?.matchId ?? '').trim();
+  if (matchId) return `match:${matchId}`;
+  return [
+    item?.leagueName || item?.league || '',
+    item?.kickoffAt || '',
+    item?.homeTeamName || item?.homeTeam || '',
+    item?.awayTeamName || item?.awayTeam || '',
+  ]
+    .map((s) => String(s).trim())
+    .join('|');
+}
+
+function isFullTimePeriod(period) {
+  const p = String(period || '').trim().toUpperCase();
+  return p === 'FT' || p === 'FULL' || p === 'FULL_TIME';
 }
 
 function buildTopPools(m) {

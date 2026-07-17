@@ -1,19 +1,21 @@
 <script setup>
 /**
- * 赛事结果（PC 主视图，H5 兼容）
- * - 顶部返回栏 + 北京时间
- * - 左侧栏：Logo + 「赛事结果」
- * - 右侧：已结束赛事两列卡片（H5 单列），展示最终比分
- * 数据源：/matches 列表，取已结束赛事展示比赛结果。
+ * 赛事结果 — UI 对齐 Figma 截图 / 安卓 EventResultsActivity
+ * - 顶栏：返回 + 标题 + 搜索（进搜索页 mode=match&phase=finished）
+ * - 日期：复用 MonthSelector includeDay（对齐 DateSelectDialog）
+ * - 卡片：联赛左、「完场」右；比分条内嵌；主客队分均为蓝色
  */
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
 import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.svg?url';
+import matchScoreArenaBgUrl from '@/assets/images/common/match_score_arena_bg.png';
+import AppSearchButton from '@/components/AppSearchButton.vue';
 import AppSideNav from '@/components/AppSideNav.vue';
 import EmptyState from '@/components/EmptyState.vue';
+import MonthSelector from '@/components/MonthSelector.vue';
 import { fetchMatchList } from '@/api/match';
 import { resolveTeamLogoUrl } from '@/constants/teamLogos';
 import { useAppStore } from '@/store/modules/app';
@@ -31,16 +33,28 @@ const error = ref(false);
 
 const beijingNow = ref('');
 let clockTimer = null;
-let refreshTimer = null;
+
+function todayShanghai() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const pick = (type) => parts.find((p) => p.type === type)?.value ?? '';
+  return `${pick('year')}-${pick('month')}-${pick('day')}`;
+}
+
+const selectedDate = ref(todayShanghai());
 
 function kickoffTime(iso) {
   if (!iso) return '';
   try {
     const d = new Date(iso);
-    const hh = String(d.getHours()).padStart(2, '0');
-    const mi = String(d.getMinutes()).padStart(2, '0');
-    return `${hh}:${mi}`;
-  } catch { return ''; }
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  } catch {
+    return '';
+  }
 }
 
 const resultMatches = computed(() =>
@@ -61,8 +75,13 @@ const resultMatches = computed(() =>
 function updateBeijingClock() {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Shanghai',
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
   }).formatToParts(new Date());
   const pick = (type) => parts.find((p) => p.type === type)?.value ?? '';
   beijingNow.value = `${pick('year')}-${pick('month')}-${pick('day')} ${pick('hour')}:${pick('minute')}:${pick('second')}`;
@@ -71,9 +90,12 @@ function updateBeijingClock() {
 async function loadMatches() {
   try {
     error.value = false;
-    if (!matches.value.length) loading.value = true;
-    // 使用服务端 phase=finished 过滤已结束赛事（对齐安卓端 EventResultsActivity）。
-    const res = await fetchMatchList({ phase: 'finished', pageSize: 50 });
+    loading.value = true;
+    const res = await fetchMatchList({
+      phase: 'finished',
+      date: selectedDate.value,
+      pageSize: 50,
+    });
     matches.value = res.data?.records || [];
   } catch {
     error.value = true;
@@ -88,22 +110,31 @@ function goBack() {
   else router.push('/');
 }
 
+/** 对齐安卓：搜索页 match 模式 + phase=finished */
+function goSearch() {
+  router.push({
+    name: 'market-search',
+    query: { mode: 'match', phase: 'finished' },
+  });
+}
+
+watch(selectedDate, () => {
+  loadMatches();
+});
+
 onMounted(() => {
   updateBeijingClock();
   clockTimer = window.setInterval(updateBeijingClock, 1000);
   loadMatches();
-  refreshTimer = window.setInterval(loadMatches, 60000);
 });
 
 onBeforeUnmount(() => {
   if (clockTimer) window.clearInterval(clockTimer);
-  if (refreshTimer) window.clearInterval(refreshTimer);
 });
 </script>
 
 <template>
   <div class="result-page">
-    <!-- 顶部返回栏 + 北京时间 -->
     <header class="result-topbar">
       <span v-if="!isMobile" class="result-topbar__clock">Beijing Time: {{ beijingNow }}</span>
       <div class="result-topbar__bar">
@@ -111,6 +142,8 @@ onBeforeUnmount(() => {
           <img :src="iconNavBackMarketUrl" width="48" height="48" alt="" />
         </button>
         <h1 v-if="isMobile" class="result-topbar__title">{{ t('赛事结果') }}</h1>
+        <!-- 右上角搜索：复用 Header 同款圆形搜索按钮 -->
+        <AppSearchButton class="result-topbar__search" :size="36" @click="goSearch" />
       </div>
     </header>
 
@@ -118,57 +151,83 @@ onBeforeUnmount(() => {
       <AppSideNav v-if="!isMobile" :items="sideNavItems" active-key="results" />
 
       <main class="result-content">
-        <!-- 加载 -->
-        <div v-if="loading" class="result-state">
-          <div class="result-spinner" />
-          <span>{{ t('加载中') }}</span>
-        </div>
+        <div class="result-panel">
+          <div class="result-date-row">
+            <MonthSelector v-model="selectedDate" include-day :aria-label="t('日期选择')" />
+          </div>
 
-        <!-- 错误 -->
-        <div v-else-if="error" class="result-state">
-          <span>{{ t('加载失败') }}</span>
-          <button type="button" class="result-retry" @click="loadMatches">{{ t('重试') }}</button>
-        </div>
+          <div v-if="loading" class="result-state">
+            <div class="result-spinner" />
+            <span>{{ t('加载中') }}</span>
+          </div>
 
-        <!-- 空 -->
-        <EmptyState v-else-if="!resultMatches.length" :text="t('暂无相关赛事')" />
+          <div v-else-if="error" class="result-state">
+            <span>{{ t('加载失败') }}</span>
+            <button type="button" class="result-retry" @click="loadMatches">{{ t('重试') }}</button>
+          </div>
 
-        <!-- 卡片列表 -->
-        <div v-else class="result-grid">
-          <article v-for="m in resultMatches" :key="m.id" class="result-card">
-            <div class="result-card__top">
-              <span class="result-card__league">
-                <svg class="result-card__gear" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <path d="M8 10a2 2 0 100-4 2 2 0 000 4z" stroke="#7b92ad" stroke-width="1.2"/>
-                  <path d="M8 1.5l1 1.6 1.9-.4.4 1.9 1.6 1-1 .9 1 .9-1.6 1-.4 1.9-1.9-.4-1 1.6-1-1.6-1.9.4-.4-1.9-1.6-1 1-.9-1-.9 1.6-1 .4-1.9 1.9.4 1-1.6z" stroke="#7b92ad" stroke-width="1" stroke-linejoin="round"/>
-                </svg>
-                <img v-if="m.leagueIcon" class="result-card__league-logo" :src="m.leagueIcon" alt="" width="18" height="18" @error="(e) => e.target.style.display='none'" />
-                <span class="result-card__league-name">{{ m.league }}</span>
-              </span>
-              <span class="result-card__badge">{{ t('已结束') }}</span>
-            </div>
+          <EmptyState v-else-if="!resultMatches.length" :text="t('暂无相关赛事')" />
 
-            <div class="result-card__body">
-              <div class="result-card__team result-card__team--home">
-                <span class="result-card__team-name">{{ m.homeTeam }}</span>
-                <img v-if="m.homeLogo" class="result-card__team-logo" :src="m.homeLogo" alt="" width="28" height="28" @error="(e) => e.target.style.display='none'" />
-              </div>
-
-              <div class="result-card__center">
-                <div class="result-card__score">
-                  <span class="result-card__score-home">{{ m.homeScore }}</span>
-                  <span class="result-card__score-sep">:</span>
-                  <span class="result-card__score-away">{{ m.awayScore }}</span>
+          <div v-else class="result-grid">
+            <article v-for="m in resultMatches" :key="m.id" class="result-card">
+              <div class="result-card__head">
+                <div class="result-card__league">
+                  <img
+                    v-if="m.leagueIcon"
+                    class="result-card__league-logo"
+                    :src="m.leagueIcon"
+                    alt=""
+                    width="18"
+                    height="18"
+                    @error="(e) => (e.target.style.display = 'none')"
+                  />
+                  <span class="result-card__league-name">{{ m.league }}</span>
                 </div>
-                <span class="result-card__time">{{ m.time }}</span>
+                <!-- 截图：右侧「完场」徽标 -->
+                <span class="result-card__badge">{{ t('完场') }}</span>
               </div>
 
-              <div class="result-card__team result-card__team--away">
-                <img v-if="m.awayLogo" class="result-card__team-logo" :src="m.awayLogo" alt="" width="28" height="28" @error="(e) => e.target.style.display='none'" />
-                <span class="result-card__team-name">{{ m.awayTeam }}</span>
+              <div class="result-card__arena">
+                <img class="result-card__arena-bg" :src="matchScoreArenaBgUrl" alt="" aria-hidden="true" />
+                <div class="result-card__arena-inner">
+                  <div class="result-card__team result-card__team--home">
+                    <span class="result-card__team-name">{{ m.homeTeam }}</span>
+                    <span class="result-card__logo-wrap">
+                      <img
+                        v-if="m.homeLogo"
+                        class="result-card__team-logo"
+                        :src="m.homeLogo"
+                        alt=""
+                        @error="(e) => (e.target.style.display = 'none')"
+                      />
+                    </span>
+                  </div>
+
+                  <div class="result-card__center">
+                    <div class="result-card__score">
+                      <span>{{ m.homeScore }}</span>
+                      <span class="result-card__score-sep">:</span>
+                      <span>{{ m.awayScore }}</span>
+                    </div>
+                    <span class="result-card__time">{{ m.time }}</span>
+                  </div>
+
+                  <div class="result-card__team result-card__team--away">
+                    <span class="result-card__logo-wrap">
+                      <img
+                        v-if="m.awayLogo"
+                        class="result-card__team-logo"
+                        :src="m.awayLogo"
+                        alt=""
+                        @error="(e) => (e.target.style.display = 'none')"
+                      />
+                    </span>
+                    <span class="result-card__team-name">{{ m.awayTeam }}</span>
+                  </div>
+                </div>
               </div>
-            </div>
-          </article>
+            </article>
+          </div>
         </div>
       </main>
     </div>
@@ -192,7 +251,6 @@ onBeforeUnmount(() => {
   }
 }
 
-/* --- 顶部返回栏 + 北京时间 --- */
 .result-topbar {
   position: relative;
 
@@ -220,7 +278,7 @@ onBeforeUnmount(() => {
 
   @include web-only {
     height: 80px;
-    padding: 0 32px;
+    padding: 0 24px 0 32px;
     border: 0.8px solid var(--auxiliary-1);
     border-radius: 40px;
     background: var(--surface-card);
@@ -245,9 +303,6 @@ onBeforeUnmount(() => {
   background: transparent;
   cursor: pointer;
   flex-shrink: 0;
-  transition: opacity 0.2s ease;
-
-  &:hover { opacity: 0.85; }
 
   img {
     display: block;
@@ -270,7 +325,10 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
-/* --- 布局 --- */
+.result-topbar__search {
+  margin-left: auto;
+}
+
 .result-layout {
   @include web-only {
     display: flex;
@@ -297,7 +355,201 @@ onBeforeUnmount(() => {
   }
 }
 
-/* --- 状态 --- */
+.result-panel {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 10px;
+  border-radius: 16px;
+  border: 0.8px solid #fff;
+  background: #eaf1f9;
+}
+
+.result-date-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+.result-grid {
+  display: grid;
+  gap: 10px;
+
+  @include web-only {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @include mobile-only {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.result-card {
+  box-sizing: border-box;
+  padding: 12px;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.result-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 24px;
+}
+
+.result-card__league {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.result-card__league-logo {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.result-card__league-name {
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(11, 52, 98, 0.5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 截图：右侧「完场」浅灰胶囊 */
+.result-card__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 18px;
+  padding: 0 10px;
+  border-radius: 12px;
+  background: #eaf1f9;
+  color: rgba(11, 52, 98, 0.5);
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.result-card__arena {
+  position: relative;
+  margin-top: 10px;
+  height: 52px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #eaf1f9;
+}
+
+.result-card__arena-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.result-card__arena-inner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 56px minmax(0, 1fr);
+  align-items: center;
+  height: 100%;
+  padding: 0 6px;
+  box-sizing: border-box;
+}
+
+.result-card__team {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+
+  &--home {
+    justify-content: flex-end;
+  }
+
+  &--away {
+    justify-content: flex-start;
+  }
+}
+
+.result-card__team-name {
+  font-size: 14px;
+  font-weight: 400;
+  color: #0b3462;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.result-card__logo-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 4px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: #fff;
+  border: 0.5px solid #e4f0fe;
+  flex-shrink: 0;
+}
+
+.result-card__team-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.result-card__center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  flex-shrink: 0;
+}
+
+/* 截图：比分整体蓝色 */
+.result-card__score {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-family: $font-family-num, $font-family-base;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  color: #1c7bff;
+}
+
+.result-card__score-sep {
+  color: #1c7bff;
+}
+
+.result-card__time {
+  margin-top: 1px;
+  font-family: $font-family-num, $font-family-base;
+  font-size: 12px;
+  color: rgba(11, 52, 98, 0.5);
+  line-height: 1;
+  text-align: center;
+}
+
 .result-state {
   display: flex;
   flex-direction: column;
@@ -319,7 +571,9 @@ onBeforeUnmount(() => {
 }
 
 @keyframes result-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .result-retry {
@@ -331,142 +585,5 @@ onBeforeUnmount(() => {
   color: #1c7bff;
   font-size: 14px;
   cursor: pointer;
-}
-
-/* --- 卡片网格 --- */
-.result-grid {
-  display: grid;
-  gap: 12px;
-
-  @include web-only {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  @include mobile-only {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.result-card {
-  padding: 12px 16px;
-  border-radius: 14px;
-  background: #fff;
-  border: 0.8px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 0 2px 12px rgba(21, 58, 118, 0.06);
-  box-sizing: border-box;
-}
-
-.result-card__top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.result-card__league {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  min-width: 0;
-}
-
-.result-card__gear {
-  flex-shrink: 0;
-  display: block;
-}
-
-.result-card__league-logo {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  object-fit: contain;
-  flex-shrink: 0;
-}
-
-.result-card__league-name {
-  font-size: 13px;
-  color: #5d7899;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* 已结束：灰色徽标区分进行中（蓝色） */
-.result-card__badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 20px;
-  padding: 0 8px;
-  border-radius: 6px;
-  background: rgba(11, 52, 98, 0.1);
-  color: #5d7899;
-  font-size: 11px;
-  font-weight: 500;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.result-card__body {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: center;
-  gap: 10px;
-  margin-top: 12px;
-}
-
-.result-card__team {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-
-  &--home { justify-content: flex-end; }
-  &--away { justify-content: flex-start; }
-}
-
-.result-card__team-name {
-  font-size: 14px;
-  font-weight: 500;
-  color: #0b3462;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.result-card__team-logo {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  object-fit: contain;
-  flex-shrink: 0;
-}
-
-.result-card__center {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
-}
-
-.result-card__score {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-family: $font-family-num, $font-family-base;
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1;
-  color: #0b3462;
-}
-
-.result-card__score-sep { color: #0b3462; }
-
-.result-card__time {
-  font-family: $font-family-num, $font-family-base;
-  font-size: 12px;
-  color: rgba(11, 52, 98, 0.45);
-  line-height: 1;
 }
 </style>

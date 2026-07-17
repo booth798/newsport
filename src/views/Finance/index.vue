@@ -34,6 +34,8 @@ const activeTab = computed(() => route.path);
 // 会员互转 / 银行卡提现 / 区块链提现在 H5 隐藏底部 Tab，页面底部只保留安全区。
 const hidesMobileTabBar = computed(() => route.matched.some((r) => r.meta?.hideMobileTabBar));
 const isWithdrawRoute = computed(() => withdrawPaths.includes(route.path));
+// PC 交易账务（记录页）侧栏为状态筛选，由 Records 自行渲染，此处隐藏充值/提现侧栏。
+const isRecordsRoute = computed(() => route.name === 'finance-records');
 // 两种提现方式都开启时才显示切换 Tab；单一方式直接展示对应页面。
 const isWithdrawPage = computed(() => withdrawMethodsResolved.value && isWithdrawRoute.value && withdrawTabs.value.length > 1);
 const sidebarTabs = computed(() => availableTabs.value.map((tab) => ({ ...tab, label: t(tab.label) })));
@@ -70,8 +72,14 @@ onMounted(loadWithdrawMethods);
 
 <template>
   <div class="finance-layout" :class="{ 'finance-layout--no-tabbar': hidesMobileTabBar }">
-    <div class="finance-layout__inner">
-      <AppSideNav :items="sidebarTabs" :active-key="activeTab" aria-label="finance" />
+    <div class="finance-layout__inner" :class="{ 'finance-layout__inner--records': isRecordsRoute }">
+      <!-- 记录页 PC 侧栏在 Records 内；充值/提现等仍用本层 AppSideNav -->
+      <AppSideNav
+        v-if="!isRecordsRoute"
+        :items="sidebarTabs"
+        :active-key="activeTab"
+        aria-label="finance"
+      />
 
       <nav v-if="isWithdrawPage" class="finance-tabs" :aria-label="t('提现')">
         <RouterLink
@@ -85,7 +93,7 @@ onMounted(loadWithdrawMethods);
         </RouterLink>
       </nav>
 
-      <div class="finance-content">
+      <div class="finance-content" :class="{ 'finance-content--records': isRecordsRoute }">
         <!-- 提现入口先确认可用方式，避免短暂渲染已关闭的提现页面并触发其接口。 -->
         <RouterView v-if="!isWithdrawRoute || withdrawMethodsResolved" />
       </div>
@@ -199,6 +207,20 @@ onMounted(loadWithdrawMethods);
 
   @include mobile-only {
     width: 100%;
+  }
+}
+
+// 记录页自带状态侧栏，内容区占满内层宽度以容纳两列订单卡
+.finance-layout__inner--records {
+  @include web-only {
+    justify-content: flex-start;
+  }
+}
+
+.finance-content--records {
+  @include web-only {
+    flex: 1 1 auto;
+    max-width: 100%;
   }
 }
 </style>

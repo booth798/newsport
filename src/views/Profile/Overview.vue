@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
-import { fetchUnreadCount } from '@/api/user';
+import { fetchUnreadCount, fetchVipMe } from '@/api/user';
 import { useAppStore } from '@/store/modules/app';
 import { useUserStore } from '@/store/modules/user';
 import { useToast } from '@/hooks/useToast';
@@ -27,7 +27,6 @@ const {
   loggedInUserId,
   loggedInAssetsFormatted,
   userProfile,
-  vipLevelList,
 } = storeToRefs(userStore);
 
 // 页面状态
@@ -80,9 +79,6 @@ const overview = computed(() => ({
 }));
 const avatarDisplayUrl = computed(() => overview.value.avatarUrl || '');
 
-// VIP 等级接口未返回前保留默认点位，避免 H5 卡片出现空白。
-const fallbackVipLevels = [0, 1, 2, 3, 4].map((level) => ({ level }));
-
 const displayName = computed(
   () => overview.value.nickname || loggedInUserId.value || '—',
 );
@@ -92,70 +88,104 @@ const displayBalance = computed(
 );
 const mobileDisplayName = computed(() => (isLoggedIn.value ? displayName.value : '登录'));
 const mobileDisplayMemberId = computed(() => (isLoggedIn.value ? displayMemberId.value : ''));
-const mobileVipLevel = computed(() => (isLoggedIn.value ? overview.value.vipLevel : 0));
+// 主钱包 / 锁定钱包对齐安卓：主钱包 = balance ?: available（store 已归一），锁定 = frozen。
 const mobileBalance = computed(() => (isLoggedIn.value ? displayBalance.value : '0.00'));
-const mobileMainWallet = computed(() => (isLoggedIn.value ? displayBalance.value : '0'));
-const mobileLockedWallet = computed(() => (isLoggedIn.value ? (overview.value._wallet?.frozen || '0.00') : '0'));
+const mobileMainWallet = computed(() => (isLoggedIn.value ? displayBalance.value : '0.00'));
+const mobileLockedWallet = computed(() => (
+  isLoggedIn.value ? (overview.value.frozenBalance || '0.00') : '0.00'
+));
 
-// VIP 等级轨道：H5 / PC 共用同一套等级窗口和当前点位计算。
-// 5 张轨道图分别对应：当前等级在第 1/2/3/4/5 个点位。
+// —— 会员等级轨道：对齐安卓 MineFragment.applyVipDisplay ——
+// 当前等级来自 GET /vip/me 的 level / levelName / name；文案格式 V{n}；窗口为当前±2（0~16）。
+const VIP_LEVEL_MIN = 0;
+const VIP_LEVEL_MAX = 16;
 const vipTrackPointCount = 5;
+/** 我的页当前 VIP 等级数字（优先 /vip/me） */
+const myVipLevel = ref(0);
+
+/** 对齐安卓 MineFragment.levelNumber：从 level / levelName / name 解析数字 */
+function parseMineVipLevel(source) {
+  if (source == null) return 0;
+  if (typeof source === 'number' && Number.isFinite(source)) {
+    return Math.max(0, Math.trunc(source));
+  }
+  const candidates = typeof source === 'object'
+    ? [source.level, source.levelName, source.name, source.vipLevel]
+    : [source];
+  for (const raw of candidates) {
+    if (raw == null || raw === '') continue;
+    if (typeof raw === 'number' && Number.isFinite(raw)) {
+      return Math.max(0, Math.trunc(raw));
+    }
+    const text = String(raw).trim();
+    const matched = text.match(/(?:vip\s*)?v?\s*(\d+)/i);
+    if (matched) return Math.max(0, Number(matched[1]));
+    const asNum = Number(text);
+    if (Number.isFinite(asNum)) return Math.max(0, Math.trunc(asNum));
+  }
+  return 0;
+}
+
 function getProfileVipLevelImage(pointIndex, platform = 'h5') {
   // 页面只负责拼会员等级轨道图名称，实际图片路径交给公共方法解析。
   const safePointIndex = Math.min(Math.max(Math.trunc(Number(pointIndex)) || 0, 0), vipTrackPointCount - 1);
   const safePlatform = platform === 'pc' ? 'pc' : 'h5';
   return getImageUrl(`profile/vip_level_${safePointIndex}_${safePlatform}.svg`);
 }
-const availableVipLevels = computed(() => {
-  // 后端等级列表可能从 V1 开始，也可能从 V0 开始，这里统一转成数字后参与位置计算。
-  const levels = vipLevelList.value.length > 0 ? vipLevelList.value : fallbackVipLevels;
-  return levels.map((item) => ({
-    ...item,
-    level: Number(item.level),
-  }));
-});
+
 const normalizedVipLevel = computed(() => {
-  const level = Number(mobileVipLevel.value);
-  if (!Number.isFinite(level)) return 0;
-  return Math.trunc(level);
+  const level = Number(myVipLevel.value);
+  if (!Number.isFinite(level)) return VIP_LEVEL_MIN;
+  return Math.min(Math.max(Math.trunc(level), VIP_LEVEL_MIN), VIP_LEVEL_MAX);
 });
-const currentVipLevelIndex = computed(() => {
-  const levels = availableVipLevels.value;
-  if (levels.length === 0) return 0;
 
-  // 优先按真实 level 精确匹配，确保接口等级不是从 0 开始时也能找到正确位置。
-  const matchedIndex = levels.findIndex((item) => item.level === normalizedVipLevel.value);
-  if (matchedIndex >= 0) return matchedIndex;
-
-  return Math.min(Math.max(normalizedVipLevel.value, 0), levels.length - 1);
-});
+/** 五个点位：current-2 … current+2，越界隐藏；文案 V{n} */
 const vipVisibleLevels = computed(() => {
-  const levels = availableVipLevels.value;
-  const currentIndex = currentVipLevelIndex.value;
-  // 只展示当前等级及前后各 2 个等级；首尾不足时不向另一侧补满。
-  const startIndex = Math.max(0, currentIndex - 2);
-  const endIndex = Math.min(levels.length - 1, currentIndex + 2);
-
-  return levels.slice(startIndex, endIndex + 1).map((item, index) => ({
-    ...item,
-    // className 映射到 5 个固定点位：3 为中心，1/2 在左侧，4/5 在右侧。
-    className: `level_babel_${startIndex + index - currentIndex + 3}`,
-  }));
+  const current = normalizedVipLevel.value;
+  return [-2, -1, 0, 1, 2].map((offset, index) => {
+    const level = current + offset;
+    const visible = level >= VIP_LEVEL_MIN && level <= VIP_LEVEL_MAX;
+    return {
+      level,
+      // 对齐安卓 mine_vip_level_format：V%1$d
+      label: `V${level}`,
+      visible,
+      className: `level_babel_${index + 1}`,
+    };
+  });
 });
-const vipTrackIndex = computed(() => {
-  const levels = availableVipLevels.value;
-  const currentIndex = currentVipLevelIndex.value;
-  // 根据当前等级左右两侧实际存在的等级数量，选择对应点位的背景图。
-  const leftCount = Math.min(2, currentIndex);
-  const rightCount = Math.min(2, levels.length - 1 - currentIndex);
 
-  if (leftCount < 2) return leftCount;
-  if (rightCount < 2) return vipTrackPointCount - 1 - rightCount;
+/** 轨道背景图点位：对齐安卓 icon_vip1~5 选择逻辑 */
+const vipTrackIndex = computed(() => {
+  const current = normalizedVipLevel.value;
+  const oneHidden = current - 2 < VIP_LEVEL_MIN;
+  const twoHidden = current - 1 < VIP_LEVEL_MIN;
+  const fourHidden = current + 1 > VIP_LEVEL_MAX;
+  const fiveHidden = current + 2 > VIP_LEVEL_MAX;
+  if (oneHidden && twoHidden) return 0;
+  if (oneHidden) return 1;
+  if (fourHidden && fiveHidden) return 4;
+  if (fiveHidden) return 3;
   return 2;
 });
+
 const mobileVipTrackH5 = computed(() => getProfileVipLevelImage(vipTrackIndex.value, 'h5'));
 const desktopVipTrack = computed(() => getProfileVipLevelImage(vipTrackIndex.value, 'pc'));
 
+async function loadMyVipLevel() {
+  if (!isLoggedIn.value) {
+    myVipLevel.value = 0;
+    return;
+  }
+  try {
+    // 对齐安卓 CustomerRepository.vip() → GET /vip/me
+    const res = await fetchVipMe();
+    myVipLevel.value = parseMineVipLevel(res?.data);
+  } catch {
+    // 接口失败时回退资料里的 vipLevel，避免轨道空白
+    myVipLevel.value = parseMineVipLevel(userProfile.value);
+  }
+}
 const profileMenuItem = { label: '个人资料', icon: iconProfileInfo, action: 'userInfo' };
 const messagesMenuItem = { label: '消息中心', icon: iconProfileMessages, action: 'messages' };
 const bankCardMenuItem = { label: '绑定信息', icon: iconProfileBindinfo, action: 'binding' };
@@ -189,13 +219,15 @@ const mobileMenuItems = computed(() => {
     : [serviceMenuItem, vipBenefitsMenuItem];
 });
 
-// 数据请求
+// 数据请求：资料 + 钱包分拆，钱包与刷新按钮共用 refreshUserBalance（对齐安卓 MineFragment）。
 async function loadOverview() {
   if (!isLoggedIn.value) return;
   try {
     loading.value = true;
     await Promise.all([
       userStore.loadUserProfile(),
+      userStore.refreshUserBalance(),
+      loadMyVipLevel(),
       loadUnreadCount(),
     ]);
   } catch {
@@ -326,16 +358,17 @@ function openUserInfoModal() {
   showUserInfoModal.value = true;
 }
 
-// 页面保持挂载时，登录成功后主动加载资料。
+// 页面保持挂载时，登录成功后主动加载资料；退出则重置 VIP 轨道。
 watch(isLoggedIn, (loggedIn, wasLoggedIn) => {
   if (loggedIn && !wasLoggedIn) {
     loadOverview();
+  } else if (!loggedIn) {
+    myVipLevel.value = 0;
   }
 });
 
 onMounted(() => {
   loadOverview();
-  userStore.loadVipLevels().catch(() => {});
 });
 </script>
 
@@ -368,8 +401,13 @@ onMounted(() => {
               <img class="profile-h5-card__vip-track" :src="mobileVipTrackH5" alt="" aria-hidden="true" />
             </div>
             <div class="level_babel_wrapper">
-              <div v-for="item in vipVisibleLevels" :key="item.level" :class="item.className">
-                {{ item.name }}
+              <div
+                v-for="item in vipVisibleLevels"
+                v-show="item.visible"
+                :key="item.level"
+                :class="item.className"
+              >
+                {{ item.label }}
               </div>
             </div>
           </div>
@@ -474,8 +512,13 @@ onMounted(() => {
                   aria-hidden="true" />
               </div>
               <div class="pc_level_babel_wrapper">
-                <span v-for="item in vipVisibleLevels" :key="`label-${item.level}`" :class="[item.className]">
-                  {{ item.name }}
+                <span
+                  v-for="item in vipVisibleLevels"
+                  v-show="item.visible"
+                  :key="`label-${item.level}`"
+                  :class="[item.className]"
+                >
+                  {{ item.label }}
                 </span>
               </div>
             </div>

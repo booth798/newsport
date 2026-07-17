@@ -2,48 +2,65 @@ import { defineStore } from 'pinia';
 
 import { clearSession } from '@/api/encrypt';
 import { clearToken, setToken } from '@/api/request';
+import { fetchBalance } from '@/api/finance';
 import { fetchProfileSummary, fetchVipLevels } from '@/api/user';
 import { resolveAvatarUrl } from '@/api/upload';
 
 const CUSTOMER_STORAGE_KEY = 'mysport:customer';
 let vipLevelsRequest = null;
 let userProfileRequest = null;
+let walletRequest = null;
 
 function formatMoney(value) {
-  if (value == null) return '0.00';
-  const amount = Number(value);
-  if (!Number.isFinite(amount)) return String(value);
-  return amount.toLocaleString('zh-CN', {
+  // 金额展示对齐安卓 AppTools.formatAmount：Locale.US 千分位 + 固定两位小数。
+  if (value == null || value === '') return '0.00';
+  // 兼容已格式化字符串（如 "1,234.56"），避免二次 Number 成 NaN 后显示 0.00。
+  const amount = Number(String(value).replace(/,/g, '').replace(/[¥+\s]/g, ''));
+  if (!Number.isFinite(amount)) return '0.00';
+  return amount.toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 }
 
-function normalizeUserProfile(summary = {}) {
+/** 对齐安卓 MineFragment.renderWallet：主钱包 balance ?: available，锁定 frozen */
+function walletDisplayPatch(wallet = {}, fallbackCurrency = 'CNY') {
+  const mainBalance = wallet.balance ?? wallet.available;
+  return {
+    balance: formatMoney(mainBalance),
+    frozenBalance: formatMoney(wallet.frozen),
+    currency: wallet.currency || fallbackCurrency,
+    wallet,
+  };
+}
+
+function normalizeUserProfile(summary = {}, previous = {}) {
   // 接口层只返回原始数据，用户资料的字段兼容与展示格式统一在 store 完成。
+  // 钱包字段不在此写入：与安卓一致，统一由 GET /wallet（refreshUserBalance）负责。
   const customer = summary.customer || {};
-  const wallet = summary.wallet || {};
   const stats = summary.stats || {};
   const winRate = Number(stats.winRate);
   const profit = Number(stats.profit);
   const vipLevel = customer.vipLevel ?? customer.level ?? 0;
 
   return {
+    ...previous,
     ...customer,
     nickname: customer.nickname || customer.username || '',
     memberId: customer.customerNo || '',
     avatarUrl: resolveAvatarUrl(customer.avatar),
     withdrawPasswordSet: customer.withdrawPasswordSet === true,
-    balance: formatMoney(wallet.balance),
-    frozenBalance: formatMoney(wallet.frozen),
-    currency: wallet.currency || 'CNY',
+    // 保留已有钱包展示，避免资料接口覆盖刷新后的余额。
+    balance: previous.balance ?? '0.00',
+    frozenBalance: previous.frozenBalance ?? '0.00',
+    currency: previous.currency || 'CNY',
+    wallet: previous.wallet || {},
     vipLevel,
     totalBet: formatMoney(stats.totalBet),
     winRate: `${Number.isFinite(winRate) ? winRate.toFixed(1) : '0.0'}%`,
     totalProfit: Number.isFinite(profit)
       ? `${profit >= 0 ? '+' : ''}¥${formatMoney(profit)}`
       : '¥0.00',
-    wallet,
     stats,
   };
 }
@@ -56,6 +73,10 @@ function normalizeUserProfilePatch(profile = {}) {
   }
   if (Object.prototype.hasOwnProperty.call(profile, 'balance')) {
     normalized.balance = formatMoney(profile.balance);
+  }
+  if (Object.prototype.hasOwnProperty.call(profile, 'frozen')
+    || Object.prototype.hasOwnProperty.call(profile, 'frozenBalance')) {
+    normalized.frozenBalance = formatMoney(profile.frozen ?? profile.frozenBalance);
   }
   return normalized;
 }
@@ -125,20 +146,22 @@ export const useUserStore = defineStore('user', {
       persistCustomer(this.customer);
     },
     async loadUserProfile({ force = false } = {}) {
-      // 用户资料跨页面复用，已获取时直接读取 store，避免重复请求个人中心接口。
+      // 用户资料跨页面复用；钱包与安卓一样始终走独立 GET /wallet。
       if (this.userProfile && !force) return this.userProfile;
       if (userProfileRequest && !force) return userProfileRequest;
 
-      userProfileRequest = fetchProfileSummary()
-        .then((res) => {
-          this.userProfile = normalizeUserProfile(res.data);
-          this.customer = { ...(this.customer || {}), ...this.userProfile };
-          persistCustomer(this.customer);
-          return this.userProfile;
-        })
-        .finally(() => {
-          userProfileRequest = null;
-        });
+      userProfileRequest = (async () => {
+        const res = await fetchProfileSummary();
+        const previous = this.userProfile || this.customer || {};
+        this.userProfile = normalizeUserProfile(res.data, previous);
+        this.customer = { ...(this.customer || {}), ...this.userProfile };
+        persistCustomer(this.customer);
+        // 首次拉资料时同步拉钱包，保证 Header 等处也能拿到余额。
+        await this.refreshUserBalance().catch(() => {});
+        return this.userProfile;
+      })().finally(() => {
+        userProfileRequest = null;
+      });
 
       return userProfileRequest;
     },
@@ -154,11 +177,29 @@ export const useUserStore = defineStore('user', {
       return this.userProfile;
     },
     async refreshUserBalance() {
-      // 余额刷新统一复用用户资料接口，并同步内存状态与本地缓存。
-      const profile = await this.loadUserProfile({ force: true });
-      const balance = profile.balance ?? '0.00';
-      this.updateUserProfile({ balance });
-      return balance;
+      // 对齐安卓 MineFragment.loadWalletData / refreshWallet：只拉 GET /wallet。
+      if (walletRequest) return walletRequest;
+
+      walletRequest = (async () => {
+        const res = await fetchBalance();
+        const wallet = res?.data || {};
+        const patch = walletDisplayPatch(
+          wallet,
+          this.userProfile?.currency || this.customer?.currency || 'CNY',
+        );
+        // 直接写入已格式化字段，避免再走 formatMoney 二次处理。
+        this.userProfile = {
+          ...(this.userProfile || this.customer || {}),
+          ...patch,
+        };
+        this.customer = { ...(this.customer || {}), ...patch };
+        persistCustomer(this.customer);
+        return this.userProfile?.balance ?? '0.00';
+      })().finally(() => {
+        walletRequest = null;
+      });
+
+      return walletRequest;
     },
     clearWebLogin() {
       const hasToken = Boolean(localStorage.getItem('mysport:token'));
@@ -166,6 +207,7 @@ export const useUserStore = defineStore('user', {
       this.customer = null;
       this.userProfile = null;
       userProfileRequest = null;
+      walletRequest = null;
       // 请求层可能已清除 token 并派发失效事件，避免重复派发造成递归清理。
       if (hasToken) clearToken();
       clearSession();

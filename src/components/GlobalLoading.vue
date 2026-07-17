@@ -1,18 +1,18 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 
-const activeCount = ref(0);
-const visible = computed(() => activeCount.value > 0);
+// 显隐由 request 层统一合并事件，组件只跟布尔态，避免二次计数导致闪烁
+const visible = ref(false);
 
 function onShow() {
-  activeCount.value++;
+  visible.value = true;
 }
 
 function onHide() {
-  activeCount.value = Math.max(0, activeCount.value - 1);
+  visible.value = false;
 }
 
 onMounted(() => {

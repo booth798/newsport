@@ -103,12 +103,22 @@ function toggleLeague(id) {
 }
 
 function onSelectAll() {
+  // 全选可切换：勾选 → 全选；再点取消勾选 → 全部不选
+  if (isSelectAll.value) {
+    selectedIds.value = new Set();
+    isSelectAll.value = false;
+    return;
+  }
   selectedIds.value = new Set(allLeagues.value.map((l) => l.id));
   isSelectAll.value = true;
 }
 
 function onSelectCustom() {
-  if (isSelectAll.value) isSelectAll.value = false;
+  // 切到自选：退出全选态；若当前为全选集合则清空，便于重新勾选
+  if (isSelectAll.value || selectedIds.value.size === allLeagues.value.length) {
+    selectedIds.value = new Set();
+  }
+  isSelectAll.value = false;
 }
 
 function scrollToGroup(key) {

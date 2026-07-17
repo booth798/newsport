@@ -8,6 +8,7 @@ import { storeToRefs } from 'pinia';
 
 import BaseModal from '@/components/BaseModal.vue';
 import { useAppStore } from '@/store/modules/app';
+import iconDialogInfoUrl from '@/assets/images/common/icon_dialog_info.svg?url';
 
 const { t } = useI18n();
 const appStore = useAppStore();
@@ -31,7 +32,9 @@ function confirmLogin() {
     @update:model-value="close"
   >
     <div class="app-login-dialog__body">
-      <span class="app-login-dialog__info" aria-hidden="true">i</span>
+      <span class="app-login-dialog__info" aria-hidden="true">
+        <img :src="iconDialogInfoUrl" width="20" height="20" alt="" />
+      </span>
       <p>{{ t('请先登录') }}</p>
     </div>
     <div class="app-login-dialog__actions">
@@ -46,8 +49,6 @@ function confirmLogin() {
 </template>
 
 <style lang="scss" scoped>
-@use '@/styles/tools.scss' as *;
-
 .app-login-dialog__body {
   display: flex;
   align-items: center;
@@ -56,27 +57,29 @@ function confirmLogin() {
   height: 70px;
   border-radius: 12px;
   background: #fff;
-  color: #0b3462;
-  font-size: 16px;
-  font-weight: 700;
 
   p {
     margin: 0;
+    color: #0b3462;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.4;
   }
 }
 
 .app-login-dialog__info {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
-  border: 1.5px solid #5d7899;
-  border-radius: 50%;
-  color: #5d7899;
-  font-size: 12px;
-  font-weight: 700;
-  font-family: $font-family-num, $font-family-base;
+  width: 20px;
+  height: 20px;
+
+  img {
+    display: block;
+    width: 20px;
+    height: 20px;
+  }
 }
 
 .app-login-dialog__actions {
