@@ -17,7 +17,6 @@ const userStore = useUserStore();
 const { isMobile } = storeToRefs(appStore);
 const {
   isLoggedIn,
-  loggedInAssetsFormatted,
   userProfile,
   vipLevelList: levels,
 } = storeToRefs(userStore);
@@ -43,35 +42,85 @@ const sideNavItems = computed(() => [
 const mobileCardBackground = getImageUrl('vip/vip-card-mobile.png');
 const desktopCardBackground = getImageUrl('vip/vip-card-desktop.png');
 
-// VIP 专属接口优先，未返回时回退用户资料中的统一 vipLevel 字段。
-const currentLevel = computed(() => Number(myVip.value?.level ?? userProfile.value?.vipLevel) || 0);
-const currentLevelInfo = computed(
-  () => levels.value.find((item) => Number(item.level) === currentLevel.value) || levels.value[0] || null,
-);
-const currentLevelName = computed(
-  () => currentLevelInfo.value?.name || `VIP${currentLevel.value}`,
-);
-const selectedPrivilegeInfo = computed(
-  () => levels.value.find((item) => Number(item.level) === selectedPrivilegeLevel.value)
-    || currentLevelInfo.value,
-);
-const currentPrivilege = computed(() => ({
-  freeWithdrawCount: selectedPrivilegeInfo.value?.freeWithdrawCount ?? 0,
-  maxWithdraw: selectedPrivilegeInfo.value?.maxWithdraw ?? 0,
-}));
-const displayedAmount = computed(
-  () => myVip.value?.totalDeposit ?? myVip.value?.totalBet ?? loggedInAssetsFormatted.value ?? 0,
-);
-
-function formatAmount(value) {
-  const amount = Number(value);
-  return Number.isFinite(amount)
-    ? amount.toLocaleString('zh-CN', { maximumFractionDigits: 2 })
-    : '0';
+/** 对齐安卓 VipRightsActivity.vipLevel：优先解析数字 level */
+function parseVipLevel(source) {
+  if (source == null) return 0;
+  if (typeof source === 'number' && Number.isFinite(source)) return Math.max(0, Math.trunc(source));
+  const candidates = typeof source === 'object'
+    ? [source.level, source.levelName, source.name, source.vipLevel]
+    : [source];
+  for (const raw of candidates) {
+    if (raw == null || raw === '') continue;
+    if (typeof raw === 'number' && Number.isFinite(raw)) return Math.max(0, Math.trunc(raw));
+    const matched = String(raw).match(/(?:vip\s*)?v?\s*(\d+)/i);
+    if (matched) return Math.max(0, Number(matched[1]));
+    const asNum = Number(raw);
+    if (Number.isFinite(asNum)) return Math.max(0, Math.trunc(asNum));
+  }
+  return 0;
 }
 
+// 当前等级来自 GET /vip/me，与安卓 bindCurrentVip 一致。
+const currentLevel = computed(() => parseVipLevel(myVip.value ?? userProfile.value));
+const currentLevelName = computed(() => `VIP${currentLevel.value}`);
+
+/**
+ * 特权规则对齐安卓 applyVipWithdrawalRule：
+ * 选中当前等级时优先用 /vip/me 的 freeWithdrawCount / singleWithdrawLimit；
+ * 其它等级用 /vip/levels 的 freeWithdrawCount / (singleWithdrawLimit ?? maxWithdraw)。
+ */
+const currentPrivilege = computed(() => {
+  const selected = Number(selectedPrivilegeLevel.value);
+  const levelInfo = levels.value.find((item) => Number(item.level) === selected) || null;
+  const isCurrent = selected === currentLevel.value;
+  const fromMe = myVip.value || {};
+
+  let freeWithdrawCount = levelInfo?.freeWithdrawCount ?? 0;
+  let singleWithdrawLimit = levelInfo?.singleWithdrawLimit ?? levelInfo?.maxWithdraw ?? null;
+
+  if (isCurrent) {
+    if (fromMe.freeWithdrawCount != null) freeWithdrawCount = fromMe.freeWithdrawCount;
+    if (fromMe.singleWithdrawLimit != null) singleWithdrawLimit = fromMe.singleWithdrawLimit;
+  }
+
+  return {
+    freeWithdrawCount: Number(freeWithdrawCount) || 0,
+    singleWithdrawLimit,
+  };
+});
+
+/** 总额度对齐安卓：VipMeVO.currentHoldings（持有额=余额+冻结） */
+const displayedHoldings = computed(() => {
+  const holdings = myVip.value?.currentHoldings;
+  if (holdings != null && holdings !== '') return holdings;
+  return 0;
+});
+
+/** 持有额展示：对齐 AppTools.formatAmount，en-US 固定两位 */
+function formatHoldingsAmount(value) {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return '0.00';
+  return amount.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+/** 门槛/限额展示：对齐安卓 formatVipLimit（#,##0.##）；空值显示 0 */
+function formatVipLimit(value) {
+  if (value == null || value === '') return '0';
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return '0';
+  return amount.toLocaleString('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+}
+
+/** 特权列表文案对齐安卓 vip_level_format：VIP%1$d */
 function getLevelName(level) {
-  return level.name || `VIP${level.level}`;
+  const n = typeof level === 'object' ? Number(level?.level) : Number(level);
+  return `VIP${Number.isFinite(n) ? n : 0}`;
 }
 
 function getLevelImage(level) {
@@ -209,11 +258,10 @@ onMounted(loadData);
           <img class="vip-card__background vip-card__background--mobile" :src="mobileCardBackground" alt="" />
           <img class="vip-card__background vip-card__background--desktop" :src="desktopCardBackground" alt="" />
           <img class="vip-card__level" :src="getLevelImage(currentLevel)" :alt="currentLevelName" />
-          <p v-if="activeTab === 'detail'" class="vip-card__amount">
+          <!-- 对齐安卓：顶部始终展示总额度 = currentHoldings，不随 Tab 切换 -->
+          <p class="vip-card__amount">
             <span>{{ t('总额度') }}：</span>
-            <span>{{ formatAmount(displayedAmount) }}</span>
-          </p>
-          <p v-else class="vip-card__privilege">{{ t('提现优惠') }}：{{ currentPrivilege.freeWithdrawCount }}{{ t('次') }}
+            <span>{{ formatHoldingsAmount(displayedHoldings) }}</span>
           </p>
         </section>
 
@@ -233,7 +281,7 @@ onMounted(loadData);
                 <article v-for="level in levels" :key="level.level" class="vip-level-card">
                   <img :src="getLevelLogo(level.level)" :alt="getLevelName(level)" />
                   <span>{{ t('总额度') }}</span>
-                  <b>{{ formatAmount(level.minTotalDeposit) }}</b>
+                  <b>{{ formatHoldingsAmount(level.minTotalDeposit) }}</b>
                 </article>
               </div>
             </template>
@@ -241,8 +289,8 @@ onMounted(loadData);
               <div class="vip-level-grid">
                 <article v-for="level in levels" :key="level.level" class="vip-level-card">
                   <img :src="getLevelLogo(level.level)" :alt="getLevelName(level)" />
-                  <div class="vip-level-card__name">{{level.name }}</div>
-                  <b>{{ formatAmount(level.minTotalDeposit) }}<span>（{{ t('总额度') }}）</span></b>
+                  <div class="vip-level-card__name">{{ getLevelName(level) }}</div>
+                  <b>{{ formatHoldingsAmount(level.minTotalDeposit) }}<span>（{{ t('总额度') }}）</span></b>
                 </article>
               </div>
             </template>
@@ -290,11 +338,12 @@ onMounted(loadData);
             <div class="vip-privilege-summary">
               <div>
                 <dt>{{ t('提现优惠') }}</dt>
-                <dd>{{ currentPrivilege.freeWithdrawCount }}{{ t('次') }}</dd>
+                <!-- 对齐安卓 vip_withdraw_count_format：%d 次 -->
+                <dd>{{ currentPrivilege.freeWithdrawCount }} {{ t('次') }}</dd>
               </div>
               <div>
                 <dt>{{ t('提现限额') }}</dt>
-                <dd>{{ formatAmount(currentPrivilege.maxWithdraw) }}</dd>
+                <dd>{{ formatVipLimit(currentPrivilege.singleWithdrawLimit) }}</dd>
               </div>
             </div>
             <div>

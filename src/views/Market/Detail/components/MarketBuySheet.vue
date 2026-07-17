@@ -708,7 +708,11 @@ function onBackdropKeydown(e) {
 
     @include web-only {
       max-width: 440px;
-      max-height: min(90vh, 820px);
+      // 预留关闭按钮上浮 + 外边距，避免整页裁切弹窗底部
+      max-height: calc(100dvh - 72px);
+      min-height: 0;
+      // 保持 visible，避免裁掉上浮的关闭按钮
+      overflow: visible;
     }
   }
 
@@ -724,6 +728,13 @@ function onBackdropKeydown(e) {
       flex: 1;
       gap: 12px;
       max-height: 100%;
+    }
+
+    @include web-only {
+      flex: 1 1 auto;
+      // 与 panel-wrap 同高上限，自身裁剪并由内层滚动
+      max-height: calc(100dvh - 72px);
+      overflow: hidden;
     }
   }
 
@@ -814,21 +825,30 @@ function onBackdropKeydown(e) {
     }
 
     @include web-only {
-      max-height: min(90vh, 820px);
-      overflow-y: auto;
+      flex: 1 1 auto;
+      min-height: 0;
+      max-height: 100%;
+      // 外层不滚动，由 body / success-body 滚动，底部按钮保持可见
+      overflow: hidden;
     }
   }
 
-  /* H5：仅弹框内可滚动；PC：整块表单区滚动 */
+  /* H5 / PC：内容区可滚动，避免矮屏裁切 */
   &__body {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    min-height: 0;
 
     @include mobile-only {
       flex: 1;
-      min-height: 0;
       overflow-y: auto;
+    }
+
+    @include web-only {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      overscroll-behavior: contain;
     }
   }
 
@@ -1431,6 +1451,13 @@ function onBackdropKeydown(e) {
     box-shadow: 0 12px 40px rgba(21, 58, 118, 0.28);
     gap: 0;
 
+    @include web-only {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      max-height: 100%;
+    }
+
     &::before {
       content: 'UNIBET';
       position: absolute;
@@ -1455,6 +1482,7 @@ function onBackdropKeydown(e) {
     justify-content: center;
     gap: 10px;
     padding: 16px 16px 18px;
+    flex-shrink: 0;
   }
 
   &__success-icon {
@@ -1481,11 +1509,17 @@ function onBackdropKeydown(e) {
     background: #fff;
     display: flex;
     flex-direction: column;
+    min-height: 0;
 
     @include mobile-only {
       flex: 1;
-      min-height: 0;
       overflow-y: auto;
+    }
+
+    @include web-only {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      overscroll-behavior: contain;
     }
   }
 
