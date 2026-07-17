@@ -13,6 +13,7 @@ import { fetchBindings, removeBinding } from '@/api/user';
 import { fetchWithdrawMethods } from '@/api/finance';
 import { useToast } from '@/hooks/useToast';
 import { getImageUrl } from '@/utils/common';
+import iconDialogInfoUrl from '@/assets/images/common/icon_dialog_info.svg?url';
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -169,7 +170,9 @@ watch(
 
   <BaseModal :model-value="deleteConfirmOpen" :title="t('提示')" :show-close="false" @update:model-value="cancelDelete">
     <div class="binding-manager__confirm-text">
-      <span class="binding-manager__confirm-icon" aria-hidden="true">i</span>
+      <span class="binding-manager__confirm-icon" aria-hidden="true">
+        <img :src="iconDialogInfoUrl" width="20" height="20" alt="" />
+      </span>
       <span>{{ deleteConfirmText }}</span>
     </div>
     <div class="binding-manager__confirm-actions">
@@ -232,26 +235,28 @@ watch(
   box-sizing: border-box;
   border-radius: 20px;
   background: #fff;
-  color: var(--theme-text);
+  // 与登录确认弹窗文案一致：16px / Regular / #0B3462
+  color: #0b3462;
   font-size: 16px;
+  font-weight: 400;
+  line-height: 1.4;
   text-align: center;
   word-break: break-all;
 }
 
 .binding-manager__confirm-icon {
   display: inline-flex;
-  width: 24px;
-  height: 24px;
-  flex: 0 0 24px;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
   align-items: center;
   justify-content: center;
-  border: 2px solid currentColor;
-  border-radius: 50%;
-  font-family: serif;
-  font-size: 17px;
-  font-weight: 700;
-  font-style: italic;
-  line-height: 1;
+
+  img {
+    display: block;
+    width: 20px;
+    height: 20px;
+  }
 }
 
 .binding-manager__confirm-actions {

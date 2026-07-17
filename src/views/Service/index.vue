@@ -20,6 +20,7 @@ import { KfConnectionState } from '@/hooks/useKfWebSocket';
 import BaseModal from '@/components/BaseModal.vue';
 import iconBackUrl from '@/assets/images/common/icon_back.svg?url';
 import avatarDefaultUrl from '@/assets/images/common/avatar_default.png?url';
+import iconDialogInfoUrl from '@/assets/images/common/icon_dialog_info.svg?url';
 import iconEmojiUrl from '@/assets/images/service/icon_emoji.png';
 import {
   SERVICE_EMOTICON_ITEMS,
@@ -616,7 +617,9 @@ onMounted(() => {
       @update:model-value="cancelExit"
     >
       <div class="service-exit-dialog__body">
-        <span class="service-exit-dialog__info" aria-hidden="true">i</span>
+        <span class="service-exit-dialog__info" aria-hidden="true">
+          <img :src="iconDialogInfoUrl" width="20" height="20" alt="" />
+        </span>
         <p>{{ t('是否结束对话') }}</p>
       </div>
       <div class="service-exit-dialog__actions">
@@ -1473,27 +1476,30 @@ onMounted(() => {
   height: 70px;
   border-radius: 12px;
   background: #fff;
-  color: #0b3462;
-  font-size: 16px;
-  font-weight: 700;
 
   p {
     margin: 0;
+    // 与登录确认弹窗文案一致：16px / Regular / #0B3462
+    color: #0b3462;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.4;
   }
 }
 
 .service-exit-dialog__info {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
-  border: 1.5px solid #5d7899;
-  border-radius: 50%;
-  color: #5d7899;
-  font-size: 12px;
-  font-weight: 700;
-  font-family: $font-family-num, $font-family-base;
+  width: 20px;
+  height: 20px;
+
+  img {
+    display: block;
+    width: 20px;
+    height: 20px;
+  }
 }
 
 .service-exit-dialog__actions {

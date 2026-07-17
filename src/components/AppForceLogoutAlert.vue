@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useAppStore } from '@/store/modules/app';
 import BaseModal from '@/components/BaseModal.vue';
+import iconDialogInfoUrl from '@/assets/images/common/icon_dialog_info.svg?url';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -26,7 +27,9 @@ function confirm() {
     @update:model-value="confirm"
   >
     <div class="force-logout-dialog__body">
-      <span class="force-logout-dialog__info" aria-hidden="true">i</span>
+      <span class="force-logout-dialog__info" aria-hidden="true">
+        <img :src="iconDialogInfoUrl" width="20" height="20" alt="" />
+      </span>
       <p>{{ t('您的账号已在其他设备登录，本次登录已下线') }}</p>
     </div>
     <div class="force-logout-dialog__actions">
@@ -48,28 +51,30 @@ function confirm() {
   height: 70px;
   border-radius: 12px;
   background: #fff;
-  color: #0B3462;
-  font-size: 14px;
-  font-weight: 700;
 
   p {
     margin: 0;
+    // 与登录确认弹窗文案一致：16px / Regular / #0B3462
+    color: #0b3462;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.4;
   }
 }
 
 .force-logout-dialog__info {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
-  border: 1.5px solid #5d7899;
-  border-radius: 50%;
-  color: #5d7899;
-  font-size: 12px;
-  font-weight: 700;
-  font-family: $font-family-num, $font-family-base;
-  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+
+  img {
+    display: block;
+    width: 20px;
+    height: 20px;
+  }
 }
 
 .force-logout-dialog__actions {

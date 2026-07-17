@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/useToast';
 import { registerApi, captchaInit, captchaVerify } from '@/api/user';
 import { useAppStore } from '@/store/modules/app';
 import BaseModal from '@/components/BaseModal.vue';
+import iconDialogInfoUrl from '@/assets/images/common/icon_dialog_info.svg?url';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -330,7 +331,9 @@ onBeforeUnmount(() => {
       :show-close="true"
     >
       <div class="register-success__body">
-        <span class="register-success__info" aria-hidden="true">i</span>
+        <span class="register-success__info" aria-hidden="true">
+          <img :src="iconDialogInfoUrl" width="20" height="20" alt="" />
+        </span>
         <p>{{ t('恭喜您成功注册UNIBET！') }}</p>
       </div>
       <div class="register-success__actions">
@@ -725,28 +728,30 @@ onBeforeUnmount(() => {
   height: 70px;
   border-radius: 12px;
   background: #fff;
-  color: #0b3462;
-  font-size: 14px;
-  font-weight: 700;
 
   p {
     margin: 0;
+    // 与登录确认弹窗文案一致：16px / Regular / #0B3462
+    color: #0b3462;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.4;
   }
 }
 
 .register-success__info {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
-  border: 1.5px solid #5d7899;
-  border-radius: 50%;
-  color: #5d7899;
-  font-size: 12px;
-  font-weight: 700;
-  font-family: $font-family-num, $font-family-base;
-  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+
+  img {
+    display: block;
+    width: 20px;
+    height: 20px;
+  }
 }
 
 .register-success__actions {
