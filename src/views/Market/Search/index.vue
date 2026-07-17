@@ -1,7 +1,7 @@
 <script setup>
 /**
  * 搜索页：对齐安卓 MarketSearchActivity
- * - 默认市场搜索：GET /markets/list?teamName=
+ * - 默认市场搜索：GET /markets/list?teamName=&period=FT
  * - mode=match：赛事搜索（联赛/主客队本地过滤），phase 透传 finished/live/all
  * - 空白关键词不请求；清空关键词时清空列表
  */
@@ -175,14 +175,15 @@ async function doSearch() {
       return;
     }
 
-    // 对齐安卓 HomeRepository.markets(page=1, size=20, teamName=keyword)
+    // 对齐安卓 HomeRepository.markets：teamName + period=FT（全场，避免半场盘口混入）
     const res = await fetchMarketListPaged({
       pageNum: 1,
       pageSize: PAGE_SIZE,
       teamName: keyword,
+      period: 'FT',
     });
     if (requestSerial !== searchRequestSerial) return;
-    // 搜索页对齐安卓：FT/HT 各算一条，不做 matchId 去重
+    // period=FT 后仅全场盘口；仍按 marketId 映射，避免同场重复
     results.value = (res?.data?.records ?? []).map(normalizeMarketRecord);
     matchResults.value = [];
   } catch (error) {

@@ -23,6 +23,7 @@ const loading = ref(true);
 const loadingMore = ref(false);
 const error = ref(false);
 const searchQuery = ref('');
+const trimmedQuery = computed(() => searchQuery.value.trim());
 /** PC 联赛筛选弹层开关（H5 仍跳转筛选页） */
 const filterPanelOpen = ref(false);
 
@@ -69,6 +70,8 @@ async function loadMarkets(append) {
   const day = currentDay();
   const leagueList = currentLeagueFilters();
   const page = append ? pageNum.value + 1 : 1;
+  // PC/H5 球队搜索统一走服务端 teamName，并固定全场 period=FT
+  const teamName = trimmedQuery.value || undefined;
 
   // 全部不选：不发请求，直接空列表
   if (leagueList.length === 0) {
@@ -86,6 +89,7 @@ async function loadMarkets(append) {
         day,
         league: lg || undefined,
         period: MARKET_PERIOD,
+        teamName,
       }).catch(() => null),
     ),
   );
@@ -194,20 +198,21 @@ function normalizeMarketRecord(r) {
 
 onMounted(loadInitial);
 
-const trimmedQuery = computed(() => searchQuery.value.trim());
-const hasQuery = computed(() => trimmedQuery.value.length > 0);
+/**
+ * PC 搜索对齐 H5 搜索页：回车触发服务端 teamName 查询；
+ * 清空关键词后恢复当前筛选下的完整列表（不再做本地字符串过滤）。
+ */
+function onSearchEnter(e) {
+  e?.preventDefault?.();
+  if (!trimmedQuery.value) return;
+  reload();
+}
 
-const filteredMatches = computed(() => {
-  let list = matches.value;
-  // 联赛过滤已由服务端 league 参数完成，这里只做搜索过滤。
-  if (hasQuery.value) {
-    const q = trimmedQuery.value.toLowerCase();
-    list = list.filter((m) =>
-      [m.league, m.homeTeam, m.awayTeam, m.date].filter(Boolean).join(' ').toLowerCase().includes(q),
-    );
+function onSearchInput() {
+  if (!trimmedQuery.value) {
+    reload();
   }
-  return list;
-});
+}
 
 async function selectFilter(key) {
   if (activeFilter.value === key) return;
@@ -288,6 +293,9 @@ watch([selectedLeagues, isAllSelected], () => {
             class="market-leagues__search-input"
             :placeholder="t('搜索球队名称')"
             autocomplete="off"
+            enterkeyhint="search"
+            @keydown.enter.prevent="onSearchEnter"
+            @input="onSearchInput"
           />
         </label>
       </div>
@@ -327,14 +335,14 @@ watch([selectedLeagues, isAllSelected], () => {
         <button type="button" class="market-leagues__retry" @click="loadInitial">{{ t('重试') }}</button>
       </div>
       <EmptyState
-        v-else-if="filteredMatches.length === 0"
+        v-else-if="matches.length === 0"
         :text="t('暂无相关赛事')"
       />
 
       <!-- 列表 -->
       <div v-else class="market-leagues__grid">
         <HomeMatchCard
-          v-for="match in filteredMatches"
+          v-for="match in matches"
           :key="match._dedupeKey || match.id"
           :match="match"
         />
