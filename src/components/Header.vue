@@ -131,6 +131,14 @@ const financeMonth = computed({
 const isFinanceCompact = computed(
   () => isFinancePage.value && !isMobile.value && route.name !== 'finance-records',
 );
+// PC 侧栏进入「我的」：对齐提款页紧凑顶栏（左侧返回），不展示右侧操作按钮。
+const isProfileHomeCompact = computed(
+  () => !isMobile.value && isProfileHomePage.value,
+);
+// PC 充值/提现等财务子页与「我的」一样：紧凑顶栏只保留左侧返回，隐藏右侧按钮。
+const hidePcCompactToolbar = computed(
+  () => isProfileHomeCompact.value || isFinanceCompact.value,
+);
 const isCompactDetailHeader = computed(
   () =>
     isMarketLeaguePage.value ||
@@ -138,7 +146,8 @@ const isCompactDetailHeader = computed(
     isPurchaseDetailsPage.value ||
     (isMobile.value && route.meta?.compactHeader) ||
     (isMobile.value && isProfileSubPage.value) ||
-    isFinanceCompact.value
+    isFinanceCompact.value ||
+    isProfileHomeCompact.value,
 );
 const compactTitle = computed(() => t(route.meta?.titleKey || '返回'));
 const isMobileMarketListHeader = computed(() => isMobile.value && isMarketListPage.value);
@@ -375,7 +384,7 @@ watch(isLoggedIn, (loggedIn) => {
         </template>
       </div>
       <div
-        v-if="!isMobile"
+        v-if="!isMobile && !hidePcCompactToolbar"
         class="header-toolbar"
         :class="{
           'header-toolbar--member': isLoggedIn && !isCompactDetailHeader,

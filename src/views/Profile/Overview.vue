@@ -203,7 +203,7 @@ const menuItems = computed(() => {
         serviceMenuItem,
         messagesMenuItem,
         vipBenefitsMenuItem,
-        vipTransferMenuItem,
+        // PC「我的」不再展示会员互转入口
         profileMenuItem,
         securityMenuItem,
         languageSettingMenuItem,
