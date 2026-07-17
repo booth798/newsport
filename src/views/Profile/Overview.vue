@@ -1329,20 +1329,25 @@ onMounted(() => {
 
   .profile-home__menu-badge {
     position: absolute;
-    top: -4px;
-    right: -8px;
+    // 贴在图标右上角外侧，对齐设计稿红点位置
+    top: 0;
+    right: 0;
+    transform: translate(45%, -35%);
+    z-index: 1;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 18px;
-    height: 18px;
+    min-width: 20px;
+    height: 20px;
     padding: 0 5px;
-    border-radius: 9px;
+    border-radius: 10px;
     background: #f44336;
     color: #fff;
     font-size: 11px;
     font-weight: 600;
     line-height: 1;
+    pointer-events: none;
+    box-sizing: border-box;
   }
 
   .profile-home__menu-label {
