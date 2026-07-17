@@ -12,8 +12,13 @@ const appStore = useAppStore();
 const { csHours } = storeToRefs(appStore);
 
 const vipLevel = ref(0);
-const homeMatches = ref([]);
+/** /api/home 的 hotMarkets 原始盘口（未归并），对齐安卓 cachedHotMarkets */
+const homeHotMarkets = ref([]);
 const homeBanners = ref([]);
+/** 热门联赛 Tab 原始数据，对齐安卓 HomeFragment.hotLeagues */
+const hotLeagues = ref([]);
+/** /home（及并行的 /leagues/hot）是否已结束，供子组件结束加载态 */
+const homeReady = ref(false);
 // 接口只返回时段（如 09:00-21:00），前端按当前语言拼完整走马灯文案。
 const announcementText = computed(() => {
   void locale.value;
@@ -24,13 +29,23 @@ const announcementText = computed(() => {
 
 onMounted(async () => {
   try {
-    const { fetchHomeData, normalizeHomeMarkets } = await import('@/api/match');
-    const homeRes = await fetchHomeData();
-    const data = homeRes.data || {};
-    if (data.vip) vipLevel.value = data.vip.level || 0;
-    if (data.hotMarkets) homeMatches.value = normalizeHomeMarkets(data.hotMarkets);
-    homeBanners.value = data.banners || [];
-  } catch { /* non-critical */ }
+    // 对齐安卓 loadRemoteData：首页聚合与热门联赛 Tab 并行拉取，去掉原先 3s 延迟
+    const { fetchHomeData, fetchHotLeagues } = await import('@/api/match');
+    const [homeRes, leagueRes] = await Promise.all([
+      fetchHomeData().catch(() => null),
+      fetchHotLeagues().catch(() => null),
+    ]);
+    if (homeRes) {
+      const data = homeRes.data || {};
+      if (data.vip) vipLevel.value = data.vip.level || 0;
+      // 原始盘口交给子组件按 onePerEvent 归并（与安卓一致）
+      homeHotMarkets.value = Array.isArray(data.hotMarkets) ? data.hotMarkets : [];
+      homeBanners.value = data.banners || [];
+    }
+    if (leagueRes) hotLeagues.value = leagueRes.data || [];
+  } finally {
+    homeReady.value = true;
+  }
 });
 </script>
 
@@ -40,7 +55,11 @@ onMounted(async () => {
 
     <div class="home__inner">
       <HomeAnnouncement :text="announcementText" />
-      <HomeHotEvents :preloaded-matches="homeMatches" />
+      <HomeHotEvents
+        :preloaded-hot-markets="homeHotMarkets"
+        :hot-leagues="hotLeagues"
+        :home-ready="homeReady"
+      />
     </div>
   </div>
 </template>
