@@ -241,8 +241,18 @@ function needsEncryption(method, body, url) {
 }
 
 // ─── 全局加载 & 网络状态 ───
+// 策略：同一路由进入后只展示一轮全局 loading；串行请求用短延迟合并，避免闪两次。
 
 let _loadingCount = 0;
+let _loadingVisible = false;
+/** 本路由是否已完成过一轮 loading（显示→隐藏） */
+let _routeLoadingUsed = false;
+let _hideTimer = null;
+/** 路由切换时递增，作废上一页未完成请求对 loading 的影响 */
+let _loadingSessionId = 0;
+
+/** 隐藏前等待，给紧随其后的串行请求机会并入同一轮 loading */
+const LOADING_HIDE_DELAY_MS = 280;
 
 function emitEvent(name) {
   if (typeof window !== 'undefined') {
@@ -250,14 +260,62 @@ function emitEvent(name) {
   }
 }
 
+/**
+ * 路由切换时重置：允许新页面再展示一轮全局 loading，并清掉上一页残留计数。
+ */
+export function resetGlobalLoadingSession() {
+  _loadingSessionId += 1;
+  if (_hideTimer) {
+    clearTimeout(_hideTimer);
+    _hideTimer = null;
+  }
+  _loadingCount = 0;
+  _routeLoadingUsed = false;
+  if (_loadingVisible) {
+    _loadingVisible = false;
+    emitEvent('mysport:loading-hide');
+  }
+}
+
 function showLoading() {
-  _loadingCount++;
-  if (_loadingCount === 1) emitEvent('mysport:loading-show');
+  if (_hideTimer) {
+    clearTimeout(_hideTimer);
+    _hideTimer = null;
+  }
+  _loadingCount += 1;
+  if (!_loadingVisible) {
+    _loadingVisible = true;
+    emitEvent('mysport:loading-show');
+  }
 }
 
 function hideLoading() {
   _loadingCount = Math.max(0, _loadingCount - 1);
-  if (_loadingCount === 0) emitEvent('mysport:loading-hide');
+  if (_loadingCount > 0) return;
+
+  if (_hideTimer) clearTimeout(_hideTimer);
+  const sessionAtSchedule = _loadingSessionId;
+  _hideTimer = setTimeout(() => {
+    _hideTimer = null;
+    // 路由已切换或期间又有新请求，则不再隐藏 / 不标记本轮结束
+    if (sessionAtSchedule !== _loadingSessionId || _loadingCount !== 0) return;
+    _routeLoadingUsed = true;
+    if (_loadingVisible) {
+      _loadingVisible = false;
+      emitEvent('mysport:loading-hide');
+    }
+  }, LOADING_HIDE_DELAY_MS);
+}
+
+/**
+ * 是否参与本轮全局 loading：
+ * - 本路由尚未结束过一轮 → 参与
+ * - 仍在展示中 / 计数未清 / 隐藏延迟未到 → 并入同一轮
+ * - 本路由已结束过一轮且当前空闲 → 不再弹出（避免第二次闪烁）
+ */
+function shouldJoinGlobalLoading() {
+  if (!_routeLoadingUsed) return true;
+  return _loadingVisible || _loadingCount > 0 || Boolean(_hideTimer);
 }
 
 const SILENT_PATHS = new Set([
@@ -285,6 +343,10 @@ export async function request(url, options = {}, _retried = false) {
   } = options;
 
   const silent = isSilent(url, options);
+  // 仅最外层请求管理 loading；401 重试复用同一轮，避免闪烁
+  const manageLoading = !silent && !_retried;
+  const sessionAtStart = _loadingSessionId;
+  const joinLoading = manageLoading && shouldJoinGlobalLoading();
 
   let fullUrl = `${API_BASE}${url}`;
   if (params) {
@@ -344,7 +406,7 @@ export async function request(url, options = {}, _retried = false) {
   const fetchOpts = { method, headers: mergedHeaders };
   if (finalBody !== undefined) fetchOpts.body = finalBody;
 
-  if (!silent) showLoading();
+  if (joinLoading && sessionAtStart === _loadingSessionId) showLoading();
 
   try {
     const res = await fetch(fullUrl, fetchOpts);
@@ -352,8 +414,8 @@ export async function request(url, options = {}, _retried = false) {
 
     if (result === null && !_retried) {
       logResponse(null, { message: '401 → 自动续期重试' });
-      if (!silent) hideLoading();
-      return request(url, options, true);
+      // await 保证 finally 在重试结束后再 hide，整段续期只算一轮 loading
+      return await request(url, options, true);
     }
     if (result === null) {
       clearToken();
@@ -372,7 +434,8 @@ export async function request(url, options = {}, _retried = false) {
     }
     throw e;
   } finally {
-    if (!silent) hideLoading();
+    // 路由已切换则丢弃，避免旧页请求干扰新页 loading 会话
+    if (joinLoading && sessionAtStart === _loadingSessionId) hideLoading();
   }
 }
 

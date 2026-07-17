@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 
+import { resetGlobalLoadingSession } from '@/api/request';
 import Home from '@/views/Home/index.vue';
 
 const routes = [
@@ -222,7 +223,12 @@ const router = createRouter({
   },
 });
 
-router.beforeEach(async (to) => {
+router.beforeEach(async (to, from) => {
+  // 进入新页面时重置全局 loading 会话（本页只展示一轮）；同步执行，早于页面发请求
+  if (to.path !== from.path || to.name !== from.name) {
+    resetGlobalLoadingSession();
+  }
+
   if (to.matched.some((r) => r.meta.requiresAuth)) {
     if (to.matched.some((r) => r.meta.guestPreview)) return true;
     const { useUserStore } = await import('@/store/modules/user');

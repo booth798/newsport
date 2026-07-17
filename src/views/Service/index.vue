@@ -20,6 +20,17 @@ import { KfConnectionState } from '@/hooks/useKfWebSocket';
 import BaseModal from '@/components/BaseModal.vue';
 import iconBackUrl from '@/assets/images/common/icon_back.svg?url';
 import avatarDefaultUrl from '@/assets/images/common/avatar_default.png?url';
+import iconEmojiUrl from '@/assets/images/service/icon_emoji.png';
+import {
+  SERVICE_EMOTICON_ITEMS,
+  SERVICE_EMOTICON_PATTERN,
+  parseServiceEmoticonSegments,
+  createServiceEmoticonImage,
+  serializeServiceEmoticonEditor,
+  renderServiceEmoticonEditor,
+  getServiceEmoticonCaretOffset,
+  setServiceEmoticonCaretOffset,
+} from '@/constants/serviceEmoticons';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -49,21 +60,43 @@ const canSend = computed(
   () => inputText.value.trim() && isConnected.value,
 );
 
-/* ─── 表情面板 ─── */
+/* ─── 表情面板（对齐安卓：输入框显示图，发送仍为 {中文}） ─── */
 const INPUT_MAX_LENGTH = 2000;
-// 常用 Unicode 表情（跨端可正常显示，作为文本发送）
-const EMOJIS = [
-  '😀', '😁', '😂', '🤣', '😊', '😍', '😘', '😜',
-  '😎', '🤔', '😅', '😳', '😭', '😡', '😱', '😴',
-  '👍', '👎', '👏', '🙏', '💪', '🤝', '👌', '✌️',
-  '❤️', '💔', '💰', '🎉', '🔥', '⚽', '🏆', '⭐',
-  '😉', '😇', '🙄', '😏', '😬', '😢', '😤', '🤗',
-  '🥳', '😌', '😔', '🤩', '😋', '😐', '🤨', '🙃',
-];
+const EMOTICONS = SERVICE_EMOTICON_ITEMS;
 const showEmojiPanel = ref(false);
 const emojiBtnRef = ref(null);
 const emojiPanelRef = ref(null);
 const replyInputRef = ref(null);
+let applyingEditorSpans = false;
+/** 点表情面板前保留输入区选区，避免插入跑到末尾 */
+let savedEditorRange = null;
+
+const inputPlaceholder = computed(() => (
+  isConnected.value ? t('请输入消息...') : t('客服连接中，请稍候...')
+));
+const inputEmpty = computed(() => !inputText.value.trim());
+
+function saveEditorSelection() {
+  const el = replyInputRef.value;
+  const sel = window.getSelection();
+  if (!el || !sel || sel.rangeCount === 0) return;
+  if (el.contains(sel.anchorNode)) {
+    savedEditorRange = sel.getRangeAt(0).cloneRange();
+  }
+}
+
+function restoreEditorSelection() {
+  const el = replyInputRef.value;
+  const sel = window.getSelection();
+  if (!el || !sel || !savedEditorRange) return false;
+  try {
+    sel.removeAllRanges();
+    sel.addRange(savedEditorRange);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 function toggleEmojiPanel() {
   if (!isConnected.value) return;
@@ -74,23 +107,117 @@ function closeEmojiPanel() {
   showEmojiPanel.value = false;
 }
 
-function insertEmoji(emoji) {
+/** 同步 contenteditable → 发送用占位符文本 */
+function syncInputFromEditor() {
   const el = replyInputRef.value;
-  const cur = inputText.value;
-  // 超出长度上限则不再插入
-  if (cur.length + emoji.length > INPUT_MAX_LENGTH) return;
-  if (el && typeof el.selectionStart === 'number') {
-    const start = el.selectionStart;
-    const end = el.selectionEnd;
-    inputText.value = cur.slice(0, start) + emoji + cur.slice(end);
-    nextTick(() => {
-      el.focus();
-      const pos = start + emoji.length;
-      el.setSelectionRange(pos, pos);
-    });
-  } else {
-    inputText.value = cur + emoji;
+  if (!el) return '';
+  const text = serializeServiceEmoticonEditor(el);
+  inputText.value = text;
+  return text;
+}
+
+/** 文本节点里若出现完整占位符，转成图片（对齐安卓 afterTextChanged applySpans） */
+function applyEditorEmoticonSpans() {
+  const el = replyInputRef.value;
+  if (!el || applyingEditorSpans) return;
+  const text = serializeServiceEmoticonEditor(el);
+  SERVICE_EMOTICON_PATTERN.lastIndex = 0;
+  if (!SERVICE_EMOTICON_PATTERN.test(text)) return;
+
+  let hasPlainCode = false;
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  let node = walker.nextNode();
+  while (node) {
+    SERVICE_EMOTICON_PATTERN.lastIndex = 0;
+    if (SERVICE_EMOTICON_PATTERN.test(node.nodeValue || '')) {
+      hasPlainCode = true;
+      break;
+    }
+    node = walker.nextNode();
   }
+  if (!hasPlainCode) return;
+
+  applyingEditorSpans = true;
+  const caret = getServiceEmoticonCaretOffset(el);
+  renderServiceEmoticonEditor(el, text);
+  setServiceEmoticonCaretOffset(el, caret);
+  applyingEditorSpans = false;
+}
+
+function onEditorInput() {
+  const el = replyInputRef.value;
+  if (!el) return;
+  let text = serializeServiceEmoticonEditor(el);
+  if (text.length > INPUT_MAX_LENGTH) {
+    text = text.slice(0, INPUT_MAX_LENGTH);
+    applyingEditorSpans = true;
+    renderServiceEmoticonEditor(el, text);
+    setServiceEmoticonCaretOffset(el, text.length);
+    applyingEditorSpans = false;
+  }
+  inputText.value = text;
+  applyEditorEmoticonSpans();
+  syncInputFromEditor();
+}
+
+function onEditorPaste(event) {
+  event.preventDefault();
+  const el = replyInputRef.value;
+  if (!el || !isConnected.value) return;
+  const pasted = (event.clipboardData || window.clipboardData)?.getData('text') || '';
+  if (!pasted) return;
+  const cur = serializeServiceEmoticonEditor(el);
+  const caret = getServiceEmoticonCaretOffset(el);
+  const next = `${cur.slice(0, caret)}${pasted}${cur.slice(caret)}`.slice(0, INPUT_MAX_LENGTH);
+  applyingEditorSpans = true;
+  renderServiceEmoticonEditor(el, next);
+  setServiceEmoticonCaretOffset(el, Math.min(caret + pasted.length, next.length));
+  applyingEditorSpans = false;
+  inputText.value = next;
+}
+
+function clearEditor() {
+  const el = replyInputRef.value;
+  if (el) el.innerHTML = '';
+  inputText.value = '';
+}
+
+/** 插入表情图片（对齐安卓 insert + ImageSpan） */
+function insertEmoji(code) {
+  const el = replyInputRef.value;
+  const img = createServiceEmoticonImage(code);
+  if (!el || !img || !isConnected.value) return;
+
+  const cur = serializeServiceEmoticonEditor(el);
+  if (cur.length + code.length > INPUT_MAX_LENGTH) return;
+
+  el.focus();
+  restoreEditorSelection();
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount > 0 && el.contains(sel.anchorNode)) {
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+    range.insertNode(img);
+    range.setStartAfter(img);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    savedEditorRange = range.cloneRange();
+  } else {
+    el.appendChild(img);
+    const range = document.createRange();
+    range.setStartAfter(img);
+    range.collapse(true);
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+    savedEditorRange = range.cloneRange();
+  }
+  syncInputFromEditor();
+}
+
+/** 气泡文本拆成文本/表情片段（对齐安卓 ImageSpan 渲染） */
+function emoticonSegments(text) {
+  return parseServiceEmoticonSegments(text);
 }
 
 // 点击面板与表情按钮以外区域时关闭表情面板
@@ -157,10 +284,10 @@ const showConnectionBanner = computed(
 
 /* ─── 发送消息 ─── */
 function handleSend() {
-  const text = inputText.value.trim();
+  const text = syncInputFromEditor().trim();
   if (!text) return;
   sendText(text);
-  inputText.value = '';
+  clearEditor();
   closeEmojiPanel();
   nextTick(scrollToBottom);
 }
@@ -327,7 +454,16 @@ onMounted(() => {
                   <div class="service-msg__bubble">
                     <!-- 文本消息 -->
                     <p v-if="msg.contentType === ContentType.TEXT" class="service-msg__text">
-                      {{ msg.text }}
+                      <template v-for="(seg, segIdx) in emoticonSegments(msg.text)" :key="segIdx">
+                        <img
+                          v-if="seg.type === 'emoji'"
+                          class="service-msg__emoticon"
+                          :src="seg.src"
+                          :alt="seg.code"
+                          draggable="false"
+                        />
+                        <template v-else>{{ seg.text }}</template>
+                      </template>
                     </p>
 
                     <!-- 图片消息 -->
@@ -397,28 +533,37 @@ onMounted(() => {
           />
 
           <div class="service-reply-composer">
-            <textarea
+            <!-- contenteditable：对齐安卓 EditText + ImageSpan，输入区显示表情图 -->
+            <div
               ref="replyInputRef"
-              v-model="inputText"
               class="service-reply-input"
-              :placeholder="isConnected ? t('请输入消息...') : t('客服连接中，请稍候...')"
-              :disabled="!isConnected"
-              maxlength="2000"
-              rows="2"
+              :class="{ 'service-reply-input--disabled': !isConnected }"
+              :contenteditable="isConnected ? 'true' : 'false'"
+              role="textbox"
+              aria-multiline="true"
+              :data-placeholder="inputPlaceholder"
+              :data-empty="inputEmpty ? 'true' : 'false'"
+              @input="onEditorInput"
+              @paste="onEditorPaste"
+              @blur="saveEditorSelection"
+              @keyup="saveEditorSelection"
+              @mouseup="saveEditorSelection"
               @keydown.enter.exact.prevent="handleSend"
             />
 
             <div class="service-reply-toolbar">
-              <!-- 表情面板 -->
+              <!-- 表情面板：8 列网格，占位符插入（对齐安卓） -->
               <div v-if="showEmojiPanel" ref="emojiPanelRef" class="service-emoji-panel">
                 <button
-                  v-for="emoji in EMOJIS"
-                  :key="emoji"
+                  v-for="item in EMOTICONS"
+                  :key="item.code"
                   type="button"
                   class="service-emoji-panel__item"
-                  @click="insertEmoji(emoji)"
+                  :title="item.code"
+                  :aria-label="item.code"
+                  @click="insertEmoji(item.code)"
                 >
-                  {{ emoji }}
+                  <img :src="item.src" :alt="item.code" draggable="false" />
                 </button>
               </div>
 
@@ -432,9 +577,7 @@ onMounted(() => {
                 :aria-label="t('表情')"
                 @click="toggleEmojiPanel"
               >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                  <path d="M12.0059 2.01758C17.5099 2.01781 21.9881 6.49598 21.9883 12L21.9736 12.5127C21.7058 17.7794 17.3379 21.9822 12.0059 21.9824C6.50166 21.9824 2.02359 17.5042 2.02344 12C2.02344 6.4957 6.50156 2.01758 12.0059 2.01758ZM12.0059 3.37891C7.25236 3.37891 3.38477 7.2465 3.38477 12L3.39551 12.4434C3.6272 16.9915 7.40114 20.6201 12.0059 20.6201L12.4492 20.6104C16.9973 20.3786 20.6258 16.6046 20.626 12L20.6162 11.5566C20.3922 7.15525 16.8506 3.61393 12.4492 3.38965L12.0059 3.37891ZM8.39453 13.1816C8.77797 13.1075 9.19423 13.2852 9.35156 13.7031H9.35254C9.81836 14.7706 10.8486 15.4678 12.0078 15.4678L12.2236 15.46C13.2989 15.3792 14.2561 14.7023 14.6592 13.708C14.8335 13.2706 15.3514 13.0563 15.7842 13.2295C16.2206 13.4048 16.4333 13.9235 16.2607 14.3564L16.2588 14.3594C15.5326 16.0709 13.8627 17.2029 12.0078 17.2031C10.1527 17.2031 8.4821 16.0711 7.75586 14.3594L7.75391 14.3564C7.58551 13.9338 7.74969 13.4084 8.23145 13.2295L8.39453 13.1816ZM9.16797 8.68262C9.73212 8.6828 10.2432 9.12666 10.2432 9.65527V10.4639C10.243 10.9924 9.73158 11.4363 9.16797 11.4365H8.8877C8.32831 11.4365 7.81168 11.0317 7.81152 10.4639V9.65527C7.81152 9.1265 8.32385 8.68262 8.8877 8.68262H9.16797ZM15.127 8.68262C15.6908 8.68262 16.2031 9.1265 16.2031 9.65527V10.4639C16.203 10.9925 15.6907 11.4365 15.127 11.4365H14.8467C14.2874 11.4364 13.7707 11.0315 13.7705 10.4639V9.65527C13.7705 9.1266 14.283 8.6828 14.8467 8.68262H15.127Z" fill="#0B3462"/>
-                </svg>
+                <img :src="iconEmojiUrl" width="24" height="24" alt="" />
               </button>
 
               <!-- 图片上传按钮 -->
@@ -992,11 +1135,22 @@ onMounted(() => {
   color: inherit;
   font-size: 16px;
   line-height: 1.45;
+  white-space: pre-wrap;
 
   @include mobile-only {
     font-size: 12px;
     line-height: 1.5;
   }
+}
+
+/* 气泡内表情图：对齐安卓 MESSAGE_FACE_SIZE_DP=16 */
+.service-msg__emoticon {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin: 0 1px;
+  vertical-align: -3px;
+  object-fit: contain;
 }
 
 .service-msg__image-wrap {
@@ -1123,7 +1277,7 @@ onMounted(() => {
   min-height: 36px;
 }
 
-/* ─── 表情面板 ─── */
+/* ─── 表情面板（对齐安卓 8 列网格 + PNG） ─── */
 
 .service-emoji-panel {
   position: absolute;
@@ -1134,7 +1288,7 @@ onMounted(() => {
   grid-template-columns: repeat(8, 1fr);
   gap: 2px;
   width: min(360px, 100%);
-  max-height: 200px;
+  max-height: 260px;
   overflow-y: auto;
   padding: 10px;
   border: 1px solid rgba(21, 58, 119, 0.12);
@@ -1142,11 +1296,6 @@ onMounted(() => {
   background: #fff;
   box-shadow: 0 8px 24px rgba(21, 58, 119, 0.16);
   box-sizing: border-box;
-
-  @include mobile-only {
-    grid-template-columns: repeat(7, 1fr);
-    max-height: 168px;
-  }
 }
 
 .service-emoji-panel__item {
@@ -1155,21 +1304,24 @@ onMounted(() => {
   justify-content: center;
   width: 100%;
   aspect-ratio: 1;
-  padding: 0;
+  padding: 6px;
   border: 0;
   border-radius: 8px;
   background: transparent;
-  font-size: 22px;
-  line-height: 1;
   cursor: pointer;
   transition: background 0.15s;
+  box-sizing: border-box;
+
+  img {
+    display: block;
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    pointer-events: none;
+  }
 
   &:hover {
     background: rgba(31, 124, 255, 0.1);
-  }
-
-  @include mobile-only {
-    font-size: 20px;
   }
 }
 
@@ -1186,6 +1338,13 @@ onMounted(() => {
   background: transparent;
   cursor: pointer;
   transition: background 0.2s;
+
+  img {
+    display: block;
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+  }
 
   &:hover:not(:disabled) {
     background: rgba(0, 0, 0, 0.04);
@@ -1244,27 +1403,46 @@ onMounted(() => {
 .service-reply-input {
   flex: 1;
   min-width: 0;
-  min-height: 0;
+  min-height: 44px;
+  max-height: 96px;
+  overflow-y: auto;
   padding: 0 0 0 2px;
   border: 0;
   border-radius: 0;
   background: transparent;
-  background-color: transparent;
   color: var(--theme-text);
   font-size: $font-size-md;
+  line-height: 1.45;
   outline: none;
   box-sizing: border-box;
   font-family: inherit;
-  resize: none;
+  white-space: pre-wrap;
+  word-break: break-word;
 
-  &::placeholder {
+  &[data-empty='true']::before {
+    content: attr(data-placeholder);
     color: rgba(23, 59, 97, 0.28);
-    opacity: 1;
+    pointer-events: none;
+  }
+
+  &--disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  // 输入框内表情：对齐安卓 INPUT_FACE_SIZE_DP=22
+  :deep(.service-reply-input__emoticon) {
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    margin: 0 1px;
+    vertical-align: -5px;
+    object-fit: contain;
   }
 
   @include mobile-only {
-    &::placeholder {
-      color: #C2C5CC;
+    &[data-empty='true']::before {
+      color: #c2c5cc;
     }
   }
 }
