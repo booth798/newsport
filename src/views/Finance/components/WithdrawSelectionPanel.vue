@@ -108,7 +108,7 @@ function add() {
 .selection-page {
   position: fixed;
   inset: 0;
-  // 低于 BaseModal（1200），使新增绑定弹窗可叠加显示并在关闭后返回本页。
+  // 低于 BaseModal 叠层起点（1200），使新增绑定弹窗可叠加显示并在关闭后返回本页。
   z-index: 1100;
   box-sizing: border-box;
   overflow-y: auto;
