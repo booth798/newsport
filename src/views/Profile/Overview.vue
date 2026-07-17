@@ -246,6 +246,11 @@ async function loadUnreadCount() {
   }
 }
 
+/** 关闭消息中心后刷新未读数，保证角标与 H5 一致 */
+function onMessageCenterToggle(open) {
+  if (!open) loadUnreadCount();
+}
+
 async function refreshBalance() {
   if (refreshing.value) return;
   try {
@@ -542,8 +547,11 @@ onMounted(() => {
               @click="handleMenuClick(item)">
               <span class="profile-home__menu-icon-wrap">
                 <img class="profile-home__menu-icon" :src="item.icon" width="54" height="54" alt="" />
-                <!-- 暂不展示联系客服未读数 -->
-                <!-- <span v-if="item.action === 'service' && unreadCount > 0" class="profile-home__menu-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span> -->
+                <!-- PC 消息中心未读数角标，对齐 H5 顶栏消息红点数字 -->
+                <span
+                  v-if="item.action === 'messages' && unreadCount > 0"
+                  class="profile-home__menu-badge"
+                >{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
               </span>
               <span class="profile-home__menu-label">{{ t(item.label) }}</span>
             </button>
@@ -554,7 +562,11 @@ onMounted(() => {
 
     <ProfileUserInfoModal v-model="showUserInfoModal" :nickname="displayName"
       :avatar-url="avatarDisplayUrl" />
-    <MessageCenterModal v-model="showMessageCenterModal" />
+    <MessageCenterModal
+      v-model="showMessageCenterModal"
+      @read-all="loadUnreadCount"
+      @update:model-value="onMessageCenterToggle"
+    />
     <ProfileSecurityModal v-model="showSecurityModal" />
     <LanguageSettingModal v-model="showLanguageSettingModal" />
     <ProfileBindingManagerModal v-model="showBindingModal" />

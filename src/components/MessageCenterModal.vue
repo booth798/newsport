@@ -3,9 +3,10 @@ import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 
-import { fetchMessages } from '@/api/user';
+import { fetchMessages, markAllRead } from '@/api/user';
 import BaseModal from '@/components/BaseModal.vue';
 import EmptyState from '@/components/EmptyState.vue';
+import { useToast } from '@/hooks/useToast';
 import iconSystemMessage from '@/assets/images/common/icon_announcement.svg';
 import clean_all_read_icon from '@/assets/images/profile/clean_all_read_icon.svg';
 
@@ -13,12 +14,14 @@ const props = defineProps({
   modelValue: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue', 'read-all']);
 const { t } = useI18n();
 const router = useRouter();
+const toast = useToast();
 const messages = ref([]);
 const loading = ref(false);
 const error = ref(false);
+const markingAllRead = ref(false);
 
 // 取第一个非空字段，与安卓 JsonObject.text(vararg keys) 行为对齐
 function pickText(source, ...keys) {
@@ -54,6 +57,8 @@ const normalizedMessages = computed(() =>
     .filter((message) => message.id !== ''),
 );
 
+const hasUnread = computed(() => normalizedMessages.value.some((m) => !m.read));
+
 async function loadMessages() {
   try {
     loading.value = true;
@@ -80,6 +85,22 @@ function openMessage(message) {
   });
 }
 
+/** PC/H5：右上角一键已读 → POST /api/messages/read-all */
+async function handleMarkAllRead() {
+  if (markingAllRead.value || !hasUnread.value) return;
+  markingAllRead.value = true;
+  try {
+    await markAllRead();
+    messages.value = messages.value.map((m) => ({ ...m, read: true }));
+    emit('read-all');
+    toast.success(t('操作成功'));
+  } catch (e) {
+    toast.error(e?.message || t('操作失败'));
+  } finally {
+    markingAllRead.value = false;
+  }
+}
+
 watch(
   () => props.modelValue,
   (visible) => {
@@ -91,7 +112,15 @@ watch(
 <template>
   <BaseModal :model-value="props.modelValue" :title="t('消息中心')" :description="t('查看您的系统消息')"
     @update:model-value="emit('update:modelValue', $event)">
-    <img class="message-center-modal__clean-all-read-icon" :src="clean_all_read_icon" alt="" width="48"/>
+    <button
+      type="button"
+      class="message-center-modal__clean-all-read"
+      :aria-label="t('全部已读')"
+      :disabled="markingAllRead || !hasUnread"
+      @click="handleMarkAllRead"
+    >
+      <img class="message-center-modal__clean-all-read-icon" :src="clean_all_read_icon" alt="" width="48" />
+    </button>
     <div class="message-center-modal">
       <div class="message-center-modal__content">
         <div v-if="loading" class="message-center-modal__state">
@@ -163,12 +192,26 @@ watch(
     }
   }
 
-  &__clean-all-read-icon {
+  &__clean-all-read {
     position: absolute;
     top: 12px;
     right: 0;
-    width: 32px;
+    padding: 0;
+    border: 0;
+    background: transparent;
     cursor: pointer;
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  }
+
+  &__clean-all-read-icon {
+    display: block;
+    width: 32px;
+    height: auto;
+    pointer-events: none;
   }
 
   &__list {

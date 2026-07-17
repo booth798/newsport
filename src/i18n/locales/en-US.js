@@ -517,6 +517,8 @@ export default {
   复制成功: 'Copied',
   复制失败: 'Copy failed',
   操作成功: 'Success',
+  操作失败: 'Operation failed',
+  全部已读: 'Mark all as read',
   提款申请已提交: 'Withdrawal request submitted',
   请输入金额: 'Please enter amount',
   金额必须大于零: 'Amount must be greater than zero',

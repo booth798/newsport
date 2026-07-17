@@ -135,6 +135,10 @@ const isFinanceCompact = computed(
 const isProfileHomeCompact = computed(
   () => !isMobile.value && isProfileHomePage.value,
 );
+// PC 系统消息详情：左侧返回 + 右侧更多（icon_more），对齐设计稿。
+const isMessagesCompact = computed(
+  () => !isMobile.value && route.name === 'profile-messages',
+);
 // PC 充值/提现等财务子页与「我的」一样：紧凑顶栏只保留左侧返回，隐藏右侧按钮。
 const hidePcCompactToolbar = computed(
   () => isProfileHomeCompact.value || isFinanceCompact.value,
@@ -147,7 +151,8 @@ const isCompactDetailHeader = computed(
     (isMobile.value && route.meta?.compactHeader) ||
     (isMobile.value && isProfileSubPage.value) ||
     isFinanceCompact.value ||
-    isProfileHomeCompact.value,
+    isProfileHomeCompact.value ||
+    isMessagesCompact.value,
 );
 const compactTitle = computed(() => t(route.meta?.titleKey || '返回'));
 const isMobileMarketListHeader = computed(() => isMobile.value && isMarketListPage.value);
@@ -394,26 +399,34 @@ watch(isLoggedIn, (loggedIn) => {
         <template v-if="isCompactDetailHeader && isLoggedIn">
           <div class="header-market-detail-stack">
             <div class="header-market-belt-row">
-              <div class="header-user-strip" role="group" :aria-label="loggedInUserId">
-                <img
-                  class="header-user-strip__avatar"
-                  :src="displayAvatarUrl"
-                  width="40"
-                  height="40"
-                  alt=""
-                />
-                <span class="header-user-strip__id">{{ loggedInUserId }}</span>
-                <div class="header-user-strip__assets">
-                  <span class="header-user-strip__assets-label">{{ t('总资产') }}</span>
-                  <span class="header-user-strip__assets-value">{{ loggedInAssetsFormatted }}</span>
+              <!-- PC 系统消息：仅右侧更多入口，不展示用户条/客服 -->
+              <template v-if="isMessagesCompact">
+                <button type="button" class="header-round-btn" :aria-label="t('菜单')" @click="mobileDrawerOpen = true">
+                  <img class="header-round-btn__img" :src="moreIconUrl" alt="" />
+                </button>
+              </template>
+              <template v-else>
+                <div class="header-user-strip" role="group" :aria-label="loggedInUserId">
+                  <img
+                    class="header-user-strip__avatar"
+                    :src="displayAvatarUrl"
+                    width="40"
+                    height="40"
+                    alt=""
+                  />
+                  <span class="header-user-strip__id">{{ loggedInUserId }}</span>
+                  <div class="header-user-strip__assets">
+                    <span class="header-user-strip__assets-label">{{ t('总资产') }}</span>
+                    <span class="header-user-strip__assets-value">{{ loggedInAssetsFormatted }}</span>
+                  </div>
                 </div>
-              </div>
-              <button type="button" class="header-round-btn" :aria-label="t('在线客服')" @click="appStore.openCustomerServiceConfirm">
-                <img class="header-round-btn__img" :src="serviceIconUrl" alt="" />
-              </button>
-              <button type="button" class="header-round-btn" :aria-label="t('菜单')" @click="mobileDrawerOpen = true">
-                <img class="header-round-btn__img" :src="moreIconUrl" alt="" />
-              </button>
+                <button type="button" class="header-round-btn" :aria-label="t('在线客服')" @click="appStore.openCustomerServiceConfirm">
+                  <img class="header-round-btn__img" :src="serviceIconUrl" alt="" />
+                </button>
+                <button type="button" class="header-round-btn" :aria-label="t('菜单')" @click="mobileDrawerOpen = true">
+                  <img class="header-round-btn__img" :src="moreIconUrl" alt="" />
+                </button>
+              </template>
             </div>
           </div>
         </template>
@@ -464,7 +477,7 @@ watch(isLoggedIn, (loggedIn) => {
     </div>
     <!-- PC / H5 共用右侧菜单抽屉（Figma 1510:11242） -->
     <MobileNavDrawer v-model="mobileDrawerOpen" :menus="navMenus" />
-    <MessageCenterModal v-model="messageCenterOpen" />
+    <MessageCenterModal v-model="messageCenterOpen" @read-all="loadUnreadCount" />
   </div>
 </template>
 

@@ -142,8 +142,8 @@ const routes = [
         path: 'messages',
         name: 'profile-messages',
         component: () => import('@/views/Profile/Messages.vue'),
-        // 消息页复用全局 Header，并隐藏移动端底栏。
-        meta: { titleKey: '消息中心', hideMobileTabBar: true },
+        // 消息详情页：PC 用紧凑顶栏（返回 + 更多）；H5 仍走 profile 子页紧凑头。
+        meta: { titleKey: '系统消息', hideMobileTabBar: true },
       },
       {
         path: 'verify',

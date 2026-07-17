@@ -43,15 +43,22 @@ async function idempotentPost(url, body, operation) {
   return res;
 }
 
-/** 我的订单列表 */
+/**
+ * 我的订单列表 GET /orders
+ * 参数对齐 OrderListReq：pageNum / pageSize / status[] / matchId / period / account / orderNo
+ * status 为数组时展开为 ?status=WON&status=LOST（与文档一致）
+ */
 export async function fetchOrderList(params = {}) {
   return get('/orders', {
     pageNum: params.pageNum || 1,
     pageSize: params.pageSize || 20,
     status: params.status,
     matchId: params.matchId,
-    marketId: params.marketId,
     period: params.period,
+    account: params.account,
+    orderNo: params.orderNo,
+    // 兼容旧调用；文档未列 marketId 时传了也会被后端忽略
+    marketId: params.marketId,
   });
 }
 

@@ -27,11 +27,14 @@ const PAGE_SIZE = 20;
 /** 对齐安卓 FinanceOverviewAdapter：下单后 5 分钟内才显示取消按钮 */
 const CANCEL_WINDOW_MS = 5 * 60 * 1000;
 
-/** PC 侧栏状态筛选 → 接口 status 多值（空表示不过滤） */
+/** PC 侧栏 → OrderListReq.status 枚举（文档：PENDING_MATCH/PLACED/WON/LOST/REFUNDED/CANCELLED） */
 const STATUS_FILTER_MAP = {
   all: undefined,
+  // 成功：已结算
   completed: ['WON', 'LOST', 'REFUNDED'],
+  // 处理中：预约中 / 已成交待结算
   processing: ['PENDING_MATCH', 'PLACED'],
+  // 已取消
   cancelled: ['CANCELLED'],
 };
 
@@ -267,6 +270,7 @@ async function loadPage(page, append = false) {
     else loadingMore.value = true;
     error.value = false;
 
+    // 对齐文档：?status=WON&status=LOST（数组一次传入，request 层展开为重复 query）
     const status = STATUS_FILTER_MAP[statusFilter.value];
     const promises = [fetchOrderList({ pageNum: page, pageSize: PAGE_SIZE, status })];
     if (page === 1) promises.push(fetchLedgerSummary().catch(() => null));
@@ -282,7 +286,7 @@ async function loadPage(page, append = false) {
       };
     }
 
-    const page_ = orderRes.data || {};
+    const page_ = orderRes?.data || {};
     const records = (page_.records || []).map(normalizeOrder);
     const total = page_.total;
     const pages = page_.pages;
@@ -434,10 +438,10 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
             <span class="ord__platform">{{ t('UNI BET平台') }}</span>
             <span v-if="order.kickoffFormatted" class="ord__kickoff">{{ order.kickoffFormatted }}</span>
             <span
-              v-if="order.statusText || order.statusKey"
+              v-if="order.statusKey || order.statusText"
               class="ord__badge"
               :class="`ord__badge--${order.state}`"
-            >{{ order.statusText || t(order.statusKey) }}</span>
+            >{{ order.statusKey ? t(order.statusKey) : order.statusText }}</span>
           </div>
 
           <div class="ord__divider" />
