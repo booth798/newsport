@@ -80,6 +80,13 @@ function applyWsYields(newYields, rowsRef) {
       probability: `${Number(update).toFixed(2)}%`,
     };
   });
+  // 买入弹窗打开时同步 selectedRow，避免 expectedYield 仍用打开瞬间的旧赔率（对齐安卓 MarketYieldStore）
+  const selected = selectedRow.value;
+  if (!selected || !showBuySheet.value) return;
+  const updated = rowsRef.value.find(
+    (r) => r.scoreRaw === selected.scoreRaw || r.score === selected.score,
+  );
+  if (updated) selectedRow.value = updated;
 }
 
 function formatVolume(n) {

@@ -65,6 +65,7 @@ const phase = ref('form');
 const walletBalance = ref(null);
 const walletLoading = ref(false);
 const pendingQuota = ref(null);
+/** 下单前拉取的最新收益率（对齐安卓 currentYield / MarketYieldStore.latest） */
 const refreshedYield = ref(null);
 
 const QUICK_AMOUNTS_KEY = 'mysport:buy_quick_amounts';
@@ -284,6 +285,59 @@ async function loadPendingQuota() {
   } catch { /* non-critical */ }
 }
 
+/** 比分 key：接口 / WS 使用 `主:客` */
+function getScoreKey() {
+  return props.row?.scoreRaw ?? String(props.row?.score ?? '0-0').replace(/-/g, ':');
+}
+
+function extractYieldValue(item) {
+  if (item == null) return null;
+  if (typeof item === 'number' || typeof item === 'string') {
+    const n = Number(item);
+    return Number.isFinite(n) ? n : null;
+  }
+  if (item.yieldPct != null) {
+    const n = Number(item.yieldPct);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
+/** 从 yields 接口响应中按比分取最新收益率 */
+function matchPoolYield(data, scoreKey) {
+  if (!data) return null;
+  if (Array.isArray(data)) {
+    const alt = scoreKey.replace(/:/g, '-');
+    const found = data.find((p) => p?.score === scoreKey || p?.score === alt);
+    return extractYieldValue(found);
+  }
+  if (typeof data === 'object') {
+    return extractYieldValue(data[scoreKey] ?? data[scoreKey.replace(/:/g, '-')]);
+  }
+  return null;
+}
+
+/**
+ * 对齐安卓 BuyDialog：下单用 MarketYieldStore.latest(marketId, score) ?: currentYield
+ * 先拉当前赔率列表，失败则回退弹窗内已展示值。
+ */
+async function resolveLatestYield() {
+  const marketId = props.row?._marketId;
+  const fallback = Number(profitPercent.value);
+  if (!marketId) {
+    return Number.isFinite(fallback) ? fallback : null;
+  }
+  try {
+    const yieldRes = await fetchPoolYields(marketId);
+    const latest = matchPoolYield(yieldRes.data, getScoreKey());
+    if (latest != null) {
+      refreshedYield.value = latest;
+      return latest;
+    }
+  } catch { /* 回退展示值 */ }
+  return Number.isFinite(fallback) ? fallback : null;
+}
+
 watch(
   () => props.visible,
   (open) => {
@@ -292,13 +346,22 @@ watch(
       buyType.value = 'standard';
       buyAmount.value = '';
       editingAmounts.value = false;
+      refreshedYield.value = null;
       const yield_ = Number(profitPercent.value);
       profitMin.value = yield_ ? yield_.toFixed(2) : '5.34';
       profitMax.value = yield_ ? yield_.toFixed(2) : '7.34';
-      refreshedYield.value = null;
       refreshWalletBalance();
       loadPendingQuota();
     }
+  },
+);
+
+// 详情页 WS 同步 selectedRow 后，清空本地刷新值，展示跟随实时赔率
+watch(
+  () => props.row?.yieldPct,
+  (next, prev) => {
+    if (!props.visible || next == null || next === prev) return;
+    refreshedYield.value = null;
   },
 );
 
@@ -373,15 +436,38 @@ async function confirmBuy() {
   try {
     submitting.value = true;
     const marketId = props.row?._marketId;
-    const score = props.row?.scoreRaw ?? (props.row?.score ?? '0-0').replace(/-/g, ':');
-    const payload = {
-      marketId,
-      score,
-      amount: amt,
-      expectedYield: Number(profitPercent.value),
-    };
+    const score = getScoreKey();
 
-    const res = await submitBuyOrder(payload);
+    // 直接用最新赔率下单；若仍 YIELD_CHANGED 则静默刷新后再试一次（不弹提示）
+    let latestYield = await resolveLatestYield();
+    if (latestYield == null) {
+      toast.error(t('提交失败，请重试'));
+      return;
+    }
+
+    let res;
+    try {
+      res = await submitBuyOrder({
+        marketId,
+        score,
+        amount: amt,
+        expectedYield: latestYield,
+      });
+    } catch (firstErr) {
+      const errCode = firstErr?.code || firstErr?.response?.data?.code;
+      const errMsg = String(firstErr?.message || '');
+      const yieldChanged = errCode === 'YIELD_CHANGED' || errMsg.includes('YIELD_CHANGED');
+      if (!yieldChanged) throw firstErr;
+
+      latestYield = await resolveLatestYield();
+      if (latestYield == null) throw firstErr;
+      res = await submitBuyOrder({
+        marketId,
+        score,
+        amount: amt,
+        expectedYield: latestYield,
+      });
+    }
 
     if (res.walletBalance != null) {
       userStore.updateUserProfile({ balance: res.walletBalance });
@@ -393,25 +479,7 @@ async function confirmBuy() {
     buildSuccessPayload(order, amt);
     phase.value = 'success';
   } catch (e) {
-    const errCode = e?.code || e?.response?.data?.code;
-    const errMsg = e?.message || '';
-    if (errCode === 'YIELD_CHANGED' || errMsg.includes('YIELD_CHANGED')) {
-      toast.error(errMsg || t('赔率已变化，请确认最新赔率后重新提交'));
-      try {
-        const marketId = props.row?._marketId;
-        if (marketId) {
-          const yieldRes = await fetchPoolYields(marketId);
-          const pools = yieldRes.data || [];
-          const scoreKey = props.row?.scoreRaw ?? (props.row?.score ?? '0-0').replace(/-/g, ':');
-          const found = pools.find((p) => p.score === scoreKey);
-          if (found?.yieldPct != null) {
-            refreshedYield.value = Number(found.yieldPct);
-          }
-        }
-      } catch { /* non-critical */ }
-    } else {
-      toast.error(errMsg || t('提交失败，请重试'));
-    }
+    toast.error(e?.message || t('提交失败，请重试'));
   } finally {
     submitting.value = false;
   }
