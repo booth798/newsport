@@ -134,9 +134,8 @@ const routes = [
       },
       {
         path: 'info',
-        name: 'profile-info',
-        component: () => import('@/views/Profile/Info.vue'),
-        meta: { titleKey: '个人资料', hideMobileTabBar: true },
+        // 旧个人资料页已废弃，统一走弹窗；保留路径重定向避免外链 404
+        redirect: '/profile',
       },
       {
         path: 'messages',

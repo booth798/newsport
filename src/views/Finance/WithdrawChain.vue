@@ -19,14 +19,18 @@ import WithdrawNoticeModal from './components/WithdrawNoticeModal.vue';
 
 import { fetchWithdrawList, submitWithdraw } from '@/api/finance';
 import { fetchBindings } from '@/api/user';
+import {
+  WITHDRAW_PASSWORD_MAX_LENGTH,
+  isValidWithdrawPassword,
+  sanitizeWithdrawPasswordInput,
+} from '@/constants/withdrawPassword';
 import { useToast } from '@/hooks/useToast';
 import { useUserStore } from '@/store/modules/user';
 import { useAppStore } from '@/store/modules/app';
 
 const PAGE_SIZE = 20;
-// 与安卓 WithdrawActivity 一致：链上提现同样最低 100，密码 6-20 位字母数字。
+// 链上提现最低 100；提现密码固定 6 位数字。
 const MIN_WITHDRAW_AMOUNT = 100;
-const WITHDRAW_PASSWORD_PATTERN = /^[a-zA-Z0-9]{6,20}$/;
 const FILTER_OPTIONS = [
   { value: 'all', label: '全部' },
   { value: 'completed', label: '已提现' },
@@ -283,7 +287,7 @@ async function handleSubmit() {
     toast.error(t('请输入提款密码'));
     return;
   }
-  if (!WITHDRAW_PASSWORD_PATTERN.test(password)) {
+  if (!isValidWithdrawPassword(password)) {
     toast.error(t('提现密码格式提示'));
     return;
   }
@@ -359,8 +363,15 @@ onBeforeUnmount(() => {
 
         <label class="wc-field">
           <span class="wc-field__label">{{ t('提款密码') }}</span>
-          <BaseInput v-model="withdrawPassword" type="password" autocomplete="current-password"
-            :placeholder="t('请输入提款密码')" />
+          <BaseInput
+            :model-value="withdrawPassword"
+            type="password"
+            autocomplete="current-password"
+            inputmode="numeric"
+            :maxlength="WITHDRAW_PASSWORD_MAX_LENGTH"
+            :placeholder="t('请输入提款密码')"
+            @update:model-value="withdrawPassword = sanitizeWithdrawPasswordInput($event)"
+          />
         </label>
 
         <button class="wc-form__submit btn btn--primary" type="submit" :disabled="submitting">

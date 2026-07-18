@@ -10,6 +10,7 @@ import MobileTabBar from '@/components/MobileTabBar.vue';
 import GlobalToast from '@/components/GlobalToast.vue';
 import GlobalLoading from '@/components/GlobalLoading.vue';
 import NetworkBar from '@/components/NetworkBar.vue';
+import ProfileUserInfoModal from '@/views/Profile/components/ProfileUserInfoModal.vue';
 
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -35,8 +36,15 @@ const appStore = useAppStore();
 const userStore = useUserStore();
 const route = useRoute();
 const router = useRouter();
-const { locale, isMobile } = storeToRefs(appStore);
-const { isLoggedIn } = storeToRefs(userStore);
+const { locale, isMobile, profileUserInfoModalOpen } = storeToRefs(appStore);
+const { isLoggedIn, loggedInUserId, loggedInAvatarUrl, userProfile } = storeToRefs(userStore);
+
+const profileModalNickname = computed(
+  () => userProfile.value?.nickname || loggedInUserId.value || '',
+);
+const profileModalAvatarUrl = computed(
+  () => userProfile.value?.avatarUrl || loggedInAvatarUrl.value || '',
+);
 const isBarePage = computed(() => Boolean(route.meta?.bare) || route.matched.some((r) => r.meta?.bare));
 // 嵌套路由用 matched 判断，避免子路由 meta 未合入 route.meta。
 // 赛事结果搜索（mode=match）无底部 Tab，对齐安卓 MarketSearchActivity 全屏。
@@ -171,6 +179,12 @@ useWalletWs({
   <AppCustomerServiceConfirm />
   <AppLoginConfirm />
   <AppForceLogoutAlert />
+  <!-- 侧栏「个人资料」全局弹窗：头像 + 昵称设置 -->
+  <ProfileUserInfoModal
+    v-model="profileUserInfoModalOpen"
+    :nickname="profileModalNickname"
+    :avatar-url="profileModalAvatarUrl"
+  />
   <GlobalToast ref="toastRef" />
   <GlobalLoading />
   <NetworkBar />

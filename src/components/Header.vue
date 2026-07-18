@@ -73,7 +73,7 @@ const navMenus = {
   ],
   myBenefit: [
     { labelKey: '我的', to: '/profile', icon: iconMy },
-    { labelKey: '个人资料', to: '/profile/info', icon: iconPersonalProfile },
+    { labelKey: '个人资料', action: 'profileInfo', icon: iconPersonalProfile },
     { labelKey: '设置', to: '/profile/security', icon: iconSettings },
   ],
 };

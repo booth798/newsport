@@ -56,10 +56,17 @@ function onOddsPillClick(pool, e) {
   if (props.detailMode) return;
   e.preventDefault();
   e.stopPropagation();
+  const query = {};
+  if (props.fromLeague) query.fromLeague = props.fromLeague;
+  // H5 首页/市场卡：只进比赛详情，不自动弹购买窗；PC 仍可点赔率直达下单
+  if (!isMobile.value) {
+    query.autoBuy = '1';
+    query.score = pool.score;
+  }
   router.push({
     name: 'market-detail',
     params: { id: String(props.match.id) },
-    query: { autoBuy: '1', score: pool.score },
+    ...(Object.keys(query).length ? { query } : {}),
   });
 }
 

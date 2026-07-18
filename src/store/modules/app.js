@@ -17,6 +17,8 @@ export const useAppStore = defineStore('app', {
     customerServiceConfirmOpen: false,
     loginConfirmOpen: false,
     forceLogoutAlertOpen: false,
+    // 侧栏「个人资料」打开头像/昵称弹窗（不再进入 /profile/info 页）
+    profileUserInfoModalOpen: false,
     publicConfig: {},
   }),
   getters: {
@@ -80,6 +82,12 @@ export const useAppStore = defineStore('app', {
     },
     closeForceLogoutAlert() {
       this.forceLogoutAlertOpen = false;
+    },
+    openProfileUserInfoModal() {
+      this.profileUserInfoModalOpen = true;
+    },
+    closeProfileUserInfoModal() {
+      this.profileUserInfoModalOpen = false;
     },
     async loadPublicConfig({ force = false } = {}) {
       if (!force && Object.keys(this.publicConfig).length > 0) return this.publicConfig;

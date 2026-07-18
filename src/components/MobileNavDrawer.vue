@@ -32,6 +32,7 @@ import iconSettings from '@/assets/images/menu/icon_settings.svg';
 import iconContact from '@/assets/images/menu/icon_my_contact_support.svg';
 
 import { useAppStore } from '@/store/modules/app';
+import { useUserStore } from '@/store/modules/user';
 import { useToast } from '@/hooks/useToast';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
@@ -53,6 +54,7 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const appStore = useAppStore();
+const userStore = useUserStore();
 const toast = useToast();
 
 // 抽屉打开时锁定背后滚动，关闭后恢复，避免影响页面其它元素布局。
@@ -89,7 +91,8 @@ const sections = [
     titleKey: '我的权益',
     items: [
       { labelKey: '我的', to: '/profile', icon: iconMy },
-      { labelKey: '个人资料', to: '/profile/info', icon: iconPersonalProfile },
+      // 个人资料：打开弹窗，不再跳转 /profile/info
+      { labelKey: '个人资料', action: 'profileInfo', icon: iconPersonalProfile },
       { labelKey: '设置', to: '/profile/security', icon: iconSettings },
     ],
   },
@@ -131,7 +134,6 @@ function isLinkActive(item) {
   if (to === '/profile/vipBenefits') return route.name === 'vip-benefits';
   if (to === '/profile/about') return route.name === 'profile-about';
   if (to === '/profile') return route.name === 'profile' || route.name === 'profile-home';
-  if (to === '/profile/info') return route.name === 'profile-info';
   if (to === '/profile/security') return route.name === 'profile-security';
   return route.path === to;
 }
@@ -139,6 +141,16 @@ function isLinkActive(item) {
 function onItemClick(item) {
   if (item.action === 'soon') {
     toast.info(t('暂无数据'));
+    return;
+  }
+  // 个人资料：PC/H5 统一打开头像昵称弹窗
+  if (item.action === 'profileInfo') {
+    close();
+    if (!userStore.isLoggedIn) {
+      appStore.openLoginConfirm();
+      return;
+    }
+    appStore.openProfileUserInfoModal();
     return;
   }
   if (item.to) {

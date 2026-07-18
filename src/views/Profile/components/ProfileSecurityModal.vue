@@ -6,6 +6,11 @@ import { useAppStore } from '@/store/modules/app';
 import { storeToRefs } from 'pinia';
 
 import { changePassword } from '@/api/user';
+import {
+  WITHDRAW_PASSWORD_MAX_LENGTH,
+  isValidWithdrawPassword,
+  sanitizeWithdrawPasswordInput,
+} from '@/constants/withdrawPassword';
 import { useToast } from '@/hooks/useToast';
 import { useUserStore } from '@/store/modules/user';
 import BaseInput from '@/components/BaseInput.vue';
@@ -79,6 +84,14 @@ function passwordIcon(field) {
   return passwordVisibility.value[field] ? iconEyeOpenUrl : iconEyeClosedUrl;
 }
 
+/** 提现密码输入：仅保留数字并限制 6 位 */
+function onWithdrawPasswordInput(target, value) {
+  const sanitized = sanitizeWithdrawPasswordInput(value);
+  if (target === 'current') withdrawCurrent.value = sanitized;
+  else if (target === 'new') withdrawNew.value = sanitized;
+  else withdrawConfirm.value = sanitized;
+}
+
 async function handleSave() {
   const current = activeSection.value === 'login' ? loginCurrent.value : withdrawCurrent.value;
   const newPassword = activeSection.value === 'login' ? loginNew.value : withdrawNew.value;
@@ -89,15 +102,21 @@ async function handleSave() {
     return;
   }
   if (!newPassword.trim()) { toast.error(t('请输入新密码')); return; }
-  // 登录密码对齐安卓：长度 6-32；提现密码对齐：6-20 位字母数字
+  // 登录密码：长度 6-32；提现密码：固定 6 位数字
   if (activeSection.value === 'login') {
     if (newPassword.length < 6 || newPassword.length > 32) {
       toast.error(t('登录密码长度应为6-32位'));
       return;
     }
-  } else if (!/^[a-zA-Z0-9]{6,20}$/.test(newPassword)) {
-    toast.error(t('提现密码格式提示'));
-    return;
+  } else {
+    if (withdrawPasswordSet.value && !isValidWithdrawPassword(current)) {
+      toast.error(t('提现密码格式提示'));
+      return;
+    }
+    if (!isValidWithdrawPassword(newPassword)) {
+      toast.error(t('提现密码格式提示'));
+      return;
+    }
   }
   if (!confirm.trim()) { toast.error(t('请确认新密码')); return; }
   if (newPassword !== confirm) { toast.error(t('两次密码输入不一致')); return; }
@@ -191,23 +210,43 @@ watch(
         <template v-else>
           <label v-if="withdrawPasswordSet" class="profile-security-modal__field">
             <span>{{ t('旧提现密码') }} <b>*</b></span>
-            <BaseInput v-model="withdrawCurrent" :type="passwordInputType('withdrawCurrent')" :placeholder="t('请输入旧提现密码')">
+            <BaseInput
+              :model-value="withdrawCurrent"
+              :type="passwordInputType('withdrawCurrent')"
+              :placeholder="t('请输入旧提现密码')"
+              inputmode="numeric"
+              :maxlength="WITHDRAW_PASSWORD_MAX_LENGTH"
+              autocomplete="off"
+              @update:model-value="onWithdrawPasswordInput('current', $event)"
+            >
               <template #suffix><img class="eye-icon" :aria-label="t('显示密码')" :src="passwordIcon('withdrawCurrent')" @click="togglePasswordVisible('withdrawCurrent')" /></template>
             </BaseInput>
           </label>
           <label class="profile-security-modal__field">
             <span>{{ t(withdrawPasswordSet ? '新提现密码' : '提现密码') }} <b>*</b></span>
             <BaseInput
-              v-model="withdrawNew"
+              :model-value="withdrawNew"
               :type="passwordInputType('withdrawNew')"
               :placeholder="t(withdrawPasswordSet ? '请输入新提现密码占位' : '请输入提现密码占位')"
+              inputmode="numeric"
+              :maxlength="WITHDRAW_PASSWORD_MAX_LENGTH"
+              autocomplete="off"
+              @update:model-value="onWithdrawPasswordInput('new', $event)"
             >
               <template #suffix><img class="eye-icon" :aria-label="t('显示密码')" :src="passwordIcon('withdrawNew')" @click="togglePasswordVisible('withdrawNew')" /></template>
             </BaseInput>
           </label>
           <label class="profile-security-modal__field">
             <span>{{ t('确认提现密码') }} <b>*</b></span>
-            <BaseInput v-model="withdrawConfirm" :type="passwordInputType('withdrawConfirm')" :placeholder="t('请再次输入提现密码')">
+            <BaseInput
+              :model-value="withdrawConfirm"
+              :type="passwordInputType('withdrawConfirm')"
+              :placeholder="t('请再次输入提现密码')"
+              inputmode="numeric"
+              :maxlength="WITHDRAW_PASSWORD_MAX_LENGTH"
+              autocomplete="off"
+              @update:model-value="onWithdrawPasswordInput('confirm', $event)"
+            >
               <template #suffix><img class="eye-icon" :aria-label="t('显示密码')" :src="passwordIcon('withdrawConfirm')" @click="togglePasswordVisible('withdrawConfirm')" /></template>
             </BaseInput>
           </label>
