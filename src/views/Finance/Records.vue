@@ -168,18 +168,58 @@ function resolveLeagueLogo(league, overrideUrl) {
 }
 
 function parseMatchScore(scoreStr) {
-  if (!scoreStr) return null;
-  const parts = scoreStr.split(/[:\-]/);
-  if (parts.length === 2 && parts[0].trim() && parts[1].trim()) {
-    return { home: parts[0].trim(), away: parts[1].trim() };
+  if (scoreStr == null || scoreStr === '') return null;
+  // 兼容对象形态 { home, away } / { homeScore, awayScore }
+  if (typeof scoreStr === 'object') {
+    const home = scoreStr.home ?? scoreStr.homeScore ?? scoreStr.h ?? scoreStr.ftHomeScore;
+    const away = scoreStr.away ?? scoreStr.awayScore ?? scoreStr.a ?? scoreStr.ftAwayScore;
+    if (home != null && away != null && String(home).trim() !== '' && String(away).trim() !== '') {
+      return { home: String(home).trim(), away: String(away).trim() };
+    }
+    return null;
   }
+  const text = String(scoreStr).trim();
+  if (!text) return null;
+  // 对齐安卓 split(":", "-", limit=2)；并兼容全角冒号「：」
+  const m = text.match(/(\d+)\s*[:：\-]\s*(\d+)/);
+  if (m) return { home: m[1], away: m[2] };
   return null;
 }
 
-/** 选项比分 0:0 / 0-0 → 0 - 0 */
+/** 赛果比分：优先 matchScore，兼容其它别名（成功订单应有赛果） */
+function resolveMatchScoreRaw(o) {
+  const nested = o.match || o.matchInfo || o.matchResult || {};
+  const candidates = [
+    o.matchScore,
+    o.resultScore,
+    o.finalScore,
+    o.ftScore,
+    nested.matchScore,
+    nested.score,
+    nested.ftScore,
+    isHalfPeriod(o.period) ? (o.htScore || nested.htScore) : null,
+  ];
+  for (const c of candidates) {
+    if (c != null && c !== '') return c;
+  }
+  if (o.homeScore != null && o.awayScore != null) return `${o.homeScore}:${o.awayScore}`;
+  if (o.ftHomeScore != null && o.ftAwayScore != null) return `${o.ftHomeScore}:${o.ftAwayScore}`;
+  if (nested.homeScore != null && nested.awayScore != null) return `${nested.homeScore}:${nested.awayScore}`;
+  if (o.htHomeScore != null && o.htAwayScore != null && isHalfPeriod(o.period)) {
+    return `${o.htHomeScore}:${o.htAwayScore}`;
+  }
+  return '';
+}
+
+function isHalfPeriod(period) {
+  const p = String(period || '').toUpperCase();
+  return p === 'HT' || p === 'HALF' || p === 'HALFTIME';
+}
+
+/** 选项比分 0:0 / 0-0 / 0：0 → 0 - 0 */
 function formatOptionScore(score) {
   if (!score) return '';
-  return String(score).replace(/[:\-]/, ' - ').replace(/\s+/g, ' ').trim();
+  return String(score).replace(/[:：\-]/, ' - ').replace(/\s+/g, ' ').trim();
 }
 
 function periodLabel(period) {
@@ -213,7 +253,7 @@ function normalizeOrder(o) {
   })();
   const score = o.score || '';
   const yieldAtBuy = o.yieldAtBuy || o.yieldPct || o.yield || '';
-  const matchScore = o.matchScore || '';
+  const matchScore = resolveMatchScoreRaw(o);
   const orderNo = o.orderNo || o.orderId || o.id || '';
   const parsedScore = parseMatchScore(matchScore);
   const periodText = periodLabel(o.period);
@@ -327,6 +367,7 @@ function onStatusSelect(key) {
 }
 
 function toggleExpand(id) {
+  // 手风琴：同时只展开一张；再点同一张则收起
   expandedId.value = expandedId.value === id ? null : id;
 }
 
@@ -425,8 +466,12 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
         <button type="button" class="fin-empty__btn" @click="goToMarket">{{ t('前往比赛') }}</button>
       </EmptyState>
 
-      <!-- 订单列表：PC 两列网格，H5 单列 -->
-      <div v-else class="fin-list">
+      <!-- 订单列表：PC 未展开网格等高，展开后瀑布流；同时仅允许展开一张 -->
+      <div
+        v-else
+        class="fin-list"
+        :class="{ 'fin-list--has-expanded': expandedId != null }"
+      >
         <article
           v-for="order in orders"
           :key="order.id"
@@ -461,7 +506,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
           </div>
 
           <div class="ord__panel">
-            <!-- 对阵区：无比分时显示 VS -->
+            <!-- 对阵区：有赛果显示比分（成功单应有 matchScore）；无比分时仍占位同高 -->
             <div class="ord__arena" :class="{ 'ord__arena--scored': order.parsedScore }">
               <div class="ord__arena-inner">
                 <div class="ord__team">
@@ -475,6 +520,11 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
                     class="ord__score"
                     :class="isWinningSide(order, 'home') ? 'ord__score--high' : 'ord__score--default'"
                   >{{ order.parsedScore.home }}</span>
+                  <span
+                    v-else
+                    class="ord__score ord__score--slot"
+                    aria-hidden="true"
+                  />
                 </div>
                 <div class="ord__score-area">
                   <span class="ord__vs">VS</span>
@@ -487,6 +537,11 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
                     class="ord__score"
                     :class="isWinningSide(order, 'away') ? 'ord__score--high' : 'ord__score--default'"
                   >{{ order.parsedScore.away }}</span>
+                  <span
+                    v-else
+                    class="ord__score ord__score--slot"
+                    aria-hidden="true"
+                  />
                 </div>
               </div>
 
@@ -742,17 +797,30 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   flex-direction: column;
   gap: 10px;
 
-  // PC：订单卡两列网格
+  // PC：未展开用网格同行等高；展开后改瀑布流，卡片按高度错落排布
   @include web-only {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px 16px;
+    gap: 20px;
+    align-items: stretch;
+
+    &--has-expanded {
+      display: block;
+      column-count: 2;
+      column-gap: 20px;
+      align-items: unset;
+    }
   }
 }
 
 .fin-list__more {
   @include web-only {
     grid-column: 1 / -1;
+
+    .fin-list--has-expanded & {
+      column-span: all;
+      break-inside: avoid;
+    }
   }
 }
 
@@ -763,6 +831,24 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   background: #eaf1f9;
   border: 0.8px solid #fff;
   box-sizing: border-box;
+
+  @include web-only {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    margin: 0;
+  }
+}
+
+.fin-list--has-expanded .ord {
+  @include web-only {
+    display: inline-block;
+    width: 100%;
+    height: auto;
+    margin: 0 0 20px;
+    break-inside: avoid;
+    vertical-align: top;
+  }
 }
 
 .ord__top {
@@ -855,6 +941,14 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   background-position: top center;
   background-repeat: no-repeat;
   background-size: 100% auto;
+
+  // PC 未展开：面板撑满卡片，保证同行左右卡视觉等高
+  @include web-only {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
 }
 
 // --- 对阵区 ---
@@ -872,15 +966,12 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: start;
   gap: 8px;
-  min-height: 100px;
+  // 有无比分统一高度，避免左右卡因赛果显隐高低不一
+  min-height: 126px;
   padding: 12px 27px 10px;
   background: transparent;
   border-radius: 18px 18px 0 0;
   box-sizing: border-box;
-}
-
-.ord__arena--scored .ord__arena-inner {
-  min-height: 126px;
 }
 
 .ord__team {
@@ -959,6 +1050,12 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   &--high {
     background-image: url('@/assets/images/events/bg_score_high.svg');
     color: #fff;
+  }
+
+  // 无比分时占位，保证左右卡对阵区高度一致
+  &--slot {
+    visibility: hidden;
+    background: none;
   }
 }
 
@@ -1126,22 +1223,9 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
     color: #1c7bff;
   }
 
-  .fin-list {
-    display: block;
-    column-count: 2;
-    column-gap: 20px;
-  }
-
-  .ord {
-    display: inline-block;
-    width: 100%;
-    margin-bottom: 20px;
-    break-inside: avoid;
-    vertical-align: top;
-  }
-
-  .fin-list > .fin-state {
-    column-span: all;
+  // 未展开且列表无展开项时：操作区沉底，同行左右卡内容对齐
+  .fin-list:not(.fin-list--has-expanded) .ord .ord__actions {
+    margin-top: auto;
   }
 }
 </style>
