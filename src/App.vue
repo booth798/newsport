@@ -6,11 +6,13 @@ import AppLogoutConfirm from '@/components/AppLogoutConfirm.vue';
 import AppCustomerServiceConfirm from '@/components/AppCustomerServiceConfirm.vue';
 import AppLoginConfirm from '@/components/AppLoginConfirm.vue';
 import AppForceLogoutAlert from '@/components/AppForceLogoutAlert.vue';
+import AppWithdrawPasswordConfirm from '@/components/AppWithdrawPasswordConfirm.vue';
 import MobileTabBar from '@/components/MobileTabBar.vue';
 import GlobalToast from '@/components/GlobalToast.vue';
 import GlobalLoading from '@/components/GlobalLoading.vue';
 import NetworkBar from '@/components/NetworkBar.vue';
 import ProfileUserInfoModal from '@/views/Profile/components/ProfileUserInfoModal.vue';
+import ProfileSecurityModal from '@/views/Profile/components/ProfileSecurityModal.vue';
 
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -36,7 +38,7 @@ const appStore = useAppStore();
 const userStore = useUserStore();
 const route = useRoute();
 const router = useRouter();
-const { locale, isMobile, profileUserInfoModalOpen } = storeToRefs(appStore);
+const { locale, isMobile, profileUserInfoModalOpen, profileSecurityModalOpen, profileSecurityInitialSection } = storeToRefs(appStore);
 const { isLoggedIn, loggedInUserId, loggedInAvatarUrl, userProfile } = storeToRefs(userStore);
 
 const profileModalNickname = computed(
@@ -179,11 +181,18 @@ useWalletWs({
   <AppCustomerServiceConfirm />
   <AppLoginConfirm />
   <AppForceLogoutAlert />
+  <AppWithdrawPasswordConfirm />
   <!-- 侧栏「个人资料」全局弹窗：头像 + 昵称设置 -->
   <ProfileUserInfoModal
     v-model="profileUserInfoModalOpen"
     :nickname="profileModalNickname"
     :avatar-url="profileModalAvatarUrl"
+  />
+  <!-- 提现引导「去设置」打开的安全设置弹窗（可定位提现密码 tab） -->
+  <ProfileSecurityModal
+    :model-value="profileSecurityModalOpen"
+    :initial-section="profileSecurityInitialSection"
+    @update:model-value="(open) => { if (!open) appStore.closeProfileSecurityModal(); }"
   />
   <GlobalToast ref="toastRef" />
   <GlobalLoading />

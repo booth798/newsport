@@ -9,6 +9,8 @@ const FALLBACK_MAP = {
   LOGGED_IN_ELSEWHERE:  { zhCN: '您的账号已在其他设备登录，本次登录已下线', enUS: 'Your account has logged in on another device; this session was signed out' },
   ACCOUNT_DISABLED:     { zhCN: '账号已被禁用', enUS: 'Account disabled' },
   CUSTOMER_BLACKLISTED: { zhCN: '账户已被拉黑', enUS: 'Account blacklisted' },
+  WITHDRAW_PASSWORD_NOT_SET: { zhCN: '请先设置提款密码', enUS: 'Please set withdrawal password first' },
+  WITHDRAW_PASSWORD_REQUIRED: { zhCN: '请先设置提款密码', enUS: 'Please set withdrawal password first' },
 };
 
 let remoteMap = {};

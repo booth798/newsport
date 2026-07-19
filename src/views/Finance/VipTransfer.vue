@@ -11,10 +11,12 @@ import { fetchBalance, fetchTransferRecords, transfer } from '@/api/finance';
 import {
   WITHDRAW_PASSWORD_MAX_LENGTH,
   isValidWithdrawPassword,
+  isWithdrawPasswordNotSetError,
   sanitizeWithdrawPasswordInput,
 } from '@/constants/withdrawPassword';
 import { useToast } from '@/hooks/useToast';
 import { useUserStore } from '@/store/modules/user';
+import { useAppStore } from '@/store/modules/app';
 
 import { getImageUrl } from '@/utils/common';
 
@@ -32,6 +34,7 @@ const route = useRoute();
 const router = useRouter();
 const toast = useToast();
 const userStore = useUserStore();
+const appStore = useAppStore();
 const { loggedInAssetsFormatted } = storeToRefs(userStore);
 
 const loading = ref(true);
@@ -209,6 +212,11 @@ async function handleSubmit() {
     return;
   }
 
+  if (userStore.userProfile?.withdrawPasswordSet === false) {
+    appStore.openWithdrawPasswordConfirm();
+    return;
+  }
+
   try {
     submitting.value = true;
     // 传参与安卓一致：toCustomerNo / amount / withdrawPassword，并带 Idempotency-Key。
@@ -225,6 +233,10 @@ async function handleSubmit() {
     await refreshWalletBalance();
     await loadPage({ silent: true });
   } catch (error) {
+    if (isWithdrawPasswordNotSetError(error)) {
+      appStore.openWithdrawPasswordConfirm();
+      return;
+    }
     toast.error(error?.message || t('提交失败请重试'));
   } finally {
     submitting.value = false;

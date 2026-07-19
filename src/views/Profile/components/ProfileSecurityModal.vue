@@ -20,6 +20,8 @@ import iconEyeOpenUrl from '@/assets/images/common/icon_eye_open.svg?url';
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
+  /** 打开时默认 tab：login | withdraw（提现页引导设置时用 withdraw） */
+  initialSection: { type: String, default: 'login' },
 });
 
 const emit = defineEmits(['update:modelValue']);
@@ -152,7 +154,7 @@ watch(
       } catch {
         // 保留当前表单；请求失败时不阻断用户修改登录密码。
       }
-      activeSection.value = 'login';
+      activeSection.value = props.initialSection === 'withdraw' ? 'withdraw' : 'login';
       resetForm();
     }
   },

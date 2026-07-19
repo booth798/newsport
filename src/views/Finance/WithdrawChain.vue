@@ -22,6 +22,7 @@ import { fetchBindings } from '@/api/user';
 import {
   WITHDRAW_PASSWORD_MAX_LENGTH,
   isValidWithdrawPassword,
+  isWithdrawPasswordNotSetError,
   sanitizeWithdrawPasswordInput,
 } from '@/constants/withdrawPassword';
 import { useToast } from '@/hooks/useToast';
@@ -291,6 +292,13 @@ async function handleSubmit() {
     toast.error(t('提现密码格式提示'));
     return;
   }
+
+  // 对齐安卓：本地已知未设密码时直接弹确认窗，不调提现接口
+  if (userStore.userProfile?.withdrawPasswordSet === false) {
+    appStore.openWithdrawPasswordConfirm();
+    return;
+  }
+
   try {
     submitting.value = true;
     // 传参对齐安卓：bindingType=crypto / bindingId / amount / withdrawPassword
@@ -305,6 +313,10 @@ async function handleSubmit() {
     withdrawPassword.value = '';
     await Promise.allSettled([loadRecords(), userStore.refreshUserBalance()]);
   } catch (e) {
+    if (isWithdrawPasswordNotSetError(e)) {
+      appStore.openWithdrawPasswordConfirm();
+      return;
+    }
     toast.error(e?.message || t('提交失败请重试'));
   } finally {
     submitting.value = false;

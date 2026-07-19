@@ -371,6 +371,8 @@ export default {
   修改登录密码: 'Change Login Password',
   修改提现密码: 'Change Withdraw Password',
   设置提现密码: 'Set Withdraw Password',
+  '您还没有设置提现密码，是否去设置？': 'You have not set a withdrawal password. Set it now?',
+  去设置: 'Set now',
   确认设置: 'Confirm Setup',
   提现密码: 'Withdraw Password',
   请输入提现密码占位: 'Enter withdrawal password (6 digits)',

@@ -19,6 +19,7 @@ import { fetchBindings } from '@/api/user';
 import {
   WITHDRAW_PASSWORD_MAX_LENGTH,
   isValidWithdrawPassword,
+  isWithdrawPasswordNotSetError,
   sanitizeWithdrawPasswordInput,
 } from '@/constants/withdrawPassword';
 import { useToast } from '@/hooks/useToast';
@@ -294,6 +295,12 @@ async function handleSubmit() {
     return;
   }
 
+  // 对齐安卓：本地已知未设密码时直接弹确认窗，不调提现接口
+  if (userStore.userProfile?.withdrawPasswordSet === false) {
+    appStore.openWithdrawPasswordConfirm();
+    return;
+  }
+
   try {
     submitting.value = true;
     // 传参对齐安卓：bindingType / bindingId / amount / withdrawPassword
@@ -309,6 +316,11 @@ async function handleSubmit() {
     // 提交已成功时，后续刷新失败不应被误报为提现失败。
     await Promise.allSettled([loadRecords(), userStore.refreshUserBalance()]);
   } catch (error) {
+    // 接口返回「请先设置提款密码」：弹窗引导设置，不 toast
+    if (isWithdrawPasswordNotSetError(error)) {
+      appStore.openWithdrawPasswordConfirm();
+      return;
+    }
     toast.error(error?.message || t('提交失败请重试'));
   } finally {
     submitting.value = false;

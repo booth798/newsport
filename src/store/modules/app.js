@@ -19,6 +19,10 @@ export const useAppStore = defineStore('app', {
     forceLogoutAlertOpen: false,
     // 侧栏「个人资料」打开头像/昵称弹窗（不再进入 /profile/info 页）
     profileUserInfoModalOpen: false,
+    // 未设置提现密码：确认弹窗 → 安全设置（提现 tab）
+    withdrawPasswordConfirmOpen: false,
+    profileSecurityModalOpen: false,
+    profileSecurityInitialSection: 'login',
     publicConfig: {},
   }),
   getters: {
@@ -88,6 +92,21 @@ export const useAppStore = defineStore('app', {
     },
     closeProfileUserInfoModal() {
       this.profileUserInfoModalOpen = false;
+    },
+    // 对齐安卓 ToAddPasswordDialog：提现/互转遇到未设密码时弹确认
+    openWithdrawPasswordConfirm() {
+      this.withdrawPasswordConfirmOpen = true;
+    },
+    closeWithdrawPasswordConfirm() {
+      this.withdrawPasswordConfirmOpen = false;
+    },
+    openProfileSecurityModal(section = 'login') {
+      this.profileSecurityInitialSection = section === 'withdraw' ? 'withdraw' : 'login';
+      this.profileSecurityModalOpen = true;
+    },
+    closeProfileSecurityModal() {
+      this.profileSecurityModalOpen = false;
+      this.profileSecurityInitialSection = 'login';
     },
     async loadPublicConfig({ force = false } = {}) {
       if (!force && Object.keys(this.publicConfig).length > 0) return this.publicConfig;
