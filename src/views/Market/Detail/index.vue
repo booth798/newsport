@@ -36,6 +36,8 @@ const mobileSections = [
 ];
 const showBuySheet = ref(false);
 const selectedRow = ref(null);
+/** 买入弹窗锁定的盘口（fulltime/halftime），避免与侧栏切换或 WS 串盘 */
+const buySheetTab = ref('fulltime');
 
 const match = ref(null);
 const loading = ref(true);
@@ -58,7 +60,7 @@ const htMarketId = ref(null);
 const { yields: ftYields, disconnect: disconnectFt } = useMarketWs(ftMarketId);
 const { yields: htYields, disconnect: disconnectHt } = useMarketWs(htMarketId);
 
-function applyWsYields(newYields, rowsRef) {
+function applyWsYields(newYields, rowsRef, periodTab) {
   if (!newYields || !Object.keys(newYields).length) return;
   rowsRef.value = rowsRef.value.map((row) => {
     const update = newYields[row.scoreRaw];
@@ -80,12 +82,19 @@ function applyWsYields(newYields, rowsRef) {
       probability: `${Number(update).toFixed(2)}%`,
     };
   });
-  // 买入弹窗打开时同步 selectedRow，避免 expectedYield 仍用打开瞬间的旧赔率（对齐安卓 MarketYieldStore）
+  // 买入弹窗打开时同步 selectedRow；仅同步当前买入 period，避免半场单被全场 WS 覆盖（对齐安卓分 marketId 观察）
   const selected = selectedRow.value;
   if (!selected || !showBuySheet.value) return;
-  const updated = rowsRef.value.find(
-    (r) => r.scoreRaw === selected.scoreRaw || r.score === selected.score,
-  );
+  if (periodTab && buySheetTab.value !== periodTab) return;
+  const updated = rowsRef.value.find((r) => {
+    const scoreMatched = r.scoreRaw === selected.scoreRaw || r.score === selected.score;
+    if (!scoreMatched) return false;
+    // 同一比分 FT/HT 并存时，必须按 marketId 区分
+    if (selected._marketId != null && r._marketId != null) {
+      return String(r._marketId) === String(selected._marketId);
+    }
+    return true;
+  });
   if (updated) selectedRow.value = updated;
 }
 
@@ -96,8 +105,8 @@ function formatVolume(n) {
   return `¥${num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-watch(ftYields, (y) => applyWsYields(y, scoreRowsFulltime), { deep: true });
-watch(htYields, (y) => applyWsYields(y, scoreRowsHalftime), { deep: true });
+watch(ftYields, (y) => applyWsYields(y, scoreRowsFulltime, 'fulltime'), { deep: true });
+watch(htYields, (y) => applyWsYields(y, scoreRowsHalftime, 'halftime'), { deep: true });
 
 function scoreRowsForTab(tab) {
   return tab === 'halftime' ? scoreRowsHalftime.value : scoreRowsFulltime.value;
@@ -146,8 +155,11 @@ async function loadMatchData(id) {
     scoreRowsHalftime.value = halftimeRes.data || [];
     ftMarketId.value = fulltimeRes.data?.[0]?._marketId || null;
     htMarketId.value = halftimeRes.data?.[0]?._marketId || null;
+    // 手续费优先全场市场；半场买入时以 row.feeRate（半场 market）为准
     if (fulltimeRes.market?.feeRate != null) {
       match.value = { ...match.value, feeRate: fulltimeRes.market.feeRate };
+    } else if (halftimeRes.market?.feeRate != null) {
+      match.value = { ...match.value, feeRate: halftimeRes.market.feeRate };
     }
   } catch (e) {
     if (gen !== loadGeneration) return;
@@ -178,15 +190,7 @@ watch(
       closeBuySheet();
     }
     await loadMatchData(id);
-    // 首次进入且携带 autoBuy 参数时自动打开购买面板
-    if (oldId == null && route.query.autoBuy === '1') {
-      const targetScore = route.query.score;
-      const rows = scoreRowsFulltime.value;
-      const row = targetScore
-        ? rows.find((r) => r.score === targetScore) ?? rows[0]
-        : rows[0];
-      if (row) openBuySheet(row, 'fulltime');
-    }
+    // 不再根据 autoBuy 自动弹购买窗（PC/H5 进详情后由用户再点比分行下单）
   },
   { immediate: true },
 );
@@ -202,7 +206,9 @@ function openBuySheet(row, tab = activeTab.value) {
     appStore.openLoginConfirm();
     return;
   }
-  activeTab.value = tab;
+  const periodTab = tab === 'halftime' ? 'halftime' : 'fulltime';
+  activeTab.value = periodTab;
+  buySheetTab.value = periodTab;
   selectedRow.value = row;
   showBuySheet.value = true;
 }
@@ -402,7 +408,7 @@ function formatScoreLabel(score) {
       :visible="showBuySheet"
       :match="match"
       :row="selectedRow"
-      :market-tab="activeTab"
+      :market-tab="buySheetTab"
       @close="closeBuySheet"
     />
   </div>
