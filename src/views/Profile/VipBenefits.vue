@@ -246,15 +246,13 @@ function scrollPrivilegeLevelToCenter(level, attempt = 0) {
   });
 }
 
-/** 切换侧栏/顶栏 Tab；进入 VIP 特权时把当前等级滚到可视区中间 */
+/** 切换侧栏/顶栏 Tab；每次进入 VIP 特权都重新选中当前会员等级并居中 */
 function selectVipTab(key) {
   activeTab.value = key;
   if (key !== 'privilege') return;
-  const level = selectedPrivilegeLevel.value ?? currentLevel.value;
-  if (selectedPrivilegeLevel.value == null) {
-    selectedPrivilegeLevel.value = currentLevel.value;
-  }
-  scrollPrivilegeLevelToCenter(level);
+  // 不保留上次手动点选，始终回到当前等级（如 V8）
+  selectedPrivilegeLevel.value = currentLevel.value;
+  scrollPrivilegeLevelToCenter(currentLevel.value);
 }
 
 async function loadData() {
@@ -265,7 +263,7 @@ async function loadData() {
     if (isLoggedIn.value) requests.push(fetchVipMe());
     const [, vipResponse] = await Promise.all(requests);
     myVip.value = vipResponse?.data || null;
-    // 默认选中当前会员等级；若已在特权 Tab 则立即居中滚动
+    // 每次进入页面都重新选中当前会员等级
     selectedPrivilegeLevel.value = currentLevel.value;
     if (activeTab.value === 'privilege') {
       scrollPrivilegeLevelToCenter(currentLevel.value);
@@ -275,15 +273,13 @@ async function loadData() {
   }
 }
 
-// 等级列表晚于切 Tab 返回时，补一次居中（如当前为 V8）
+// 等级列表晚于切 Tab 返回时，补选当前等级并居中
 watch(
   () => levels.value.length,
   (levelCount) => {
     if (activeTab.value !== 'privilege' || !levelCount) return;
-    if (selectedPrivilegeLevel.value == null) {
-      selectedPrivilegeLevel.value = currentLevel.value;
-    }
-    scrollPrivilegeLevelToCenter(selectedPrivilegeLevel.value ?? currentLevel.value);
+    selectedPrivilegeLevel.value = currentLevel.value;
+    scrollPrivilegeLevelToCenter(currentLevel.value);
   },
 );
 
