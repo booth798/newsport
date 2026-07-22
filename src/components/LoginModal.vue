@@ -13,6 +13,11 @@ import { useUserStore } from '@/store/modules/user';
 import { useToast } from '@/hooks/useToast';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { loginApi, registerApi, captchaInit, captchaVerify } from '@/api/user';
+import {
+  clearRememberedLogin,
+  getRememberedLogin,
+  saveRememberedLogin,
+} from '@/utils/rememberLogin';
 
 const { t } = useI18n();
 const appStore = useAppStore();
@@ -60,11 +65,17 @@ const sliderProgress = computed(() => {
 
 const labelOpacity = computed(() => Math.max(0, 1 - sliderProgress.value * 2.5));
 
-watch(isLogin, () => {
+watch(isLogin, (loginMode) => {
   showPassword.value = false;
-  rememberPassword.value = false;
   resetSlider();
   initCaptcha();
+  // 切回登录态时回填记住的账号密码；注册态不清除本地记忆，只清空表单密码
+  if (loginMode) {
+    loadRemembered();
+  } else {
+    password.value = '';
+    rememberPassword.value = false;
+  }
 });
 
 watch(
@@ -72,10 +83,12 @@ watch(
   (open) => {
     if (!open) {
       resetSlider();
-    } else {
-      loadRemembered();
-      initCaptcha();
+      return;
     }
+    // PC / H5 共用弹窗：每次打开登录层都尝试回填记住密码
+    isLogin.value = true;
+    loadRemembered();
+    initCaptcha();
   },
 );
 
@@ -150,25 +163,35 @@ const canSubmit = computed(
 /** 与稿图一致：须完成滑动验证后才可登入 */
 const canSubmitLogin = computed(() => canSubmit.value && sliderVerified.value);
 
-const REMEMBER_KEY = 'mysport:remember_account';
-
+/** 从本地回填账号+密码（对齐安卓 rememberedLogin） */
 function loadRemembered() {
-  try {
-    const saved = localStorage.getItem(REMEMBER_KEY);
-    if (saved) {
-      const data = JSON.parse(saved);
-      account.value = data.account || '';
-      rememberPassword.value = true;
-    }
-  } catch { /* ignore */ }
+  const remembered = getRememberedLogin();
+  if (!remembered) {
+    rememberPassword.value = false;
+    return;
+  }
+  account.value = remembered.account;
+  password.value = remembered.password;
+  rememberPassword.value = true;
 }
 
-function saveRemembered() {
-  if (rememberPassword.value && account.value.trim()) {
-    localStorage.setItem(REMEMBER_KEY, JSON.stringify({ account: account.value.trim() }));
+/** 登录成功后按勾选结果持久化或清除 */
+function persistRememberedAfterLogin() {
+  if (rememberPassword.value) {
+    saveRememberedLogin(account.value.trim(), password.value);
   } else {
-    localStorage.removeItem(REMEMBER_KEY);
+    clearRememberedLogin();
   }
+}
+
+function resetLoginFormFields() {
+  account.value = '';
+  password.value = '';
+  rememberPassword.value = false;
+  showPassword.value = false;
+  captchaToken.value = '';
+  captchaId.value = '';
+  resetSlider();
 }
 
 const loginSubmitting = ref(false);
@@ -204,23 +227,18 @@ async function submitWebLogin() {
   if (!canSubmitLogin.value || loginSubmitting.value) return;
   try {
     loginSubmitting.value = true;
-    saveRemembered();
 
     const token = captchaToken.value || 'ALWAYS_PASS';
     const res = await loginApi(account.value.trim(), password.value, token, {
       remember: rememberPassword.value,
     });
+    // 仅登录成功后再写入/清除本地记忆（对齐安卓）
+    persistRememberedAfterLogin();
     const loginData = res.data || {};
     userStore.completeWebLogin(loginData);
     appStore.closeLoginModal();
     toast.success(t('登录成功'));
-    account.value = '';
-    password.value = '';
-    rememberPassword.value = false;
-    showPassword.value = false;
-    captchaToken.value = '';
-    captchaId.value = '';
-    resetSlider();
+    resetLoginFormFields();
     userStore.loadUserProfile({ force: true }).catch(() => {});
   } catch (e) {
     toast.error(e.message || t('提交失败，请重试'));
@@ -312,9 +330,13 @@ onBeforeUnmount(() => {
 
 const toggleMode = () => {
   isLogin.value = !isLogin.value;
-  account.value = '';
-  password.value = '';
   inviteCode.value = '';
+  // 切到注册：清空表单；切回登录由 isLogin watch 回填记住的账号密码
+  if (!isLogin.value) {
+    account.value = '';
+    password.value = '';
+    rememberPassword.value = false;
+  }
 };
 
 const passwordInputType = computed(() => (showPassword.value ? 'text' : 'password'));

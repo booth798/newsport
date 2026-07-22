@@ -31,6 +31,9 @@ const previewCount = ref(0);
 const previewLoading = ref(false);
 let previewTimer = null;
 const rootRef = ref(null);
+const bodyRef = ref(null);
+/** 长文案截断时的悬浮完整提示（fixed，避免被 overflow 裁切） */
+const hoverTip = ref(null);
 
 const INDEX_ENTRIES = ['☆', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''), '#'];
 const PINYIN_REFS = [
@@ -47,6 +50,40 @@ function leagueDisplayName(league) {
   const shortName = (league.shortName || '').trim();
   const isEn = String(locale.value || '').toLowerCase().startsWith('en');
   return isEn ? (name || shortName) : (shortName || name);
+}
+
+/** 悬浮完整名：优先全称，保证比 pill 截断文案更完整 */
+function leagueTipText(league) {
+  const name = (league.name || '').trim();
+  const shortName = (league.shortName || '').trim();
+  return name || shortName || leagueDisplayName(league);
+}
+
+function clearHoverTip() {
+  hoverTip.value = null;
+}
+
+/**
+ * 仅当 pill 标签实际溢出时展示完整名称提示，样式对齐市场主题色。
+ */
+function onPillMouseEnter(event, league) {
+  const pill = event.currentTarget;
+  if (!(pill instanceof HTMLElement)) return;
+  const labelEl = pill.querySelector('.league-filter-pop__pill-label');
+  if (!(labelEl instanceof HTMLElement)) return;
+  const text = leagueTipText(league);
+  if (!text) return;
+  // 未截断则不打扰；全称比展示名更长时也提示
+  const truncated = labelEl.scrollWidth > labelEl.clientWidth + 1;
+  const fullerThanLabel = text !== (labelEl.textContent || '').trim();
+  if (!truncated && !fullerThanLabel) return;
+
+  const rect = pill.getBoundingClientRect();
+  hoverTip.value = {
+    text,
+    left: rect.left + rect.width / 2,
+    top: rect.top - 6,
+  };
 }
 
 function getPinyinInitial(str) {
@@ -244,6 +281,7 @@ watch(
       loadLeagues();
       document.addEventListener('pointerdown', onDocPointerDown, true);
     } else {
+      clearHoverTip();
       document.removeEventListener('pointerdown', onDocPointerDown, true);
     }
   },
@@ -252,6 +290,7 @@ watch(
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', onDocPointerDown, true);
   if (previewTimer) clearTimeout(previewTimer);
+  clearHoverTip();
 });
 </script>
 
@@ -277,7 +316,11 @@ onBeforeUnmount(() => {
     </div>
 
     <template v-else>
-      <div class="league-filter-pop__body">
+      <div
+        ref="bodyRef"
+        class="league-filter-pop__body"
+        @scroll="clearHoverTip"
+      >
         <section
           v-for="group in groupedLeagues"
           :key="group.key"
@@ -292,6 +335,8 @@ onBeforeUnmount(() => {
               class="league-filter-pop__pill"
               :class="{ 'league-filter-pop__pill--selected': selectedIds.has(league.id) }"
               @click="toggleLeague(league.id)"
+              @mouseenter="onPillMouseEnter($event, league)"
+              @mouseleave="clearHoverTip"
             >
               <CircleCheckBig
                 v-if="selectedIds.has(league.id)"
@@ -307,7 +352,7 @@ onBeforeUnmount(() => {
                 :stroke-width="1.4"
                 aria-hidden="true"
               />
-              <span class="league-filter-pop__pill-label">{{ league.shortName || league.name }}</span>
+              <span class="league-filter-pop__pill-label">{{ leagueDisplayName(league) }}</span>
             </button>
           </div>
         </section>
@@ -376,6 +421,18 @@ onBeforeUnmount(() => {
       </footer>
     </template>
   </div>
+
+  <!-- 悬浮完整联赛名：挂到 body，避免弹层 overflow 裁切 -->
+  <Teleport to="body">
+    <div
+      v-if="hoverTip"
+      class="league-filter-tip"
+      role="tooltip"
+      :style="{ left: `${hoverTip.left}px`, top: `${hoverTip.top}px` }"
+    >
+      {{ hoverTip.text }}
+    </div>
+  </Teleport>
 </template>
 
 <style lang="scss" scoped>
@@ -602,5 +659,44 @@ onBeforeUnmount(() => {
 
 @keyframes league-filter-spin {
   to { transform: rotate(360deg); }
+}
+</style>
+
+<!-- Teleport 到 body 的提示不受 scoped 影响，单独写主题样式 -->
+<style lang="scss">
+.league-filter-tip {
+  position: fixed;
+  z-index: 4000;
+  box-sizing: border-box;
+  max-width: min(280px, calc(100vw - 24px));
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(28, 123, 255, 0.28);
+  background: #fff;
+  color: #0b3462;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  word-break: break-word;
+  white-space: normal;
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+  box-shadow:
+    0 4px 16px rgba(21, 58, 119, 0.14),
+    0 0 0 0.8px rgba(255, 255, 255, 0.8) inset;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -5px;
+    width: 10px;
+    height: 10px;
+    border-right: 1px solid rgba(28, 123, 255, 0.28);
+    border-bottom: 1px solid rgba(28, 123, 255, 0.28);
+    background: #fff;
+    transform: translateX(-50%) rotate(45deg);
+  }
 }
 </style>
