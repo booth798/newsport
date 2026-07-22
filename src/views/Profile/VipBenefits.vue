@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onMounted, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
@@ -195,27 +195,66 @@ function handlePrivilegeClick(level) {
 }
 
 /**
- * 将指定等级项平滑滚动到容器水平居中位置，
- * 通过 offsetLeft 计算目标偏移量，使选中项视觉居中。
+ * 将指定等级项平滑滚动到容器水平居中位置。
+ * 特权列表仅在 privilege Tab 挂载，切 Tab 后需等 DOM 就绪再滚（如当前 V8）。
  */
-function scrollPrivilegeLevelToCenter(level) {
+let privilegeScrollRetryTimer = null;
+
+function clearPrivilegeScrollRetry() {
+  if (privilegeScrollRetryTimer != null) {
+    window.clearTimeout(privilegeScrollRetryTimer);
+    privilegeScrollRetryTimer = null;
+  }
+}
+
+function scrollPrivilegeLevelToCenter(level, attempt = 0) {
+  clearPrivilegeScrollRetry();
   nextTick(() => {
-    const container = privilegeLevelsRef.value;
-    if (!container) return;
-    const items = container.querySelectorAll('.vip-privilege-levels__item');
-    const idx = levels.value.findIndex((l) => Number(l.level) === Number(level));
-    const target = items[idx];
-    if (!target) return;
-    // 使用元素相对视口的位置换算内容区坐标，避免 PC 端父级 padding 影响 offsetLeft。
-    const containerRect = container.getBoundingClientRect();
-    const targetRect = target.getBoundingClientRect();
-    const targetCenter = container.scrollLeft
-      + targetRect.left
-      - containerRect.left
-      + (targetRect.width / 2);
-    const scrollLeft = targetCenter - (container.clientWidth / 2);
-    container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+    requestAnimationFrame(() => {
+      const container = privilegeLevelsRef.value;
+      if (!container) {
+        if (attempt < 8) {
+          privilegeScrollRetryTimer = window.setTimeout(
+            () => scrollPrivilegeLevelToCenter(level, attempt + 1),
+            50,
+          );
+        }
+        return;
+      }
+      const items = container.querySelectorAll('.vip-privilege-levels__item');
+      const idx = levels.value.findIndex((l) => Number(l.level) === Number(level));
+      const target = items[idx];
+      if (!target) {
+        if (attempt < 8) {
+          privilegeScrollRetryTimer = window.setTimeout(
+            () => scrollPrivilegeLevelToCenter(level, attempt + 1),
+            50,
+          );
+        }
+        return;
+      }
+      // 相对视口换算，避免 PC 父级 padding 影响 offsetLeft
+      const containerRect = container.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const targetCenter = container.scrollLeft
+        + targetRect.left
+        - containerRect.left
+        + (targetRect.width / 2);
+      const scrollLeft = Math.max(0, targetCenter - (container.clientWidth / 2));
+      container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+    });
   });
+}
+
+/** 切换侧栏/顶栏 Tab；进入 VIP 特权时把当前等级滚到可视区中间 */
+function selectVipTab(key) {
+  activeTab.value = key;
+  if (key !== 'privilege') return;
+  const level = selectedPrivilegeLevel.value ?? currentLevel.value;
+  if (selectedPrivilegeLevel.value == null) {
+    selectedPrivilegeLevel.value = currentLevel.value;
+  }
+  scrollPrivilegeLevelToCenter(level);
 }
 
 async function loadData() {
@@ -226,16 +265,33 @@ async function loadData() {
     if (isLoggedIn.value) requests.push(fetchVipMe());
     const [, vipResponse] = await Promise.all(requests);
     myVip.value = vipResponse?.data || null;
-    // 进入特权 Tab 时默认展示当前会员等级的权益，并在列表渲染后滚动居中。
+    // 默认选中当前会员等级；若已在特权 Tab 则立即居中滚动
     selectedPrivilegeLevel.value = currentLevel.value;
-    scrollPrivilegeLevelToCenter(currentLevel.value);
+    if (activeTab.value === 'privilege') {
+      scrollPrivilegeLevelToCenter(currentLevel.value);
+    }
   } catch {
     error.value = t('加载失败');
-  } finally {
   }
 }
 
+// 等级列表晚于切 Tab 返回时，补一次居中（如当前为 V8）
+watch(
+  () => levels.value.length,
+  (levelCount) => {
+    if (activeTab.value !== 'privilege' || !levelCount) return;
+    if (selectedPrivilegeLevel.value == null) {
+      selectedPrivilegeLevel.value = currentLevel.value;
+    }
+    scrollPrivilegeLevelToCenter(selectedPrivilegeLevel.value ?? currentLevel.value);
+  },
+);
+
 onMounted(loadData);
+
+onBeforeUnmount(() => {
+  clearPrivilegeScrollRetry();
+});
 </script>
 
 <template>
@@ -251,7 +307,7 @@ onMounted(loadData);
       </div>
     </div>
     <div class="vip-benefits__layout">
-      <AppSideNav :items="sideNavItems" :active-key="activeTab" @select="activeTab = $event" />
+      <AppSideNav :items="sideNavItems" :active-key="activeTab" @select="selectVipTab" />
 
       <main class="vip-benefits__content">
         <section class="vip-card">
@@ -268,7 +324,7 @@ onMounted(loadData);
         <nav class="vip-tabs" :aria-label="t('VIP权益')">
           <button v-for="tab in [{ key: 'detail', label: t('VIP详情') }, { key: 'privilege', label: t('VIP特权') }]"
             :key="tab.key" type="button" :class="{ 'btn--primary active': activeTab === tab.key }"
-            @click="activeTab = tab.key">
+            @click="selectVipTab(tab.key)">
             {{ tab.label }}
           </button>
         </nav>
