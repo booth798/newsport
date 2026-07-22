@@ -219,6 +219,43 @@ const successAmount = ref('0.00');
 const successYield = ref('0.00%');
 const successProfit = ref('0.00');
 
+/**
+ * 成功页「预估收益」：只展示净收益，不含本金。
+ * estimatedPayout / payout 可能是含本金到账额（如 539.76 = 500 + 39.76），需扣本金；
+ * 对齐账务列表 resolveProfit。
+ */
+function resolveSuccessProfit(order, amount, yieldRaw) {
+  const amt = Number(amount);
+  const explicit = pickOrderText(
+    order,
+    'expectedProfit',
+    'profit',
+    'netProfit',
+    'realizedProfit',
+  );
+  if (explicit !== '') {
+    const n = Number(explicit);
+    if (Number.isFinite(n)) {
+      // 若字段实际仍是含本金金额，同样扣本金
+      if (Number.isFinite(amt) && amt > 0 && n >= amt) return formatMoneyAmount(n - amt);
+      return formatMoneyAmount(n);
+    }
+  }
+
+  const payoutRaw = pickOrderText(order, 'estimatedPayout', 'payout', 'returnAmount');
+  if (payoutRaw !== '') {
+    const payoutAmount = Number(payoutRaw);
+    if (Number.isFinite(payoutAmount)) {
+      const profit = Number.isFinite(amt) && amt > 0 && payoutAmount >= amt
+        ? payoutAmount - amt
+        : payoutAmount;
+      return formatMoneyAmount(profit);
+    }
+  }
+
+  return calcNetProfit(amount, String(yieldRaw).split('~')[0]);
+}
+
 function buildSuccessPayload(order, amount) {
   // 字段优先级对齐安卓 BuyDialog.buildResultPayload
   const yieldRaw = pickOrderText(
@@ -233,15 +270,6 @@ function buildSuccessPayload(order, amount) {
       .filter(Boolean)
       .join(' ~ ')
   ) || profitPercent.value;
-
-  const profitRaw = pickOrderText(
-    order,
-    'estimatedPayout',
-    'expectedProfit',
-    'profit',
-    'payout',
-    'returnAmount',
-  ) || calcNetProfit(amount, yieldRaw.split('~')[0]);
 
   const scoreRaw = pickOrderText(order, 'score', 'selectedScore')
     || props.row?.scoreRaw
@@ -264,7 +292,8 @@ function buildSuccessPayload(order, amount) {
     pickOrderText(order, 'amount', 'orderAmount') || amount,
   );
   successYield.value = formatYieldPercent(yieldRaw);
-  successProfit.value = formatMoneyAmount(profitRaw);
+  // 预估收益不含本金（如 500×8.37%×0.95 ≈ 39.76，而非 539.76）
+  successProfit.value = resolveSuccessProfit(order, amount, yieldRaw);
 }
 
 async function refreshWalletBalance() {
