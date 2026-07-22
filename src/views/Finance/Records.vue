@@ -27,15 +27,16 @@ const PAGE_SIZE = 20;
 /** 对齐安卓 FinanceOverviewAdapter：下单后 5 分钟内才显示取消按钮 */
 const CANCEL_WINDOW_MS = 5 * 60 * 1000;
 
-/** PC 侧栏 → OrderListReq.status 枚举（文档：PENDING_MATCH/PLACED/WON/LOST/REFUNDED/CANCELLED） */
+/** PC 侧栏 → OrderListReq.status
+ * 成功：已中奖(WON) + 已开奖(LOST)
+ * 已取消：已退款(REFUNDED) + 已取消(CANCELLED)
+ * 处理中：预约中 / 已成交待结算
+ */
 const STATUS_FILTER_MAP = {
   all: undefined,
-  // 成功：已结算
-  completed: ['WON', 'LOST', 'REFUNDED'],
-  // 处理中：预约中 / 已成交待结算
+  completed: ['WON', 'LOST'],
   processing: ['PENDING_MATCH', 'PLACED'],
-  // 已取消
-  cancelled: ['CANCELLED'],
+  cancelled: ['REFUNDED', 'CANCELLED'],
 };
 
 const orders = ref([]);
@@ -129,16 +130,26 @@ function formatFullDateTime(iso) {
   } catch { return ''; }
 }
 
+/**
+ * 卡片展示态：成功 / 处理中 / 已取消（用于样式与侧栏分类）
+ * 成功 = 已中奖 + 已开奖；已取消 = 已退款 + 已取消
+ */
 function mapOrderState(status) {
   if (!status) return 'unknown';
   const s = status.toUpperCase();
   if (['PENDING_MATCH', 'PLACED', 'PENDING', 'CREATED'].includes(s)) return 'processing';
-  if (['WON', 'LOST', 'REFUNDED', 'SETTLED', 'SETTLED_WON', 'SETTLED_LOST'].includes(s)) return 'completed';
-  if (['CANCELLED', 'CANCELED', 'FAILED', 'REJECTED', 'EXPIRED'].includes(s)) return 'cancelled';
+  if (['WON', 'LOST', 'SETTLED', 'SETTLED_WON', 'SETTLED_LOST'].includes(s)) return 'completed';
+  if (['REFUNDED', 'CANCELLED', 'CANCELED', 'FAILED', 'REJECTED', 'EXPIRED'].includes(s)) return 'cancelled';
   return 'unknown';
 }
 
-function statusLabelKey(state) {
+/** 角标文案：展示细粒度状态（已中奖/已开奖/已退款/已取消/处理中） */
+function statusBadgeKey(status, state) {
+  const s = String(status || '').toUpperCase();
+  if (s === 'WON' || s === 'SETTLED_WON') return '已中奖';
+  if (s === 'LOST' || s === 'SETTLED_LOST' || s === 'SETTLED') return '已开奖';
+  if (s === 'REFUNDED') return '已退款';
+  if (['CANCELLED', 'CANCELED', 'FAILED', 'REJECTED', 'EXPIRED'].includes(s)) return '已取消';
   if (state === 'processing') return '处理中';
   if (state === 'completed') return '成功';
   if (state === 'cancelled') return '已取消';
@@ -272,7 +283,8 @@ function normalizeOrder(o) {
     status,
     state,
     statusText: o.statusLabel || '',
-    statusKey: statusLabelKey(state),
+    // 角标优先细粒度文案；样式仍用 state（成功/处理中/已取消）
+    statusKey: statusBadgeKey(status, state),
     amount,
     amountFormatted: formatMoney(amount),
     detailAmountFormatted: formatMoney(detailAmount),
