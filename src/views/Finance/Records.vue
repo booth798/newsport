@@ -27,16 +27,17 @@ const PAGE_SIZE = 20;
 /** 对齐安卓 FinanceOverviewAdapter：下单后 5 分钟内才显示取消按钮 */
 const CANCEL_WINDOW_MS = 5 * 60 * 1000;
 
-/** PC 侧栏 → OrderListReq.status
- * 成功：已中奖(WON) + 已开奖(LOST)
- * 已取消：已退款(REFUNDED) + 已取消(CANCELLED)
- * 处理中：预约中 / 已成交待结算
+/** PC 侧栏 → OrderListReq.status（与角标细粒度一致）
+ * 已中奖(WON) / 已开奖(LOST) / 处理中 / 已退款(REFUNDED) / 已取消(CANCELLED)
+ * 样式分类仍：成功=已中奖+已开奖；已取消=已退款+已取消
  */
 const STATUS_FILTER_MAP = {
   all: undefined,
-  completed: ['WON', 'LOST'],
+  won: ['WON'],
+  settled: ['LOST'],
   processing: ['PENDING_MATCH', 'PLACED'],
-  cancelled: ['REFUNDED', 'CANCELLED'],
+  refunded: ['REFUNDED'],
+  cancelled: ['CANCELLED'],
 };
 
 const orders = ref([]);
@@ -49,13 +50,15 @@ const hasMore = ref(false);
 const summary = ref({ totalIncome: 0, totalExpense: 0, netProfit: 0 });
 const expandedId = ref(null);
 const cancelingId = ref(null);
-/** PC 侧栏：全部 / 成功 / 处理中 / 已取消（H5 不展示侧栏，始终按「全部」拉取） */
+/** PC 侧栏细粒度筛选；H5 不展示侧栏，始终按「全部」拉取 */
 const statusFilter = ref('all');
 
 const statusNavItems = computed(() => [
   { key: 'all', label: t('全部') },
-  { key: 'completed', label: t('成功') },
+  { key: 'won', label: t('已中奖') },
+  { key: 'settled', label: t('已开奖') },
   { key: 'processing', label: t('处理中') },
+  { key: 'refunded', label: t('已退款') },
   { key: 'cancelled', label: t('已取消') },
 ]);
 
