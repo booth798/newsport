@@ -252,7 +252,7 @@ async function submitWebLogin() {
 const canSubmitRegister = computed(
   () => canSubmit.value && sliderVerified.value
     && account.value.trim().length >= 4
-    && password.value.trim().length >= 6,
+    && /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,12}$/.test(password.value.trim()),
 );
 
 async function submitRegister() {
@@ -263,8 +263,9 @@ async function submitRegister() {
     toast.error(t('用户名需4-20位'));
     return;
   }
-  if (pwd.length < 6 || pwd.length > 32) {
-    toast.error(t('密码需6-32位'));
+  // 注册密码与独立注册页一致：6-12 位字母+数字
+  if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,12}$/.test(pwd)) {
+    toast.error(t('登录密码长度提示'));
     return;
   }
   if (!sliderVerified.value) {
@@ -447,9 +448,9 @@ const passwordInputType = computed(() => (showPassword.value ? 'text' : 'passwor
                         class="form-input form-input--has-prefix form-input--has-suffix"
                         :class="{ 'form-input--password-dots': !showPassword }"
                         :type="passwordInputType"
-                        :placeholder="t('请输入密码') + ' (6-32' + t('位') + ')'"
+                        :placeholder="t('请输入密码') + ' (6-12' + t('位') + ')'"
                         autocomplete="new-password"
-                        maxlength="32"
+                        maxlength="12"
                       />
                       <button
                         type="button"

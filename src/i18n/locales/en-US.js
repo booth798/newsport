@@ -99,7 +99,7 @@ export default {
   请输入手机号: 'Enter mobile number',
   请输入手机验证码: 'Enter verification code',
   请输入密码: 'Enter password',
-  '请设置8-16位字母+数字密码': 'Set an 8-16 character letters + numbers password',
+  '请设置8-16位字母+数字密码': 'Set a 6-12 character letters + numbers password',
   验证码: 'Code',
   验证码错误: 'Incorrect verification code',
   '{seconds}s 重发': 'Resend in {seconds}s',

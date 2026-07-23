@@ -141,7 +141,8 @@ function onSliderKnobPointerDown(e) {
 
 const passwordType = computed(() => (showPassword.value ? 'text' : 'password'));
 const isAccountValid = computed(() => selectedAccount.value.length > 0);
-const isPasswordValid = computed(() => /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,16}$/.test(password.value));
+/** 注册密码：6-12 位，须同时含字母与数字（对齐登录密码规则） */
+const isPasswordValid = computed(() => /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,12}$/.test(password.value));
 const canSubmit = computed(() => isAccountValid.value && isPasswordValid.value
   && confirmPassword.value === password.value && sliderVerified.value && !submitting.value);
 
@@ -234,7 +235,7 @@ onBeforeUnmount(() => {
               v-model="password"
               class="register-field__input"
               :type="passwordType"
-              maxlength="16"
+              maxlength="12"
               :placeholder="t('请输入新密码占位')"
               autocomplete="new-password"
             />
@@ -255,7 +256,7 @@ onBeforeUnmount(() => {
               v-model="confirmPassword"
               class="register-field__input"
               :type="passwordType"
-              maxlength="16"
+              maxlength="12"
               :placeholder="t('再次输入相同密码')"
               autocomplete="new-password"
             />
