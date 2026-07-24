@@ -47,8 +47,8 @@ const expandedId = ref(null);
 const cancelingId = ref(null);
 /** PC 侧栏：全部 / 成功 / 处理中 / 已取消（H5 不展示侧栏，始终按「全部」拉取） */
 const statusFilter = ref('all');
-/** 时间筛选：全部 / 昨日 / 近3天 / 本周 / 本月；默认昨日 */
-const timeRange = ref('yesterday');
+/** 时间筛选：全部 / 昨日 / 近3天 / 本周 / 本月；默认全部 */
+const timeRange = ref('all');
 
 const statusNavItems = computed(() => [
   { key: 'all', label: t('全部') },
