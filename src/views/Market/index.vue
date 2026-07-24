@@ -10,6 +10,7 @@ import { useLeagueFilterStore } from '@/store/modules/leagueFilter';
 import EmptyState from '@/components/EmptyState.vue';
 import HomeMatchCard from '@/views/Home/components/HomeMatchCard.vue';
 import MarketLeagueFilterPopover from './components/MarketLeagueFilterPopover.vue';
+import { useImeSafeSearchInput } from '@/hooks/useImeSafeSearchInput';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -25,6 +26,20 @@ const error = ref(false);
 const trimmedQuery = computed(() => teamSearchQuery.value.trim());
 /** PC 联赛筛选弹层开关（H5 仍跳转筛选页） */
 const filterPanelOpen = ref(false);
+
+// PC 工具栏搜索：本地 draft + IME 组字兼容，避免每键写 store 导致输入抖动
+const {
+  draft: searchDraft,
+  onCompositionStart: onSearchCompositionStart,
+  onCompositionEnd: onSearchCompositionEnd,
+  onInput: onSearchInput,
+  onEnter: onSearchEnter,
+} = useImeSafeSearchInput({
+  getCommitted: () => teamSearchQuery.value,
+  commit: (q) => filterStore.setTeamSearchQuery(q),
+  onSubmit: () => filterStore.submitTeamSearch(),
+  onClear: () => filterStore.clearTeamSearch(),
+});
 
 const activeFilter = ref('all');
 const matchCounts = ref({ all: 0, today: 0, tomorrow: 0 });
@@ -200,24 +215,8 @@ onMounted(loadInitial);
 /**
  * 球队搜索：回车触发服务端 teamName 查询；
  * 清空关键词后恢复当前筛选下的完整列表。
- * H5 顶栏与 PC 工具栏共用 store，避免跳转独立搜索页。
+ * H5 顶栏与 PC 工具栏共用 store；输入态见 useImeSafeSearchInput。
  */
-function onSearchEnter(e) {
-  // 中文输入法组字中不触发，避免误搜
-  if (e?.isComposing || e?.keyCode === 229) return;
-  e?.preventDefault?.();
-  // 收起手机软键盘
-  e?.target?.blur?.();
-  if (!trimmedQuery.value) return;
-  filterStore.submitTeamSearch();
-}
-
-function onSearchInput() {
-  if (!trimmedQuery.value) {
-    filterStore.clearTeamSearch();
-  }
-}
-
 async function selectFilter(key) {
   if (activeFilter.value === key) return;
   activeFilter.value = key;
@@ -297,7 +296,7 @@ watch(() => filterStore.teamSearchNonce, () => {
         <label class="market-leagues__search" :aria-label="t('搜索球队名称')">
           <span class="market-leagues__search-icon" aria-hidden="true" />
           <input
-            v-model="teamSearchQuery"
+            :value="searchDraft"
             type="search"
             class="market-leagues__search-input"
             :placeholder="t('搜索球队名称')"
@@ -307,6 +306,8 @@ watch(() => filterStore.teamSearchNonce, () => {
             spellcheck="false"
             enterkeyhint="search"
             inputmode="search"
+            @compositionstart="onSearchCompositionStart"
+            @compositionend="onSearchCompositionEnd"
             @keydown.enter="onSearchEnter"
             @input="onSearchInput"
           />

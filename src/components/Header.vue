@@ -18,6 +18,7 @@ import MonthSelector from '@/components/MonthSelector.vue';
 import { useAppStore } from '@/store/modules/app';
 import { useUserStore } from '@/store/modules/user';
 import { useLeagueFilterStore } from '@/store/modules/leagueFilter';
+import { useImeSafeSearchInput } from '@/hooks/useImeSafeSearchInput';
 import { fetchUnreadCount } from '@/api/user';
 
 
@@ -41,6 +42,21 @@ const { isLoggedIn, loggedInUserId, loggedInAssetsFormatted, loggedInAvatarUrl }
 const { teamSearchQuery } = storeToRefs(filterStore);
 // PC 用户条头像：优先用户真实头像，无则回退默认图。
 const displayAvatarUrl = computed(() => loggedInAvatarUrl.value || avatarDefaultUrl);
+
+// H5 市场搜索：本地 draft + IME 组字兼容，避免每键写 store 导致输入抖动
+const {
+  draft: marketSearchDraft,
+  onCompositionStart: onMarketSearchCompositionStart,
+  onCompositionEnd: onMarketSearchCompositionEnd,
+  onInput: onMarketSearchInput,
+  onEnter: onMarketSearchEnter,
+  clear: clearMarketSearch,
+} = useImeSafeSearchInput({
+  getCommitted: () => teamSearchQuery.value,
+  commit: (q) => filterStore.setTeamSearchQuery(q),
+  onSubmit: () => filterStore.submitTeamSearch(),
+  onClear: () => filterStore.clearTeamSearch(),
+});
 
 const mobileDrawerOpen = ref(false);
 const messageCenterOpen = ref(false);
@@ -245,28 +261,6 @@ function startBeijingTimerIfNeeded() {
   beijingTimer = window.setInterval(updateBeijingClock, 1000);
 }
 
-/** H5 市场顶栏：回车搜索（兼容软键盘搜索键 + 中文输入法组字） */
-function onMarketSearchEnter(e) {
-  if (e?.isComposing || e?.keyCode === 229) return;
-  e.preventDefault();
-  // 收起 iOS/Android 软键盘，避免遮挡列表
-  e.target?.blur?.();
-  const q = teamSearchQuery.value.trim();
-  if (!q) return;
-  filterStore.submitTeamSearch();
-}
-
-/** 清空搜索框时恢复完整列表 */
-function onMarketSearchInput() {
-  if (!teamSearchQuery.value.trim()) {
-    filterStore.clearTeamSearch();
-  }
-}
-
-function clearMarketSearch() {
-  filterStore.clearTeamSearch();
-}
-
 watch(
   () => route.name,
   () => {
@@ -382,7 +376,7 @@ watch(isLoggedIn, (loggedIn) => {
           <label class="header-market-search" :aria-label="t('搜索球队名称')">
             <span class="header-market-search__icon" aria-hidden="true" />
             <input
-              v-model="teamSearchQuery"
+              :value="marketSearchDraft"
               type="search"
               class="header-market-search__input"
               :placeholder="t('搜索球队名称')"
@@ -392,14 +386,18 @@ watch(isLoggedIn, (loggedIn) => {
               spellcheck="false"
               enterkeyhint="search"
               inputmode="search"
+              @compositionstart="onMarketSearchCompositionStart"
+              @compositionend="onMarketSearchCompositionEnd"
               @keydown.enter="onMarketSearchEnter"
               @input="onMarketSearchInput"
             />
+            <!-- 常驻占位，避免清空按钮显隐导致输入框宽度抖动 -->
             <button
-              v-if="teamSearchQuery"
               type="button"
               class="header-market-search__clear"
+              :class="{ 'header-market-search__clear--hidden': !marketSearchDraft }"
               :aria-label="t('清空')"
+              :tabindex="marketSearchDraft ? 0 : -1"
               @click.prevent="clearMarketSearch"
             />
           </label>
@@ -635,6 +633,11 @@ watch(isLoggedIn, (loggedIn) => {
         border-radius: 50%;
         background: #c5d3e6 center / 10px 10px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10' fill='none'%3E%3Cpath d='M2 2L8 8M8 2L2 8' stroke='%23fff' stroke-width='1.4' stroke-linecap='round'/%3E%3C/svg%3E");
         cursor: pointer;
+
+        &--hidden {
+          visibility: hidden;
+          pointer-events: none;
+        }
       }
     }
 

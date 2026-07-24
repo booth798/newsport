@@ -329,7 +329,7 @@ function formatScoreLabel(score) {
       </div>
     </div>
 
-    <!-- H5：赛事卡 + 全场/半场 pill tabs + 平铺列表 -->
+    <!-- H5：球场英雄卡 + 全场/半场 pill tabs + 平铺列表（对齐 Figma 355:3541） -->
     <div v-else class="market-detail__layout market-detail__layout--m">
       <div class="market-detail__main market-detail__main--m">
         <div class="m-detail-wrap">
@@ -338,68 +338,68 @@ function formatScoreLabel(score) {
           </div>
 
           <section class="m-score-card">
-          <div class="m-score-card__tab-bar">
-            <div class="m-score-card__tabs">
-              <button
-                type="button"
-                class="m-score-card__tab"
-                :class="{ 'm-score-card__tab--active': activeTab === 'fulltime' }"
-                @click="activeTab = 'fulltime'"
-              >
-                {{ t('全场') }}
-              </button>
-              <button
-                type="button"
-                class="m-score-card__tab"
-                :class="{ 'm-score-card__tab--active': activeTab === 'halftime' }"
-                @click="activeTab = 'halftime'"
-              >
-                {{ t('半场') }}
-              </button>
+            <div class="m-score-card__tab-bar">
+              <div class="m-score-card__tabs">
+                <button
+                  type="button"
+                  class="m-score-card__tab"
+                  :class="{ 'm-score-card__tab--active': activeTab === 'fulltime' }"
+                  @click="activeTab = 'fulltime'"
+                >
+                  {{ t('全场') }}
+                </button>
+                <button
+                  type="button"
+                  class="m-score-card__tab"
+                  :class="{ 'm-score-card__tab--active': activeTab === 'halftime' }"
+                  @click="activeTab = 'halftime'"
+                >
+                  {{ t('半场') }}
+                </button>
+              </div>
+              <span class="m-score-card__vol-badge">
+                <img
+                  class="m-score-card__vol-icon"
+                  :src="iconVolumeThumbUpUrl"
+                  width="14"
+                  height="14"
+                  alt=""
+                />
+                <span class="m-score-card__vol-text">{{ t('成交量') }}</span>
+              </span>
             </div>
-            <span class="m-score-card__vol-badge">
-              <img
-                class="m-score-card__vol-icon"
-                :src="iconVolumeThumbUpUrl"
-                width="14"
-                height="14"
-                alt=""
-              />
-              <span class="m-score-card__vol-text">{{ t('成交量') }}</span>
-            </span>
-          </div>
 
-          <ul v-if="scoreRows.length" class="m-score-card__list">
-            <li
-              v-for="row in scoreRows"
-              :key="`${activeTab}-${row.score}`"
-              class="m-score-card__row"
-              :class="{
-                'm-score-card__row--active': selectedRow?.score === row.score && showBuySheet,
-                'm-score-card__row--halftime': activeTab === 'halftime',
-                'm-score-card__row--suspended': row.suspended,
-              }"
-              :role="row.suspended ? undefined : 'button'"
-              :tabindex="row.suspended ? -1 : 0"
-              @click="!row.suspended && selectRow(row)"
-              @keydown.enter.prevent="!row.suspended && selectRow(row)"
-            >
-              <span class="m-score-card__cell m-score-card__cell--score">{{ formatScoreLabel(row.score) }}</span>
-              <span class="m-score-card__cell m-score-card__cell--prob">{{ row.probability }}</span>
-              <span class="m-score-card__cell m-score-card__cell--vol">{{ row.volumeFormatted }}</span>
-              <img
-                class="m-score-card__arrow"
-                :src="iconArrowRightUrl"
-                width="16"
-                height="16"
-                alt=""
-                aria-hidden="true"
-                @click.stop="!row.suspended && selectRow(row)"
-              />
-            </li>
-          </ul>
-          <EmptyState v-else :icon-size="96" />
-        </section>
+            <ul v-if="scoreRows.length" class="m-score-card__list">
+              <li
+                v-for="row in scoreRows"
+                :key="`${activeTab}-${row.score}`"
+                class="m-score-card__row"
+                :class="{
+                  'm-score-card__row--active': selectedRow?.score === row.score && showBuySheet,
+                  'm-score-card__row--halftime': activeTab === 'halftime',
+                  'm-score-card__row--suspended': row.suspended,
+                }"
+                :role="row.suspended ? undefined : 'button'"
+                :tabindex="row.suspended ? -1 : 0"
+                @click="!row.suspended && selectRow(row)"
+                @keydown.enter.prevent="!row.suspended && selectRow(row)"
+              >
+                <span class="m-score-card__cell m-score-card__cell--score">{{ formatScoreLabel(row.score) }}</span>
+                <span class="m-score-card__cell m-score-card__cell--prob">{{ row.probability }}</span>
+                <span class="m-score-card__cell m-score-card__cell--vol">{{ row.volumeFormatted }}</span>
+                <img
+                  class="m-score-card__arrow"
+                  :src="iconArrowRightUrl"
+                  width="16"
+                  height="16"
+                  alt=""
+                  aria-hidden="true"
+                  @click.stop="!row.suspended && selectRow(row)"
+                />
+              </li>
+            </ul>
+            <EmptyState v-else :icon-size="96" />
+          </section>
         </div>
       </div>
     </div>
@@ -704,6 +704,8 @@ function formatScoreLabel(score) {
   @include mobile-only {
     padding-top: 8px;
     padding-bottom: calc($mobile-tab-bar-offset + $spacing-3xl);
+    padding-left: 12px;
+    padding-right: 12px;
     background: #e3ecfb;
   }
 
@@ -730,30 +732,14 @@ function formatScoreLabel(score) {
 
 .m-detail-wrap {
   @include mobile-only {
-    background: #eaf1f9;
-    border: 0.8px solid #fff;
-    border-radius: 16px;
-    padding: 16px;
-    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     gap: 10px;
-  }
-
-  &__hero {
-    @include mobile-only {
-      :deep(.match-card--detail-h5) {
-        padding: 0;
-        border-radius: 0;
-        background: transparent;
-        border: none;
-        box-shadow: none;
-      }
-    }
+    box-sizing: border-box;
   }
 }
 
-/* H5 比分市场卡片 — pill tabs + 平铺列表 */
+/* H5 比分市场卡片 — pill tabs + 平铺列表（Figma 355:3541） */
 .m-score-card {
   @include mobile-only {
     background: #fff;
@@ -791,7 +777,7 @@ function formatScoreLabel(score) {
       padding: 0;
       border-radius: 48px;
       border: 0.8px solid #d6e0eb;
-      background: transparent;
+      background: #fff;
       font-family: $font-family-base;
       font-size: 12px;
       font-weight: 350;
@@ -853,34 +839,6 @@ function formatScoreLabel(score) {
     }
   }
 
-  &__head-row {
-    @include mobile-only {
-      display: grid;
-      grid-template-columns: 50px 60px 1fr 16px;
-      align-items: center;
-      padding: 0 14px;
-      height: 28px;
-    }
-  }
-
-  &__head-label {
-    @include mobile-only {
-      font-size: 11px;
-      color: #8ba3c0;
-      font-weight: 500;
-
-      &--right {
-        text-align: right;
-      }
-    }
-  }
-
-  &__head-spacer {
-    @include mobile-only {
-      width: 16px;
-    }
-  }
-
   &__list {
     @include mobile-only {
       list-style: none;
@@ -895,7 +853,7 @@ function formatScoreLabel(score) {
   &__row {
     @include mobile-only {
       display: grid;
-      grid-template-columns: 50px 60px 1fr 16px;
+      grid-template-columns: 58px 64px 1fr 16px;
       gap: 0;
       align-items: center;
       height: 40px;
@@ -941,6 +899,7 @@ function formatScoreLabel(score) {
       @include mobile-only {
         font-family: $font-family-base;
         font-weight: 700;
+        letter-spacing: 0.02em;
       }
     }
 
@@ -949,8 +908,6 @@ function formatScoreLabel(score) {
         font-family: $font-family-base;
         font-weight: 700;
         color: #1c7bff;
-        /* 比分与概率之间留出间隔 */
-        padding-left: 25px;
       }
     }
 
@@ -960,6 +917,7 @@ function formatScoreLabel(score) {
         font-weight: 400;
         text-align: right;
         margin-right: 6px;
+        color: #0b3462;
       }
     }
   }

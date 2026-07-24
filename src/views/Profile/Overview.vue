@@ -133,11 +133,22 @@ function getProfileVipLevelImage(pointIndex, platform = 'h5') {
   return getImageUrl(`profile/vip_level_${safePointIndex}_${safePlatform}.svg`);
 }
 
+/** 当前等级盾牌 logo（Figma：叠在轨道弧顶上方） */
+function getVipLevelLogo(level) {
+  const normalizedLevel = Number.isInteger(Number(level)) && Number(level) >= VIP_LEVEL_MIN && Number(level) <= VIP_LEVEL_MAX
+    ? Number(level)
+    : VIP_LEVEL_MIN;
+  return getImageUrl(`vip/vip_level_logo_${normalizedLevel}.svg`);
+}
+
 const normalizedVipLevel = computed(() => {
   const level = Number(myVipLevel.value);
   if (!Number.isFinite(level)) return VIP_LEVEL_MIN;
   return Math.min(Math.max(Math.trunc(level), VIP_LEVEL_MIN), VIP_LEVEL_MAX);
 });
+
+/** 当前等级盾牌 logo */
+const currentVipLevelLogo = computed(() => getVipLevelLogo(normalizedVipLevel.value));
 
 /** 五个点位：current-2 … current+2，越界隐藏；文案 V{n} */
 const vipVisibleLevels = computed(() => {
@@ -401,7 +412,14 @@ onMounted(() => {
             @click="openUserInfoModal" />
           <div class="profile-h5-card__vip">
             <div class="vip_level_wrapper">
-              <div class="profile-h5-card__vip-title">{{ t('会员等级') }}</div>
+              <!-- 当前等级盾牌：主体在轨道上方，底尖落在弧顶（对齐 Figma 1122-5282） -->
+              <img
+                class="profile-h5-card__vip-logo norem"
+                :src="currentVipLevelLogo"
+                :alt="`V${normalizedVipLevel}`"
+                width="49"
+                height="49"
+              />
               <img class="profile-h5-card__vip-track" :src="mobileVipTrackH5" alt="" aria-hidden="true" />
             </div>
             <div class="level_babel_wrapper">
@@ -414,6 +432,8 @@ onMounted(() => {
                 {{ item.label }}
               </div>
             </div>
+            <!-- Figma：中心 V0 下方「会员等级」 -->
+            <div class="profile-h5-card__vip-title">{{ t('会员等级') }}</div>
           </div>
         </section>
 
@@ -511,7 +531,14 @@ onMounted(() => {
 
             <div class="profile-home__vip">
               <div class="pc_vip_level_wrapper">
-                <p class="profile-home__vip-title">{{ t('会员等级') }}</p>
+                <!-- 当前等级盾牌：主体在轨道上方，底尖落在弧顶（对齐 Figma） -->
+                <img
+                  class="profile-home__vip-logo norem"
+                  :src="currentVipLevelLogo"
+                  :alt="`V${normalizedVipLevel}`"
+                  width="49"
+                  height="49"
+                />
                 <img class="profile-home__vip-track" :src="desktopVipTrack" width="752" height="54" alt=""
                   aria-hidden="true" />
               </div>
@@ -525,6 +552,7 @@ onMounted(() => {
                   {{ item.label }}
                 </span>
               </div>
+              <p class="profile-home__vip-title">{{ t('会员等级') }}</p>
             </div>
           </div>
 
@@ -672,37 +700,54 @@ onMounted(() => {
 .profile-h5-card__vip {
   position: absolute;
   width: 100%;
-  height: 50px;
-  bottom: 16px;
+  // 含轨道 + V 文案 + 「会员等级」
+  height: 72px;
+  bottom: 8px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
+
   .vip_level_wrapper {
     width: 100%;
     position: relative;
-    .profile-h5-card__vip-title {
-      color: #FFFFFF;
-      font-size: 12px;
-      font-weight: 500;
-      text-align: center;
+    height: 33px;
+
+    // Figma：盾牌主体在弧线上方，底尖落在轨道中心
+    .profile-h5-card__vip-logo.norem {
+      position: absolute;
+      left: 50%;
+      // 轨道中心线约在 top≈22px（viewBox y=24/35）；logo 底边对齐该点
+      top: -27px;
+      z-index: 3;
+      display: block;
+      width: 48.69px;
+      height: 48.87px;
+      transform: translateX(-50%);
+      object-fit: contain;
+      pointer-events: none;
     }
 
     .profile-h5-card__vip-track {
       position: absolute;
       top: 0;
       left: 50%;
+      z-index: 1;
       transform: translateX(-50%);
       width: 359px;
       height: 33px;
     }
   }
+
   .level_babel_wrapper {
     width: 359px;
     height: 50px;
     position: absolute;
     top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
     [class^="level_babel"] {
       position: absolute;
       color: #FFFFFF;
@@ -737,6 +782,21 @@ onMounted(() => {
         transform: translateX(-50%);
       }
     }
+  }
+
+  // Figma：位于中心 V0 正下方
+  .profile-h5-card__vip-title {
+    position: absolute;
+    left: 50%;
+    top: 52px;
+    z-index: 2;
+    transform: translateX(-50%);
+    color: #FFFFFF;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
+    pointer-events: none;
   }
 }
 
@@ -1183,21 +1243,33 @@ onMounted(() => {
     position: relative;
     width: 100%;
     height: 54px;
-    overflow: hidden;
-    .profile-home__vip-title {
-      font-size: 14px;
-      font-weight: 500;
-      color: #FFFFFF;
-      margin-top: 10px;
+    // 盾牌向上超出轨道，不可裁切
+    overflow: visible;
+
+    // Figma：盾牌主体在轨道上方，底尖落在弧顶中心（PC 轨道中心约 y=40/54）
+    .profile-home__vip-logo.norem {
+      position: absolute;
+      left: 50%;
+      top: -9px;
+      z-index: 3;
+      display: block;
+      width: 48.69px;
+      height: 48.87px;
+      transform: translateX(-50%);
+      object-fit: contain;
+      pointer-events: none;
     }
+
     .profile-home__vip-track {
       position: absolute;
       top: 0;
+      left: 0;
+      z-index: 1;
       width: 100%;
+      height: 54px;
+      object-fit: contain;
     }
   }
-
-
 
   .pc_level_babel_wrapper {
     position: absolute;
@@ -1209,6 +1281,7 @@ onMounted(() => {
     margin: 0 auto;
     padding: 0;
     transform: translateX(-50%);
+    z-index: 2;
 
     [class^="level_babel"] {
       position: absolute;
@@ -1248,6 +1321,22 @@ onMounted(() => {
         transform: translateX(-50%);
       }
     }
+  }
+
+  // Figma：中心 V 文案下方「会员等级」
+  .profile-home__vip-title {
+    position: absolute;
+    left: 50%;
+    top: 78px;
+    z-index: 2;
+    margin: 0;
+    transform: translateX(-50%);
+    font-size: 14px;
+    font-weight: 500;
+    color: #FFFFFF;
+    line-height: 1.2;
+    white-space: nowrap;
+    pointer-events: none;
   }
 
   .profile-home__stat {

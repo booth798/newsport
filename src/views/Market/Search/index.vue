@@ -39,6 +39,8 @@ const matchSearchPhase = computed(() => {
 
 const searchInputRef = ref(null);
 const searchQuery = ref('');
+/** 中文输入法组字中，避免中间态触发清空/回车搜索导致抖动 */
+const searchComposing = ref(false);
 const results = ref([]);
 const matchResults = ref([]);
 const loading = ref(false);
@@ -146,7 +148,9 @@ function normalizeMatchRecord(m) {
   };
 }
 
-async function doSearch() {
+async function doSearch(e) {
+  // 组字中不触发，避免中文输入法回车选词被当成搜索
+  if (e?.isComposing || e?.keyCode === 229 || searchComposing.value) return;
   const keyword = trimmedQuery.value;
   // 与安卓一致：空白关键词不请求；进行中的搜索忽略重复触发
   if (!keyword || searching.value) return;
@@ -199,7 +203,19 @@ async function doSearch() {
   }
 }
 
-function onInputChange() {
+function onSearchCompositionStart() {
+  searchComposing.value = true;
+}
+
+function onSearchCompositionEnd(e) {
+  searchComposing.value = false;
+  searchQuery.value = e?.target?.value ?? searchQuery.value;
+  onInputChange();
+}
+
+function onInputChange(e) {
+  if (e?.target) searchQuery.value = e.target.value;
+  if (searchComposing.value || e?.isComposing) return;
   if (!trimmedQuery.value) {
     searchRequestSerial += 1;
     hasSearched.value = false;
@@ -211,6 +227,7 @@ function onInputChange() {
 }
 
 function clearInput() {
+  searchComposing.value = false;
   searchRequestSerial += 1;
   searchQuery.value = '';
   hasSearched.value = false;
@@ -249,20 +266,24 @@ onMounted(async () => {
           </svg>
           <input
             ref="searchInputRef"
-            v-model="searchQuery"
+            :value="searchQuery"
             type="search"
             class="search-page__search-input"
             :placeholder="searchPlaceholder"
             autocomplete="off"
             enterkeyhint="search"
+            @compositionstart="onSearchCompositionStart"
+            @compositionend="onSearchCompositionEnd"
             @keydown.enter.prevent="doSearch"
             @input="onInputChange"
           />
+          <!-- 常驻占位，避免清空按钮显隐导致输入宽度抖动 -->
           <button
-            v-if="searchQuery"
             type="button"
             class="search-page__m-clear"
+            :class="{ 'search-page__m-clear--hidden': !searchQuery }"
             :aria-label="t('清空')"
+            :tabindex="searchQuery ? 0 : -1"
             @click="clearInput"
           >
             <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -287,12 +308,14 @@ onMounted(async () => {
           </svg>
           <input
             ref="searchInputRef"
-            v-model="searchQuery"
+            :value="searchQuery"
             type="search"
             class="search-page__search-input"
             :placeholder="searchPlaceholder"
             autocomplete="off"
             enterkeyhint="search"
+            @compositionstart="onSearchCompositionStart"
+            @compositionend="onSearchCompositionEnd"
             @keydown.enter.prevent="doSearch"
             @input="onInputChange"
           />
@@ -593,6 +616,11 @@ onMounted(async () => {
 
     svg {
       display: block;
+    }
+
+    &--hidden {
+      visibility: hidden;
+      pointer-events: none;
     }
   }
 
