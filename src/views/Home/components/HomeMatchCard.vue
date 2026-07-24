@@ -8,7 +8,8 @@ import { useAppStore } from '@/store/modules/app';
 import { useCountdown } from '@/hooks/useCountdown';
 
 import bgGridPatternUrl from '@/assets/images/events/bg_grid_pattern.svg?url';
-import bgMatchDetailHeroUrl from '@/assets/images/events/bg_match_detail_hero.jpg';
+import bgMatchDetailHeroH5Url from '@/assets/images/events/bg_match_detail_hero_h5.png';
+import bgMatchDetailHeroPcUrl from '@/assets/images/events/bg_match_detail_hero_pc.png';
 import bgScoreDefaultUrl from '@/assets/images/events/bg_score_default.svg?url';
 import bgScoreHighUrl from '@/assets/images/events/bg_score_high.svg?url';
 import iconChampionUrl from '@/assets/images/events/icon_champion.svg?url';
@@ -40,6 +41,8 @@ const props = defineProps({
     default: '',
   },
 });
+
+const emit = defineEmits(['open-purchase']);
 
 const router = useRouter();
 
@@ -168,90 +171,101 @@ function formatPoolScore(score) {
     class="match-card"
     :class="{ 'match-card--detail': props.detailMode, 'match-card--detail-h5': isDetailH5 }"
   >
-    <!-- H5: 移动端布局 -->
-    <div v-if="isMobile" class="match-card__inner match-card__inner--m">
-      <!-- Figma 355:3541：详情英雄卡 = 球场背景 + 白字叠加 -->
-      <div v-if="isDetailH5" class="match-card__detail-hero">
+    <!-- 比赛详情：H5 / PC 分别使用设计稿提供的原始头图。 -->
+    <div v-if="props.detailMode" class="match-card__detail-hero">
+      <picture>
+        <source media="(min-width: 751px)" :srcset="bgMatchDetailHeroPcUrl" />
         <img
           class="match-card__detail-hero-bg"
-          :src="bgMatchDetailHeroUrl"
+          :src="bgMatchDetailHeroH5Url"
           alt=""
-          width="750"
-          height="405"
+          width="1077"
+          height="471"
           decoding="async"
           draggable="false"
         />
-        <div class="match-card__detail-hero-shade" aria-hidden="true" />
-        <div class="match-card__detail-hero-body">
-          <div class="match-card__detail-hero-top">
-            <div class="match-card__detail-hero-league">
+      </picture>
+      <div class="match-card__detail-hero-body">
+        <div class="match-card__detail-hero-top">
+          <div class="match-card__detail-hero-league">
+            <img
+              class="match-card__detail-hero-league-icon"
+              :src="leagueIconUrl"
+              alt=""
+              width="20"
+              height="20"
+              draggable="false"
+            />
+            <div class="match-card__detail-hero-league-meta">
+              <span class="match-card__detail-hero-league-name">{{ match.league }}</span>
+              <span class="match-card__detail-hero-date">
+                {{ isMobile ? detailMatchDate : listKickoffLabel }}
+              </span>
+            </div>
+          </div>
+          <div class="match-card__detail-hero-countdown">
+            <span class="match-card__detail-hero-countdown-lab">{{ t('倒计时') }}:</span>
+            <span class="match-card__detail-hero-countdown-num">{{ detailCountdownLabel }}</span>
+          </div>
+        </div>
+
+        <div class="match-card__detail-hero-teams">
+          <div class="match-card__detail-hero-side match-card__detail-hero-side--home">
+            <div class="match-card__detail-hero-logo">
               <img
-                class="match-card__detail-hero-league-icon"
-                :src="leagueIconUrl"
-                alt=""
-                width="20"
-                height="20"
+                v-if="homeTeamLogoUrl"
+                class="match-card__detail-hero-logo-img"
+                :src="homeTeamLogoUrl"
+                :alt="match.homeTeam"
+                width="72"
+                height="72"
+                decoding="async"
                 draggable="false"
               />
-              <div class="match-card__detail-hero-league-meta">
-                <span class="match-card__detail-hero-league-name">{{ match.league }}</span>
-                <span class="match-card__detail-hero-date">{{ detailMatchDate }}</span>
-              </div>
+              <span v-else class="match-card__detail-hero-logo-fallback">{{ match.homeTeam.charAt(0) }}</span>
             </div>
-            <div class="match-card__detail-hero-countdown">
-              <span class="match-card__detail-hero-countdown-lab">{{ t('倒计时') }}:</span>
-              <span class="match-card__detail-hero-countdown-num">{{ detailCountdownLabel }}</span>
+            <div class="match-card__detail-hero-name-row">
+              <span class="match-card__detail-hero-name">{{ match.homeTeam }}</span>
+              <span class="match-card__detail-hero-home-tag">{{ t('主') }}</span>
             </div>
           </div>
 
-          <div class="match-card__detail-hero-teams">
-            <div class="match-card__detail-hero-side match-card__detail-hero-side--home">
-              <div class="match-card__detail-hero-logo">
-                <img
-                  v-if="homeTeamLogoUrl"
-                  class="match-card__detail-hero-logo-img"
-                  :src="homeTeamLogoUrl"
-                  :alt="match.homeTeam"
-                  width="72"
-                  height="72"
-                  decoding="async"
-                  draggable="false"
-                />
-                <span v-else class="match-card__detail-hero-logo-fallback">{{ match.homeTeam.charAt(0) }}</span>
-              </div>
-              <div class="match-card__detail-hero-name-row">
-                <span class="match-card__detail-hero-name">{{ match.homeTeam }}</span>
-                <!-- Figma：主队角标在队名右侧 -->
-                <span class="match-card__detail-hero-home-tag">{{ t('主') }}</span>
-              </div>
+          <span class="match-card__detail-hero-vs">VS</span>
+
+          <div class="match-card__detail-hero-side match-card__detail-hero-side--away">
+            <div class="match-card__detail-hero-logo">
+              <img
+                v-if="awayTeamLogoUrl"
+                class="match-card__detail-hero-logo-img"
+                :src="awayTeamLogoUrl"
+                :alt="match.awayTeam"
+                width="72"
+                height="72"
+                decoding="async"
+                draggable="false"
+              />
+              <span v-else class="match-card__detail-hero-logo-fallback">{{ match.awayTeam.charAt(0) }}</span>
             </div>
-
-            <span class="match-card__detail-hero-vs">VS</span>
-
-            <div class="match-card__detail-hero-side match-card__detail-hero-side--away">
-              <div class="match-card__detail-hero-logo">
-                <img
-                  v-if="awayTeamLogoUrl"
-                  class="match-card__detail-hero-logo-img"
-                  :src="awayTeamLogoUrl"
-                  :alt="match.awayTeam"
-                  width="72"
-                  height="72"
-                  decoding="async"
-                  draggable="false"
-                />
-                <span v-else class="match-card__detail-hero-logo-fallback">{{ match.awayTeam.charAt(0) }}</span>
-              </div>
-              <div class="match-card__detail-hero-name-row">
-                <span class="match-card__detail-hero-name">{{ match.awayTeam }}</span>
-              </div>
+            <div class="match-card__detail-hero-name-row">
+              <span class="match-card__detail-hero-name">{{ match.awayTeam }}</span>
             </div>
           </div>
         </div>
-      </div>
 
-      <template v-else>
-        <div class="match-card__m-top">
+        <button
+          v-if="!isMobile"
+          type="button"
+          class="match-card__detail-hero-button btn btn--primary"
+          @click="emit('open-purchase')"
+        >
+          {{ t('进入比赛') }}
+        </button>
+      </div>
+    </div>
+
+    <!-- H5: 移动端列表卡片布局 -->
+    <div v-else-if="isMobile" class="match-card__inner match-card__inner--m">
+      <div class="match-card__m-top">
           <div class="match-card__m-league-row">
             <div class="match-card__league">
               <img
@@ -378,7 +392,6 @@ function formatPoolScore(score) {
             </div>
           </div>
         </div>
-      </template>
     </div>
 
     <!-- PC: 桌面端布局（与移动端结构一致） -->
@@ -577,44 +590,11 @@ function formatPoolScore(score) {
     cursor: default;
 
     @include web-only {
-      .match-card__foot {
-        display: flex;
-        justify-content: center;
-      }
-
-      .match-card__btn {
-        width: min(100%, 300px);
-        max-width: 300px;
-      }
-
-      .match-card__pill--detail-w {
-        gap: 4px;
-        padding: 6px 12px;
-        border-radius: 8px;
-        background: rgba(228, 240, 254, 0.95);
-
-        .match-card__pill-lab-keyword,
-        .match-card__pill-lab-sep,
-        .match-card__pill-time {
-          font-size: 14px;
-          font-weight: 500;
-          line-height: 1;
-        }
-
-        .match-card__pill-lab-keyword {
-          color: rgba(11, 52, 98, 1);
-        }
-
-        .match-card__pill-lab-sep,
-        .match-card__pill-time {
-          color: #1f7cff;
-        }
-
-        .match-card__pill-time {
-          font-family: $font-family-num;
-          font-weight: 600;
-        }
-      }
+      padding: 0;
+      border: none;
+      border-radius: 32px;
+      background: transparent;
+      box-shadow: 0 8px 20px rgba(21, 58, 118, 0.18);
 
       &:hover {
         transform: none;
@@ -646,263 +626,342 @@ function formatPoolScore(score) {
     }
   }
 
-  /* Figma 比赛详情英雄卡：球场背景 + 白字 */
+  /* 比赛详情英雄卡：素材比例与 H5 / PC 设计槽位一一对应。 */
   &__detail-hero {
+    position: relative;
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    isolation: isolate;
+
     @include mobile-only {
-      position: relative;
-      display: block;
-      width: 100%;
-      min-height: 188px;
+      aspect-ratio: 1077 / 471;
       border-radius: 16px;
-      overflow: hidden;
-      isolation: isolate;
+    }
+
+    @include web-only {
+      aspect-ratio: 2400 / 882;
+      border-radius: 32px;
     }
   }
 
   &__detail-hero-bg {
-    @include mobile-only {
-      position: absolute;
-      inset: 0;
-      z-index: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: center;
-      pointer-events: none;
-    }
-  }
-
-  &__detail-hero-shade {
-    @include mobile-only {
-      position: absolute;
-      inset: 0;
-      z-index: 1;
-      pointer-events: none;
-      /* 顶部加深保证联赛/倒计时可读，底部略浅露出球场 */
-      background: linear-gradient(
-        180deg,
-        rgba(8, 18, 36, 0.55) 0%,
-        rgba(8, 18, 36, 0.28) 42%,
-        rgba(8, 18, 36, 0.4) 100%
-      );
-    }
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    object-fit: cover;
+    object-position: center;
+    pointer-events: none;
   }
 
   &__detail-hero-body {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+
     @include mobile-only {
-      position: relative;
-      z-index: 2;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      padding: 12px 12px 14px;
-      box-sizing: border-box;
+      gap: 8px;
+      padding: 12px 12px 10px;
+    }
+
+    @include web-only {
+      gap: 8px;
+      padding: 22px 28px 20px;
     }
   }
 
   &__detail-hero-top {
-    @include mobile-only {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 10px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+
+    @include web-only {
+      justify-content: center;
+      min-height: 40px;
     }
   }
 
   &__detail-hero-league {
-    @include mobile-only {
-      display: flex;
-      align-items: flex-start;
-      gap: 6px;
-      min-width: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    min-width: 0;
+
+    @include web-only {
+      justify-content: center;
+      text-align: center;
     }
   }
 
   &__detail-hero-league-icon {
-    @include mobile-only {
-      flex-shrink: 0;
-      width: 20px;
-      height: 20px;
-      margin-top: 1px;
-      border-radius: 50%;
-      object-fit: contain;
-      background: rgba(255, 255, 255, 0.92);
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    margin-top: 1px;
+    border-radius: 50%;
+    object-fit: contain;
+    background: rgba(255, 255, 255, 0.92);
+
+    @include web-only {
+      display: none;
     }
   }
 
   &__detail-hero-league-meta {
-    @include mobile-only {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+
+    @include web-only {
+      gap: 8px;
     }
   }
 
   &__detail-hero-league-name {
+    font-family: $font-family-base;
+    font-weight: 600;
+    line-height: 1.2;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
     @include mobile-only {
-      font-family: $font-family-base;
       font-size: 14px;
-      font-weight: 600;
-      line-height: 1.2;
-      color: #fff;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    }
+
+    @include web-only {
+      font-size: 18px;
     }
   }
 
   &__detail-hero-date {
+    font-family: $font-family-num;
+    font-weight: 400;
+    line-height: 1.2;
+    color: rgba(255, 255, 255, 0.88);
+    white-space: nowrap;
+
     @include mobile-only {
-      font-family: $font-family-num;
       font-size: 12px;
-      font-weight: 400;
-      line-height: 1.2;
-      color: rgba(255, 255, 255, 0.88);
-      white-space: nowrap;
+    }
+
+    @include web-only {
+      font-size: 16px;
     }
   }
 
   &__detail-hero-countdown {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    box-sizing: border-box;
+    white-space: nowrap;
+    color: #fff;
+
     @include mobile-only {
-      flex-shrink: 0;
-      display: inline-flex;
-      align-items: center;
-      gap: 2px;
+      position: absolute;
+      top: 29px;
+      right: 0;
       height: 24px;
       padding: 0 10px;
-      border-radius: 20px;
-      background: rgba(0, 0, 0, 0.45);
-      box-sizing: border-box;
-      white-space: nowrap;
+      border-radius: 10px 0 0 10px;
+      background: rgba(255, 255, 255, 0.55);
+    }
+
+    @include web-only {
+      position: absolute;
+      top: 44px;
+      right: 20px;
+      height: 34px;
+      padding: 0 14px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.25);
     }
   }
 
+  &__detail-hero-countdown-lab,
+  &__detail-hero-countdown-num {
+    line-height: 1;
+    color: #fff;
+  }
+
   &__detail-hero-countdown-lab {
+    font-family: $font-family-base;
+    font-weight: 400;
+
     @include mobile-only {
-      font-family: $font-family-base;
       font-size: 12px;
-      font-weight: 400;
-      line-height: 1;
-      color: #fff;
+    }
+
+    @include web-only {
+      font-size: 14px;
     }
   }
 
   &__detail-hero-countdown-num {
+    font-family: $font-family-num;
+    font-weight: 600;
+
     @include mobile-only {
-      font-family: $font-family-num;
       font-size: 12px;
-      font-weight: 600;
-      line-height: 1;
-      color: #fff;
+    }
+
+    @include web-only {
+      font-size: 16px;
     }
   }
 
   &__detail-hero-teams {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    flex: 1;
+
     @include mobile-only {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-      align-items: center;
       column-gap: 8px;
-      padding-top: 2px;
+    }
+
+    @include web-only {
+      width: 100%;
+      margin: 0 auto;
+      column-gap: 18px;
     }
   }
 
   &__detail-hero-side {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 0;
+
     @include mobile-only {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      gap: 6px;
+    }
+
+    @include web-only {
       gap: 8px;
-      min-width: 0;
     }
   }
 
   &__detail-hero-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #fff;
+    box-sizing: border-box;
+    overflow: hidden;
+
     @include mobile-only {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 52px;
-      height: 52px;
-      border-radius: 50%;
-      background: #fff;
-      box-sizing: border-box;
-      overflow: hidden;
+      width: 48px;
+      height: 48px;
+    }
+
+    @include web-only {
+      width: 62px;
+      height: 62px;
     }
   }
 
   &__detail-hero-logo-img {
-    @include mobile-only {
-      display: block;
-      width: 72%;
-      height: 72%;
-      object-fit: contain;
-    }
+    display: block;
+    width: 72%;
+    height: 72%;
+    object-fit: contain;
   }
 
   &__detail-hero-logo-fallback {
-    @include mobile-only {
-      font-family: $font-family-base;
-      font-size: 18px;
-      font-weight: 600;
-      color: #1c7bff;
-    }
+    font-family: $font-family-base;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1c7bff;
   }
 
   &__detail-hero-name-row {
-    @include mobile-only {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-      max-width: 100%;
-      min-width: 0;
-    }
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    max-width: 100%;
+    min-width: 0;
   }
 
   &__detail-hero-name {
+    font-family: $font-family-base;
+    font-weight: 500;
+    line-height: 1.2;
+    color: #fff;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
     @include mobile-only {
-      font-family: $font-family-base;
       font-size: 13px;
-      font-weight: 500;
-      line-height: 1.2;
-      color: #fff;
-      text-align: center;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    }
+
+    @include web-only {
+      font-size: 16px;
     }
   }
 
   &__detail-hero-home-tag {
-    @include mobile-only {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      width: 14px;
-      height: 14px;
-      border-radius: 3px;
-      background: #1c7bff;
-      font-family: $font-family-base;
-      font-size: 10px;
-      font-weight: 500;
-      line-height: 1;
-      color: #fff;
-    }
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    background: #1c7bff;
+    font-family: $font-family-base;
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1;
+    color: #fff;
   }
 
   &__detail-hero-vs {
+    align-self: start;
+    font-family: $font-family-num;
+    font-weight: 700;
+    line-height: 1;
+    color: #fff;
+    text-align: center;
+
     @include mobile-only {
-      align-self: start;
-      margin-top: 14px; /* 与 52px logo 垂直中线对齐 */
-      font-family: $font-family-num;
+      margin-top: 41px;
       font-size: 22px;
-      font-weight: 700;
-      line-height: 1;
-      color: #fff;
-      text-align: center;
+    }
+
+    @include web-only {
+      margin-top: 58px;
+      font-size: 40px;
+    }
+  }
+
+  &__detail-hero-button {
+    @include web-only {
+      width: 300px;
+      height: 40px;
+      margin: 0 auto;
+      padding: 0;
+
+      &:focus-visible {
+        outline: 2px solid #fff;
+        outline-offset: 2px;
+      }
     }
   }
 

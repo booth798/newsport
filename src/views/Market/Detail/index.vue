@@ -275,7 +275,7 @@ function formatScoreLabel(score) {
 
       <div class="market-detail__main">
         <div class="market-detail__hero">
-          <HomeMatchCard :match="match" detail-mode />
+          <HomeMatchCard :match="match" detail-mode @open-purchase="openBuySheetFromHero" />
         </div>
 
         <section
@@ -334,7 +334,7 @@ function formatScoreLabel(score) {
       <div class="market-detail__main market-detail__main--m">
         <div class="m-detail-wrap">
           <div class="m-detail-wrap__hero">
-            <HomeMatchCard :match="match" detail-mode />
+            <HomeMatchCard :match="match" detail-mode @open-purchase="openBuySheetFromHero" />
           </div>
 
           <section class="m-score-card">
