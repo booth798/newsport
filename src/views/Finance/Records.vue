@@ -10,6 +10,7 @@ import { fetchLedgerSummary } from '@/api/finance';
 import { fetchOrderList, cancelOrder } from '@/api/order';
 import { useToast } from '@/hooks/useToast';
 import { resolveTeamLogoUrl } from '@/constants/teamLogos';
+import { isWithinOrderCancelWindow } from '@/constants/orderCancel';
 
 import leagueUclUrl from '@/assets/images/common/league_ucl.svg?url';
 import orderCopyIconUrl from '@/assets/images/finance/icon_order_copy.svg?url';
@@ -21,8 +22,6 @@ const toast = useToast();
 const userStore = useUserStore();
 
 const PAGE_SIZE = 20;
-/** 对齐安卓 FinanceOverviewAdapter：下单后 10 分钟内才显示取消按钮 */
-const CANCEL_WINDOW_MS = 10 * 60 * 1000;
 
 /** PC 侧栏 → OrderListReq.status（侧栏标签仍用「成功/已取消」，数据按细粒度合并）
  * 成功：已中奖(WON) + 已开奖(LOST)
@@ -218,15 +217,21 @@ function mapOrderState(status) {
   return 'unknown';
 }
 
-/** 角标文案：细粒度状态；处理中统一展示「待结算」（对齐 Figma） */
+/** 角标文案（账务列表）
+ * 下注中→等结算；未中→已失利；中了→已结算；用户取消→已取消；比赛取消退回→已退款
+ */
 function statusBadgeKey(status, state) {
   const s = String(status || '').toUpperCase();
-  if (s === 'WON' || s === 'SETTLED_WON') return '已中奖';
-  if (s === 'LOST' || s === 'SETTLED_LOST' || s === 'SETTLED') return '已开奖';
+  if (s === 'WON' || s === 'SETTLED_WON') return '已结算';
+  if (s === 'LOST' || s === 'SETTLED_LOST') return '已失利';
+  // 笼统 SETTLED 按已结算展示
+  if (s === 'SETTLED') return '已结算';
   if (s === 'REFUNDED') return '已退款';
   if (['CANCELLED', 'CANCELED', 'FAILED', 'REJECTED', 'EXPIRED'].includes(s)) return '已取消';
-  if (state === 'processing') return '待结算';
-  if (state === 'completed') return '成功';
+  if (state === 'processing' || ['PENDING_MATCH', 'PLACED', 'PENDING', 'CREATED'].includes(s)) {
+    return '等结算';
+  }
+  if (state === 'completed') return '已结算';
   if (state === 'cancelled') return '已取消';
   return '';
 }
@@ -384,11 +389,10 @@ function normalizeOrder(o) {
   };
 }
 
-/** 对齐安卓 isWithinCancelWindow：展开 + 处理中 + 下单 10 分钟内才显示取消 */
+/** 对齐 isWithinOrderCancelWindow：展开 + 处理中 + 下单 10 分钟内才显示取消 */
 function canShowCancel(order) {
   if (!order?.cancelable || expandedId.value !== order.id) return false;
-  if (order.placedAtMillis == null) return false;
-  return Math.abs(Date.now() - order.placedAtMillis) <= CANCEL_WINDOW_MS;
+  return isWithinOrderCancelWindow(order.placedAtMillis);
 }
 
 async function loadPage(page, append = false) {

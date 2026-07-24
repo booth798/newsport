@@ -14,6 +14,7 @@ import iconUkUrl from '@/assets/images/events/icon_uk.svg?url';
 import iconChevronDownUrl from '@/assets/images/common/icon_drawer_section_chevron_down.svg?url';
 import iconChevronUpUrl from '@/assets/images/common/icon_drawer_section_chevron_up.svg?url';
 import { resolveTeamLogoUrl } from '@/constants/teamLogos';
+import { isWithinOrderCancelWindow } from '@/constants/orderCancel';
 
 const props = defineProps({
   order: {
@@ -72,7 +73,13 @@ const summaryProfitLabelKey = computed(() => {
   return '盈利';
 });
 
-const showCancelAction = computed(() => props.order.canCancel);
+/** 处理中且下单 10 分钟内才展示取消 */
+const showCancelAction = computed(() => {
+  if (!props.order.canCancel) return false;
+  const placedAt = props.order.tradeTime || props.order.placedAt || props.order.createdAt;
+  if (!placedAt) return true;
+  return isWithinOrderCancelWindow(placedAt);
+});
 
 async function copyOrderNo() {
   try {

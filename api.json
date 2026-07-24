@@ -5521,7 +5521,7 @@
                     },
                     "betInWindow": {
                         "type": "number",
-                        "description": "未结算下注（即时成交单本金锁到结算；其中 5 分钟内的可撤）",
+                        "description": "未结算下注（即时成交单本金锁到结算；其中 10 分钟内的可撤）",
                         "example": 150.0
                     },
                     "withdraw": {

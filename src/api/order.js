@@ -1,4 +1,5 @@
 import { get, post, del } from './request';
+import { isWithinOrderCancelWindow } from '@/constants/orderCancel';
 
 const IDEMPOTENCY_STORAGE_KEY = 'mysport:idempotency';
 
@@ -148,6 +149,10 @@ export async function fetchScheduledList(matchId, options = {}) {
 }
 
 function normalizeOrder(o) {
+  const placedAt = o.placedAt || o.createdAt || '';
+  const status = String(o.status || '').toUpperCase();
+  // 处理中订单：下单 10 分钟内可撤
+  const processing = ['PENDING_MATCH', 'PLACED', 'PENDING', 'CREATED'].includes(status);
   return {
     ...o,
     orderNo: o.orderNo || o.id,
@@ -164,8 +169,9 @@ function normalizeOrder(o) {
     tradeAmountFormatted: `¥${formatMoney(o.amount)}`,
     yieldPercent: o.yieldAtBuy,
     statusKey: o.statusLabel || o.status || '',
-    tradeTime: o.placedAt || o.createdAt || '',
+    tradeTime: placedAt,
     profitFormatted: formatMoney(o.estimatedPayout ?? o.payout),
+    canCancel: processing && isWithinOrderCancelWindow(placedAt),
   };
 }
 
