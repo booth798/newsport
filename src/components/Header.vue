@@ -561,19 +561,8 @@ watch(isLoggedIn, (loggedIn) => {
       border: 0.8px solid var(--auxiliary-1);
       justify-content: space-between;
       gap: 12px;
-    }
 
-    .logo {
-      display: block;
-      width: 78px;
-      height: 28px;
-      object-fit: contain;
-      flex-shrink: 0;
-    }
-
-    // H5 市场列表：顶栏内联搜索（Figma 白底圆角条）
-    // 挂在 .norem 下，避免 pxtorem 把 14px 占位文字放大
-    .card-primary.norem {
+      // H5 市场搜索：挂在 .norem 下，占位 14px / #8599B0 不被 pxtorem 放大
       .header-market-search {
         display: inline-flex;
         align-items: center;
@@ -647,6 +636,14 @@ watch(isLoggedIn, (loggedIn) => {
         background: #c5d3e6 center / 10px 10px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10' fill='none'%3E%3Cpath d='M2 2L8 8M8 2L2 8' stroke='%23fff' stroke-width='1.4' stroke-linecap='round'/%3E%3C/svg%3E");
         cursor: pointer;
       }
+    }
+
+    .logo {
+      display: block;
+      width: 78px;
+      height: 28px;
+      object-fit: contain;
+      flex-shrink: 0;
     }
 
     .header-market-search__placeholder {
