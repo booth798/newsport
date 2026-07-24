@@ -45,7 +45,7 @@ async function idempotentPost(url, body, operation) {
 
 /**
  * 我的订单列表 GET /orders
- * 参数对齐 OrderListReq：pageNum / pageSize / status[] / matchId / period / account / orderNo
+ * 参数对齐 OrderListReq：pageNum / pageSize / status[] / matchId / period / startAt / endAt …
  * status 为数组时展开为 ?status=WON&status=LOST（与文档一致）
  */
 export async function fetchOrderList(params = {}) {
@@ -57,6 +57,9 @@ export async function fetchOrderList(params = {}) {
     period: params.period,
     account: params.account,
     orderNo: params.orderNo,
+    // 按下单时间段筛选（与 ledger/summary 共用）
+    startAt: params.startAt,
+    endAt: params.endAt,
     // 兼容旧调用；文档未列 marketId 时传了也会被后端忽略
     marketId: params.marketId,
   });

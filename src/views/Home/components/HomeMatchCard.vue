@@ -111,6 +111,22 @@ const detailMatchDate = computed(() => {
   return `2026-${raw}`;
 });
 
+/** H5 列表开赛时间：对齐 Figma「03-19 02:30」 */
+const listKickoffLabel = computed(() => {
+  const raw = props.match.kickoffAt;
+  if (raw) {
+    const d = new Date(raw);
+    if (!Number.isNaN(d.getTime())) {
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mi = String(d.getMinutes()).padStart(2, '0');
+      return `${mm}-${dd} ${hh}:${mi}`;
+    }
+  }
+  return props.match.date || '';
+});
+
 const DEFAULT_POOLS = [
   { score: '0:0', probability: '--' },
   { score: '0:1', probability: '--' },
@@ -123,9 +139,11 @@ const topPools = computed(() => {
   return DEFAULT_POOLS;
 });
 
-/** 比分展示统一为安卓端的冒号格式（如 0:0）；仅影响显示，不改用于跳转的原始 pool.score。 */
+/** 比分展示：H5 列表跟 Figma 用连字符；其它场景跟安卓用冒号 */
 function formatPoolScore(score) {
-  return String(score ?? '').replace('-', ':');
+  const raw = String(score ?? '');
+  if (isMobile.value && !props.detailMode) return raw.replace(':', '-');
+  return raw.replace('-', ':');
 }
 </script>
 
@@ -186,7 +204,7 @@ function formatPoolScore(score) {
         </div>
         <div class="match-card__divider match-card__divider--m" aria-hidden="true" />
         <div class="match-card__m-time-row">
-          <span class="match-card__date">{{ match.date }}</span>
+          <span class="match-card__date">{{ listKickoffLabel }}</span>
           <div class="match-card__pill match-card__pill--m">
             <span class="match-card__pill-lab">{{ t('开赛倒数') }}</span>
             <span class="match-card__pill-time">{{ liveCountdown || match.countdown }}</span>
@@ -261,9 +279,17 @@ function formatPoolScore(score) {
                   </div>
                 </div>
 
-                <span class="match-card__team-name match-card__team-name--home"><span v-if="isDetailH5" class="match-card__home-tag">{{ t('主') }}</span>{{ match.homeTeam }}</span>
+                <span class="match-card__team-name match-card__team-name--home">
+                  <span v-if="isDetailH5" class="match-card__home-tag">{{ t('主') }}</span>
+                  <span class="match-card__team-name-text">{{ match.homeTeam }}</span>
+                  <!-- 市场列表：主/客贴队名旁，避免占下方结算比分位 -->
+                  <span v-if="!isDetailH5" class="match-card__side-tag match-card__side-tag--home">{{ t('主') }}</span>
+                </span>
                 <span class="match-card__vs">VS</span>
-                <span class="match-card__team-name match-card__team-name--away">{{ match.awayTeam }}</span>
+                <span class="match-card__team-name match-card__team-name--away">
+                  <span class="match-card__team-name-text">{{ match.awayTeam }}</span>
+                  <span v-if="!isDetailH5" class="match-card__side-tag match-card__side-tag--away">{{ t('客') }}</span>
+                </span>
               </div>
 
               <div v-if="!isDetailH5" class="match-card__odds-pills">
@@ -763,6 +789,30 @@ function formatPoolScore(score) {
     }
   }
 
+  // H5 市场列表：主/客角标贴在队名旁
+  &__side-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    font-family: $font-family-base;
+    font-size: 10px;
+    font-weight: 400;
+    line-height: 1;
+    color: #fff;
+
+    &--home {
+      background: #1c7bff;
+    }
+
+    &--away {
+      background: rgba(11, 52, 98, 0.5);
+    }
+  }
+
   &__inner {
     display: flex;
     flex-direction: column;
@@ -1024,7 +1074,7 @@ function formatPoolScore(score) {
 
     @include mobile-only {
       border-radius: 16px;
-      border: 0.8px solid #fff;
+      border: 1px solid #e4f0fe;
     }
 
     &--w {
@@ -1034,7 +1084,7 @@ function formatPoolScore(score) {
   }
 
   &__surface--m &__arena-grid-inner {
-    padding: 12px 8px 8px;
+    padding: 7px 8px 8px;
   }
 
   &__arena-grid {
@@ -1079,17 +1129,17 @@ function formatPoolScore(score) {
   &__mg {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    grid-template-rows: auto auto auto;
+    // 主/客已贴队名；第三行留给结算比分，不再放角标
+    grid-template-rows: auto auto;
     grid-template-areas:
       'hlogo . alogo'
-      'hname vs aname'
-      'hscore . ascore';
+      'hname vs aname';
     justify-items: stretch;
     align-items: center;
     column-gap: 6px;
 
     &--m {
-      row-gap: 10px;
+      row-gap: 8px;
     }
 
     &--w {
@@ -1135,6 +1185,12 @@ function formatPoolScore(score) {
     border: 0.5px solid rgb(228, 240, 254);
     box-sizing: border-box;
 
+    @include mobile-only {
+      width: 44px;
+      height: 44px;
+      border: 0.5px solid #e4f0fe;
+    }
+
     @include web-only {
       width: 40px;
       height: 40px;
@@ -1158,6 +1214,12 @@ function formatPoolScore(score) {
 
   &__team-name {
     margin: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    max-width: 100%;
+    min-width: 0;
     font-family: $font-family-base;
     font-size: $font-size-md;
     font-weight: 500;
@@ -1166,10 +1228,6 @@ function formatPoolScore(score) {
     letter-spacing: 0;
     color: #0b3462;
     text-align: center;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 
     @include web-only {
       font-size: $font-size-md;
@@ -1184,17 +1242,24 @@ function formatPoolScore(score) {
     }
   }
 
+  &__team-name-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   &__vs {
     grid-area: vs;
     display: inline-block;
     justify-self: center;
+    align-self: center;
     font-family: $font-family-num;
     font-weight: 700;
     font-style: normal;
     line-height: 1;
     color: #1c7bff;
     font-size: $font-size-lg;
-    transform: translateY(-100%);
 
     @include web-only {
       font-size: $font-size-lg;
@@ -1265,7 +1330,7 @@ function formatPoolScore(score) {
     align-items: center;
     justify-content: center;
     height: 36px;
-    border-radius: 8px;
+    border-radius: 6px;
     background: #e4f0fe;
     gap: 2px;
     cursor: pointer;
@@ -1273,6 +1338,11 @@ function formatPoolScore(score) {
 
     @include mobile-only {
       max-width: 95px;
+      border-radius: 6px;
+    }
+
+    @include web-only {
+      border-radius: 8px;
     }
 
     &:hover {

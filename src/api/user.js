@@ -2,16 +2,6 @@ import { get, post, put, del, request } from './request';
 import { bootstrapEncrypt, decryptResponse, saveSession } from './encrypt';
 import { resolveErrorMessage } from './errorCodes';
 
-/** 滑动验证码初始化 */
-export async function captchaInit() {
-  return get('/captcha/slider/init');
-}
-
-/** 滑动验证码校验 */
-export async function captchaVerify(captchaId, x) {
-  return post('/captcha/slider/verify', { captchaId, x });
-}
-
 const __DEV__ = import.meta.env.DEV;
 const _S = {
   tag:     'background:#1565c0;color:#fff;padding:2px 6px;border-radius:3px;font-weight:bold',
@@ -100,22 +90,20 @@ async function bootstrapRequest(url, payload, extraHeaders = {}) {
   }
 }
 
-/** 登录（BOOTSTRAP 加密） */
-export async function loginApi(account, password, captchaToken, options = {}) {
+/** 登录（BOOTSTRAP 加密；后端已取消滑动验证码） */
+export async function loginApi(account, password, options = {}) {
   return bootstrapRequest('/auth/login', {
     account,
     password,
-    captchaToken: captchaToken || 'ALWAYS_PASS',
     remember: options.remember ?? false,
   }, { 'X-Device-Type': 'H5' });
 }
 
-/** 注册（BOOTSTRAP 加密） */
-export async function registerApi(username, password, captchaToken, options = {}) {
+/** 注册（BOOTSTRAP 加密；后端已取消滑动验证码） */
+export async function registerApi(username, password, options = {}) {
   return bootstrapRequest('/auth/register', {
     username,
     password,
-    captchaToken: captchaToken || 'ALWAYS_PASS',
     inviteCode: options.inviteCode,
     agentCode: options.agentCode,
     phone: options.phone,

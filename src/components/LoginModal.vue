@@ -12,7 +12,7 @@ import { useAppStore } from '@/store/modules/app';
 import { useUserStore } from '@/store/modules/user';
 import { useToast } from '@/hooks/useToast';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
-import { loginApi, registerApi, captchaInit, captchaVerify } from '@/api/user';
+import { loginApi, registerApi } from '@/api/user';
 import {
   clearRememberedLogin,
   getRememberedLogin,
@@ -39,36 +39,10 @@ const inviteCode = ref('');
 const isLogin = ref(true);
 const showPassword = ref(false);
 const rememberPassword = ref(false);
-
-
-const SLIDER_KNOB_W = 52;
-const SLIDER_TRACK_PAD_X = 4;
-
-const verifyTrackRef = ref(null);
-const sliderOffsetPx = ref(0);
-const sliderVerified = ref(false);
-const sliderDragging = ref(false);
-const sliderAnimating = ref(false);
-
-function resetSlider() {
-  sliderOffsetPx.value = 0;
-  sliderVerified.value = false;
-  sliderDragging.value = false;
-  sliderAnimating.value = false;
-}
-
-const sliderProgress = computed(() => {
-  const max = getSliderMaxOffset();
-  if (max <= 0) return 0;
-  return Math.min(1, sliderOffsetPx.value / max);
-});
-
-const labelOpacity = computed(() => Math.max(0, 1 - sliderProgress.value * 2.5));
+const loginSubmitting = ref(false);
 
 watch(isLogin, (loginMode) => {
   showPassword.value = false;
-  resetSlider();
-  initCaptcha();
   // 切回登录态时回填记住的账号密码；注册态不清除本地记忆，只清空表单密码
   if (loginMode) {
     loadRemembered();
@@ -81,87 +55,19 @@ watch(isLogin, (loginMode) => {
 watch(
   () => props.visible,
   (open) => {
-    if (!open) {
-      resetSlider();
-      return;
-    }
+    if (!open) return;
     // PC / H5 共用弹窗：每次打开登录层都尝试回填记住密码
     isLogin.value = true;
     loadRemembered();
-    initCaptcha();
   },
 );
-
-const knobTransformStyle = computed(() => ({
-  transform: `translate(${sliderOffsetPx.value}px, -50%)`,
-  transition: sliderDragging.value ? 'none' : 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
-}));
-
-const fillStyle = computed(() => ({
-  width: `${sliderOffsetPx.value + SLIDER_KNOB_W + SLIDER_TRACK_PAD_X}px`,
-  transition: sliderDragging.value ? 'none' : 'width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
-}));
-
-function getSliderMaxOffset() {
-  const track = verifyTrackRef.value;
-  if (!track) return 0;
-  const w = track.getBoundingClientRect().width;
-  return Math.max(0, w - SLIDER_TRACK_PAD_X * 2 - SLIDER_KNOB_W);
-}
-
-function onSliderKnobPointerDown(e) {
-  if (sliderVerified.value || sliderAnimating.value) return;
-  if (e.pointerType === 'mouse' && e.button !== 0) return;
-  e.preventDefault();
-
-  const knobEl = e.currentTarget;
-  if (!(knobEl instanceof Element)) return;
-
-  knobEl.setPointerCapture(e.pointerId);
-  sliderDragging.value = true;
-
-  const startClientX = e.clientX;
-  const startOffset = sliderOffsetPx.value;
-
-  const onMove = (ev) => {
-    const max = getSliderMaxOffset();
-    const dx = ev.clientX - startClientX;
-    sliderOffsetPx.value = Math.min(max, Math.max(0, startOffset + dx));
-  };
-
-  const onUp = () => {
-    knobEl.releasePointerCapture(e.pointerId);
-    knobEl.removeEventListener('pointermove', onMove);
-    knobEl.removeEventListener('pointerup', onUp);
-    knobEl.removeEventListener('pointercancel', onUp);
-    sliderDragging.value = false;
-
-    const max = getSliderMaxOffset();
-    const threshold = max * 0.88;
-    if (max > 0 && sliderOffsetPx.value >= threshold) {
-      sliderOffsetPx.value = max;
-      sliderAnimating.value = true;
-      verifyCaptchaSlider(sliderOffsetPx.value);
-    } else {
-      sliderOffsetPx.value = 0;
-    }
-  };
-
-  knobEl.addEventListener('pointermove', onMove);
-  knobEl.addEventListener('pointerup', onUp);
-  knobEl.addEventListener('pointercancel', onUp);
-}
-
-onBeforeUnmount(() => {
-  resetSlider();
-});
 
 const canSubmit = computed(
   () => account.value.trim().length > 0 && password.value.trim().length > 0,
 );
 
-/** 与稿图一致：须完成滑动验证后才可登入 */
-const canSubmitLogin = computed(() => canSubmit.value && sliderVerified.value);
+/** 后端已取消滑块验证，账号密码非空即可登入 */
+const canSubmitLogin = computed(() => canSubmit.value);
 
 /** 从本地回填账号+密码（对齐安卓 rememberedLogin） */
 function loadRemembered() {
@@ -189,47 +95,13 @@ function resetLoginFormFields() {
   password.value = '';
   rememberPassword.value = false;
   showPassword.value = false;
-  captchaToken.value = '';
-  captchaId.value = '';
-  resetSlider();
-}
-
-const loginSubmitting = ref(false);
-const captchaToken = ref('');
-const captchaId = ref('');
-
-async function initCaptcha() {
-  try {
-    const res = await captchaInit();
-    const data = res.data || {};
-    captchaId.value = data.captchaId || '';
-    if (!data.captchaId) {
-      captchaToken.value = 'ALWAYS_PASS';
-      sliderVerified.value = true;
-    }
-  } catch {
-    captchaToken.value = 'ALWAYS_PASS';
-  }
-}
-
-async function verifyCaptchaSlider(offsetPx) {
-  if (captchaId.value) {
-    try {
-      const res = await captchaVerify(captchaId.value, Math.round(offsetPx));
-      captchaToken.value = res.data?.captchaToken || '';
-    } catch { /* 验证失败静默处理 */ }
-  }
-  sliderVerified.value = true;
-  sliderAnimating.value = false;
 }
 
 async function submitWebLogin() {
   if (!canSubmitLogin.value || loginSubmitting.value) return;
   try {
     loginSubmitting.value = true;
-
-    const token = captchaToken.value || 'ALWAYS_PASS';
-    const res = await loginApi(account.value.trim(), password.value, token, {
+    const res = await loginApi(account.value.trim(), password.value, {
       remember: rememberPassword.value,
     });
     // 仅登录成功后再写入/清除本地记忆（对齐安卓）
@@ -242,15 +114,13 @@ async function submitWebLogin() {
     userStore.loadUserProfile({ force: true }).catch(() => {});
   } catch (e) {
     toast.error(e.message || t('提交失败，请重试'));
-    resetSlider();
-    initCaptcha();
   } finally {
     loginSubmitting.value = false;
   }
 }
 
 const canSubmitRegister = computed(
-  () => canSubmit.value && sliderVerified.value
+  () => canSubmit.value
     && account.value.trim().length >= 4
     && /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,12}$/.test(password.value.trim()),
 );
@@ -268,15 +138,9 @@ async function submitRegister() {
     toast.error(t('登录密码长度提示'));
     return;
   }
-  if (!sliderVerified.value) {
-    toast.error(t('请完成滑动验证'));
-    return;
-  }
   try {
     loginSubmitting.value = true;
-
-    const token = captchaToken.value || 'ALWAYS_PASS';
-    const res = await registerApi(name, password.value, token, {
+    const res = await registerApi(name, password.value, {
       inviteCode: inviteCode.value.trim() || undefined,
     });
     const loginData = res.data || {};
@@ -287,14 +151,9 @@ async function submitRegister() {
     password.value = '';
     inviteCode.value = '';
     showPassword.value = false;
-    captchaToken.value = '';
-    captchaId.value = '';
-    resetSlider();
     userStore.loadUserProfile({ force: true }).catch(() => {});
   } catch (e) {
     toast.error(e.message || t('提交失败，请重试'));
-    resetSlider();
-    initCaptcha();
   } finally {
     loginSubmitting.value = false;
   }
@@ -488,52 +347,6 @@ const passwordInputType = computed(() => (showPassword.value ? 'text' : 'passwor
             </div>
 
             <div v-if="!isLogin" class="login-modal__blue-footer">
-              <div class="login-verify">
-                <Transition name="verify-flip" mode="out-in">
-                  <div
-                    v-if="sliderVerified"
-                    key="success"
-                    class="login-verify__track login-verify__track--success"
-                    role="status"
-                    aria-live="polite"
-                  >
-                    <svg class="login-verify__check-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                      <path d="M4 10.5L8.5 15L16 5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                    <span class="login-verify__success-text">{{ t('验证成功') }}</span>
-                  </div>
-                  <div
-                    v-else
-                    key="track"
-                    ref="verifyTrackRef"
-                    class="login-verify__track"
-                    :class="{ 'login-verify__track--dragging': sliderDragging }"
-                  >
-                    <div class="login-verify__fill" :style="fillStyle" />
-                    <button
-                      type="button"
-                      class="login-verify__knob"
-                      :class="{ 'login-verify__knob--dragging': sliderDragging }"
-                      :style="knobTransformStyle"
-                      :aria-label="t('向右滑动验证')"
-                      @pointerdown="onSliderKnobPointerDown"
-                    >
-                      <svg class="login-verify__knob-icon" width="18" height="18" viewBox="0 0 18 18" fill="none">
-                        <path d="M7 4.5L11.5 9L7 13.5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                      </svg>
-                    </button>
-                    <span
-                      class="login-verify__label"
-                      :class="{ 'login-verify__label--dragging': sliderDragging }"
-                      :style="{ '--_label-opacity': labelOpacity, opacity: sliderDragging ? labelOpacity : undefined }"
-                      aria-hidden="true"
-                    >
-                      {{ t('向右滑动验证') }}
-                    </span>
-                  </div>
-                </Transition>
-              </div>
-
               <button
                 type="button"
                 class="btn btn--primary login-modal__submit login-modal__submit--inverse"
@@ -553,52 +366,6 @@ const passwordInputType = computed(() => (showPassword.value ? 'text' : 'passwor
             </div>
 
             <div v-if="isLogin" class="login-modal__blue-footer">
-              <div class="login-verify">
-                <Transition name="verify-flip" mode="out-in">
-                  <div
-                    v-if="sliderVerified"
-                    key="success"
-                    class="login-verify__track login-verify__track--success"
-                    role="status"
-                    aria-live="polite"
-                  >
-                    <svg class="login-verify__check-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                      <path d="M4 10.5L8.5 15L16 5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                    <span class="login-verify__success-text">{{ t('验证成功') }}</span>
-                  </div>
-                  <div
-                    v-else
-                    key="track"
-                    ref="verifyTrackRef"
-                    class="login-verify__track"
-                    :class="{ 'login-verify__track--dragging': sliderDragging }"
-                  >
-                    <div class="login-verify__fill" :style="fillStyle" />
-                    <button
-                      type="button"
-                      class="login-verify__knob"
-                      :class="{ 'login-verify__knob--dragging': sliderDragging }"
-                      :style="knobTransformStyle"
-                      :aria-label="t('向右滑动验证')"
-                      @pointerdown="onSliderKnobPointerDown"
-                    >
-                      <svg class="login-verify__knob-icon" width="18" height="18" viewBox="0 0 18 18" fill="none">
-                        <path d="M7 4.5L11.5 9L7 13.5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                      </svg>
-                    </button>
-                    <span
-                      class="login-verify__label"
-                      :class="{ 'login-verify__label--dragging': sliderDragging }"
-                      :style="{ '--_label-opacity': labelOpacity, opacity: sliderDragging ? labelOpacity : undefined }"
-                      aria-hidden="true"
-                    >
-                      {{ t('向右滑动验证') }}
-                    </span>
-                  </div>
-                </Transition>
-              </div>
-
               <button
                 type="button"
                 class="btn btn--primary login-modal__submit login-modal__submit--inverse"
@@ -733,14 +500,15 @@ $login-input-text: rgba(11, 52, 98, 1);
   @include web-only {
     width: 400px;
     max-width: 400px;
-    min-height: 544px;
+    // 去掉滑块后按内容撑开，避免蓝区大块留白
+    min-height: 0;
     border-radius: 32px;
     overflow: hidden;
   }
 
   @include mobile-only {
-    min-height: 480px;
-    padding: 20px 12px 16px;
+    min-height: 0;
+    padding: 18px 12px 14px;
     border-radius: 24px;
   }
 
@@ -794,13 +562,13 @@ $login-input-text: rgba(11, 52, 98, 1);
   &__panel {
     position: relative;
     z-index: 1;
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     display: flex;
     flex-direction: column;
     min-height: 0;
     background: $login-panel-bg;
     border-radius: 20px;
-    padding: 30px 20px 20px;
+    padding: 28px 20px 20px;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
 
     @include web-only {
@@ -809,7 +577,7 @@ $login-input-text: rgba(11, 52, 98, 1);
 
     @include mobile-only {
       border-radius: 24px;
-      padding: 34px 20px 22px;
+      padding: 28px 20px 18px;
     }
   }
 
@@ -969,14 +737,16 @@ $login-input-text: rgba(11, 52, 98, 1);
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-top: auto;
-    padding-top: 10px;
+    gap: 12px;
+    // 去掉滑块后不再用 auto 顶开，固定与白卡间距
+    margin-top: 16px;
+    padding-top: 0;
+    padding-bottom: 4px;
 
     @include mobile-only {
-      gap: 12px;
-      margin-top: auto;
-      padding-top: 10px;
+      gap: 10px;
+      margin-top: 14px;
+      padding-bottom: 2px;
     }
   }
 
@@ -1012,173 +782,6 @@ $login-input-text: rgba(11, 52, 98, 1);
       min-height: 32px;
     }
   }
-}
-
-.login-verify {
-  width: 100%;
-}
-
-.login-verify__track {
-  position: relative;
-  box-sizing: border-box;
-  height: 48px;
-  border-radius: $radius-pill;
-  background: #fff;
-  border: 0.8px solid $login-frame-border;
-  touch-action: none;
-  overflow: hidden;
-  transition: border-color 0.2s, box-shadow 0.2s;
-
-  @include mobile-only {
-    height: 46px;
-  }
-
-  &--dragging {
-    border-color: rgba(13, 108, 251, 0.35);
-    box-shadow: 0 0 0 3px rgba(13, 108, 251, 0.1);
-  }
-
-  &--success {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    touch-action: auto;
-    background: $login-cta-blue;
-    border: 1px solid rgba(255, 255, 255, 0.92);
-    box-shadow: 0 2px 14px rgba(13, 108, 251, 0.4);
-    overflow: visible;
-  }
-}
-
-.login-verify__fill {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  border-radius: $radius-pill;
-  background: linear-gradient(90deg, rgba(13, 108, 251, 0.08) 0%, rgba(13, 108, 251, 0.18) 100%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.login-verify__check-icon {
-  flex-shrink: 0;
-  animation: verify-check-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-
-@keyframes verify-check-pop {
-  0% {
-    transform: scale(0) rotate(-45deg);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(1) rotate(0);
-    opacity: 1;
-  }
-}
-
-.login-verify__success-text {
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.2;
-  color: #fff;
-  text-align: center;
-  letter-spacing: 0.02em;
-}
-
-.login-verify__knob {
-  position: absolute;
-  left: 4px;
-  top: 50%;
-  z-index: 2;
-  width: 52px;
-  height: 40px;
-  border-radius: 20px;
-
-  @include mobile-only {
-    width: 52px;
-    height: 40px;
-    border-radius: 20px;
-  }
-  padding: 0;
-  margin: 0;
-  border: none;
-  background: $login-cta-blue;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(13, 108, 251, 0.35);
-  cursor: grab;
-  touch-action: none;
-  -webkit-tap-highlight-color: transparent;
-  transition: box-shadow 0.2s, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-
-  &--dragging {
-    cursor: grabbing;
-    box-shadow: 0 4px 16px rgba(13, 108, 251, 0.5);
-    transition: box-shadow 0.15s;
-  }
-
-  &:focus-visible {
-    outline: 2px solid rgba(13, 108, 251, 0.55);
-    outline-offset: 2px;
-  }
-}
-
-.login-verify__knob-icon {
-  transition: transform 0.2s;
-  flex-shrink: 0;
-
-  .login-verify__knob--dragging & {
-    transform: translateX(1px);
-  }
-}
-
-.login-verify__label {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  padding: 0 60px 0 12px;
-  font-size: 15px;
-  font-weight: 500;
-  color: $login-cta-blue;
-  text-align: center;
-  line-height: 1.2;
-  pointer-events: none;
-  transition: opacity 0.15s;
-  animation: slider-label-shimmer 2.5s ease-in-out infinite;
-}
-
-.login-verify__label--dragging {
-  animation: none;
-}
-
-@keyframes slider-label-shimmer {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.55; }
-}
-
-.verify-flip-enter-active {
-  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.verify-flip-leave-active {
-  transition: all 0.2s ease-in;
-}
-
-.verify-flip-enter-from {
-  opacity: 0;
-  transform: scale(0.92);
-}
-
-.verify-flip-leave-to {
-  opacity: 0;
-  transform: scale(0.95);
 }
 
 // 登入：白底蓝字（稿图底部主按钮），覆盖全局 .btn--primary

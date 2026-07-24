@@ -16,14 +16,13 @@ const router = useRouter();
 const appStore = useAppStore();
 const { isMobile } = storeToRefs(appStore);
 const filterStore = useLeagueFilterStore();
-const { selectedLeagues, isAllSelected } = storeToRefs(filterStore);
+const { selectedLeagues, isAllSelected, teamSearchQuery } = storeToRefs(filterStore);
 
 const matches = ref([]);
 const loading = ref(true);
 const loadingMore = ref(false);
 const error = ref(false);
-const searchQuery = ref('');
-const trimmedQuery = computed(() => searchQuery.value.trim());
+const trimmedQuery = computed(() => teamSearchQuery.value.trim());
 /** PC 联赛筛选弹层开关（H5 仍跳转筛选页） */
 const filterPanelOpen = ref(false);
 
@@ -199,18 +198,23 @@ function normalizeMarketRecord(r) {
 onMounted(loadInitial);
 
 /**
- * PC 搜索对齐 H5 搜索页：回车触发服务端 teamName 查询；
- * 清空关键词后恢复当前筛选下的完整列表（不再做本地字符串过滤）。
+ * 球队搜索：回车触发服务端 teamName 查询；
+ * 清空关键词后恢复当前筛选下的完整列表。
+ * H5 顶栏与 PC 工具栏共用 store，避免跳转独立搜索页。
  */
 function onSearchEnter(e) {
+  // 中文输入法组字中不触发，避免误搜
+  if (e?.isComposing || e?.keyCode === 229) return;
   e?.preventDefault?.();
+  // 收起手机软键盘
+  e?.target?.blur?.();
   if (!trimmedQuery.value) return;
-  reload();
+  filterStore.submitTeamSearch();
 }
 
 function onSearchInput() {
   if (!trimmedQuery.value) {
-    reload();
+    filterStore.clearTeamSearch();
   }
 }
 
@@ -245,6 +249,11 @@ const filterTags = computed(() => [
 
 // 联赛筛选（筛选页写入 store）变化时重新加载，PC/H5 共用。
 watch([selectedLeagues, isAllSelected], () => {
+  reload();
+});
+
+// H5 顶栏 / PC 工具栏提交搜索后刷新列表
+watch(() => filterStore.teamSearchNonce, () => {
   reload();
 });
 </script>
@@ -288,13 +297,17 @@ watch([selectedLeagues, isAllSelected], () => {
         <label class="market-leagues__search" :aria-label="t('搜索球队名称')">
           <span class="market-leagues__search-icon" aria-hidden="true" />
           <input
-            v-model="searchQuery"
+            v-model="teamSearchQuery"
             type="search"
             class="market-leagues__search-input"
             :placeholder="t('搜索球队名称')"
             autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
             enterkeyhint="search"
-            @keydown.enter.prevent="onSearchEnter"
+            inputmode="search"
+            @keydown.enter="onSearchEnter"
             @input="onSearchInput"
           />
         </label>
@@ -407,8 +420,9 @@ watch([selectedLeagues, isAllSelected], () => {
     }
 
     @include mobile-only {
+      // Figma 热门赛事容器：浅蓝底 + 白描边
       border-radius: 16px;
-      padding: 16px 12px;
+      padding: 16px 12px 12px;
       background: #eaf1f9;
       border: 0.8px solid #fff;
       box-shadow: none;
@@ -437,6 +451,11 @@ watch([selectedLeagues, isAllSelected], () => {
     scrollbar-width: none;
 
     &::-webkit-scrollbar { display: none; }
+
+    @include mobile-only {
+      margin-bottom: 10px;
+      gap: 6px;
+    }
 
     &--pc {
       flex: 1;
@@ -474,14 +493,14 @@ watch([selectedLeagues, isAllSelected], () => {
   &__filter-tag {
     flex: 0 0 auto;
     height: 32px;
-    padding: 0 16px;
+    padding: 0 14px;
     border: 0.8px solid #d6e0eb;
     border-radius: 48px;
     background: #fff;
     color: #0b3462;
     font-family: $font-family-base;
-    font-size: $font-size-sm;
-    font-weight: 400;
+    font-size: 12px;
+    font-weight: 350;
     white-space: nowrap;
     cursor: pointer;
     box-shadow: 0 3px 8px rgba(21, 58, 119, 0.1);
@@ -499,6 +518,7 @@ watch([selectedLeagues, isAllSelected], () => {
       padding: 0 20px;
       border: 1px solid #d6e0eb;
       font-size: 16px;
+      font-weight: 400;
       color: #1c7bff;
       box-shadow: 0 3px 8px rgba(21, 58, 119, 0.1);
 

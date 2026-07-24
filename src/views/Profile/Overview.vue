@@ -395,7 +395,6 @@ onMounted(() => {
               alt="" />
             <span class="profile-h5-card__meta">
               <strong>{{ mobileDisplayName }}</strong>
-              <span v-if="mobileDisplayMemberId">ID： {{ mobileDisplayMemberId }}</span>
             </span>
           </button>
           <button v-if="isLoggedIn" type="button" class="profile-h5-card__arrow" :aria-label="t('个人资料')"

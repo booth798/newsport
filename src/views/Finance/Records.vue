@@ -2,11 +2,9 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
-import { storeToRefs } from 'pinia';
 
 import AppSideNav from '@/components/AppSideNav.vue';
 import EmptyState from '@/components/EmptyState.vue';
-import { useAppStore } from '@/store/modules/app';
 import { useUserStore } from '@/store/modules/user';
 import { fetchLedgerSummary } from '@/api/finance';
 import { fetchOrderList, cancelOrder } from '@/api/order';
@@ -21,11 +19,10 @@ const { t, locale } = useI18n();
 const router = useRouter();
 const toast = useToast();
 const userStore = useUserStore();
-const { isMobile } = storeToRefs(useAppStore());
 
 const PAGE_SIZE = 20;
-/** 对齐安卓 FinanceOverviewAdapter：下单后 5 分钟内才显示取消按钮 */
-const CANCEL_WINDOW_MS = 5 * 60 * 1000;
+/** 对齐安卓 FinanceOverviewAdapter：下单后 10 分钟内才显示取消按钮 */
+const CANCEL_WINDOW_MS = 10 * 60 * 1000;
 
 /** PC 侧栏 → OrderListReq.status（侧栏标签仍用「成功/已取消」，数据按细粒度合并）
  * 成功：已中奖(WON) + 已开奖(LOST)
@@ -51,6 +48,8 @@ const expandedId = ref(null);
 const cancelingId = ref(null);
 /** PC 侧栏：全部 / 成功 / 处理中 / 已取消（H5 不展示侧栏，始终按「全部」拉取） */
 const statusFilter = ref('all');
+/** 时间筛选（对齐 Figma：昨日 / 近3天 / 本周 / 本月 / 全部）；默认昨日 */
+const timeRange = ref('yesterday');
 
 const statusNavItems = computed(() => [
   { key: 'all', label: t('全部') },
@@ -59,12 +58,88 @@ const statusNavItems = computed(() => [
   { key: 'cancelled', label: t('已取消') },
 ]);
 
-/** PC 无订单也展示汇总三卡；H5 仍仅在有列表时展示 */
+const timeRangeItems = computed(() => [
+  { key: 'yesterday', label: t('昨日') },
+  { key: 'last3', label: t('近3天') },
+  { key: 'week', label: t('本周') },
+  { key: 'month', label: t('本月') },
+  { key: 'all', label: t('全部') },
+]);
+
+/** 有登录态时始终展示汇总三卡（空列表也展示 0，对齐 Figma） */
 const showSummary = computed(() => {
+  if (!userStore.isLoggedIn) return false;
   if (loading.value || error.value) return false;
-  if (!isMobile.value) return true;
-  return orders.value.length > 0;
+  return true;
 });
+
+function pad2(n) {
+  return String(n).padStart(2, '0');
+}
+
+/** 本地时区 ISO（含 offset），对齐接口示例 2026-07-01T00:00:00+08:00 */
+function toOffsetIso(date) {
+  const y = date.getFullYear();
+  const m = pad2(date.getMonth() + 1);
+  const d = pad2(date.getDate());
+  const h = pad2(date.getHours());
+  const mi = pad2(date.getMinutes());
+  const s = pad2(date.getSeconds());
+  const offsetMin = -date.getTimezoneOffset();
+  const sign = offsetMin >= 0 ? '+' : '-';
+  const abs = Math.abs(offsetMin);
+  return `${y}-${m}-${d}T${h}:${mi}:${s}${sign}${pad2(Math.floor(abs / 60))}:${pad2(abs % 60)}`;
+}
+
+function startOfDay(d) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
+function endOfDay(d) {
+  const x = new Date(d);
+  x.setHours(23, 59, 59, 0);
+  return x;
+}
+
+/**
+ * 时间 Tab → startAt/endAt
+ * 「全部」不传参数（后端按钱包累计总额统计）
+ */
+function getTimeRangeParams(key) {
+  const now = new Date();
+  if (key === 'all') return {};
+
+  if (key === 'yesterday') {
+    const y = new Date(now);
+    y.setDate(y.getDate() - 1);
+    return { startAt: toOffsetIso(startOfDay(y)), endAt: toOffsetIso(endOfDay(y)) };
+  }
+
+  if (key === 'last3') {
+    // 含今天共 3 天
+    const start = new Date(now);
+    start.setDate(start.getDate() - 2);
+    return { startAt: toOffsetIso(startOfDay(start)), endAt: toOffsetIso(endOfDay(now)) };
+  }
+
+  if (key === 'week') {
+    // 本周：周一 00:00 ～ 今天结束
+    const start = startOfDay(now);
+    const day = start.getDay();
+    const diff = day === 0 ? 6 : day - 1;
+    start.setDate(start.getDate() - diff);
+    return { startAt: toOffsetIso(start), endAt: toOffsetIso(endOfDay(now)) };
+  }
+
+  if (key === 'month') {
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    return { startAt: toOffsetIso(startOfDay(start)), endAt: toOffsetIso(endOfDay(now)) };
+  }
+
+  return {};
+}
 
 function formatMoney(val) {
   if (val == null || val === '') return '0.00';
@@ -143,14 +218,14 @@ function mapOrderState(status) {
   return 'unknown';
 }
 
-/** 角标文案：展示细粒度状态（已中奖/已开奖/已退款/已取消/处理中） */
+/** 角标文案：细粒度状态；处理中统一展示「待结算」（对齐 Figma） */
 function statusBadgeKey(status, state) {
   const s = String(status || '').toUpperCase();
   if (s === 'WON' || s === 'SETTLED_WON') return '已中奖';
   if (s === 'LOST' || s === 'SETTLED_LOST' || s === 'SETTLED') return '已开奖';
   if (s === 'REFUNDED') return '已退款';
   if (['CANCELLED', 'CANCELED', 'FAILED', 'REJECTED', 'EXPIRED'].includes(s)) return '已取消';
-  if (state === 'processing') return '处理中';
+  if (state === 'processing') return '待结算';
   if (state === 'completed') return '成功';
   if (state === 'cancelled') return '已取消';
   return '';
@@ -309,7 +384,7 @@ function normalizeOrder(o) {
   };
 }
 
-/** 对齐安卓 isWithinCancelWindow：展开 + 处理中 + 下单 5 分钟内才显示取消 */
+/** 对齐安卓 isWithinCancelWindow：展开 + 处理中 + 下单 10 分钟内才显示取消 */
 function canShowCancel(order) {
   if (!order?.cancelable || expandedId.value !== order.id) return false;
   if (order.placedAtMillis == null) return false;
@@ -322,10 +397,15 @@ async function loadPage(page, append = false) {
     else loadingMore.value = true;
     error.value = false;
 
-    // 对齐文档：?status=WON&status=LOST（数组一次传入，request 层展开为重复 query）
+    // 对齐文档：?status=WON&status=LOST；时间段与汇总共用 startAt/endAt
     const status = STATUS_FILTER_MAP[statusFilter.value];
-    const promises = [fetchOrderList({ pageNum: page, pageSize: PAGE_SIZE, status })];
-    if (page === 1) promises.push(fetchLedgerSummary().catch(() => null));
+    const range = getTimeRangeParams(timeRange.value);
+    const promises = [
+      fetchOrderList({ pageNum: page, pageSize: PAGE_SIZE, status, ...range }),
+    ];
+    if (page === 1) {
+      promises.push(fetchLedgerSummary(range).catch(() => null));
+    }
 
     const [orderRes, summaryRes] = await Promise.all(promises);
 
@@ -374,6 +454,14 @@ function loadMore() {
 function onStatusSelect(key) {
   if (statusFilter.value === key) return;
   statusFilter.value = key;
+  expandedId.value = null;
+  loadPage(1);
+}
+
+/** 切换时间筛选：同步刷新汇总 + 订单第一页 */
+function onTimeRangeSelect(key) {
+  if (timeRange.value === key) return;
+  timeRange.value = key;
   expandedId.value = null;
   loadPage(1);
 }
@@ -445,7 +533,28 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
     />
 
     <div class="records-page__main">
-      <!-- 汇总头：收入加号、支出减号、净收益按正负；过万缩写为「万」；PC 无数据也展示 -->
+      <!-- H5：时间筛选胶囊栏（Figma 1118:9023） -->
+      <div
+        v-if="userStore.isLoggedIn"
+        class="fin-time-tabs"
+        role="tablist"
+        :aria-label="t('时间筛选')"
+      >
+        <button
+          v-for="item in timeRangeItems"
+          :key="item.key"
+          type="button"
+          role="tab"
+          class="fin-time-tabs__btn"
+          :class="{ 'fin-time-tabs__btn--active': timeRange === item.key }"
+          :aria-selected="timeRange === item.key"
+          @click="onTimeRangeSelect(item.key)"
+        >
+          {{ item.label }}
+        </button>
+      </div>
+
+      <!-- 汇总头：收入加号、支出减号、净收益按正负；过万缩写为「万」 -->
       <section v-if="showSummary" class="fin-summary">
         <div class="fin-summary__item">
           <span class="fin-summary__label">{{ t('总收入') }}</span>
@@ -685,7 +794,49 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   }
 }
 
-// --- 汇总头（设计稿：白底容器 + 三块浅蓝卡） ---
+// --- 时间筛选（Figma：浅蓝胶囊轨 + 选中蓝底白字） ---
+.fin-time-tabs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  height: 48px;
+  padding: 6px;
+  border-radius: 30px;
+  background: #eaf1f9;
+  border: 0.8px solid #fff;
+  box-shadow: 0 2px 10px rgba(21, 58, 118, 0.06);
+  box-sizing: border-box;
+
+  @include web-only {
+    max-width: 520px;
+  }
+}
+
+.fin-time-tabs__btn {
+  flex: 1;
+  height: 36px;
+  padding: 0 6px;
+  border: none;
+  border-radius: 20px;
+  background: transparent;
+  color: #1c3a76;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+
+  &--active {
+    background: #1c7bff;
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(28, 123, 255, 0.35);
+  }
+}
+
+// --- 汇总头（设计稿：白底/浅蓝容器 + 三列） ---
 .fin-summary {
   display: flex;
   gap: 6px;
@@ -704,6 +855,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
 
   @include mobile-only {
     min-height: 90px;
+    // 保持原 H5 样式：白底 + 顶部淡蓝渐变，内嵌三块浅蓝卡
     background:
       linear-gradient(180deg, rgba(28, 123, 255, 0.2) 0%, rgba(28, 123, 255, 0) 100%),
       #fff;

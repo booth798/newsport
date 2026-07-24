@@ -10,9 +10,14 @@ export async function fetchLockedWallet() {
   return get('/wallet/locked');
 }
 
-/** 账务汇总（总收入/总支出/净收益） */
-export async function fetchLedgerSummary() {
-  return get('/ledger/summary');
+/** 账务汇总（总收入/总支出/净收益）
+ * startAt/endAt 非空则按下单时间段统计；都空=钱包累计总额
+ */
+export async function fetchLedgerSummary(params = {}) {
+  const query = {};
+  if (params.startAt) query.startAt = params.startAt;
+  if (params.endAt) query.endAt = params.endAt;
+  return get('/ledger/summary', query);
 }
 
 /** 充值渠道列表 */

@@ -15,9 +15,9 @@ import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.sv
 import MobileNavDrawer from '@/components/MobileNavDrawer.vue';
 import MessageCenterModal from '@/components/MessageCenterModal.vue';
 import MonthSelector from '@/components/MonthSelector.vue';
-import AppSearchButton from '@/components/AppSearchButton.vue';
 import { useAppStore } from '@/store/modules/app';
 import { useUserStore } from '@/store/modules/user';
+import { useLeagueFilterStore } from '@/store/modules/leagueFilter';
 import { fetchUnreadCount } from '@/api/user';
 
 
@@ -33,10 +33,12 @@ const { t } = useI18n();
 
 const appStore = useAppStore();
 const userStore = useUserStore();
+const filterStore = useLeagueFilterStore();
 const route = useRoute();
 const router = useRouter();
 const { isMobile } = storeToRefs(appStore);
 const { isLoggedIn, loggedInUserId, loggedInAssetsFormatted, loggedInAvatarUrl } = storeToRefs(userStore);
+const { teamSearchQuery } = storeToRefs(filterStore);
 // PC 用户条头像：优先用户真实头像，无则回退默认图。
 const displayAvatarUrl = computed(() => loggedInAvatarUrl.value || avatarDefaultUrl);
 
@@ -243,8 +245,26 @@ function startBeijingTimerIfNeeded() {
   beijingTimer = window.setInterval(updateBeijingClock, 1000);
 }
 
-function openMarketSearch() {
-  router.push({ name: 'market-search' });
+/** H5 市场顶栏：回车搜索（兼容软键盘搜索键 + 中文输入法组字） */
+function onMarketSearchEnter(e) {
+  if (e?.isComposing || e?.keyCode === 229) return;
+  e.preventDefault();
+  // 收起 iOS/Android 软键盘，避免遮挡列表
+  e.target?.blur?.();
+  const q = teamSearchQuery.value.trim();
+  if (!q) return;
+  filterStore.submitTeamSearch();
+}
+
+/** 清空搜索框时恢复完整列表 */
+function onMarketSearchInput() {
+  if (!teamSearchQuery.value.trim()) {
+    filterStore.clearTeamSearch();
+  }
+}
+
+function clearMarketSearch() {
+  filterStore.clearTeamSearch();
 }
 
 watch(
@@ -280,6 +300,7 @@ watch(isLoggedIn, (loggedIn) => {
     :class="{
       'header--market-detail': isCompactDetailHeader,
       'header--vip-transfer': isMobile && isMonthFilterPage,
+      'header--market-list': isMobileMarketListHeader,
     }"
   >
     <div class="card-primary norem" :class="{ 'card-primary--market-detail': isCompactDetailHeader }">
@@ -357,7 +378,31 @@ watch(isLoggedIn, (loggedIn) => {
           </template>
         </template>
         <template v-else-if="isMobileMarketListHeader">
-          <AppSearchButton @click="openMarketSearch" />
+          <!-- H5 市场列表顶栏：当前页内联搜索（不跳转搜索页） -->
+          <label class="header-market-search" :aria-label="t('搜索球队名称')">
+            <span class="header-market-search__icon" aria-hidden="true" />
+            <input
+              v-model="teamSearchQuery"
+              type="search"
+              class="header-market-search__input"
+              :placeholder="t('搜索球队名称')"
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
+              enterkeyhint="search"
+              inputmode="search"
+              @keydown.enter="onMarketSearchEnter"
+              @input="onMarketSearchInput"
+            />
+            <button
+              v-if="teamSearchQuery"
+              type="button"
+              class="header-market-search__clear"
+              :aria-label="t('清空')"
+              @click.prevent="clearMarketSearch"
+            />
+          </label>
         </template>
         <template v-else-if="isMobileProfileHomeHeader">
           <button type="button" class="header-mobile-circle-btn" :aria-label="t('消息中心')" @click="messageCenterOpen = true">
@@ -524,6 +569,103 @@ watch(isLoggedIn, (loggedIn) => {
       height: 28px;
       object-fit: contain;
       flex-shrink: 0;
+    }
+
+    // H5 市场列表：顶栏内联搜索（Figma 白底圆角条）
+    // 挂在 .norem 下，避免 pxtorem 把 14px 占位文字放大
+    .card-primary.norem {
+      .header-market-search {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        box-sizing: border-box;
+        width: min(202px, 56vw);
+        height: 36px;
+        padding: 0 10px 0 12px;
+        border: 1.5px solid #fff;
+        border-radius: 34px;
+        background: #fff;
+        flex-shrink: 0;
+      }
+
+      .header-market-search__icon {
+        flex-shrink: 0;
+        width: 24px;
+        height: 24px;
+        background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'%3E%3Ccircle cx='11' cy='11' r='6.5' stroke='%2394A8C4' stroke-width='1.5'/%3E%3Cpath d='M16.5 16.5L20 20' stroke='%2394A8C4' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+      }
+
+      .header-market-search__input {
+        flex: 1;
+        min-width: 0;
+        height: 100%;
+        border: none;
+        outline: none;
+        background: transparent;
+        font-size: 14px;
+        font-weight: 300;
+        line-height: 1.2;
+        color: #0b3462;
+        -webkit-appearance: none;
+        appearance: none;
+
+        &::placeholder {
+          font-size: 14px;
+          font-weight: 300;
+          line-height: 1.2;
+          color: #8599b0;
+          opacity: 1;
+          -webkit-text-fill-color: #8599b0;
+        }
+
+        &::-webkit-input-placeholder {
+          font-size: 14px;
+          font-weight: 300;
+          color: #8599b0;
+          -webkit-text-fill-color: #8599b0;
+        }
+
+        &::-moz-placeholder {
+          font-size: 14px;
+          font-weight: 300;
+          color: #8599b0;
+          opacity: 1;
+        }
+
+        &::-webkit-search-cancel-button {
+          display: none;
+        }
+      }
+
+      .header-market-search__clear {
+        flex-shrink: 0;
+        width: 18px;
+        height: 18px;
+        padding: 0;
+        border: none;
+        border-radius: 50%;
+        background: #c5d3e6 center / 10px 10px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10' fill='none'%3E%3Cpath d='M2 2L8 8M8 2L2 8' stroke='%23fff' stroke-width='1.4' stroke-linecap='round'/%3E%3C/svg%3E");
+        cursor: pointer;
+      }
+    }
+
+    .header-market-search__placeholder {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-align: left;
+      font-size: 14px;
+      font-weight: 300;
+      line-height: 1.2;
+      color: #8599b0;
+    }
+
+    &.header--market-list .card-primary.norem {
+      height: 48px;
+      min-height: 48px;
+      padding: 0 14px 0 14px;
     }
 
     .header-mobile-user-strip {

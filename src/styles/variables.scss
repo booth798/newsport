@@ -19,8 +19,8 @@ $mobile-header-height: 64px;
 // 22 顶距 + 胶囊内容区 + 18 底距 ≈ 116；勿大于内容区自然起始 top，否则 sticky 会把侧栏顶出与主列错位
 $web-market-detail-sidebar-sticky-top: 116px;
 $mobile-market-detail-sidebar-sticky-top: 100px;
-// H5 底部 Tab 占位（图标 + 文案 + 上下内边距，不含安全区）
-$mobile-tab-bar-offset: 72px;
+// H5 底部 Tab 占位（含客服大圆自然高出背景的部分，不含安全区）
+$mobile-tab-bar-offset: 76px;
 
 // 间距系统（8px 基础网格）
 $spacing-xs: 4px;
