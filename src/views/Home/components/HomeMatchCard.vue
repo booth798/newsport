@@ -423,9 +423,16 @@ function formatPoolScore(score) {
                   </div>
                 </div>
 
-                <span class="match-card__team-name match-card__team-name--home">{{ match.homeTeam }}</span>
+                <span class="match-card__team-name match-card__team-name--home">
+                  <span class="match-card__team-name-text">{{ match.homeTeam }}</span>
+                  <!-- PC 市场列表：主/客贴队名旁 -->
+                  <span v-if="!detailMode" class="match-card__side-tag match-card__side-tag--home">{{ t('主') }}</span>
+                </span>
                 <span class="match-card__vs">VS</span>
-                <span class="match-card__team-name match-card__team-name--away">{{ match.awayTeam }}</span>
+                <span class="match-card__team-name match-card__team-name--away">
+                  <span class="match-card__team-name-text">{{ match.awayTeam }}</span>
+                  <span v-if="!detailMode" class="match-card__side-tag match-card__side-tag--away">{{ t('客') }}</span>
+                </span>
               </div>
 
               <div v-if="!detailMode" class="match-card__odds-pills">
@@ -789,7 +796,7 @@ function formatPoolScore(score) {
     }
   }
 
-  // H5 市场列表：主/客角标贴在队名旁
+  // 市场列表主/客角标（H5 / PC 共用，贴在队名旁）
   &__side-tag {
     display: inline-flex;
     align-items: center;

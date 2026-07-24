@@ -41,7 +41,7 @@ const loading = ref(true);
 const error = ref(false);
 const submitting = ref(false);
 const loadingMore = ref(false);
-const accountId = ref('');
+const toAccount = ref('');
 const amount = ref('');
 const withdrawPassword = ref('');
 const records = ref([]);
@@ -184,14 +184,14 @@ function formatDateTime(value) {
 }
 
 async function handleSubmit() {
-  // 校验与请求体字段对齐安卓 MemberTransferActivity.validateTransfer / transfer。
-  const account = accountId.value.trim();
+  // 转入方按账户名提交：toAccount / amount / withdrawPassword
+  const account = toAccount.value.trim();
   const amountText = String(amount.value ?? '').replaceAll(',', '').trim();
   const password = withdrawPassword.value.trim();
   const transferAmount = Number(amountText);
 
   if (!account) {
-    toast.error(t('请输入对方账户ID'));
+    toast.error(t('请输入对方账户'));
     return;
   }
   if (
@@ -219,14 +219,13 @@ async function handleSubmit() {
 
   try {
     submitting.value = true;
-    // 传参与安卓一致：toCustomerNo / amount / withdrawPassword，并带 Idempotency-Key。
     await transfer({
-      toCustomerNo: account,
+      toAccount: account,
       amount: transferAmount,
       withdrawPassword: password,
     });
     toast.success(t('转账申请已提交'));
-    accountId.value = '';
+    toAccount.value = '';
     amount.value = '';
     withdrawPassword.value = '';
     // 与安卓一致：成功后重新拉取钱包余额，再静默刷新互转记录。
@@ -293,7 +292,7 @@ async function loadMore() {
 
         <label class="vip-transfer-field">
           <span>{{ t('转入账户') }}</span>
-          <BaseInput v-model="accountId" autocomplete="off" :placeholder="t('请输入对方账户ID')" />
+          <BaseInput v-model="toAccount" autocomplete="off" :placeholder="t('请输入对方账户')" />
         </label>
 
         <label class="vip-transfer-field">

@@ -4038,10 +4038,10 @@
                 "type": "object",
                 "description": "客户划转请求（Feature #5）。走 SESSION_AES 体加密（含提现密码）。",
                 "properties": {
-                    "toCustomerNo": {
+                    "toAccount": {
                         "type": "string",
-                        "description": "对方公开客户号（customerNo），即对外展示的客户号字符串，非内部数据库 ID",
-                        "example": "U100023",
+                        "description": "对方账户名（登录账号 / accountName），非内部数据库 ID",
+                        "example": "ceshi3",
                         "minLength": 1
                     },
                     "amount": {
@@ -4063,7 +4063,7 @@
                 },
                 "required": [
                     "amount",
-                    "toCustomerNo",
+                    "toAccount",
                     "withdrawPassword"
                 ]
             },

@@ -113,10 +113,10 @@ export async function fetchRecords(params = {}) {
   return { code: 200, data: records, total: page.total };
 }
 
-/** 会员互转：字段对齐安卓 POST api/wallet/transfer（toCustomerNo / amount / withdrawPassword） */
+/** 会员互转：POST /wallet/transfer（toAccount / amount / withdrawPassword） */
 export async function transfer(payload) {
   return post('/wallet/transfer', {
-    toCustomerNo: payload.toCustomerNo,
+    toAccount: payload.toAccount,
     amount: payload.amount,
     withdrawPassword: payload.withdrawPassword,
   }, {

@@ -47,7 +47,7 @@ const expandedId = ref(null);
 const cancelingId = ref(null);
 /** PC 侧栏：全部 / 成功 / 处理中 / 已取消（H5 不展示侧栏，始终按「全部」拉取） */
 const statusFilter = ref('all');
-/** 时间筛选（对齐 Figma：昨日 / 近3天 / 本周 / 本月 / 全部）；默认昨日 */
+/** 时间筛选：全部 / 昨日 / 近3天 / 本周 / 本月；默认昨日 */
 const timeRange = ref('yesterday');
 
 const statusNavItems = computed(() => [
@@ -58,11 +58,11 @@ const statusNavItems = computed(() => [
 ]);
 
 const timeRangeItems = computed(() => [
+  { key: 'all', label: t('全部') },
   { key: 'yesterday', label: t('昨日') },
   { key: 'last3', label: t('近3天') },
   { key: 'week', label: t('本周') },
   { key: 'month', label: t('本月') },
-  { key: 'all', label: t('全部') },
 ]);
 
 /** 有登录态时始终展示汇总三卡（空列表也展示 0，对齐 Figma） */
@@ -637,8 +637,8 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
                 <div class="ord__team">
                   <img v-if="order.homeLogo" class="ord__team-logo" :src="order.homeLogo" alt="" width="44" height="44" @error="(e) => e.target.style.display='none'" />
                   <div class="ord__team-name">
-                    {{ order.homeTeam }}
-                    <span class="ord__host-tag">{{ t('主') }}</span>
+                    <span class="ord__team-name-text">{{ order.homeTeam }}</span>
+                    <span class="ord__side-tag ord__side-tag--home">{{ t('主') }}</span>
                   </div>
                   <span
                     v-if="order.parsedScore"
@@ -656,7 +656,10 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
                 </div>
                 <div class="ord__team">
                   <img v-if="order.awayLogo" class="ord__team-logo" :src="order.awayLogo" alt="" width="44" height="44" @error="(e) => e.target.style.display='none'" />
-                  <span class="ord__team-name">{{ order.awayTeam }}</span>
+                  <div class="ord__team-name">
+                    <span class="ord__team-name-text">{{ order.awayTeam }}</span>
+                    <span class="ord__side-tag ord__side-tag--away">{{ t('客') }}</span>
+                  </div>
                   <span
                     v-if="order.parsedScore"
                     class="ord__score"
@@ -1161,31 +1164,47 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
 }
 
 .ord__team-name {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  max-width: 100%;
+  min-width: 0;
   font-size: 14px;
   font-weight: 500;
   line-height: 20px;
   color: #0b3462;
   text-align: center;
+}
+
+.ord__team-name-text {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 100%;
 }
 
-.ord__host-tag {
+// 主/客角标贴队名旁（PC / H5 共用）
+.ord__side-tag {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
   min-width: 14px;
   height: 14px;
   padding: 0 2px;
   border-radius: 3px;
-  background: #1c7bff;
   font-size: 10px;
+  line-height: 1;
   color: #fff;
-  margin-left: 4px;
-  vertical-align: middle;
-  flex-shrink: 0;
+
+  &--home {
+    background: #1c7bff;
+  }
+
+  &--away {
+    background: rgba(11, 52, 98, 0.5);
+  }
 }
 
 .ord__score-area {
