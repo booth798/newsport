@@ -17,7 +17,7 @@ import WithdrawAddressModal from './components/WithdrawAddressModal.vue';
 import WithdrawBindingForm from './components/WithdrawBindingForm.vue';
 import WithdrawNoticeModal from './components/WithdrawNoticeModal.vue';
 
-import { fetchWithdrawList, submitWithdraw } from '@/api/finance';
+import { fetchWithdrawList, fetchWithdrawPaidTotal, submitWithdraw } from '@/api/finance';
 import { fetchBindings } from '@/api/user';
 import {
   WITHDRAW_PASSWORD_MAX_LENGTH,
@@ -25,6 +25,12 @@ import {
   isWithdrawPasswordNotSetError,
   sanitizeWithdrawPasswordInput,
 } from '@/constants/withdrawPassword';
+import {
+  WITHDRAW_STATUS_FILTERS,
+  getWithdrawMonthRangeShanghai,
+  resolveWithdrawFilterStatus,
+  resolveWithdrawRecordStatus,
+} from '@/constants/withdrawRecords';
 import { useToast } from '@/hooks/useToast';
 import { useUserStore } from '@/store/modules/user';
 import { useAppStore } from '@/store/modules/app';
@@ -32,12 +38,9 @@ import { useAppStore } from '@/store/modules/app';
 const PAGE_SIZE = 20;
 // 链上提现最低 100；提现密码固定 6 位数字。
 const MIN_WITHDRAW_AMOUNT = 100;
-const FILTER_OPTIONS = [
-  { value: 'all', label: '全部' },
-  { value: 'completed', label: '已提现' },
-  { value: 'processing', label: '审核中' },
-  { value: 'cancelled', label: '提现失败' },
-];
+/** 本页仅展示区块链提现记录 */
+const BINDING_TYPE = 'crypto';
+const FILTER_OPTIONS = WITHDRAW_STATUS_FILTERS;
 
 const { locale, t } = useI18n();
 const route = useRoute();
@@ -71,6 +74,8 @@ const reachedEnd = ref(false);
 const filterOpen = ref(false);
 const filterRef = ref(null);
 const selectedFilter = ref('all');
+/** 顶部合计：paid-total 的 totalAmount（与筛选无关） */
+const paidTotal = ref(0);
 
 const selectedWallet = computed(
   () => wallets.value.find((w) => w.id === selectedWalletId.value) || null,
@@ -78,18 +83,6 @@ const selectedWallet = computed(
 const hasMore = computed(() => !reachedEnd.value && records.value.length > 0);
 const selectedFilterLabel = computed(
   () => FILTER_OPTIONS.find((o) => o.value === selectedFilter.value)?.label || '全部',
-);
-
-// 按筛选态过滤已加载记录（后端 data 为数组、无独立筛选接口时的兜底）
-const visibleRecords = computed(() => {
-  if (selectedFilter.value === 'all') return records.value;
-  return records.value.filter((r) => r.statusTone === selectedFilter.value);
-});
-// 已完成总合计：累计已提现记录金额
-const completedTotal = computed(() =>
-  records.value
-    .filter((r) => r.statusTone === 'completed')
-    .reduce((sum, r) => sum + (Number(r.rawAmount) || 0), 0),
 );
 
 const displayBalance = computed(() => {
@@ -136,17 +129,8 @@ function formatDateTime(value) {
 }
 
 function statusInfo(status) {
-  const s = String(status || '').toUpperCase();
-  if (['SUCCESS', 'COMPLETED', 'DONE', 'PAID', 'FINISHED', 'APPROVED'].includes(s)) {
-    return { tone: 'completed', label: t('已提现') };
-  }
-  if (['PENDING', 'PROCESSING', 'REVIEWING', 'CREATED', 'WAIT', 'AUDITING'].includes(s)) {
-    return { tone: 'processing', label: t('审核中') };
-  }
-  if (['CANCELLED', 'CANCELED', 'FAILED', 'REJECTED', 'EXPIRED'].includes(s)) {
-    return { tone: 'cancelled', label: t('提现失败') };
-  }
-  return { tone: 'processing', label: t('审核中') };
+  const info = resolveWithdrawRecordStatus(status);
+  return { tone: info.tone, label: t(info.labelKey) };
 }
 
 // 仅保留区块链类钱包（含链类型/地址、或类型标记为 crypto/wallet）
@@ -188,34 +172,61 @@ function normalizeRecord(r) {
     rawAmount: Number(r.amount) || 0,
     amount: formatMoney(r.amount),
     currency: r.currency || 'CNY',
-    address: r.toAddress || r.address || '—',
-    rejectReason: r.rejectReason || '',
+    address: r.toAddress || r.address || r.payoutAccountMasked || '—',
+    rejectReason: r.rejectReason || r.failedReason || '',
     statusLabel: info.label,
     statusTone: info.tone,
   };
 }
 
 function buildParams(page) {
-  return { pageNum: page, pageSize: PAGE_SIZE, month: selectedMonth.value };
+  return {
+    pageNum: page,
+    pageSize: PAGE_SIZE,
+    month: selectedMonth.value,
+    status: resolveWithdrawFilterStatus(selectedFilter.value),
+  };
 }
 
-function applyResponse(res, append, requestedPage) {
+function isCryptoRecord(record) {
+  return String(record.bindingType || '').toLowerCase() === BINDING_TYPE;
+}
+
+/** 拉取一页；bindingType 过滤后为空且有下一页时自动续拉 */
+async function loadRecordPage(page, append) {
+  const res = await fetchWithdrawList(buildParams(page));
   const list = Array.isArray(res?.data) ? res.data : (res?.data?.records || []);
-  const next = list.map(normalizeRecord);
-  records.value = append ? [...records.value, ...next] : next;
-  pageNum.value = requestedPage;
+  const matched = list.filter(isCryptoRecord).map(normalizeRecord);
+  records.value = append ? [...records.value, ...matched] : matched;
+  pageNum.value = page;
   reachedEnd.value = list.length < PAGE_SIZE;
+  if (matched.length === 0 && !reachedEnd.value) {
+    await loadRecordPage(page + 1, append || records.value.length > 0);
+  }
 }
 
-async function loadRecords() {
+async function loadPaidTotal() {
+  try {
+    const range = getWithdrawMonthRangeShanghai(selectedMonth.value);
+    const response = await fetchWithdrawPaidTotal(range);
+    const amount = response?.data?.totalAmount ?? response?.data?.total ?? response?.data;
+    paidTotal.value = Number(amount) || 0;
+  } catch {
+    paidTotal.value = 0;
+  }
+}
+
+async function loadRecords({ withTotal = true } = {}) {
   recordsLoading.value = true;
   recordsError.value = false;
   reachedEnd.value = false;
   try {
-    const res = await fetchWithdrawList(buildParams(1));
-    applyResponse(res, false, 1);
+    const tasks = [loadRecordPage(1, false)];
+    if (withTotal) tasks.push(loadPaidTotal());
+    await Promise.all(tasks);
   } catch {
     recordsError.value = true;
+    if (withTotal) paidTotal.value = 0;
   } finally {
     recordsLoading.value = false;
   }
@@ -226,8 +237,7 @@ async function loadMore() {
   const nextPage = pageNum.value + 1;
   try {
     loadingMore.value = true;
-    const res = await fetchWithdrawList(buildParams(nextPage));
-    applyResponse(res, true, nextPage);
+    await loadRecordPage(nextPage, true);
   } catch {
     toast.error(t('加载失败'));
   } finally {
@@ -255,8 +265,13 @@ async function handleWalletSaved(binding) {
 }
 
 function selectFilter(value) {
+  if (selectedFilter.value === value) {
+    filterOpen.value = false;
+    return;
+  }
   selectedFilter.value = value;
   filterOpen.value = false;
+  loadRecords({ withTotal: false });
 }
 
 function handleFilterOutsideClick(event) {
@@ -324,12 +339,12 @@ async function handleSubmit() {
 }
 
 watch(selectedMonth, () => {
-  loadRecords();
+  loadRecords({ withTotal: true });
 });
 
 onMounted(() => {
   loadWallets();
-  loadRecords();
+  loadRecords({ withTotal: true });
   document.addEventListener('click', handleFilterOutsideClick);
 });
 
@@ -424,12 +439,12 @@ onBeforeUnmount(() => {
                 </div>
               </div>
             </div>
-            <strong>{{ formatMoney(completedTotal) }}</strong>
+            <strong>{{ formatMoney(paidTotal) }}</strong>
           </div>
 
-          <EmptyState v-if="!visibleRecords.length" :text="t('暂无记录')" />
+          <EmptyState v-if="!records.length" :text="t('暂无记录')" />
 
-          <article v-for="record in visibleRecords" :key="record.id" class="wc-record">
+          <article v-for="record in records" :key="record.id" class="wc-record">
             <div class="wc-record__header">
               <time>{{ record.createdAt }}</time>
               <span class="wc-record__badge" :class="`wc-record__badge--${record.statusTone}`">
@@ -851,6 +866,8 @@ onBeforeUnmount(() => {
     color: #5d7899;
   }
 
+  &--pending,
+  &--paying,
   &--processing {
     background: rgba(28, 123, 255, 0.15);
     color: #1c7bff;

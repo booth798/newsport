@@ -243,6 +243,8 @@ export default {
   收款地址: 'Receiving address',
   已提现: 'Withdrawn',
   提现失败: 'Withdrawal failed',
+  待审核: 'Pending review',
+  提现中: 'Paying',
   请先添加提现地址: 'Please add a withdrawal address first',
   请选择提现地址: 'Please select a withdrawal address',
   提现: 'Withdrawal',

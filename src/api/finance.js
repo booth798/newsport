@@ -74,14 +74,27 @@ export async function submitWithdraw(payload) {
   });
 }
 
-/** 提现订单列表 */
+/** 提现订单列表
+ * status 支持逗号分隔多值（对齐 WithdrawActivity）
+ */
 export async function fetchWithdrawList(params = {}) {
-  return get('/finance/withdraw/list', {
+  const query = {
     pageNum: params.pageNum || 1,
     pageSize: params.pageSize || 20,
-    status: params.status,
     month: params.month,
-  });
+  };
+  if (params.status) query.status = params.status;
+  return get('/finance/withdraw/list', query);
+}
+
+/** 提现已打款总额（顶部合计）
+ * 仅传 startAt / endAt，不传 status；展示 data.totalAmount
+ */
+export async function fetchWithdrawPaidTotal(params = {}) {
+  const query = {};
+  if (params.startAt) query.startAt = params.startAt;
+  if (params.endAt) query.endAt = params.endAt;
+  return get('/finance/withdraw/paid-total', query);
 }
 
 /** 取消提现 */

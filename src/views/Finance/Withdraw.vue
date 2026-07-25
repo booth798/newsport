@@ -14,7 +14,7 @@ import MonthSelector from '@/components/MonthSelector.vue';
 import WithdrawBankModal from './components/WithdrawBankModal.vue';
 import WithdrawBindingForm from './components/WithdrawBindingForm.vue';
 import WithdrawNoticeModal from './components/WithdrawNoticeModal.vue';
-import { fetchWithdrawList, submitWithdraw } from '@/api/finance';
+import { fetchWithdrawList, fetchWithdrawPaidTotal, submitWithdraw } from '@/api/finance';
 import { fetchBindings } from '@/api/user';
 import {
   WITHDRAW_PASSWORD_MAX_LENGTH,
@@ -22,6 +22,12 @@ import {
   isWithdrawPasswordNotSetError,
   sanitizeWithdrawPasswordInput,
 } from '@/constants/withdrawPassword';
+import {
+  WITHDRAW_STATUS_FILTERS,
+  getWithdrawMonthRangeShanghai,
+  resolveWithdrawFilterStatus,
+  resolveWithdrawRecordStatus,
+} from '@/constants/withdrawRecords';
 import { useToast } from '@/hooks/useToast';
 import { useUserStore } from '@/store/modules/user';
 import { useAppStore } from '@/store/modules/app';
@@ -29,12 +35,9 @@ import { useAppStore } from '@/store/modules/app';
 const PAGE_SIZE = 20;
 // 最低提现 100；提现密码固定 6 位数字。
 const MIN_WITHDRAW_AMOUNT = 100;
-const FILTER_OPTIONS = [
-  { value: 'all', label: '全部' },
-  { value: 'completed', label: '已提现' },
-  { value: 'processing', label: '审核中' },
-  { value: 'cancelled', label: '提现失败' },
-];
+/** 本页仅展示银行卡提现记录 */
+const BINDING_TYPE = 'bank_card';
+const FILTER_OPTIONS = WITHDRAW_STATUS_FILTERS;
 
 const { locale, t } = useI18n();
 const route = useRoute();
@@ -70,6 +73,8 @@ const reachedEnd = ref(false);
 const filterOpen = ref(false);
 const filterRef = ref(null);
 const selectedFilter = ref('all');
+/** 顶部合计：paid-total 的 totalAmount（与筛选无关） */
+const paidTotal = ref(0);
 
 const selectedBank = computed(
   () => bankCards.value.find((card) => card.id === selectedBankId.value) || null,
@@ -77,15 +82,6 @@ const selectedBank = computed(
 const hasMore = computed(() => !reachedEnd.value && records.value.length > 0);
 const selectedFilterLabel = computed(
   () => FILTER_OPTIONS.find((option) => option.value === selectedFilter.value)?.label || '全部',
-);
-const visibleRecords = computed(() => {
-  if (selectedFilter.value === 'all') return records.value;
-  return records.value.filter((record) => record.statusTone === selectedFilter.value);
-});
-const completedTotal = computed(() =>
-  records.value
-    .filter((record) => record.statusTone === 'completed')
-    .reduce((sum, record) => sum + (Number(record.rawAmount) || 0), 0),
 );
 const displayBalance = computed(() => {
   const value = Number(String(loggedInAssetsFormatted.value ?? 0).replaceAll(',', ''));
@@ -138,14 +134,8 @@ function formatDateTime(value) {
 }
 
 function statusInfo(status) {
-  const value = String(status || '').toUpperCase();
-  if (['SUCCESS', 'COMPLETED', 'DONE', 'PAID', 'FINISHED', 'APPROVED'].includes(value)) {
-    return { tone: 'completed', label: t('已提现') };
-  }
-  if (['CANCELLED', 'CANCELED', 'FAILED', 'REJECTED', 'EXPIRED'].includes(value)) {
-    return { tone: 'cancelled', label: t('提现失败') };
-  }
-  return { tone: 'processing', label: t('审核中') };
+  const info = resolveWithdrawRecordStatus(status);
+  return { tone: info.tone, label: t(info.labelKey) };
 }
 
 function normalizeBankCard(binding) {
@@ -201,26 +191,59 @@ function normalizeRecord(record) {
 }
 
 function buildParams(page) {
-  return { pageNum: page, pageSize: PAGE_SIZE, month: selectedMonth.value };
+  return {
+    pageNum: page,
+    pageSize: PAGE_SIZE,
+    month: selectedMonth.value,
+    status: resolveWithdrawFilterStatus(selectedFilter.value),
+  };
 }
 
-function applyResponse(response, append, requestedPage) {
+function isBankCardRecord(record) {
+  return String(record.bindingType || '').toLowerCase() === BINDING_TYPE;
+}
+
+/**
+ * 拉取一页列表；按 bindingType 过滤后本页为空且仍有下一页时自动续拉（对齐安卓）。
+ */
+async function loadRecordPage(page, append) {
+  const response = await fetchWithdrawList(buildParams(page));
   const list = Array.isArray(response?.data) ? response.data : (response?.data?.records || []);
-  const nextRecords = list.map(normalizeRecord);
-  records.value = append ? [...records.value, ...nextRecords] : nextRecords;
-  pageNum.value = requestedPage;
+  const matched = list.filter(isBankCardRecord).map(normalizeRecord);
+  records.value = append ? [...records.value, ...matched] : matched;
+  pageNum.value = page;
   reachedEnd.value = list.length < PAGE_SIZE;
+  if (matched.length === 0 && !reachedEnd.value) {
+    await loadRecordPage(page + 1, append || records.value.length > 0);
+  }
 }
 
-async function loadRecords() {
+async function loadPaidTotal() {
+  try {
+    const range = getWithdrawMonthRangeShanghai(selectedMonth.value);
+    const response = await fetchWithdrawPaidTotal(range);
+    const amount = response?.data?.totalAmount ?? response?.data?.total ?? response?.data;
+    paidTotal.value = Number(amount) || 0;
+  } catch {
+    paidTotal.value = 0;
+  }
+}
+
+async function loadRecords({ withTotal = true } = {}) {
   recordsLoading.value = true;
   recordsError.value = false;
   reachedEnd.value = false;
   try {
-    const response = await fetchWithdrawList(buildParams(1));
-    applyResponse(response, false, 1);
+    const tasks = [loadRecordPage(1, false)];
+    if (withTotal) tasks.push(loadPaidTotal());
+    await Promise.all(tasks);
   } catch {
     recordsError.value = true;
+    if (!withTotal) {
+      /* 仅列表失败时保留已有合计 */
+    } else {
+      paidTotal.value = 0;
+    }
   } finally {
     recordsLoading.value = false;
   }
@@ -231,8 +254,7 @@ async function loadMore() {
   const nextPage = pageNum.value + 1;
   try {
     loadingMore.value = true;
-    const response = await fetchWithdrawList(buildParams(nextPage));
-    applyResponse(response, true, nextPage);
+    await loadRecordPage(nextPage, true);
   } catch {
     toast.error(t('加载失败'));
   } finally {
@@ -256,8 +278,14 @@ async function handleBankSaved(binding) {
 }
 
 function selectFilter(value) {
+  if (selectedFilter.value === value) {
+    filterOpen.value = false;
+    return;
+  }
   selectedFilter.value = value;
   filterOpen.value = false;
+  // 筛选只影响列表 status，合计仍按月份 paid-total
+  loadRecords({ withTotal: false });
 }
 
 function handleFilterOutsideClick(event) {
@@ -313,7 +341,6 @@ async function handleSubmit() {
     toast.success(t('提款申请已提交'));
     amount.value = '';
     withdrawPassword.value = '';
-    // 提交已成功时，后续刷新失败不应被误报为提现失败。
     await Promise.allSettled([loadRecords(), userStore.refreshUserBalance()]);
   } catch (error) {
     // 接口返回「请先设置提款密码」：弹窗引导设置，不 toast
@@ -327,11 +354,13 @@ async function handleSubmit() {
   }
 }
 
-watch(selectedMonth, loadRecords);
+watch(selectedMonth, () => {
+  loadRecords({ withTotal: true });
+});
 
 onMounted(() => {
   loadBankCards();
-  loadRecords();
+  loadRecords({ withTotal: true });
   document.addEventListener('click', handleFilterOutsideClick);
 });
 
@@ -441,12 +470,12 @@ onBeforeUnmount(() => {
                 </div>
               </div>
             </div>
-            <strong>{{ formatMoney(completedTotal) }}</strong>
+            <strong>{{ formatMoney(paidTotal) }}</strong>
           </div>
 
-          <EmptyState v-if="!visibleRecords.length" :text="t('暂无记录')" />
+          <EmptyState v-if="!records.length" :text="t('暂无记录')" />
 
-          <article v-for="record in visibleRecords" :key="record.id" class="withdraw-record">
+          <article v-for="record in records" :key="record.id" class="withdraw-record">
             <div class="withdraw-record__header">
               <time>{{ record.createdAt }}</time>
               <span class="withdraw-record__badge" :class="`withdraw-record__badge--${record.statusTone}`">
@@ -919,6 +948,8 @@ onBeforeUnmount(() => {
     color: #5d7899;
   }
 
+  &--pending,
+  &--paying,
   &--processing {
     background: rgba(28, 123, 255, 0.15);
     color: var(--theme-primary);
