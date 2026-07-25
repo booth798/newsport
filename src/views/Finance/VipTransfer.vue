@@ -147,12 +147,16 @@ function applyRecordResponse(response, append) {
 }
 
 function normalizeRecord(record) {
+  const isIn = record.direction === 'in';
   return {
     id: record.transferId,
-    direction: record.direction === 'in' ? 'in' : 'out',
-    typeLabel: record.typeLabel || (record.direction === 'in' ? '会员转入' : '会员转出'),
+    direction: isIn ? 'in' : 'out',
+    typeLabel: record.typeLabel || (isIn ? '会员转入' : '会员转出'),
     amount: formatMoney(record.amount),
-    account: record.counterpartyNo || '—',
+    // 会员转出展示对手方名称；转入仍用账号编号
+    account: isIn
+      ? (record.counterpartyNo || '—')
+      : (record.counterpartyName || record.counterpartyNo || '—'),
     createdAt: formatDateTime(record.createdAt),
   };
 }
