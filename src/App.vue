@@ -7,6 +7,7 @@ import AppCustomerServiceConfirm from '@/components/AppCustomerServiceConfirm.vu
 import AppLoginConfirm from '@/components/AppLoginConfirm.vue';
 import AppForceLogoutAlert from '@/components/AppForceLogoutAlert.vue';
 import AppWithdrawPasswordConfirm from '@/components/AppWithdrawPasswordConfirm.vue';
+import AppVersionUpdateBanner from '@/components/AppVersionUpdateBanner.vue';
 import MobileTabBar from '@/components/MobileTabBar.vue';
 import GlobalToast from '@/components/GlobalToast.vue';
 import GlobalLoading from '@/components/GlobalLoading.vue';
@@ -182,6 +183,7 @@ useWalletWs({
   <AppLoginConfirm />
   <AppForceLogoutAlert />
   <AppWithdrawPasswordConfirm />
+  <AppVersionUpdateBanner />
   <!-- 侧栏「个人资料」全局弹窗：头像 + 昵称设置 -->
   <ProfileUserInfoModal
     v-model="profileUserInfoModalOpen"
