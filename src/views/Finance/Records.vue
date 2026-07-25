@@ -594,7 +594,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
         <button type="button" class="fin-empty__btn" @click="goToMarket">{{ t('前往比赛') }}</button>
       </EmptyState>
 
-      <!-- 订单列表：PC 未展开网格等高，展开后瀑布流；同时仅允许展开一张 -->
+      <!-- 订单列表：PC 双列网格；展开时顶对齐避免同行被拉高，且不切换瀑布流以免重排；同时仅允许展开一张 -->
       <div
         v-else
         class="fin-list"
@@ -975,18 +975,16 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   flex-direction: column;
   gap: 10px;
 
-  // PC：未展开用网格同行等高；展开后改瀑布流，卡片按高度错落排布
+  // PC：始终双列网格，展开不切瀑布流，避免一排卡片重排成错位两列
   @include web-only {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 20px;
     align-items: stretch;
 
+    // 有展开项时顶对齐：展开卡变高，同行另一张保持原高，不拉齐
     &--has-expanded {
-      display: block;
-      column-count: 2;
-      column-gap: 20px;
-      align-items: unset;
+      align-items: start;
     }
   }
 }
@@ -994,11 +992,6 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
 .fin-list__more {
   @include web-only {
     grid-column: 1 / -1;
-
-    .fin-list--has-expanded & {
-      column-span: all;
-      break-inside: avoid;
-    }
   }
 }
 
@@ -1020,12 +1013,8 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
 
 .fin-list--has-expanded .ord {
   @include web-only {
-    display: inline-block;
-    width: 100%;
+    // 顶对齐时按内容高度，避免 height:100% 再被拉满
     height: auto;
-    margin: 0 0 20px;
-    break-inside: avoid;
-    vertical-align: top;
   }
 }
 
