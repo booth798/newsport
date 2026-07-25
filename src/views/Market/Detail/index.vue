@@ -924,7 +924,7 @@ function formatScoreLabel(score) {
 
   &__row--halftime &__cell--prob {
     @include mobile-only {
-      color: #fb5c0d;
+      color: #1c7bff;
     }
   }
 
@@ -1062,7 +1062,7 @@ function formatScoreLabel(score) {
   &--halftime {
     @include web-only {
       .score-table__cell--prob {
-        color: #fb5c0d;
+        color: #1c7bff;
       }
     }
   }

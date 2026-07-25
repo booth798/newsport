@@ -224,12 +224,9 @@ function formatScoreLabel(score) {
     }
   }
 
-  &__row--fulltime &__cell--prob {
-    color: #1c7bff;
-  }
-
+  &__row--fulltime &__cell--prob,
   &__row--halftime &__cell--prob {
-    color: #fb5c0d;
+    color: #1c7bff;
   }
 
   &__arrow {

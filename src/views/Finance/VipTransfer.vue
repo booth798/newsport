@@ -224,7 +224,7 @@ async function handleSubmit() {
       amount: transferAmount,
       withdrawPassword: password,
     });
-    toast.success(t('转账申请已提交'));
+    toast.success(t('划转成功'));
     toAccount.value = '';
     amount.value = '';
     withdrawPassword.value = '';

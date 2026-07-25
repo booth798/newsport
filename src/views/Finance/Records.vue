@@ -342,6 +342,8 @@ function normalizeOrder(o) {
     const ms = Date.parse(placedAt);
     return Number.isFinite(ms) ? ms : null;
   })();
+  // 结算时间：接口 settledAt
+  const settledAt = o.settledAt || '';
   const score = o.score || '';
   const yieldAtBuy = o.yieldAtBuy || o.yieldPct || o.yield || '';
   const matchScore = resolveMatchScoreRaw(o);
@@ -379,6 +381,7 @@ function normalizeOrder(o) {
     kickoffFormatted: formatKickoff(kickoff),
     placedAtFormatted: formatFullDateTime(placedAt),
     placedAtMillis,
+    settledAtFormatted: settledAt ? formatFullDateTime(settledAt) : '',
     matchScore,
     parsedScore,
     marketLabel,
@@ -706,6 +709,10 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
               <div class="ord__detail-row">
                 <span class="ord__detail-label">{{ t('金额') }}</span>
                 <span class="ord__detail-val">{{ order.detailAmountFormatted }}</span>
+              </div>
+              <div v-if="order.settledAtFormatted" class="ord__detail-row">
+                <span class="ord__detail-label">{{ t('结算时间') }}</span>
+                <span class="ord__detail-val">{{ order.settledAtFormatted }}</span>
               </div>
 
             </div>
