@@ -1,6 +1,8 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
+import { clearChunkReloadFlag } from '@/router/lazyView';
+
 /** 当前运行中的构建 ID（打包时注入） */
 const CURRENT_BUILD_ID = String(import.meta.env.VITE_APP_BUILD_ID || '');
 
@@ -16,7 +18,7 @@ const SNOOZE_KEY = 'mysport-app-version-snooze-until';
  * - 轮询 /version.json
  * - 标签页重新可见时检查
  * - 路由切换节流检查
- * - Vite 预加载/动态 chunk 失败时强制提示（部署后旧页面最常见）
+ * - Vite / 路由懒加载 chunk 失败时强制提示（部署后旧页面最常见）
  */
 export function useAppVersionCheck() {
   const router = useRouter();
@@ -66,6 +68,9 @@ export function useAppVersionCheck() {
         remoteBuildId.value = nextId;
         updateAvailable.value = true;
         if (force) clearSnooze();
+      } else {
+        // 版本一致：清除 chunk 自动刷新标记
+        clearChunkReloadFlag();
       }
     } catch {
       // 网络波动时静默失败，等待下次轮询
@@ -81,6 +86,7 @@ export function useAppVersionCheck() {
 
   function refreshNow() {
     clearSnooze();
+    clearChunkReloadFlag();
     // 硬刷新当前页；version.json / index.html 需短缓存或 no-cache 才能拉到新资源
     window.location.reload();
   }
@@ -91,23 +97,28 @@ export function useAppVersionCheck() {
     }
   }
 
-  function onVitePreloadError(event) {
-    // 部署后旧 chunk 404：立即提示刷新
-    event?.preventDefault?.();
+  function onChunkLoadError() {
+    // 部署后旧 chunk 404 / 路由无法解析组件：立即提示刷新
     updateAvailable.value = true;
     clearSnooze();
+  }
+
+  function onVitePreloadError(event) {
+    event?.preventDefault?.();
+    onChunkLoadError();
   }
 
   function onUnhandledRejection(event) {
     const reason = event?.reason;
     const msg = String(reason?.message || reason || '');
-    if (/Failed to fetch dynamically imported module|Importing a module script failed|Loading chunk [\d]+ failed/i.test(msg)) {
-      updateAvailable.value = true;
-      clearSnooze();
+    if (/Failed to fetch dynamically imported module|Importing a module script failed|Loading chunk [\d]+ failed|Couldn't resolve component/i.test(msg)) {
+      onChunkLoadError();
     }
   }
 
   onMounted(() => {
+    clearChunkReloadFlag();
+
     // 首屏稍晚再查，避开启动关键请求
     window.setTimeout(() => {
       if (!disposed) checkForUpdate();
@@ -119,6 +130,7 @@ export function useAppVersionCheck() {
 
     document.addEventListener('visibilitychange', onVisibilityChange);
     window.addEventListener('vite:preloadError', onVitePreloadError);
+    window.addEventListener('mysport:chunk-load-error', onChunkLoadError);
     window.addEventListener('unhandledrejection', onUnhandledRejection);
 
     router.afterEach(() => {
@@ -136,6 +148,7 @@ export function useAppVersionCheck() {
     clearTimeout(routeCheckTimer);
     document.removeEventListener('visibilitychange', onVisibilityChange);
     window.removeEventListener('vite:preloadError', onVitePreloadError);
+    window.removeEventListener('mysport:chunk-load-error', onChunkLoadError);
     window.removeEventListener('unhandledrejection', onUnhandledRejection);
   });
 

@@ -53,7 +53,7 @@ const tabs = [
   },
   {
     key: 'finance',
-    to: '/finance',
+    to: '/finance/records',
     labelKey: '账务',
     icon: tabFinance,
     iconActive: tabFinanceActive,

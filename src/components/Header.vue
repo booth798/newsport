@@ -8,7 +8,6 @@ import logoUrl from '@/assets/images/common/logo_nav.svg';
 import navbarHomeIcon from '@/assets/images/common/navbar_home.svg';
 import navbarHomeMutedIcon from '@/assets/images/common/navbar_home_muted.svg';
 import loginIconUrl from '@/assets/images/common/icon_login.svg?url';
-import serviceIconUrl from '@/assets/images/common/icon_header_service.svg?url';
 import moreIconUrl from '@/assets/images/common/icon_more.svg?url';
 import avatarDefaultUrl from '@/assets/images/common/avatar_default.png?url';
 import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.svg?url';
@@ -356,11 +355,8 @@ watch(isLoggedIn, (loggedIn) => {
           <template v-if="isMonthFilterPage">
             <MonthSelector v-model="financeMonth" :aria-label="t('选择月份')" />
           </template>
-          <!-- H5 比赛详情页右上角不展示客服/菜单按钮 -->
+          <!-- H5 比赛详情页右上角不展示菜单按钮 -->
           <template v-else-if="isLoggedIn && !isMarketDetailPage">
-            <button type="button" class="header-mobile-btn" :aria-label="t('在线客服')" @click="appStore.openCustomerServiceConfirm">
-              <img class="header-mobile-btn__service-img" :src="serviceIconUrl" alt="" />
-            </button>
             <button type="button" class="header-mobile-btn" :aria-label="t('菜单')" @click="mobileDrawerOpen = true">
               <img class="header-mobile-btn__img" :src="moreIconUrl" alt="" />
             </button>
@@ -417,9 +413,6 @@ watch(isLoggedIn, (loggedIn) => {
         </template>
      
         <template v-else-if="isLoggedIn">
-          <button type="button" class="header-mobile-btn" :aria-label="t('在线客服')" @click="appStore.openCustomerServiceConfirm">
-            <img class="header-mobile-btn__service-img" :src="serviceIconUrl" alt="" />
-          </button>
           <button type="button" class="header-mobile-btn" :aria-label="t('菜单')" @click="mobileDrawerOpen = true">
             <img class="header-mobile-btn__img" :src="moreIconUrl" alt="" />
           </button>
@@ -442,7 +435,7 @@ watch(isLoggedIn, (loggedIn) => {
         <template v-if="isCompactDetailHeader && isLoggedIn">
           <div class="header-market-detail-stack">
             <div class="header-market-belt-row">
-              <!-- PC 系统消息：仅右侧更多入口，不展示用户条/客服 -->
+              <!-- PC 系统消息：仅右侧更多入口，不展示用户条 -->
               <template v-if="isMessagesCompact">
                 <button type="button" class="header-round-btn" :aria-label="t('菜单')" @click="mobileDrawerOpen = true">
                   <img class="header-round-btn__img" :src="moreIconUrl" alt="" />
@@ -463,9 +456,6 @@ watch(isLoggedIn, (loggedIn) => {
                     <span class="header-user-strip__assets-value">{{ loggedInAssetsFormatted }}</span>
                   </div>
                 </div>
-                <button type="button" class="header-round-btn" :aria-label="t('在线客服')" @click="appStore.openCustomerServiceConfirm">
-                  <img class="header-round-btn__img" :src="serviceIconUrl" alt="" />
-                </button>
                 <button type="button" class="header-round-btn" :aria-label="t('菜单')" @click="mobileDrawerOpen = true">
                   <img class="header-round-btn__img" :src="moreIconUrl" alt="" />
                 </button>
@@ -501,9 +491,6 @@ watch(isLoggedIn, (loggedIn) => {
               <span class="header-user-strip__assets-value">{{ loggedInAssetsFormatted }}</span>
             </div>
           </div>
-          <button type="button" class="header-round-btn" :aria-label="t('在线客服')" @click="appStore.openCustomerServiceConfirm">
-            <img class="header-round-btn__img" :src="serviceIconUrl" alt="" />
-          </button>
           <button type="button" class="header-round-btn" :aria-label="t('菜单')" @click="mobileDrawerOpen = true">
             <img class="header-round-btn__img" :src="moreIconUrl" alt="" />
           </button>
@@ -828,15 +815,6 @@ watch(isLoggedIn, (loggedIn) => {
         width: 36px;
         height: 36px;
         display: block;
-        pointer-events: none;
-        border-radius: 50%;
-      }
-
-      &__service-img {
-        width: 36px;
-        height: 36px;
-        display: block;
-        object-fit: contain;
         pointer-events: none;
         border-radius: 50%;
       }

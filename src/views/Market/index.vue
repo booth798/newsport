@@ -24,6 +24,8 @@ const loading = ref(true);
 const loadingMore = ref(false);
 const error = ref(false);
 const trimmedQuery = computed(() => teamSearchQuery.value.trim());
+/** 已提交球队搜索时隐藏筛选栏（PC/H5 共用） */
+const isTeamSearching = computed(() => Boolean(trimmedQuery.value));
 /** PC 联赛筛选弹层开关（H5 仍跳转筛选页） */
 const filterPanelOpen = ref(false);
 
@@ -251,8 +253,9 @@ watch([selectedLeagues, isAllSelected], () => {
   reload();
 });
 
-// H5 顶栏 / PC 工具栏提交搜索后刷新列表
+// H5 顶栏 / PC 工具栏提交搜索后刷新列表；搜索时收起筛选弹层
 watch(() => filterStore.teamSearchNonce, () => {
+  if (trimmedQuery.value) filterPanelOpen.value = false;
   reload();
 });
 </script>
@@ -263,8 +266,13 @@ watch(() => filterStore.teamSearchNonce, () => {
       <h2 id="market-leagues-title" class="visually-hidden">{{ t('全部赛事') }}</h2>
 
       <!-- PC 工具栏：筛选 + 日期间 Tab + 搜索（对齐 Figma 截图，复用 H5 筛选能力） -->
-      <div v-if="!isMobile" class="market-leagues__toolbar">
-        <div class="market-leagues__filter-bar market-leagues__filter-bar--pc">
+      <div
+        v-if="!isMobile"
+        class="market-leagues__toolbar"
+        :class="{ 'market-leagues__toolbar--searching': isTeamSearching }"
+      >
+        <!-- 搜索中隐藏筛选/日期间 Tab，仅保留搜索框 -->
+        <div v-if="!isTeamSearching" class="market-leagues__filter-bar market-leagues__filter-bar--pc">
           <div class="market-leagues__filter-anchor">
             <button
               type="button"
@@ -314,8 +322,8 @@ watch(() => filterStore.teamSearchNonce, () => {
         </label>
       </div>
 
-      <!-- H5 筛选栏（保持原样，不改动） -->
-      <div v-if="isMobile" class="market-leagues__filter-bar">
+      <!-- H5 筛选栏：搜索中隐藏 -->
+      <div v-if="isMobile && !isTeamSearching" class="market-leagues__filter-bar">
         <button
           type="button"
           class="market-leagues__filter-btn"
@@ -440,6 +448,11 @@ watch(() => filterStore.teamSearchNonce, () => {
     position: relative;
     z-index: 5;
     overflow: visible;
+
+    // 搜索态仅剩搜索框时靠右，避免空出左侧
+    &--searching {
+      justify-content: flex-end;
+    }
   }
 
   &__filter-bar {

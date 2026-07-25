@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 
 import { resetGlobalLoadingSession } from '@/api/request';
 import Home from '@/views/Home/index.vue';
+import { isChunkLoadError, lazyView, notifyChunkLoadError } from '@/router/lazyView';
 
 const routes = [
   {
@@ -13,97 +14,98 @@ const routes = [
   {
     path: '/register',
     name: 'register',
-    component: () => import('@/views/Register/index.vue'),
+    component: lazyView(() => import('@/views/Register/index.vue')),
     meta: { titleKey: '注册会员', bare: true },
   },
   {
     path: '/market',
     name: 'market',
-    component: () => import('@/views/Market/index.vue'),
+    component: lazyView(() => import('@/views/Market/index.vue')),
     meta: { titleKey: '全部赛事', requiresAuth: true },
   },
   {
     path: '/market/search',
     name: 'market-search',
-    component: () => import('@/views/Market/Search/index.vue'),
+    component: lazyView(() => import('@/views/Market/Search/index.vue')),
     // H5：自带紧凑头；赛事结果搜索（mode=match）额外藏底部 Tab（见 App.vue）
     meta: { titleKey: '搜索', hideMobileHeader: true, requiresAuth: true },
   },
   {
     path: '/market/filter',
     name: 'market-filter',
-    component: () => import('@/views/Market/Filter/index.vue'),
+    component: lazyView(() => import('@/views/Market/Filter/index.vue')),
     meta: { titleKey: '筛选联赛', hideMobileTabBar: true, hideMobileHeader: true, requiresAuth: true },
   },
   {
     path: '/market/league/:league',
     name: 'market-league',
-    component: () => import('@/views/Market/League/index.vue'),
+    component: lazyView(() => import('@/views/Market/League/index.vue')),
     meta: { titleKey: '联赛市场', requiresAuth: true },
   },
   {
     path: '/market/:id',
     name: 'market-detail',
-    component: () => import('@/views/Market/Detail/index.vue'),
+    component: lazyView(() => import('@/views/Market/Detail/index.vue')),
     meta: { titleKey: '比赛详情', requiresAuth: true },
   },
   {
     path: '/trade/purchases',
     name: 'trade-purchases',
-    component: () => import('@/views/Trade/PurchaseDetails/index.vue'),
+    component: lazyView(() => import('@/views/Trade/PurchaseDetails/index.vue')),
     meta: { titleKey: '买入明细' },
   },
   {
     path: '/live-scores',
     name: 'live-scores',
     // 即时比分页面自带返回栏与北京时间，使用 bare 隐藏全局头部。
-    component: () => import('@/views/LiveScores/index.vue'),
+    component: lazyView(() => import('@/views/LiveScores/index.vue')),
     meta: { titleKey: '即时比分', bare: true, requiresAuth: true, guestPreview: true },
   },
   {
     path: '/match-results',
     name: 'match-results',
     // 赛事结果页面自带返回栏与北京时间，使用 bare 隐藏全局头部。
-    component: () => import('@/views/MatchResults/index.vue'),
+    component: lazyView(() => import('@/views/MatchResults/index.vue')),
     meta: { titleKey: '赛事结果', bare: true, requiresAuth: true, guestPreview: true },
   },
   {
     path: '/upcoming-matches',
     name: 'upcoming-matches',
     // 未开赛页面自带返回栏与北京时间，使用 bare 隐藏全局头部。
-    component: () => import('@/views/UpcomingMatches/index.vue'),
+    component: lazyView(() => import('@/views/UpcomingMatches/index.vue')),
     meta: { titleKey: '未开赛', bare: true, requiresAuth: true, guestPreview: true },
   },
   {
     path: '/finance',
-    component: () => import('@/views/Finance/index.vue'),
+    name: 'finance',
+    component: lazyView(() => import('@/views/Finance/index.vue')),
     meta: { titleKey: '交易账务', requiresAuth: true },
-    redirect: '/finance/records',
+    redirect: { name: 'finance-records' },
     children: [
       {
         path: 'deposit',
         name: 'finance-deposit',
-        component: () => import('@/views/Finance/Deposit.vue'),
+        component: lazyView(() => import('@/views/Finance/Deposit.vue')),
         // H5：返回顶栏 + 标题 + 右侧月份筛选，隐藏底部 Tab。
         meta: { titleKey: '充值', compactHeader: true, hideMobileTabBar: true },
       },
       {
         path: 'withdraw',
         name: 'finance-withdraw',
-        component: () => import('@/views/Finance/Withdraw.vue'),
+        component: lazyView(() => import('@/views/Finance/Withdraw.vue')),
         // H5：返回顶栏 + 标题 + 右侧月份筛选，隐藏底部 Tab（对齐会员互转）。
         meta: { titleKey: '银行卡提现', compactHeader: true, hideMobileTabBar: true },
       },
       {
         path: 'withdraw-chain',
         name: 'finance-withdraw-chain',
-        component: () => import('@/views/Finance/WithdrawChain.vue'),
+        component: lazyView(() => import('@/views/Finance/WithdrawChain.vue')),
         meta: { titleKey: '区块链提现', compactHeader: true, hideMobileTabBar: true },
       },
       {
         path: 'vip-transfer',
         name: 'finance-vip-transfer',
-        component: () => import('@/views/Finance/VipTransfer.vue'),
+        component: lazyView(() => import('@/views/Finance/VipTransfer.vue')),
         // H5 使用页面自身的返回栏，PC 继续复用财务页公共头部与侧栏。
         meta: {
           titleKey: '会员互转',
@@ -115,7 +117,7 @@ const routes = [
       {
         path: 'records',
         name: 'finance-records',
-        component: () => import('@/views/Finance/Records.vue'),
+        component: lazyView(() => import('@/views/Finance/Records.vue')),
         meta: { titleKey: '交易记录' },
       },
     ],
@@ -123,13 +125,13 @@ const routes = [
   {
     path: '/profile',
     name: 'profile',
-    component: () => import('@/views/Profile/index.vue'),
+    component: lazyView(() => import('@/views/Profile/index.vue')),
     meta: { titleKey: '我的', requiresAuth: true },
     children: [
       {
         path: '',
         name: 'profile-home',
-        component: () => import('@/views/Profile/Overview.vue'),
+        component: lazyView(() => import('@/views/Profile/Overview.vue')),
         meta: { titleKey: '我的' },
       },
       {
@@ -140,20 +142,20 @@ const routes = [
       {
         path: 'messages',
         name: 'profile-messages',
-        component: () => import('@/views/Profile/Messages.vue'),
+        component: lazyView(() => import('@/views/Profile/Messages.vue')),
         // 消息详情页：PC 用紧凑顶栏（返回 + 更多）；H5 仍走 profile 子页紧凑头。
         meta: { titleKey: '系统消息', hideMobileTabBar: true },
       },
       {
         path: 'verify',
         name: 'profile-verify',
-        component: () => import('@/views/Profile/Verify.vue'),
+        component: lazyView(() => import('@/views/Profile/Verify.vue')),
         meta: { titleKey: '实名认证', hideMobileTabBar: true },
       },
       {
         path: 'security',
         name: 'profile-security',
-        component: () => import('@/views/Profile/Security.vue'),
+        component: lazyView(() => import('@/views/Profile/Security.vue')),
         // H5 对齐 App SettingActivity：自带返回顶栏，隐藏全局头与底栏。
         meta: {
           titleKey: '设置',
@@ -164,7 +166,7 @@ const routes = [
       {
         path: 'bindings',
         name: 'profile-bindings',
-        component: () => import('@/views/Profile/Bindings.vue'),
+        component: lazyView(() => import('@/views/Profile/Bindings.vue')),
         // H5 对齐 App BindingListActivity：自带返回顶栏，隐藏全局头与底栏。
         meta: {
           titleKey: '绑定信息',
@@ -175,7 +177,7 @@ const routes = [
       {
         path: 'about',
         name: 'profile-about',
-        component: () => import('@/views/Profile/About.vue'),
+        component: lazyView(() => import('@/views/Profile/About.vue')),
         // H5 使用页面自身返回栏与品牌区，不复用全局头部与底部 Tab。
         meta: {
           titleKey: '关于我们',
@@ -186,7 +188,7 @@ const routes = [
       {
         path: 'vipBenefits',
         name: 'vip-benefits',
-        component: () => import('@/views/Profile/VipBenefits.vue'),
+        component: lazyView(() => import('@/views/Profile/VipBenefits.vue')),
         // H5 使用 VIP 页面自身的返回栏和内容布局，不复用全局头部与底部 Tab。
         meta: {
           titleKey: 'VIP详情',
@@ -196,18 +198,18 @@ const routes = [
           hideMobileTabBar: true,
         },
       },
-    ]
+    ],
   },
   {
     path: '/service',
     name: 'service',
-    component: () => import('@/views/Service/index.vue'),
+    component: lazyView(() => import('@/views/Service/index.vue')),
     meta: { titleKey: '在线客服', requiresAuth: true, guestPreview: true, bare: true },
   },
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
-    component: () => import('@/views/NotFound.vue'),
+    component: lazyView(() => import('@/views/NotFound.vue')),
     meta: { titleKey: '页面未找到' },
   },
 ];
@@ -240,6 +242,21 @@ router.beforeEach(async (to, from) => {
       appStore.openLoginConfirm();
       return { name: 'home' };
     }
+  }
+});
+
+// 捕获导航期懒加载失败（如 Couldn't resolve component "default" at "/finance"）
+router.onError((err) => {
+  if (!isChunkLoadError(err)) return;
+  notifyChunkLoadError(err);
+  try {
+    const key = 'mysport-chunk-auto-reload';
+    if (!sessionStorage.getItem(key)) {
+      sessionStorage.setItem(key, '1');
+      window.location.reload();
+    }
+  } catch {
+    /* ignore */
   }
 });
 
