@@ -9,7 +9,7 @@ import { ref, computed } from 'vue';
 const toasts = ref([]);
 let _id = 0;
 
-function show(message, { type = 'info', duration = 2500 } = {}) {
+function show(message, { type = 'info', duration = 3000 } = {}) {
   const id = ++_id;
   toasts.value.push({ id, message, type });
   setTimeout(() => {
