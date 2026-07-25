@@ -70,18 +70,22 @@ const { updateAvailable, snooze, refreshNow } = useAppVersionCheck();
 @use '@/styles/tools.scss' as *;
 
 .version-update {
+  /* 低于底部 Tab（200→已抬升），避免挡住「我的」等 Tab 点击 */
   position: fixed;
-  left: 0;
-  right: 0;
+  left: 50%;
+  right: auto;
   bottom: 28px;
-  z-index: 10050;
-  display: flex;
-  justify-content: center;
-  padding: 0 20px;
+  z-index: 190;
+  display: block;
+  width: max-content;
+  max-width: calc(100% - 40px);
+  padding: 0;
+  transform: translateX(-50%);
   pointer-events: none;
 
   &--mobile {
-    bottom: calc(#{$mobile-tab-bar-offset} + env(safe-area-inset-bottom, 0px) + 12px);
+    /* 再抬高一点，给底栏留足可点区域 */
+    bottom: calc(#{$mobile-tab-bar-offset} + env(safe-area-inset-bottom, 0px) + 20px);
   }
 }
 
@@ -95,7 +99,7 @@ const { updateAvailable, snooze, refreshNow } = useAppVersionCheck();
     'icon copy'
     'actions actions';
   gap: 12px 14px;
-  width: min(420px, 100%);
+  width: min(420px, calc(100vw - 40px));
   padding: 16px 16px 14px;
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.85);
@@ -110,7 +114,7 @@ const { updateAvailable, snooze, refreshNow } = useAppVersionCheck();
     grid-template-columns: auto 1fr auto;
     grid-template-areas: 'icon copy actions';
     align-items: center;
-    width: min(560px, 100%);
+    width: min(560px, calc(100vw - 40px));
     padding: 16px 18px;
     gap: 14px 16px;
   }
@@ -228,6 +232,13 @@ const { updateAvailable, snooze, refreshNow } = useAppVersionCheck();
 .version-update-enter-from,
 .version-update-leave-to {
   opacity: 0;
-  transform: translateY(18px) scale(0.98);
+  /* 保留水平居中 translateX，只在纵向做入场位移 */
+  transform: translateX(-50%) translateY(18px) scale(0.98);
+}
+
+.version-update-enter-to,
+.version-update-leave-from {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
 }
 </style>

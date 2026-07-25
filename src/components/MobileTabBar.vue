@@ -146,7 +146,8 @@ function openService() {
 
 .mobile-tab-bar {
   position: fixed;
-  z-index: 200;
+  /* 高于版本更新浮层，保证「我的」等 Tab 始终可点 */
+  z-index: 210;
   inset-inline: 0;
   bottom: 0;
   display: flex;
