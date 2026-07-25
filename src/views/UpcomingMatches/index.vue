@@ -4,7 +4,7 @@
  * - 顶部返回栏 + 北京时间
  * - 左侧栏：Logo + 「未开赛」
  * - 右侧：未开赛赛事两列卡片（H5 单列），展示对阵与开赛时间
- * 数据源：/matches 列表 phase=upcoming（对齐安卓端 phase 过滤）。
+ * 数据源：/matches 列表 phase=upcoming。
  */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
