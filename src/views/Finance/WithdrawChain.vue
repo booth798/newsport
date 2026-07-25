@@ -497,7 +497,7 @@ onBeforeUnmount(() => {
     <WithdrawNoticeModal v-model="noticeModalOpen" />
     <FinanceSubmitConfirm
       v-model="submitConfirmOpen"
-      :message="t('您确定要提交当前提现吗?')"
+      :message="t('是否发起当前提现')"
       @confirm="confirmSubmit"
     />
   </div>

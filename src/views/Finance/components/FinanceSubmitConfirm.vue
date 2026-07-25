@@ -10,7 +10,7 @@ import iconDialogInfoUrl from '@/assets/images/common/icon_dialog_info.svg?url';
 
 defineProps({
   modelValue: { type: Boolean, default: false },
-  /** 确认文案，如「您确定要提交当前提现吗?」 */
+  /** 确认文案，如「是否发起当前提现？」 */
   message: { type: String, required: true },
 });
 
