@@ -271,7 +271,7 @@ function parseMatchScore(scoreStr) {
   }
   const text = String(scoreStr).trim();
   if (!text) return null;
-  // 对齐安卓 split(":", "-", limit=2)；并兼容全角冒号「：」
+  // split(":", "-", limit=2)；并兼容全角冒号「：」
   const m = text.match(/(\d+)\s*[:：\-]\s*(\d+)/);
   if (m) return { home: m[1], away: m[2] };
   return null;
