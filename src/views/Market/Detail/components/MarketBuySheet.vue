@@ -577,12 +577,15 @@ function onBackdropKeydown(e) {
                 <img v-if="homeLogoUrl" :src="homeLogoUrl" alt="" width="20" height="20" />
                 <span class="buy-sheet__success-team-name">
                   {{ match.homeTeam }}
-                  <span class="buy-sheet__home-tag buy-sheet__home-tag--after">{{ t('主') }}</span>
+                  <span class="buy-sheet__side-tag buy-sheet__side-tag--home buy-sheet__side-tag--after">{{ t('主') }}</span>
                 </span>
               </span>
               <span class="buy-sheet__success-team">
                 <img v-if="awayLogoUrl" :src="awayLogoUrl" alt="" width="20" height="20" />
-                <span class="buy-sheet__success-team-name">{{ match.awayTeam }}</span>
+                <span class="buy-sheet__success-team-name">
+                  {{ match.awayTeam }}
+                  <span class="buy-sheet__side-tag buy-sheet__side-tag--away buy-sheet__side-tag--after">{{ t('客') }}</span>
+                </span>
               </span>
             </div>
           </div>
@@ -657,13 +660,16 @@ function onBackdropKeydown(e) {
                   <img v-if="homeLogoUrl" class="buy-sheet__match-logo" :src="homeLogoUrl" :alt="match.homeTeam" width="40" height="40" />
                   <span class="buy-sheet__match-name">
                     {{ match.homeTeam }}
-                    <span class="buy-sheet__home-tag">{{ t('主') }}</span>
+                    <span class="buy-sheet__side-tag buy-sheet__side-tag--home">{{ t('主') }}</span>
                   </span>
                 </div>
                 <span class="buy-sheet__match-vs">VS</span>
                 <div class="buy-sheet__match-team">
                   <img v-if="awayLogoUrl" class="buy-sheet__match-logo" :src="awayLogoUrl" :alt="match.awayTeam" width="40" height="40" />
-                  <span class="buy-sheet__match-name">{{ match.awayTeam }}</span>
+                  <span class="buy-sheet__match-name">
+                    {{ match.awayTeam }}
+                    <span class="buy-sheet__side-tag buy-sheet__side-tag--away">{{ t('客') }}</span>
+                  </span>
                 </div>
               </div>
             </div>
@@ -1122,7 +1128,7 @@ function onBackdropKeydown(e) {
     color: #1c7bff;
   }
 
-  &__home-tag {
+  &__side-tag {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1131,10 +1137,28 @@ function onBackdropKeydown(e) {
     height: 14px;
     padding: 0 2px;
     border-radius: 3px;
-    background: #1c7bff;
     font-size: 9px;
     color: #fff;
     vertical-align: middle;
+
+    &--home {
+      background: #1c7bff;
+    }
+
+    &--away {
+      background: rgba(11, 52, 98, 0.5);
+    }
+
+    &--after {
+      margin-right: 0;
+      margin-left: 0;
+      min-width: 16px;
+      height: 16px;
+      padding: 0 3px;
+      font-size: 10px;
+      line-height: 1;
+      vertical-align: unset;
+    }
   }
 
   &__panel {
@@ -1672,17 +1696,6 @@ function onBackdropKeydown(e) {
     gap: 4px;
     line-height: 1.3;
     min-width: 0;
-  }
-
-  &__home-tag--after {
-    margin-right: 0;
-    margin-left: 0;
-    min-width: 16px;
-    height: 16px;
-    padding: 0 3px;
-    font-size: 10px;
-    line-height: 1;
-    vertical-align: unset;
   }
 
   &__success-summary {

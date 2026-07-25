@@ -226,7 +226,7 @@ function formatPoolScore(score) {
             </div>
             <div class="match-card__detail-hero-name-row">
               <span class="match-card__detail-hero-name">{{ match.homeTeam }}</span>
-              <span class="match-card__detail-hero-home-tag">{{ t('主') }}</span>
+              <span class="match-card__detail-hero-side-tag match-card__detail-hero-side-tag--home">{{ t('主') }}</span>
             </div>
           </div>
 
@@ -248,6 +248,7 @@ function formatPoolScore(score) {
             </div>
             <div class="match-card__detail-hero-name-row">
               <span class="match-card__detail-hero-name">{{ match.awayTeam }}</span>
+              <span class="match-card__detail-hero-side-tag match-card__detail-hero-side-tag--away">{{ t('客') }}</span>
             </div>
           </div>
         </div>
@@ -916,7 +917,7 @@ function formatPoolScore(score) {
     }
   }
 
-  &__detail-hero-home-tag {
+  &__detail-hero-side-tag {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -924,12 +925,19 @@ function formatPoolScore(score) {
     width: 14px;
     height: 14px;
     border-radius: 3px;
-    background: #1c7bff;
     font-family: $font-family-base;
     font-size: 10px;
     font-weight: 500;
     line-height: 1;
     color: #fff;
+
+    &--home {
+      background: #1c7bff;
+    }
+
+    &--away {
+      background: rgba(11, 52, 98, 0.5);
+    }
   }
 
   &__detail-hero-vs {
