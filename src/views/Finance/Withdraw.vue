@@ -14,6 +14,7 @@ import MonthSelector from '@/components/MonthSelector.vue';
 import WithdrawBankModal from './components/WithdrawBankModal.vue';
 import WithdrawBindingForm from './components/WithdrawBindingForm.vue';
 import WithdrawNoticeModal from './components/WithdrawNoticeModal.vue';
+import FinanceSubmitConfirm from './components/FinanceSubmitConfirm.vue';
 import { fetchWithdrawList, fetchWithdrawPaidTotal, submitWithdraw } from '@/api/finance';
 import { fetchBindings } from '@/api/user';
 import {
@@ -57,6 +58,8 @@ const bindingsError = ref(false);
 const amount = ref('');
 const withdrawPassword = ref('');
 const submitting = ref(false);
+/** 送出提款前二次确认 */
+const submitConfirmOpen = ref(false);
 
 // 页面弹窗
 const bankModalOpen = ref(false);
@@ -329,6 +332,17 @@ async function handleSubmit() {
     return;
   }
 
+  // 校验通过后弹出二次确认
+  submitConfirmOpen.value = true;
+}
+
+async function confirmSubmit() {
+  if (submitting.value || !selectedBank.value) return;
+
+  const amountText = String(amount.value ?? '').replaceAll(',', '').trim();
+  const value = Number(amountText);
+  const password = withdrawPassword.value.trim();
+
   try {
     submitting.value = true;
     // 传参对齐安卓：bindingType / bindingId / amount / withdrawPassword
@@ -509,6 +523,11 @@ onBeforeUnmount(() => {
       @confirm="selectedBankId = String($event)" @add="openAddBankCard" />
     <WithdrawBindingForm v-model="bindingFormOpen" type="bank" @saved="handleBankSaved" />
     <WithdrawNoticeModal v-model="noticeModalOpen" />
+    <FinanceSubmitConfirm
+      v-model="submitConfirmOpen"
+      :message="t('您确定要提交当前提现吗?')"
+      @confirm="confirmSubmit"
+    />
   </div>
 </template>
 

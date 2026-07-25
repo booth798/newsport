@@ -268,6 +268,8 @@ export default {
   转账成功: 'Transfer successful',
   划转成功: 'Transfer successful',
   转账申请已提交: 'Transfer request submitted',
+  '您确定要提交当前提现吗?': 'Are you sure you want to submit this withdrawal?',
+  '您确定要提交当前划转吗？': 'Are you sure you want to submit this transfer?',
   余额不足: 'Insufficient balance',
   当前余额: 'Current balance',
   正在获取余额请稍候: 'Fetching balance, please wait',

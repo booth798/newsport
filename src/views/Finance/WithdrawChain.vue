@@ -16,6 +16,7 @@ import MonthSelector from '@/components/MonthSelector.vue';
 import WithdrawAddressModal from './components/WithdrawAddressModal.vue';
 import WithdrawBindingForm from './components/WithdrawBindingForm.vue';
 import WithdrawNoticeModal from './components/WithdrawNoticeModal.vue';
+import FinanceSubmitConfirm from './components/FinanceSubmitConfirm.vue';
 
 import { fetchWithdrawList, fetchWithdrawPaidTotal, submitWithdraw } from '@/api/finance';
 import { fetchBindings } from '@/api/user';
@@ -58,6 +59,8 @@ const selectedWalletId = ref('');
 const amount = ref('');
 const withdrawPassword = ref('');
 const submitting = ref(false);
+/** 送出提款前二次确认 */
+const submitConfirmOpen = ref(false);
 
 // 弹窗
 const addressModalOpen = ref(false);
@@ -314,6 +317,17 @@ async function handleSubmit() {
     return;
   }
 
+  // 校验通过后弹出二次确认
+  submitConfirmOpen.value = true;
+}
+
+async function confirmSubmit() {
+  if (submitting.value || !selectedWallet.value) return;
+
+  const amountText = String(amount.value ?? '').replaceAll(',', '').trim();
+  const val = Number(amountText);
+  const password = withdrawPassword.value.trim();
+
   try {
     submitting.value = true;
     // 传参对齐安卓：bindingType=crypto / bindingId / amount / withdrawPassword
@@ -481,6 +495,11 @@ onBeforeUnmount(() => {
     <!-- 新增地址统一使用公共弹窗，并叠加在地址选择层上方。 -->
     <WithdrawBindingForm v-model="bindingFormOpen" type="wallet" @saved="handleWalletSaved" />
     <WithdrawNoticeModal v-model="noticeModalOpen" />
+    <FinanceSubmitConfirm
+      v-model="submitConfirmOpen"
+      :message="t('您确定要提交当前提现吗?')"
+      @confirm="confirmSubmit"
+    />
   </div>
 </template>
 

@@ -7,6 +7,7 @@ import { storeToRefs } from 'pinia';
 import BaseInput from '@/components/BaseInput.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import MonthSelector from '@/components/MonthSelector.vue';
+import FinanceSubmitConfirm from './components/FinanceSubmitConfirm.vue';
 import { fetchBalance, fetchTransferRecords, transfer } from '@/api/finance';
 import {
   WITHDRAW_PASSWORD_MAX_LENGTH,
@@ -40,6 +41,7 @@ const { loggedInAssetsFormatted } = storeToRefs(userStore);
 const loading = ref(true);
 const error = ref(false);
 const submitting = ref(false);
+const submitConfirmOpen = ref(false);
 const loadingMore = ref(false);
 const toAccount = ref('');
 const amount = ref('');
@@ -221,6 +223,17 @@ async function handleSubmit() {
     return;
   }
 
+  // 校验通过后弹出二次确认
+  submitConfirmOpen.value = true;
+}
+
+async function confirmSubmit() {
+  if (submitting.value) return;
+  const account = toAccount.value.trim();
+  const amountText = String(amount.value ?? '').replaceAll(',', '').trim();
+  const password = withdrawPassword.value.trim();
+  const transferAmount = Number(amountText);
+
   try {
     submitting.value = true;
     await transfer({
@@ -394,6 +407,12 @@ async function loadMore() {
         </template>
       </section>
     </main>
+
+    <FinanceSubmitConfirm
+      v-model="submitConfirmOpen"
+      :message="t('您确定要提交当前划转吗？')"
+      @confirm="confirmSubmit"
+    />
   </div>
 </template>
 
