@@ -26,7 +26,6 @@ const toast = useToast();
 const holderName = ref('');
 const bankName = ref('');
 const bankAccount = ref('');
-const branchName = ref('');
 const walletType = ref('');
 const walletAddress = ref('');
 const walletConfirmAddress = ref('');
@@ -42,7 +41,6 @@ function resetForm() {
   holderName.value = '';
   bankName.value = '';
   bankAccount.value = '';
-  branchName.value = '';
   walletType.value = '';
   walletAddress.value = '';
   walletConfirmAddress.value = '';
@@ -64,15 +62,13 @@ async function submitBankCard() {
   if (!bankName.value) { toast.error(t('请选择银行')); return null; }
   // 卡号对齐 OpenAPI BankCardBindReq：15-19 位数字
   if (!/^\d{15,19}$/.test(bankAccount.value.trim())) { toast.error(t('请输入有效卡号')); return null; }
-  if (!branchName.value.trim()) { toast.error(t('请输入支行名称')); return null; }
 
+  // 支行名称已取消必填，不再提交 branch
   const response = await addBankCard({
     holderName: holderName.value.trim(),
     accountNo: bankAccount.value.trim(),
     accountNoConfirm: bankAccount.value.trim(),
     bankName: bankName.value,
-    // 字段名对齐安卓 / OpenAPI：branch（非 branchName）
-    branch: branchName.value.trim(),
   });
   return response?.data;
 }
@@ -144,9 +140,6 @@ watch(
           </div>
           <label class="binding-field"><span>{{ t('银行帐户') }} <b>*</b></span>
             <BaseInput v-model="bankAccount" inputmode="numeric" :placeholder="t('请输入银行账户')" />
-          </label>
-          <label class="binding-field"><span>{{ t('支行名称') }} <b>*</b></span>
-            <BaseInput v-model="branchName" :placeholder="t('请输入支行名称')" />
           </label>
         </template>
         <template v-else>
