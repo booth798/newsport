@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 import logoUrl from '@/assets/images/common/logo_nav.svg?url';
 import iconEyeClosedUrl from '@/assets/images/login/icon_login_eye_closed.svg?url';
@@ -13,11 +13,20 @@ import { registerApi } from '@/api/user';
 import { useAppStore } from '@/store/modules/app';
 import BaseModal from '@/components/BaseModal.vue';
 import iconDialogInfoUrl from '@/assets/images/common/icon_dialog_info.svg?url';
+import {
+  captureRegisterAttributionFromQuery,
+  clearRegisterAgentCode,
+  getRegisterAttributionOptions,
+} from '@/utils/registerAttribution';
 
 const { t } = useI18n();
+const route = useRoute();
 const router = useRouter();
 const toast = useToast();
 const appStore = useAppStore();
+
+// 独立注册页：立即捕获 ?ac=，避免仅依赖路由守卫时序
+captureRegisterAttributionFromQuery(route.query);
 
 const accountOptions = ref([]);
 const selectedAccount = ref('');
@@ -52,7 +61,13 @@ async function submitRegister() {
 
   try {
     submitting.value = true;
-    await registerApi(selectedAccount.value, password.value);
+    // 带上链接代理码 agentCode（?ac=），否则无法归属下级
+    await registerApi(
+      selectedAccount.value,
+      password.value,
+      getRegisterAttributionOptions(),
+    );
+    clearRegisterAgentCode();
     successOpen.value = true;
   } catch (e) {
     toast.error(e.message || t('提交失败，请重试'));

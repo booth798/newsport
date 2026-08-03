@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import { resetGlobalLoadingSession } from '@/api/request';
 import Home from '@/views/Home/index.vue';
 import { isChunkLoadError, lazyView, notifyChunkLoadError } from '@/router/lazyView';
+import { captureRegisterAttributionFromQuery } from '@/utils/registerAttribution';
 
 const routes = [
   {
@@ -226,6 +227,9 @@ const router = createRouter({
 });
 
 router.beforeEach(async (to, from) => {
+  // 代理推广链接 ?ac= → 暂存 agentCode，供注册页 / 登录弹窗注册使用
+  captureRegisterAttributionFromQuery(to.query);
+
   // 进入新页面时重置全局 loading 会话（本页只展示一轮）；同步执行，早于页面发请求
   if (to.path !== from.path || to.name !== from.name) {
     resetGlobalLoadingSession();

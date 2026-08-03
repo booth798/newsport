@@ -18,6 +18,10 @@ import {
   getRememberedLogin,
   saveRememberedLogin,
 } from '@/utils/rememberLogin';
+import {
+  clearRegisterAgentCode,
+  getRegisterAttributionOptions,
+} from '@/utils/registerAttribution';
 
 const { t } = useI18n();
 const appStore = useAppStore();
@@ -140,9 +144,15 @@ async function submitRegister() {
   }
   try {
     loginSubmitting.value = true;
-    const res = await registerApi(name, password.value, {
-      inviteCode: inviteCode.value.trim() || undefined,
-    });
+    // inviteCode：表单邀请码；agentCode：推广链接 ?ac=（PC/H5 共用弹窗）
+    const res = await registerApi(
+      name,
+      password.value,
+      getRegisterAttributionOptions({
+        inviteCode: inviteCode.value.trim() || undefined,
+      }),
+    );
+    clearRegisterAgentCode();
     const loginData = res.data || {};
     userStore.completeWebLogin(loginData);
     appStore.closeLoginModal();
