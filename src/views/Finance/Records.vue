@@ -105,36 +105,41 @@ function endOfDay(d) {
 /**
  * 时间 Tab → startAt/endAt
  * 「全部」不传参数（后端按钱包累计总额统计）
+ * 其余 Tab 均不含今天：截止到昨天 23:59:59
  */
 function getTimeRangeParams(key) {
   const now = new Date();
   if (key === 'all') return {};
 
+  // 除「全部」外：列表与汇总都不含今天
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const endAt = toOffsetIso(endOfDay(yesterday));
+
   if (key === 'yesterday') {
-    const y = new Date(now);
-    y.setDate(y.getDate() - 1);
-    return { startAt: toOffsetIso(startOfDay(y)), endAt: toOffsetIso(endOfDay(y)) };
+    return { startAt: toOffsetIso(startOfDay(yesterday)), endAt };
   }
 
   if (key === 'last3') {
-    // 含今天共 3 天
-    const start = new Date(now);
+    // 不含今天的近 3 个自然日（昨天往前共 3 天）
+    const start = new Date(yesterday);
     start.setDate(start.getDate() - 2);
-    return { startAt: toOffsetIso(startOfDay(start)), endAt: toOffsetIso(endOfDay(now)) };
+    return { startAt: toOffsetIso(startOfDay(start)), endAt };
   }
 
   if (key === 'week') {
-    // 本周：周一 00:00 ～ 今天结束
+    // 本周：周一 00:00 ～ 昨天结束（周一当天本周尚无历史日）
     const start = startOfDay(now);
     const day = start.getDay();
     const diff = day === 0 ? 6 : day - 1;
     start.setDate(start.getDate() - diff);
-    return { startAt: toOffsetIso(start), endAt: toOffsetIso(endOfDay(now)) };
+    return { startAt: toOffsetIso(start), endAt };
   }
 
   if (key === 'month') {
+    // 本月：1 号 00:00 ～ 昨天结束（月初第一天尚无本月历史日）
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    return { startAt: toOffsetIso(startOfDay(start)), endAt: toOffsetIso(endOfDay(now)) };
+    return { startAt: toOffsetIso(startOfDay(start)), endAt };
   }
 
   return {};
