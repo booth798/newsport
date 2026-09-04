@@ -9,7 +9,13 @@ const buildUrl = (baseUrl, path) => {
     return path;
   }
 
-  return `${String(baseUrl).replace(/\/+$/, '')}/${String(path).replace(/^\/+/, '')}`;
+  const normalizedPath = String(path).replace(/^\/+/, '');
+  const base = String(baseUrl || '').replace(/\/+$/, '');
+  // 无 base 时走相对路径（同源 / 当前域名）
+  if (!base) {
+    return `/${normalizedPath}`;
+  }
+  return `${base}/${normalizedPath}`;
 };
 
 export async function request(path, options = {}) {
