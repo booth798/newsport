@@ -6,7 +6,7 @@ import slideLeftIcon from '@/assets/images/common/icon_slide-left.svg';
 import slideLeftHoverIcon from '@/assets/images/common/icon_slide-left_hover.svg';
 import slideRightIcon from '@/assets/images/common/icon_slide-right.svg';
 import slideRightHoverIcon from '@/assets/images/common/icon_slide-right_hover.svg';
-import logoUrl from '@/assets/images/common/logo_nav.svg?url';
+import logoUrl from '@/assets/images/common/logo_nav.png?url';
 import { reportBannerClick } from '@/api/match';
 
 const props = defineProps({

@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import logoLoginUrl from '@/assets/images/common/logo_login.svg?url';
+import logoLoginUrl from '@/assets/images/common/logo_login.png?url';
 import iconLoginUserUrl from '@/assets/images/login/icon_login_user.svg?url';
 import iconLoginLockUrl from '@/assets/images/login/icon_login_lock.svg?url';
 import iconEyeClosedUrl from '@/assets/images/login/icon_login_eye_closed.svg?url';
@@ -218,10 +218,10 @@ const passwordInputType = computed(() => (showPassword.value ? 'text' : 'passwor
       <div v-if="visible" class="login-overlay" @click.self="close">
         <div class="login-overlay__stack">
           <div class="login-modal" role="dialog" aria-modal="true" :aria-label="isLogin ? t('会员登入') : t('会员注册')">
-            <div class="login-modal__watermark" aria-hidden="true">UNIBET</div>
+            <div class="login-modal__watermark" aria-hidden="true">UNIBALL</div>
 
             <div class="login-modal__brand">
-              <img class="login-modal__logo" :src="logoLoginUrl" width="100" height="36" alt="UNIBET" />
+              <img class="login-modal__logo" :src="logoLoginUrl" width="100" height="36" alt="UNIBALL" />
             </div>
 
             <div class="login-modal__panel">

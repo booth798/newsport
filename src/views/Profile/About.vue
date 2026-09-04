@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
 import aboutTitleUrl from '@/assets/images/about-title.png';
-import logoLoginUrl from '@/assets/images/common/logo_login.svg?url';
+import logoLoginUrl from '@/assets/images/common/logo_login.png?url';
 import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.svg?url';
 import AppSideNav from '@/components/AppSideNav.vue';
 import { getImageUrl } from '@/utils/common';

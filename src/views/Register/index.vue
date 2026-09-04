@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 
-import logoUrl from '@/assets/images/common/logo_nav.svg?url';
+import logoUrl from '@/assets/images/common/logo_nav.png?url';
 import iconEyeClosedUrl from '@/assets/images/login/icon_login_eye_closed.svg?url';
 import iconEyeOpenUrl from '@/assets/images/login/icon_login_eye_open.svg?url';
 import iconLockUrl from '@/assets/images/login/icon_login_lock.svg?url';
@@ -89,7 +89,7 @@ shuffleAccounts();
   <div class="register-page">
     <div class="register-phone">
       <header class="register-title">
-        <img class="register-title__logo" :src="logoUrl" alt="UNIBET" />
+        <img class="register-title__logo" :src="logoUrl" alt="UNIBALL" />
         <h1>{{ t('注册会员') }}</h1>
       </header>
 
@@ -179,7 +179,7 @@ shuffleAccounts();
         <span class="register-success__info" aria-hidden="true">
           <img :src="iconDialogInfoUrl" width="20" height="20" alt="" />
         </span>
-        <p>{{ t('恭喜您成功注册UNIBET！') }}</p>
+        <p>{{ t('恭喜您成功注册UNIBALL！') }}</p>
       </div>
       <div class="register-success__actions">
         <button type="button" class="register-success__btn" @click="openLogin">

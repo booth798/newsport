@@ -1580,7 +1580,7 @@ function onBackdropKeydown(e) {
     }
 
     &::before {
-      content: 'UNIBET';
+      content: 'UNIBALL';
       position: absolute;
       top: 6px;
       left: 0;
