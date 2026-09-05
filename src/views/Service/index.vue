@@ -10,6 +10,8 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 
 import { useAppStore } from '@/store/modules/app';
+import { useUserStore } from '@/store/modules/user';
+import { storeToRefs } from 'pinia';
 import {
   useCustomerService,
   MessageDirection,
@@ -36,6 +38,8 @@ import {
 const { t } = useI18n();
 const router = useRouter();
 const appStore = useAppStore();
+const userStore = useUserStore();
+const { isLoggedIn, loggedInAvatarUrl } = storeToRefs(userStore);
 
 const {
   messages,
@@ -260,6 +264,11 @@ watch(
 
 /* ─── 客服头像，优先展示服务端返回的，否则使用默认 ─── */
 const displayKfAvatar = computed(() => kfAvatar.value || avatarDefaultUrl);
+/** 登录用户自己的消息头像；未登录用默认图 */
+const displaySelfAvatar = computed(() => {
+  if (isLoggedIn.value && loggedInAvatarUrl.value) return loggedInAvatarUrl.value;
+  return avatarDefaultUrl;
+});
 const displayKfName = computed(() => kfName.value || t('在线客服'));
 
 /* ─── 连接状态文案 ─── */
@@ -512,9 +521,9 @@ onMounted(() => {
                   </div>
                 </div>
 
-                <!-- 自己的头像 -->
+                <!-- 自己的头像：登录显示个人头像 -->
                 <span v-if="isSelf(msg)" class="service-msg__avatar service-msg__avatar--self" aria-hidden="true">
-                  <span></span>
+                  <img :src="displaySelfAvatar" alt="" />
                 </span>
               </div>
             </template>
@@ -1088,19 +1097,14 @@ onMounted(() => {
 }
 
 .service-msg__avatar--self {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   background: #e9f0f8;
+  overflow: hidden;
 
-  span {
-    width: 18px;
-    height: 22px;
-    border-radius: 50% 50% 44% 44%;
-    background:
-      radial-gradient(circle at 50% 28%, #171e24 0 3px, transparent 3px),
-      linear-gradient(#f0b9a1 0 34%, #e7a78d 34% 58%, transparent 58%),
-      linear-gradient(135deg, transparent 0 43%, #0d6cfb 43% 57%, transparent 57%);
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 }
 

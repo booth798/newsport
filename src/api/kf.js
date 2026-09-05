@@ -91,6 +91,60 @@ export function extractKfBase(rawUrl) {
   }
 }
 
+function isLocalOrPrivateHost(hostname) {
+  const host = String(hostname || '').toLowerCase();
+  if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local')) return true;
+  if (/^192\.168\.\d+\.\d+$/.test(host)) return true;
+  if (/^10\.\d+\.\d+\.\d+$/.test(host)) return true;
+  if (/^172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+$/.test(host)) return true;
+  return false;
+}
+
+/**
+ * 客服 CONNECT.avatar 用的公网 origin（后台在服务端拉图，局域网/相对路径会裂图）。
+ * 生产取当前页面域名；本地开发也用当前 origin（经网关/代理可达时）。
+ */
+export function resolvePublicAssetOrigin() {
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return window.location.origin;
+  }
+  return '';
+}
+
+/**
+ * 将用户头像转为客服后台可访问的绝对 URL（对齐 mystock resolveKfUserAvatarUrl）。
+ * 支持 http(s)、/api/file/{id}、upload://{id}、纯数字 fileId。
+ */
+export function resolveKfUserAvatarUrl(avatar) {
+  const origin = resolvePublicAssetOrigin();
+  let raw = String(avatar || '').trim();
+  if (!raw) return '';
+
+  if (raw.startsWith('data:') || raw.startsWith('blob:')) return '';
+
+  // 统一成可访问 path：upload://123 → /api/file/123
+  if (raw.startsWith('upload://')) {
+    raw = `/api/file/${raw.replace(/^upload:\/\//, '')}`;
+  } else if (/^\d+$/.test(raw)) {
+    raw = `/api/file/${raw}`;
+  }
+
+  if (/^https?:\/\//i.test(raw)) {
+    try {
+      const u = new URL(raw);
+      if (isLocalOrPrivateHost(u.hostname) && origin) {
+        return `${origin}${u.pathname}${u.search}`;
+      }
+      return raw;
+    } catch {
+      return '';
+    }
+  }
+
+  const path = raw.startsWith('/') ? raw : `/${raw}`;
+  return origin ? `${origin}${path}` : path;
+}
+
 /* ─── 访客身份（对齐 OnlineServiceIdentityStore） ─── */
 
 /**

@@ -12,6 +12,7 @@ import {
   generateVisitorToken,
   resolveKfBase,
   resolveEntryLinkCode,
+  resolveKfUserAvatarUrl,
   kfInitVisitor,
   kfGetConfig,
   kfUploadImage,
@@ -145,15 +146,59 @@ export function useCustomerService() {
     return buildFrame('READ_RECEIPT', { receiveId, time, extend: {} });
   }
 
-  function buildConnectFrame(account, avatar) {
-    return JSON.stringify({
+  function buildConnectFrame(account, userName, avatar) {
+    // 对齐 mystock / 安卓 OnlineServiceFrameParser.connect：
+    // account / userName / avatar 建连时传入，后台才显示真实账号昵称与头像
+    const payload = {
       type: 'CONNECT',
       token: visitorToken,
-      account,
-      userName: null,
-      avatar,
       lastMessageId,
-    });
+    };
+    if (account) payload.account = account;
+    if (userName) payload.userName = userName;
+    if (avatar) payload.avatar = avatar;
+    return JSON.stringify(payload);
+  }
+
+  /**
+   * 组装 CONNECT 身份：登录传账号+昵称+公网头像；未登录走 guest。
+   * 参考 mystock-web ensureAuthProfile。
+   */
+  async function resolveConnectIdentity() {
+    const loggedIn = !!userStore.customerId;
+    if (!loggedIn) {
+      return {
+        identityKey: resolveGuestKey(),
+        account: 'guest',
+        userName: 'guest',
+        avatar: '',
+      };
+    }
+
+    try {
+      await userStore.loadUserProfile();
+    } catch {
+      /* 失败仍用本地缓存 */
+    }
+
+    const profile = userStore.userProfile || userStore.customer || {};
+    const account = String(
+      profile.username
+      || profile.customerNo
+      || profile.memberId
+      || userStore.customerId
+      || '',
+    ).trim();
+    const userName = String(profile.nickname || profile.username || '').trim() || account;
+    const rawAvatar = profile.avatarUrl || profile.avatar || userStore.loggedInAvatarUrl || '';
+    const avatar = resolveKfUserAvatarUrl(rawAvatar);
+
+    return {
+      identityKey: String(userStore.customerId),
+      account,
+      userName,
+      avatar,
+    };
   }
 
   /* ─── 连接流程（对齐 ensureConnected） ─── */
@@ -166,17 +211,15 @@ export function useCustomerService() {
       return;
     }
 
-    // 未登录也允许连接：登录用 customerId，未登录用稳定访客 key（对齐 Android guest 分支）
-    const loggedIn = !!userStore.customerId;
-    const identityKey = loggedIn ? String(userStore.customerId) : resolveGuestKey();
-    const account = loggedIn ? String(userStore.customerId) : 'guest';
-    visitorAccount = account;
-
     isInitializing.value = true;
     errorMessage.value = '';
     const gen = ++generation;
 
     try {
+      const identity = await resolveConnectIdentity();
+      if (gen !== generation) return;
+      visitorAccount = identity.account;
+
       // 确保公开配置已加载
       await appStore.loadPublicConfig();
       if (gen !== generation) return;
@@ -210,11 +253,17 @@ export function useCustomerService() {
         return;
       }
 
-      // 生成访客 token（登录=customerId，未登录=guest key）
-      visitorToken = await generateVisitorToken(identityKey);
+      visitorToken = await generateVisitorToken(identity.identityKey);
       if (gen !== generation) return;
 
-      if (__DEV__) console.log('[KF] 开始初始化', { kfBase, entryLinkCode, token: visitorToken.slice(0, 12) + '…' });
+      if (__DEV__) {
+        console.log('[KF] CONNECT 身份', {
+          account: identity.account,
+          userName: identity.userName,
+          avatar: identity.avatar,
+          token: `${visitorToken.slice(0, 12)}…`,
+        });
+      }
 
       // 1. init.json
       await kfInitVisitor(kfBase, visitorToken);
@@ -233,10 +282,13 @@ export function useCustomerService() {
 
       if (__DEV__) console.log('[KF] 配置获取成功', { receiveId, kfName: kfName.value });
 
-      // 3. 建立 WebSocket
+      // 3. 建立 WebSocket（带账号 / 昵称 / 公网头像）
       const wsUrl = buildKfWebSocketUrl(kfBase);
-      const avatar = userStore.customer?.avatarUrl || '';
-      const connectPayload = buildConnectFrame(account, avatar);
+      const connectPayload = buildConnectFrame(
+        identity.account,
+        identity.userName,
+        identity.avatar,
+      );
 
       ws.connect(wsUrl, connectPayload);
     } catch (e) {
