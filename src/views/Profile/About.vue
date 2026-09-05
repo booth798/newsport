@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
 import aboutTitleUrl from '@/assets/images/about-title.png';
-import logoLoginUrl from '@/assets/images/common/logo_login.svg?url';
+import logoAboutUrl from '@/assets/images/common/logo_about.png?url';
 import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.svg?url';
 import AppSideNav from '@/components/AppSideNav.vue';
 import { getImageUrl } from '@/utils/common';
@@ -59,9 +59,8 @@ function goBack() {
 
         <!-- H5：品牌 Logo + 名称 + 版本号 -->
         <div v-if="isMobile" class="about-brand">
-          <div class="about-brand__logo" aria-hidden="true">
-            <img :src="logoLoginUrl" alt="" width="48" height="18" />
-          </div>
+          <!-- 关于我们品牌图：直接使用完整 logo 资源 -->
+          <img class="about-brand__logo" :src="logoAboutUrl" alt="" width="64" height="64" />
           <p class="about-brand__name">{{ brandName }}</p>
           <p class="about-brand__version">{{ appVersion }}</p>
         </div>
@@ -214,20 +213,16 @@ function goBack() {
 }
 
 .about-brand__logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
-  background: #1c7bff;
-}
-
-.about-brand__logo img {
   display: block;
-  width: 48px;
-  height: 18px;
+  width: 90px;
+  height: 90px;
+  border-radius: 16px;
   object-fit: contain;
+  /* Logo 外轮廓：浅边框 + 柔和投影，贴近 App 图标质感 */
+  border: 1px solid rgba(11, 52, 98, 0.08);
+  box-shadow:
+    0 2px 8px rgba(11, 52, 98, 0.12),
+    0 8px 20px rgba(11, 52, 98, 0.08);
 }
 
 .about-brand__name {
