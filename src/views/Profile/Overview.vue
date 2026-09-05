@@ -83,17 +83,38 @@ const displayName = computed(
   () => overview.value.nickname || loggedInUserId.value || '—',
 );
 const displayMemberId = computed(() => overview.value.memberId || loggedInUserId.value || '—');
-const displayBalance = computed(
-  () => overview.value.balance || loggedInAssetsFormatted.value || '0.00',
-);
-const mobileDisplayName = computed(() => (isLoggedIn.value ? displayName.value : '登录'));
-const mobileDisplayMemberId = computed(() => (isLoggedIn.value ? displayMemberId.value : ''));
+
+/** 解析已格式化金额字符串（含千分位） */
+function parseMoneyAmount(value) {
+  const amount = Number(String(value ?? 0).replace(/,/g, '').replace(/[¥+\s]/g, ''));
+  return Number.isFinite(amount) ? amount : 0;
+}
+
+function formatMoneyAmount(value) {
+  return Number(value).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
 // 主钱包 / 锁定钱包对齐安卓：主钱包 = balance ?: available（store 已归一），锁定 = frozen。
-const mobileBalance = computed(() => (isLoggedIn.value ? displayBalance.value : '0.00'));
-const mobileMainWallet = computed(() => (isLoggedIn.value ? displayBalance.value : '0.00'));
+const mobileMainWallet = computed(() => (
+  isLoggedIn.value
+    ? (overview.value.balance || loggedInAssetsFormatted.value || '0.00')
+    : '0.00'
+));
 const mobileLockedWallet = computed(() => (
   isLoggedIn.value ? (overview.value.frozenBalance || '0.00') : '0.00'
 ));
+/** 账户余额 = 主钱包 + 锁定钱包（与 VIP「总额度」口径一致） */
+const displayBalance = computed(() => {
+  if (!isLoggedIn.value) return '0.00';
+  return formatMoneyAmount(
+    parseMoneyAmount(mobileMainWallet.value) + parseMoneyAmount(mobileLockedWallet.value),
+  );
+});
+const mobileBalance = computed(() => displayBalance.value);
+const mobileDisplayName = computed(() => (isLoggedIn.value ? displayName.value : '登录'));
 
 // —— 会员等级轨道：对齐安卓 MineFragment.applyVipDisplay ——
 // 当前等级来自 GET /vip/me 的 level / levelName / name；文案格式 V{n}；窗口为当前±2（0~16）。
