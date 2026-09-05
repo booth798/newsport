@@ -116,7 +116,7 @@ export async function fetchRecords(params = {}) {
     id: r.id,
     type: mapLedgerType(r.type),
     typeLabel: r.typeLabel || r.type,
-    amount: `${Number(r.amount) >= 0 ? '+' : ''}¥${formatMoney(r.amount)}`,
+    amount: `${Number(r.amount) >= 0 ? '+' : ''}${formatMoney(r.amount)}`,
     time: r.createdAt ? formatDateTime(r.createdAt) : '',
     status: r.status || 'completed',
     statusTone: 'completed',

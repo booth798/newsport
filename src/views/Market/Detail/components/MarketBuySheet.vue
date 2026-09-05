@@ -598,7 +598,7 @@ function onBackdropKeydown(e) {
           <div class="buy-sheet__success-summary">
             <div class="buy-sheet__success-summary-row">
               <span class="buy-sheet__success-summary-label">{{ t('金额') }}</span>
-              <span class="buy-sheet__success-summary-val buy-sheet__success-summary-val--profit">¥ {{ successAmount }}</span>
+              <span class="buy-sheet__success-summary-val buy-sheet__success-summary-val--profit">{{ successAmount }}</span>
             </div>
             <div class="buy-sheet__success-summary-row">
               <!-- i18n「收益率」已含 %，勿再追加，避免出现「收益率%%」 -->

@@ -59,8 +59,8 @@ function normalizeUserProfile(summary = {}, previous = {}) {
     totalBet: formatMoney(stats.totalBet),
     winRate: `${Number.isFinite(winRate) ? winRate.toFixed(1) : '0.0'}%`,
     totalProfit: Number.isFinite(profit)
-      ? `${profit >= 0 ? '+' : ''}¥${formatMoney(profit)}`
-      : '¥0.00',
+      ? `${profit >= 0 ? '+' : ''}${formatMoney(profit)}`
+      : '0.00',
     stats,
   };
 }

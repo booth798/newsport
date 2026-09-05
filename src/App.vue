@@ -151,7 +151,7 @@ provide('toast', {
 
 useWalletWs({
   onPayout(msg) {
-    const amount = msg.amount ? `¥${msg.amount}` : '';
+    const amount = msg.amount ? String(msg.amount) : '';
     toastRef.value?.show(
       i18n.global.t('派奖到账', { amount }) || `派奖到账 ${amount}`,
       { type: 'success' },

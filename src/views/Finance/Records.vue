@@ -376,7 +376,7 @@ function normalizeOrder(o) {
     amountFormatted: formatMoney(amount),
     detailAmountFormatted: formatMoney(detailAmount),
     profit,
-    profitFormatted: `¥${formatMoney(profit)}`,
+    profitFormatted: formatMoney(profit),
     league: leagueShort,
     leagueLogo: resolveLeagueLogo(league, leagueLogo),
     homeTeam,

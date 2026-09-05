@@ -33,7 +33,7 @@ function buildOrder(id, match, overrides = {}) {
     tradeAmount,
     tradeAmountFormatted: formatMoney(tradeAmount),
     profit,
-    profitFormatted: `¥${formatMoney(profit)}`,
+    profitFormatted: formatMoney(profit),
     orderNo: `NO.B01774853483511738${id}`,
     tradeTime: `2026-03-30 14:30:${String(id % 60).padStart(2, '0')}`,
     marketLabel: `比分 ${h}-${a} @ ${prob}%`,

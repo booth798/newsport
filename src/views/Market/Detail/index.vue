@@ -99,10 +99,10 @@ function applyWsYields(newYields, rowsRef, periodTab) {
 }
 
 function formatVolume(n) {
-  if (n == null) return '¥0.00';
+  if (n == null) return '0.00';
   const num = Number(n);
-  if (isNaN(num)) return '¥0.00';
-  return `¥${num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  if (isNaN(num)) return '0.00';
+  return num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 watch(ftYields, (y) => applyWsYields(y, scoreRowsFulltime, 'fulltime'), { deep: true });

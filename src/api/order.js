@@ -166,7 +166,7 @@ function normalizeOrder(o) {
       .filter(Boolean)
       .join(' '),
     amountFormatted: formatMoney(o.amount),
-    tradeAmountFormatted: `¥${formatMoney(o.amount)}`,
+    tradeAmountFormatted: formatMoney(o.amount),
     yieldPercent: o.yieldAtBuy,
     statusKey: o.statusLabel || o.status || '',
     tradeTime: placedAt,
