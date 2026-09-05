@@ -176,7 +176,11 @@ onBeforeUnmount(() => {
 
             <div class="live-card__body">
               <div class="live-card__team live-card__team--home">
-                <span class="live-card__team-name">{{ m.homeTeam }}</span>
+                <!-- 与首页一致：队名旁贴主/客角标 -->
+                <span class="live-card__team-name">
+                  <span class="live-card__team-name-text">{{ m.homeTeam }}</span>
+                  <span class="live-card__side-tag live-card__side-tag--home">{{ t('主') }}</span>
+                </span>
                 <img v-if="m.homeLogo" class="live-card__team-logo" :src="m.homeLogo" alt="" width="28" height="28" @error="(e) => e.target.style.display='none'" />
               </div>
 
@@ -191,7 +195,10 @@ onBeforeUnmount(() => {
 
               <div class="live-card__team live-card__team--away">
                 <img v-if="m.awayLogo" class="live-card__team-logo" :src="m.awayLogo" alt="" width="28" height="28" @error="(e) => e.target.style.display='none'" />
-                <span class="live-card__team-name">{{ m.awayTeam }}</span>
+                <span class="live-card__team-name">
+                  <span class="live-card__team-name-text">{{ m.awayTeam }}</span>
+                  <span class="live-card__side-tag live-card__side-tag--away">{{ t('客') }}</span>
+                </span>
               </div>
             </div>
           </article>
@@ -451,12 +458,43 @@ onBeforeUnmount(() => {
 }
 
 .live-card__team-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
   font-size: 14px;
   font-weight: 500;
   color: #0b3462;
+}
+
+.live-card__team-name-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
+}
+
+/* 对齐首页 match-card__side-tag */
+.live-card__side-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1;
+  color: #fff;
+
+  &--home {
+    background: #1c7bff;
+  }
+
+  &--away {
+    background: rgba(11, 52, 98, 0.5);
+  }
 }
 
 .live-card__team-logo {

@@ -17,4 +17,11 @@ export const SITE_CONFIG = {
     return resolveApiBaseUrl();
   },
   brandColor: '#0b6bcb',
+  /**
+   * PC「下载 APP」二维码对应链接（占位：百度；上线前换成真实安卓包 / App Store）
+   */
+  appDownload: {
+    android: 'https://www.baidu.com/',
+    ios: 'https://www.baidu.com/',
+  },
 };

@@ -191,7 +191,11 @@ onBeforeUnmount(() => {
                 <img class="result-card__arena-bg" :src="matchScoreArenaBgUrl" alt="" aria-hidden="true" />
                 <div class="result-card__arena-inner">
                   <div class="result-card__team result-card__team--home">
-                    <span class="result-card__team-name">{{ m.homeTeam }}</span>
+                    <!-- 与首页一致：队名旁贴主/客角标 -->
+                    <span class="result-card__team-name">
+                      <span class="result-card__team-name-text">{{ m.homeTeam }}</span>
+                      <span class="result-card__side-tag result-card__side-tag--home">{{ t('主') }}</span>
+                    </span>
                     <span class="result-card__logo-wrap">
                       <img
                         v-if="m.homeLogo"
@@ -222,7 +226,10 @@ onBeforeUnmount(() => {
                         @error="(e) => (e.target.style.display = 'none')"
                       />
                     </span>
-                    <span class="result-card__team-name">{{ m.awayTeam }}</span>
+                    <span class="result-card__team-name">
+                      <span class="result-card__team-name-text">{{ m.awayTeam }}</span>
+                      <span class="result-card__side-tag result-card__side-tag--away">{{ t('客') }}</span>
+                    </span>
                   </div>
                 </div>
               </div>
@@ -485,13 +492,44 @@ onBeforeUnmount(() => {
 }
 
 .result-card__team-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
   font-size: 14px;
   font-weight: 400;
   color: #0b3462;
+  line-height: 1.2;
+}
+
+.result-card__team-name-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  line-height: 1.2;
+  min-width: 0;
+}
+
+/* 对齐首页 match-card__side-tag */
+.result-card__side-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1;
+  color: #fff;
+
+  &--home {
+    background: #1c7bff;
+  }
+
+  &--away {
+    background: rgba(11, 52, 98, 0.5);
+  }
 }
 
 .result-card__logo-wrap {
