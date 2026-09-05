@@ -6,7 +6,7 @@ const STATUS_ORDERED = [
   { key: '已退款', tone: 'lost' },
 ];
 
-const PLATFORMS = ['UNI BET平台']; // i18n key；展示文案为 UNIBALL
+const PLATFORMS = ['UNI BET平台'];
 
 function formatMoney(n) {
   return n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

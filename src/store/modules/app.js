@@ -44,7 +44,7 @@ export const useAppStore = defineStore('app', {
     csHours: (state) => state.publicConfig['customer-service.hours'] || '',
     csQQ: (state) => state.publicConfig['customer-service.qq'] || '',
     csEmail: (state) => state.publicConfig['customer-service.email'] || '',
-    brandName: (state) => state.publicConfig['app.brand-name'] || 'UNIBALL',
+    brandName: (state) => state.publicConfig['app.brand-name'] || 'UNIBET',
     appCopyright: (state) => state.publicConfig['app.copyright'] || '',
     announcementBanner: (state) => state.publicConfig['announcement.banner'] || '',
   },

@@ -11,7 +11,7 @@ function resolveApiBaseUrl() {
 }
 
 export const SITE_CONFIG = {
-  siteName: 'UNIBALL',
+  siteName: 'UNIBET',
   /** 当前域名；勿再写死 api 子域，避免跨域与部署域名不一致 */
   get apiBaseUrl() {
     return resolveApiBaseUrl();

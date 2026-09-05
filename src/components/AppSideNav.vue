@@ -1,7 +1,7 @@
 <script setup>
 import { RouterLink } from 'vue-router';
 
-import logoUrl from '@/assets/images/common/logo_nav.png';
+import logoUrl from '@/assets/images/common/logo_nav.svg';
 
 defineProps({
   items: {
@@ -25,7 +25,7 @@ function selectItem(item) {
 
 <template>
   <aside class="app-side-nav">
-    <img class="app-side-nav__logo" :src="logoUrl" alt="UNIBALL" width="100" height="36" />
+    <img class="app-side-nav__logo" :src="logoUrl" alt="UNIBET" width="100" height="36" />
     <nav class="app-side-nav__list">
       <component
         :is="item.to ? RouterLink : 'button'"
