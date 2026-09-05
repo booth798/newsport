@@ -10,7 +10,7 @@ import { ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 
-import logoUrl from '@/assets/images/common/logo_nav.svg';
+import logoUrl from '@/assets/images/common/logo_nav.png';
 import chevronUp from '@/assets/images/common/icon_drawer_section_chevron_up.svg';
 import chevronDown from '@/assets/images/common/icon_drawer_section_chevron_down.svg';
 import bgScoreUrl from '@/assets/images/events/bg_score.svg?url';

@@ -468,8 +468,8 @@ onMounted(() => {
             </button>
           </div>
           <div class="profile-h5-balance__amount">
+            <!-- 金额旁不再展示 CNY 等币种文案 -->
             <strong>{{ mobileBalance }}</strong>
-            <span>{{ overview.currency }}</span>
           </div>
           <div class="profile-h5-balance__wallets">
             <div>
@@ -540,8 +540,8 @@ onMounted(() => {
             <div class="profile-home__balance-row">
               <span class="profile-home__balance-label">{{ t('账户余额') }}：</span>
               <span class="profile-home__balance-value">
-                {{ overview.currency }} <span class="profile-home__balance-value-number">{{ displayBalance }}</span>
-
+                <!-- 金额旁不再展示 CNY 等币种文案 -->
+                <span class="profile-home__balance-value-number">{{ displayBalance }}</span>
               </span>
               <button type="button" class="profile-home__refresh"
                 :class="{ 'profile-home__refresh--spinning': refreshing }" :aria-label="t('刷新余额')"

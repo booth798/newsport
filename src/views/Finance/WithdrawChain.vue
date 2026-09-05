@@ -399,7 +399,7 @@ onBeforeUnmount(() => {
         <label class="wc-field">
           <span class="wc-field__label">{{ t('提款金额') }}</span>
           <BaseInput v-model="amount" inputmode="decimal" autocomplete="off" :placeholder="t('最低提款金额为100')" />
-          <small class="wc-field__hint">{{ t('余额') }}：<b>{{ displayBalance }} CNY</b></small>
+          <small class="wc-field__hint">{{ t('余额') }}：<b>{{ displayBalance }}</b></small>
         </label>
 
         <label class="wc-field">
@@ -468,7 +468,7 @@ onBeforeUnmount(() => {
             <dl class="wc-record__body">
               <div>
                 <dt>{{ t('金额') }}</dt>
-                <dd>{{ record.amount }} {{ record.currency }}</dd>
+                <dd>{{ record.amount }}</dd>
               </div>
               <div>
                 <dt>{{ t('收款地址') }}</dt>

@@ -101,7 +101,8 @@ function normalizeOrder(order, index) {
   return {
     id,
     orderNo: order.orderNo || id,
-    amount: `${formatMoney(order.amount)} ${order.currency || 'CNY'}`,
+    // 展示仅保留金额数字，不拼接 CNY
+    amount: formatMoney(order.amount),
     remark: '系统充值',
     statusLabel: mapStatusLabel(order.status),
     createdAt: formatDateTime(order.createdAt),

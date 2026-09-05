@@ -316,7 +316,7 @@ async function loadMore() {
           <span>{{ t('转出金额') }}</span>
           <BaseInput v-model="amount" inputmode="decimal" autocomplete="off" placeholder="0.00" />
           <small>
-            {{ t('余额') }}：<b>{{ displayBalance }} CNY</b>
+            {{ t('余额') }}：<b>{{ displayBalance }}</b>
           </small>
         </label>
 
@@ -389,7 +389,7 @@ async function loadMore() {
               <dl>
                 <div>
                   <dt>{{ t('金额') }}</dt>
-                  <dd>{{ record.amount }} CNY</dd>
+                  <dd>{{ record.amount }}</dd>
                 </div>
                 <div>
                   <dt>{{ t(record.direction === 'in' ? '会员转入' : '会员转出') }}</dt>

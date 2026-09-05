@@ -1,7 +1,7 @@
 <script setup>
 import { RouterLink } from 'vue-router';
 
-import logoUrl from '@/assets/images/common/logo_nav.svg';
+import logoUrl from '@/assets/images/common/logo_nav.png';
 
 defineProps({
   items: {

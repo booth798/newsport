@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 
-import logoUrl from '@/assets/images/common/logo_nav.svg?url';
+import logoUrl from '@/assets/images/common/logo_nav.png?url';
 import iconEyeClosedUrl from '@/assets/images/login/icon_login_eye_closed.svg?url';
 import iconEyeOpenUrl from '@/assets/images/login/icon_login_eye_open.svg?url';
 import iconLockUrl from '@/assets/images/login/icon_login_lock.svg?url';

@@ -431,7 +431,7 @@ onBeforeUnmount(() => {
         <label class="withdraw-field">
           <span>{{ t('提款金额') }}</span>
           <BaseInput v-model="amount" inputmode="decimal" autocomplete="off" :placeholder="t('最低提款金额为100')" />
-          <small>{{ t('余额') }}：<b>{{ displayBalance }} CNY</b></small>
+          <small>{{ t('余额') }}：<b>{{ displayBalance }}</b></small>
         </label>
 
         <label class="withdraw-field">
@@ -499,7 +499,7 @@ onBeforeUnmount(() => {
             <dl class="withdraw-record__body">
               <div>
                 <dt>{{ t('金额') }}</dt>
-                <dd>{{ record.amount }} {{ record.currency }}</dd>
+                <dd>{{ record.amount }}</dd>
               </div>
               <div>
                 <dt>{{ t('银行账号') }}</dt>

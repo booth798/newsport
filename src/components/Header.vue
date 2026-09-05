@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
-import logoUrl from '@/assets/images/common/logo_nav.svg';
+import logoUrl from '@/assets/images/common/logo_nav.png';
 import navbarHomeIcon from '@/assets/images/common/navbar_home.svg';
 import navbarHomeMutedIcon from '@/assets/images/common/navbar_home_muted.svg';
 import loginIconUrl from '@/assets/images/common/icon_login.svg?url';
