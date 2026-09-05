@@ -61,6 +61,9 @@ let yearScrollTimer = null;
 let monthScrollTimer = null;
 let dayScrollTimer = null;
 let programmaticScroll = false;
+/** PC 滚轮累计：一次滚轮刻度常对应 100px+，需收敛为单格步进 */
+const wheelAccum = { year: 0, month: 0, day: 0 };
+let wheelStepLock = false;
 
 const shanghaiToday = computed(() => {
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -284,6 +287,60 @@ function scrollColumnToIndex(el, index) {
   });
 }
 
+/**
+ * PC 鼠标滚轮一次刻度默认滚约 100~120px（约 2~3 个日期格）。
+ * 拦截后按单项高度步进一格，触控板小增量则累计后再步进。
+ */
+function onColumnWheel(event, type) {
+  event.preventDefault();
+  if (wheelStepLock) return;
+
+  const el = type === 'year'
+    ? yearColRef.value
+    : type === 'month'
+      ? monthColRef.value
+      : dayColRef.value;
+  if (!el) return;
+
+  wheelAccum[type] += event.deltaY;
+  // 低于半格的触控板抖动忽略；达到阈值再步进
+  if (Math.abs(wheelAccum[type]) < ITEM_HEIGHT * 0.45) return;
+
+  const direction = wheelAccum[type] > 0 ? 1 : -1;
+  wheelAccum[type] = 0;
+
+  const maxIndex = type === 'year'
+    ? yearOptions.value.length - 1
+    : type === 'month'
+      ? 11
+      : dayOptions.value.length - 1;
+  const currentIndex = Math.max(0, Math.min(maxIndex, Math.round(el.scrollTop / ITEM_HEIGHT)));
+  const nextIndex = Math.max(0, Math.min(maxIndex, currentIndex + direction));
+  if (nextIndex === currentIndex) return;
+
+  // 短锁，避免同一次滚轮连发导致连跳多格
+  wheelStepLock = true;
+  window.setTimeout(() => {
+    wheelStepLock = false;
+  }, 60);
+
+  scrollColumnToIndex(el, nextIndex);
+
+  if (type === 'year') {
+    draftYear.value = yearOptions.value[nextIndex];
+    if (props.includeDay) clampDraftDay();
+    else clampDraftMonth();
+    return;
+  }
+  if (type === 'month') {
+    draftMonth.value = nextIndex + 1;
+    if (props.includeDay) clampDraftDay();
+    else clampDraftMonth();
+    return;
+  }
+  draftDay.value = dayOptions.value[nextIndex];
+}
+
 function onYearScroll() {
   if (programmaticScroll) return;
   clearTimeout(yearScrollTimer);
@@ -396,7 +453,12 @@ watch(
           :class="{ 'month-picker__wheels--with-day': includeDay }"
         >
           <div class="month-picker__highlight" aria-hidden="true"></div>
-          <div ref="yearColRef" class="month-picker__col" @scroll="onYearScroll">
+          <div
+            ref="yearColRef"
+            class="month-picker__col"
+            @scroll="onYearScroll"
+            @wheel.prevent="onColumnWheel($event, 'year')"
+          >
             <div class="month-picker__pad" aria-hidden="true"></div>
             <div
               v-for="year in yearOptions"
@@ -408,7 +470,12 @@ watch(
             </div>
             <div class="month-picker__pad" aria-hidden="true"></div>
           </div>
-          <div ref="monthColRef" class="month-picker__col" @scroll="onMonthScroll">
+          <div
+            ref="monthColRef"
+            class="month-picker__col"
+            @scroll="onMonthScroll"
+            @wheel.prevent="onColumnWheel($event, 'month')"
+          >
             <div class="month-picker__pad" aria-hidden="true"></div>
             <div
               v-for="month in monthOptions"
@@ -425,6 +492,7 @@ watch(
             ref="dayColRef"
             class="month-picker__col"
             @scroll="onDayScroll"
+            @wheel.prevent="onColumnWheel($event, 'day')"
           >
             <div class="month-picker__pad" aria-hidden="true"></div>
             <div
