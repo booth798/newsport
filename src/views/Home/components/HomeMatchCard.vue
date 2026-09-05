@@ -253,14 +253,7 @@ function formatPoolScore(score) {
           </div>
         </div>
 
-        <button
-          v-if="!isMobile"
-          type="button"
-          class="match-card__detail-hero-button btn btn--primary"
-          @click="emit('open-purchase')"
-        >
-          {{ t('进入比赛') }}
-        </button>
+        <!-- 详情页已在比赛内，不再展示「进入比赛」大按钮 -->
       </div>
     </div>
 
