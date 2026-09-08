@@ -45,7 +45,6 @@ const {
   messages,
   connectionState,
   errorMessage,
-  kfName,
   kfAvatar,
   isInitializing,
   isConnected,
@@ -269,7 +268,8 @@ const displaySelfAvatar = computed(() => {
   if (isLoggedIn.value && loggedInAvatarUrl.value) return loggedInAvatarUrl.value;
   return avatarDefaultUrl;
 });
-const displayKfName = computed(() => kfName.value || t('在线客服'));
+// 顶栏标题固定为「人工客服」，不跟接口下发的客服昵称变化
+const displayKfName = computed(() => t('人工客服'));
 
 /* ─── 连接状态文案 ─── */
 const connectionLabel = computed(() => {

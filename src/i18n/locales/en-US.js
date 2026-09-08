@@ -467,6 +467,7 @@ export default {
   关闭: 'Close',
   确定退出登录吗: 'Are you sure to logout?',
   在线客服: 'Support',
+  人工客服: 'Live Support',
   悬浮服务下载APP: 'Download app',
   下载APP: 'Download APP',
   安卓下载: 'Android',
