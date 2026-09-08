@@ -94,10 +94,15 @@ watch(selectedMonth, () => {
 async function refreshWalletBalance() {
   try {
     const res = await fetchBalance();
-    // 主钱包字段优先级对齐安卓：balance ?: available
-    const nextBalance = res.data?.balance ?? res.data?.available;
-    if (nextBalance != null) {
-      userStore.updateUserProfile({ balance: nextBalance });
+    // 可用余额优先 available；并同步写入 WalletVO 三字段
+    const wallet = res.data || {};
+    const nextAvailable = wallet.available ?? wallet.balance;
+    if (nextAvailable != null || wallet.balance != null) {
+      userStore.updateUserProfile({
+        balance: wallet.balance,
+        available: nextAvailable,
+        frozen: wallet.frozen,
+      });
     }
   } catch {
     // 余额刷新失败不阻断页面，记录列表仍可正常加载。

@@ -97,19 +97,19 @@ function formatMoneyAmount(value) {
   });
 }
 
-// 主钱包 / 锁定钱包对齐安卓：主钱包 = balance ?: available（store 已归一），锁定 = frozen。
+// WalletVO：主钱包=available，锁定=frozen，账户余额=balance（总额，不再前端相加）
 const mobileMainWallet = computed(() => (
   isLoggedIn.value
-    ? (overview.value.balance || loggedInAssetsFormatted.value || '0.00')
+    ? (overview.value.availableBalance || loggedInAssetsFormatted.value || '0.00')
     : '0.00'
 ));
 const mobileLockedWallet = computed(() => (
   isLoggedIn.value ? (overview.value.frozenBalance || '0.00') : '0.00'
 ));
-/** 账户余额 = 主钱包 + 锁定钱包（与 VIP「总额度」口径一致） */
+/** 账户余额直接取接口 balance（= available + frozen） */
 const displayBalance = computed(() => {
   if (!isLoggedIn.value) return '0.00';
-  return formatMoneyAmount(
+  return overview.value.balance || formatMoneyAmount(
     parseMoneyAmount(mobileMainWallet.value) + parseMoneyAmount(mobileLockedWallet.value),
   );
 });

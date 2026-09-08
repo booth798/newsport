@@ -23,11 +23,14 @@ function formatMoney(value) {
   });
 }
 
-/** 对齐安卓 MineFragment.renderWallet：主钱包 balance ?: available，锁定 frozen */
+/** WalletVO：balance=账户总额，available=主钱包/可用，frozen=锁定 */
 function walletDisplayPatch(wallet = {}, fallbackCurrency = 'CNY') {
-  const mainBalance = wallet.balance ?? wallet.available;
+  const totalBalance = wallet.balance;
+  // available 缺失时回退 balance，兼容旧口径
+  const availableBalance = wallet.available ?? wallet.balance;
   return {
-    balance: formatMoney(mainBalance),
+    balance: formatMoney(totalBalance),
+    availableBalance: formatMoney(availableBalance),
     frozenBalance: formatMoney(wallet.frozen),
     currency: wallet.currency || fallbackCurrency,
     wallet,
@@ -52,6 +55,7 @@ function normalizeUserProfile(summary = {}, previous = {}) {
     withdrawPasswordSet: customer.withdrawPasswordSet === true,
     // 保留已有钱包展示，避免资料接口覆盖刷新后的余额。
     balance: previous.balance ?? '0.00',
+    availableBalance: previous.availableBalance ?? '0.00',
     frozenBalance: previous.frozenBalance ?? '0.00',
     currency: previous.currency || 'CNY',
     wallet: previous.wallet || {},
@@ -73,6 +77,10 @@ function normalizeUserProfilePatch(profile = {}) {
   }
   if (Object.prototype.hasOwnProperty.call(profile, 'balance')) {
     normalized.balance = formatMoney(profile.balance);
+  }
+  if (Object.prototype.hasOwnProperty.call(profile, 'available')
+    || Object.prototype.hasOwnProperty.call(profile, 'availableBalance')) {
+    normalized.availableBalance = formatMoney(profile.available ?? profile.availableBalance);
   }
   if (Object.prototype.hasOwnProperty.call(profile, 'frozen')
     || Object.prototype.hasOwnProperty.call(profile, 'frozenBalance')) {
@@ -113,8 +121,13 @@ export const useUserStore = defineStore('user', {
       || state.customer?.username
       || state.customer?.customerNo
       || '',
+    // Header / 提现 / 买入等「可用余额」走 available；缺省回退账户总额 balance
     loggedInAssetsFormatted: (state) =>
-      state.userProfile?.balance ?? state.customer?.balance ?? '0.00',
+      state.userProfile?.availableBalance
+      ?? state.customer?.availableBalance
+      ?? state.userProfile?.balance
+      ?? state.customer?.balance
+      ?? '0.00',
     // Header / 全站头像统一从此读取；无头像时返回空串，由 UI 层兜底默认图。
     loggedInAvatarUrl: (state) => {
       const profile = state.userProfile || state.customer;
@@ -194,7 +207,7 @@ export const useUserStore = defineStore('user', {
         };
         this.customer = { ...(this.customer || {}), ...patch };
         persistCustomer(this.customer);
-        return this.userProfile?.balance ?? '0.00';
+        return this.userProfile?.availableBalance ?? this.userProfile?.balance ?? '0.00';
       })().finally(() => {
         walletRequest = null;
       });

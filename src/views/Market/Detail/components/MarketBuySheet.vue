@@ -300,9 +300,14 @@ async function refreshWalletBalance() {
   walletLoading.value = true;
   try {
     const res = await fetchBalance();
-    // 主钱包字段优先级对齐安卓：balance ?: available
-    walletBalance.value = res.data?.balance ?? res.data?.available ?? null;
-    userStore.updateUserProfile({ balance: walletBalance.value });
+    // 买入可用额度取 available（主钱包），并同步 WalletVO 三字段到 store
+    const wallet = res.data || {};
+    walletBalance.value = wallet.available ?? wallet.balance ?? null;
+    userStore.updateUserProfile({
+      balance: wallet.balance,
+      available: wallet.available ?? wallet.balance,
+      frozen: wallet.frozen,
+    });
   } catch { /* non-critical */ }
   finally { walletLoading.value = false; }
 }
