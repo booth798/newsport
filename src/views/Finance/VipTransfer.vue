@@ -94,13 +94,12 @@ watch(selectedMonth, () => {
 async function refreshWalletBalance() {
   try {
     const res = await fetchBalance();
-    // 可用余额优先 available；并同步写入 WalletVO 三字段
+    // 互转余额取主钱包 balance；并同步 WalletVO 三字段
     const wallet = res.data || {};
-    const nextAvailable = wallet.available ?? wallet.balance;
-    if (nextAvailable != null || wallet.balance != null) {
+    if (wallet.balance != null || wallet.available != null) {
       userStore.updateUserProfile({
         balance: wallet.balance,
-        available: nextAvailable,
+        available: wallet.available,
         frozen: wallet.frozen,
       });
     }

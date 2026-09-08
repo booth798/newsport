@@ -84,34 +84,19 @@ const displayName = computed(
 );
 const displayMemberId = computed(() => overview.value.memberId || loggedInUserId.value || '—');
 
-/** 解析已格式化金额字符串（含千分位） */
-function parseMoneyAmount(value) {
-  const amount = Number(String(value ?? 0).replace(/,/g, '').replace(/[¥+\s]/g, ''));
-  return Number.isFinite(amount) ? amount : 0;
-}
-
-function formatMoneyAmount(value) {
-  return Number(value).toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
-
-// WalletVO：主钱包=available，锁定=frozen，账户余额=balance（总额，不再前端相加）
+// WalletVO：主钱包=balance，锁定=frozen，账户余额=available
 const mobileMainWallet = computed(() => (
   isLoggedIn.value
-    ? (overview.value.availableBalance || loggedInAssetsFormatted.value || '0.00')
+    ? (overview.value.balance || '0.00')
     : '0.00'
 ));
 const mobileLockedWallet = computed(() => (
   isLoggedIn.value ? (overview.value.frozenBalance || '0.00') : '0.00'
 ));
-/** 账户余额直接取接口 balance（= available + frozen） */
+/** 账户余额取接口 available */
 const displayBalance = computed(() => {
   if (!isLoggedIn.value) return '0.00';
-  return overview.value.balance || formatMoneyAmount(
-    parseMoneyAmount(mobileMainWallet.value) + parseMoneyAmount(mobileLockedWallet.value),
-  );
+  return overview.value.availableBalance || loggedInAssetsFormatted.value || '0.00';
 });
 const mobileBalance = computed(() => displayBalance.value);
 const mobileDisplayName = computed(() => (isLoggedIn.value ? displayName.value : '登录'));

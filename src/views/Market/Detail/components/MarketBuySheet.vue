@@ -300,12 +300,12 @@ async function refreshWalletBalance() {
   walletLoading.value = true;
   try {
     const res = await fetchBalance();
-    // 买入可用额度取 available（主钱包），并同步 WalletVO 三字段到 store
+    // 买入可用额度取主钱包 balance；并同步 WalletVO 三字段到 store
     const wallet = res.data || {};
-    walletBalance.value = wallet.available ?? wallet.balance ?? null;
+    walletBalance.value = wallet.balance ?? wallet.available ?? null;
     userStore.updateUserProfile({
       balance: wallet.balance,
-      available: wallet.available ?? wallet.balance,
+      available: wallet.available,
       frozen: wallet.frozen,
     });
   } catch { /* non-critical */ }

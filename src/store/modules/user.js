@@ -23,14 +23,14 @@ function formatMoney(value) {
   });
 }
 
-/** WalletVO：balance=账户总额，available=主钱包/可用，frozen=锁定 */
+/** WalletVO 展示口径：balance=主钱包，frozen=锁定钱包，available=账户余额 */
 function walletDisplayPatch(wallet = {}, fallbackCurrency = 'CNY') {
-  const totalBalance = wallet.balance;
-  // available 缺失时回退 balance，兼容旧口径
-  const availableBalance = wallet.available ?? wallet.balance;
   return {
-    balance: formatMoney(totalBalance),
-    availableBalance: formatMoney(availableBalance),
+    // 主钱包
+    balance: formatMoney(wallet.balance),
+    // 账户余额
+    availableBalance: formatMoney(wallet.available ?? wallet.balance),
+    // 锁定钱包
     frozenBalance: formatMoney(wallet.frozen),
     currency: wallet.currency || fallbackCurrency,
     wallet,
@@ -121,11 +121,9 @@ export const useUserStore = defineStore('user', {
       || state.customer?.username
       || state.customer?.customerNo
       || '',
-    // Header / 提现 / 买入等「可用余额」走 available；缺省回退账户总额 balance
+    // Header / 提现 / 买入等可用额度取主钱包 balance
     loggedInAssetsFormatted: (state) =>
-      state.userProfile?.availableBalance
-      ?? state.customer?.availableBalance
-      ?? state.userProfile?.balance
+      state.userProfile?.balance
       ?? state.customer?.balance
       ?? '0.00',
     // Header / 全站头像统一从此读取；无头像时返回空串，由 UI 层兜底默认图。
@@ -207,7 +205,7 @@ export const useUserStore = defineStore('user', {
         };
         this.customer = { ...(this.customer || {}), ...patch };
         persistCustomer(this.customer);
-        return this.userProfile?.availableBalance ?? this.userProfile?.balance ?? '0.00';
+        return this.userProfile?.balance ?? '0.00';
       })().finally(() => {
         walletRequest = null;
       });
