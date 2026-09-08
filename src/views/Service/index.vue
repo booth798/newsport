@@ -439,7 +439,7 @@ onMounted(() => {
               <span class="service-chat__welcome-avatar" aria-hidden="true">
                 <img :src="displayKfAvatar" alt="" />
               </span>
-              <p>{{ t('智能客服助手为您服务') }}</p>
+              <p>{{ t('人工客服为您服务') }}</p>
             </div>
 
             <!-- 消息列表 -->
