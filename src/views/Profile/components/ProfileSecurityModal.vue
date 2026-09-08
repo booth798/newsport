@@ -11,6 +11,7 @@ import {
   isValidWithdrawPassword,
   sanitizeWithdrawPasswordInput,
 } from '@/constants/withdrawPassword';
+import { validateLoginPassword } from '@/constants/loginPassword';
 import { useToast } from '@/hooks/useToast';
 import { useUserStore } from '@/store/modules/user';
 import BaseInput from '@/components/BaseInput.vue';
@@ -104,10 +105,19 @@ async function handleSave() {
     return;
   }
   if (!newPassword.trim()) { toast.error(t('请输入新密码')); return; }
-  // 登录密码：长度 6-32；提现密码：固定 6 位数字
+  // 登录密码：6-12 位字母+数字，且不能包含账号（大小写不敏感）；提现密码：固定 6 位数字
   if (activeSection.value === 'login') {
-    if (newPassword.length < 6 || newPassword.length > 32) {
-      toast.error(t('登录密码长度应为6-32位'));
+    const profile = userProfile.value || {};
+    const accountCandidates = [
+      profile.username,
+      profile.customerNo,
+      profile.memberId,
+      userStore.customer?.username,
+      userStore.customer?.customerNo,
+    ];
+    const passwordCheck = validateLoginPassword(newPassword, accountCandidates);
+    if (!passwordCheck.ok) {
+      toast.error(t(passwordCheck.messageKey));
       return;
     }
   } else {

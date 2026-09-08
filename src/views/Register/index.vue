@@ -11,13 +11,15 @@ import iconRefreshUrl from '@/assets/images/login/icon_register_refresh.svg?url'
 import { useToast } from '@/hooks/useToast';
 import { registerApi } from '@/api/user';
 import { useAppStore } from '@/store/modules/app';
-import BaseModal from '@/components/BaseModal.vue';
-import iconDialogInfoUrl from '@/assets/images/common/icon_dialog_info.svg?url';
+import RegisterSuccessModal from '@/components/RegisterSuccessModal.vue';
 import {
   captureRegisterAttributionFromQuery,
   clearRegisterAgentCode,
   getRegisterAttributionOptions,
 } from '@/utils/registerAttribution';
+import {
+  validateLoginPassword,
+} from '@/constants/loginPassword';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -35,11 +37,16 @@ const confirmPassword = ref('');
 const showPassword = ref(false);
 const submitting = ref(false);
 const successOpen = ref(false);
+/** 注册成功弹窗展示用的账号/密码快照 */
+const registeredAccount = ref('');
+const registeredPassword = ref('');
 
 const passwordType = computed(() => (showPassword.value ? 'text' : 'password'));
 const isAccountValid = computed(() => selectedAccount.value.length > 0);
-/** 注册密码：6-12 位，须同时含字母与数字（对齐登录密码规则） */
-const isPasswordValid = computed(() => /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,12}$/.test(password.value));
+/** 注册密码：6-12 位须含字母和数字（允许特殊字符），且不能包含账号（大小写不敏感） */
+const isPasswordValid = computed(() => (
+  validateLoginPassword(password.value, selectedAccount.value).ok
+));
 /** 后端已取消滑块验证，表单合法即可提交 */
 const canSubmit = computed(() => isAccountValid.value && isPasswordValid.value
   && confirmPassword.value === password.value && !submitting.value);
@@ -59,6 +66,12 @@ function shuffleAccounts() {
 async function submitRegister() {
   if (!canSubmit.value) return;
 
+  const passwordCheck = validateLoginPassword(password.value, selectedAccount.value);
+  if (!passwordCheck.ok) {
+    toast.error(t(passwordCheck.messageKey));
+    return;
+  }
+
   try {
     submitting.value = true;
     // 带上链接代理码 agentCode（?ac=），否则无法归属下级
@@ -68,6 +81,8 @@ async function submitRegister() {
       getRegisterAttributionOptions(),
     );
     clearRegisterAgentCode();
+    registeredAccount.value = selectedAccount.value;
+    registeredPassword.value = password.value;
     successOpen.value = true;
   } catch (e) {
     toast.error(e.message || t('提交失败，请重试'));
@@ -78,6 +93,8 @@ async function submitRegister() {
 
 async function openLogin() {
   successOpen.value = false;
+  registeredAccount.value = '';
+  registeredPassword.value = '';
   await router.replace('/');
   appStore.openLoginModal();
 }
@@ -170,23 +187,12 @@ shuffleAccounts();
       </section>
     </div>
 
-    <BaseModal
+    <RegisterSuccessModal
       v-model="successOpen"
-      :title="t('提示')"
-      :show-close="true"
-    >
-      <div class="register-success__body">
-        <span class="register-success__info" aria-hidden="true">
-          <img :src="iconDialogInfoUrl" width="20" height="20" alt="" />
-        </span>
-        <p>{{ t('恭喜您成功注册UNIBET！') }}</p>
-      </div>
-      <div class="register-success__actions">
-        <button type="button" class="register-success__btn" @click="openLogin">
-          {{ t('去登录') }}
-        </button>
-      </div>
-    </BaseModal>
+      :account="registeredAccount"
+      :password="registeredPassword"
+      @confirm="openLogin"
+    />
   </div>
 </template>
 
@@ -435,56 +441,7 @@ shuffleAccounts();
   }
 }
 
-/* 注册成功弹窗（复用 BaseModal，底部带关闭按钮） */
-.register-success__body {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  height: 70px;
-  border-radius: 12px;
-  background: #fff;
-
-  p {
-    margin: 0;
-    // 与登录确认弹窗文案一致：16px / Regular / #0B3462
-    color: #0b3462;
-    font-size: 16px;
-    font-weight: 400;
-    line-height: 1.4;
-  }
-}
-
-.register-success__info {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-
-  img {
-    display: block;
-    width: 20px;
-    height: 20px;
-  }
-}
-
-.register-success__actions {
-  margin-top: 10px;
-}
-
-.register-success__btn {
-  width: 100%;
-  height: 44px;
-  border: none;
-  border-radius: 22px;
-  background: #fff;
-  color: #1c7bff;
-  font-size: 18px;
-  font-weight: 400;
-  cursor: pointer;
-}
+/* 注册成功弹窗样式已收敛到 RegisterSuccessModal */
 
 // 注册页新稿：账号候选 + 双密码确认。
 .register-card__title {

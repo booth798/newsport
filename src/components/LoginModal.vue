@@ -22,6 +22,8 @@ import {
   clearRegisterAgentCode,
   getRegisterAttributionOptions,
 } from '@/utils/registerAttribution';
+import { validateLoginPassword } from '@/constants/loginPassword';
+import RegisterSuccessModal from '@/components/RegisterSuccessModal.vue';
 
 const { t } = useI18n();
 const appStore = useAppStore();
@@ -44,6 +46,10 @@ const isLogin = ref(true);
 const showPassword = ref(false);
 const rememberPassword = ref(false);
 const loginSubmitting = ref(false);
+/** 注册成功后展示账号密码保存弹窗 */
+const registerSuccessOpen = ref(false);
+const registeredAccount = ref('');
+const registeredPassword = ref('');
 
 watch(isLogin, (loginMode) => {
   showPassword.value = false;
@@ -126,7 +132,7 @@ async function submitWebLogin() {
 const canSubmitRegister = computed(
   () => canSubmit.value
     && account.value.trim().length >= 4
-    && /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,12}$/.test(password.value.trim()),
+    && validateLoginPassword(password.value.trim(), account.value.trim()).ok,
 );
 
 async function submitRegister() {
@@ -137,9 +143,10 @@ async function submitRegister() {
     toast.error(t('用户名需4-20位'));
     return;
   }
-  // 注册密码与独立注册页一致：6-12 位字母+数字
-  if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,12}$/.test(pwd)) {
-    toast.error(t('登录密码长度提示'));
+  // 注册密码：6-12 位须含字母和数字（允许特殊字符），且不能包含账号
+  const passwordCheck = validateLoginPassword(pwd, name);
+  if (!passwordCheck.ok) {
+    toast.error(t(passwordCheck.messageKey));
     return;
   }
   try {
@@ -154,19 +161,27 @@ async function submitRegister() {
     );
     clearRegisterAgentCode();
     const loginData = res.data || {};
+    // 先记下凭据再清空表单，供注册成功弹窗保存
+    registeredAccount.value = name;
+    registeredPassword.value = pwd;
     userStore.completeWebLogin(loginData);
     appStore.closeLoginModal();
-    toast.success(t('注册成功'));
     account.value = '';
     password.value = '';
     inviteCode.value = '';
     showPassword.value = false;
+    registerSuccessOpen.value = true;
     userStore.loadUserProfile({ force: true }).catch(() => {});
   } catch (e) {
     toast.error(e.message || t('提交失败，请重试'));
   } finally {
     loginSubmitting.value = false;
   }
+}
+
+function onRegisterSuccessConfirm() {
+  registeredAccount.value = '';
+  registeredPassword.value = '';
 }
 
 const close = () => emit('close');
@@ -399,6 +414,15 @@ const passwordInputType = computed(() => (showPassword.value ? 'text' : 'passwor
       </div>
     </Transition>
   </Teleport>
+
+  <!-- 注册成功：展示账号密码并支持下载保存 -->
+  <RegisterSuccessModal
+    v-model="registerSuccessOpen"
+    :account="registeredAccount"
+    :password="registeredPassword"
+    :confirm-text="t('完成')"
+    @confirm="onRegisterSuccessConfirm"
+  />
 </template>
 
 <style lang="scss" scoped>
