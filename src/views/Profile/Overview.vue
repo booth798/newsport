@@ -863,7 +863,7 @@ onMounted(() => {
   align-items: baseline;
   justify-content: center;
   gap: 8px;
-  margin: 18px 0 10px;
+  margin: 10px 0 10px;
   color: #1c7bff;
 
   strong {
