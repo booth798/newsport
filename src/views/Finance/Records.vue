@@ -392,7 +392,7 @@ function normalizeOrder(o) {
     marketLabel,
     orderNo: orderNo ? (String(orderNo).startsWith('NO.') ? orderNo : `NO.${orderNo}`) : '',
     cancelable: state === 'processing',
-    profitLabel: state === 'completed' ? '盈利' : '预估盈利',
+    profitLabel: (status === 'WON' || status === 'SETTLED_WON') ? '盈利' : '预估盈利',
     _raw: o,
   };
 }

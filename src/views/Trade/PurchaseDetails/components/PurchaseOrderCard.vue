@@ -67,11 +67,17 @@ const chevronSrc = computed(() => (props.expanded ? iconChevronUpUrl : iconChevr
 
 const statusClass = computed(() => `purchase-card__status--${props.order.statusTone}`);
 
-const summaryProfitLabelKey = computed(() => {
-  const key = props.order.statusKey;
-  if (key === '待开奖' || key === '预约中') return '预估盈利';
-  return '盈利';
-});
+/** 仅中奖订单显示「盈利」，其余状态统一「预估盈利」 */
+function isWonOrder(order) {
+  const status = String(order?.status || '').toUpperCase();
+  if (['WON', 'SETTLED_WON'].includes(status)) return true;
+  const label = String(order?.statusKey || order?.statusLabel || '');
+  return /已获利|已中奖|中奖/.test(label) || /^WON$/i.test(label);
+}
+
+const summaryProfitLabelKey = computed(() => (
+  isWonOrder(props.order) ? '盈利' : '预估盈利'
+));
 
 /** 处理中且下单 10 分钟内才展示取消 */
 const showCancelAction = computed(() => {
