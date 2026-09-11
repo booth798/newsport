@@ -125,7 +125,7 @@ export async function uploadFile(file, purpose = 'avatar') {
       if (__DEV__) {
         console.error('%c[UPLOAD] 服务端错误', 'color:#c62828;font-weight:bold', errJson);
       }
-      errMsg = resolveErrorMessage(errJson.msg) || errJson.msg;
+      errMsg = resolveErrorMessage(errJson.msg, errJson.data) || errJson.msg;
     } catch {
       errMsg = `HTTP ${res.status}`;
     }
@@ -137,7 +137,7 @@ export async function uploadFile(file, purpose = 'avatar') {
     if (__DEV__) {
       console.error('%c[UPLOAD] 业务错误', 'color:#c62828;font-weight:bold', json);
     }
-    throw new Error(resolveErrorMessage(json.msg) || json.msg || `${json.code}`);
+    throw new Error(resolveErrorMessage(json.msg, json.data) || json.msg || `${json.code}`);
   }
   return json;
 }

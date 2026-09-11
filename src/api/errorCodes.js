@@ -11,6 +11,11 @@ const FALLBACK_MAP = {
   CUSTOMER_BLACKLISTED: { zhCN: '账户已被拉黑', enUS: 'Account blacklisted' },
   WITHDRAW_PASSWORD_NOT_SET: { zhCN: '请先设置提款密码', enUS: 'Please set withdrawal password first' },
   WITHDRAW_PASSWORD_REQUIRED: { zhCN: '请先设置提款密码', enUS: 'Please set withdrawal password first' },
+  // 提现流水未完成：文案用 {outstanding} 占位，由 data.outstanding 填充
+  TURNOVER_REQUIRED: {
+    zhCN: '提领尚需消除流水 {outstanding}',
+    enUS: 'Withdrawal requires remaining turnover {outstanding}',
+  },
 };
 
 let remoteMap = {};
@@ -46,12 +51,56 @@ export async function loadErrorCodes() {
   return loading;
 }
 
-export function resolveErrorMessage(msg) {
+/** 占位符取值展示：4200.00 → 4200；非整数量保留原数值字符串 */
+function formatPlaceholderValue(value) {
+  if (value == null) return '';
+  const num = Number(value);
+  if (!Number.isFinite(num)) return String(value);
+  if (Number.isInteger(num)) return String(num);
+  // 去掉多余尾零，如 4200.50 → 4200.5
+  return String(num);
+}
+
+/**
+ * 将模板中的 {key} 用 data[key] 替换（支持远程错误码与本地 FALLBACK）。
+ * @param {string} template
+ * @param {Record<string, unknown>|null|undefined} data
+ */
+export function renderErrorTemplate(template, data) {
+  const text = String(template ?? '');
+  if (!text || !data || typeof data !== 'object') return text;
+  return text.replace(/\{(\w+)\}/g, (matched, key) => {
+    if (!Object.prototype.hasOwnProperty.call(data, key)) return matched;
+    return formatPlaceholderValue(data[key]);
+  });
+}
+
+/**
+ * 按错误码解析文案；若模板含 {field} 且传入 data，则做占位符渲染。
+ * @param {string} msg 错误码（响应体 msg）
+ * @param {Record<string, unknown>|null|undefined} [data] 响应体 data
+ */
+export function resolveErrorMessage(msg, data) {
   if (!msg) return '';
-  const entry = remoteMap[msg] || FALLBACK_MAP[msg];
+  const remote = remoteMap[msg];
+  const fallback = FALLBACK_MAP[msg];
+  const entry = remote || fallback;
   if (!entry) return msg;
   const locale = getCurrentLocale();
-  return locale === 'en-US' ? entry.enUS : entry.zhCN;
+  let template = locale === 'en-US' ? (entry.enUS || msg) : (entry.zhCN || msg);
+  // 远程文案若无占位符、本地兜底有占位符，则用本地模板渲染（如 TURNOVER_REQUIRED + outstanding）
+  const fallbackTemplate = fallback
+    ? (locale === 'en-US' ? fallback.enUS : fallback.zhCN)
+    : '';
+  if (
+    data
+    && fallbackTemplate
+    && /\{(\w+)\}/.test(fallbackTemplate)
+    && !/\{(\w+)\}/.test(template)
+  ) {
+    template = fallbackTemplate;
+  }
+  return renderErrorTemplate(template, data);
 }
 
 export const FORCE_LOGOUT_CODES = new Set([

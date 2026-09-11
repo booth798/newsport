@@ -157,16 +157,18 @@ function checkForceLogout(msgCode) {
 async function handleResponse(res, encrypted = false) {
   if (res.status === 401 || res.status === 403) {
     let bodyMsg = '';
+    let bodyData;
     try {
       const ct = res.headers.get('content-type') || '';
       if (ct.includes('application/json')) {
         const j = await res.json();
         bodyMsg = j.msg || '';
+        bodyData = j.data;
       }
     } catch { /* ignore */ }
     if (isForceLogoutCode(bodyMsg)) {
       checkForceLogout(bodyMsg);
-      throw new ApiError(res.status, resolveErrorMessage(bodyMsg));
+      throw new ApiError(res.status, resolveErrorMessage(bodyMsg, bodyData), bodyData);
     }
     const ok = await tryRefreshToken();
     if (!ok) {
@@ -187,7 +189,7 @@ async function handleResponse(res, encrypted = false) {
   if (json.code === 401) {
     if (isForceLogoutCode(json.msg)) {
       checkForceLogout(json.msg);
-      throw new ApiError(json.code, resolveErrorMessage(json.msg), json.data);
+      throw new ApiError(json.code, resolveErrorMessage(json.msg, json.data), json.data);
     }
     const ok = await tryRefreshToken();
     if (!ok) {
@@ -202,14 +204,14 @@ async function handleResponse(res, encrypted = false) {
     const decrypted = await decryptSessionResponse(json);
     if (decrypted.code !== 200 && decrypted.code !== 0) {
       checkForceLogout(decrypted.msg);
-      throw new ApiError(decrypted.code, resolveErrorMessage(decrypted.msg), decrypted.data);
+      throw new ApiError(decrypted.code, resolveErrorMessage(decrypted.msg, decrypted.data), decrypted.data);
     }
     return decrypted;
   }
 
   if (json.code !== 200 && json.code !== 0) {
     checkForceLogout(json.msg);
-    throw new ApiError(json.code, resolveErrorMessage(json.msg), json.data);
+    throw new ApiError(json.code, resolveErrorMessage(json.msg, json.data), json.data);
   }
   return json;
 }

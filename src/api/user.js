@@ -52,7 +52,7 @@ async function bootstrapRequest(url, payload, extraHeaders = {}) {
       }
 
       if (decrypted.code !== 200 && decrypted.code !== 0) {
-        throw new Error(resolveErrorMessage(decrypted.msg) || `API Error ${decrypted.code}`);
+        throw new Error(resolveErrorMessage(decrypted.msg, decrypted.data) || `API Error ${decrypted.code}`);
       }
       if (decrypted.data?.sessionId) {
         if (__DEV__) console.log('%c[AUTH] 已保存加密会话 sid=%s', 'color:#1b5e20;font-weight:bold', decrypted.data.sessionId);
@@ -70,7 +70,7 @@ async function bootstrapRequest(url, payload, extraHeaders = {}) {
     }
 
     if (!res.ok || (json.code !== 200 && json.code !== 0)) {
-      throw new Error(resolveErrorMessage(json.msg) || `HTTP ${res.status}`);
+      throw new Error(resolveErrorMessage(json.msg, json.data) || `HTTP ${res.status}`);
     }
 
     if (json.data?.sessionId) {
