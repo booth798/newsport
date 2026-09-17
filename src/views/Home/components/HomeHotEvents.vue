@@ -96,14 +96,14 @@ function loadMoreHot() {
   loadHotFromMarketsList(hotPageNum.value + 1, true);
 }
 
-/** 将 /leagues/hot 转为 Tab：id 作 key，name 作 /markets/list 的 league 过滤值 */
+/** 将 /leagues/hot 转为 Tab：id 作 key，并以 leagueId 请求 /markets/list */
 function mapHotLeagueTabs(leagues) {
   return (leagues || []).map((l) => {
     // PC/H5 均直接展示接口名称，不自行拼接「赛事」
     const label = l.shortName || l.name;
     return {
       key: l.id,
-      query: (l.name || '').trim() || (l.shortName || '').trim(),
+      leagueId: l.id,
       labelKey: label,
       shortLabelKey: label,
       icon: l.logoUrl || iconEventsUrl,
@@ -128,11 +128,12 @@ const tabError = ref(false);
 async function loadLeagueTab(key, force = false) {
   if (!force && leagueMatchesCache.value[key]) return;
   const tab = dynamicLeagueTabs.value.find((item) => item.key === key);
-  if (!tab || !tab.query) return;
+  if (!tab || tab.leagueId == null || tab.leagueId === '') return;
   try {
     tabLoading.value = true;
     tabError.value = false;
-    const res = await fetchHomeLeagueMatches(tab.query);
+    // 按联赛 id 过滤，对齐 /markets/list?leagueId=
+    const res = await fetchHomeLeagueMatches(tab.leagueId);
     leagueMatchesCache.value = { ...leagueMatchesCache.value, [key]: res.data || [] };
   } catch {
     tabError.value = true;

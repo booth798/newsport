@@ -61,11 +61,11 @@ export const HOME_TAB_PAGE_SIZE = 20;
 
 /**
  * 首页联赛 Tab 的赛事列表
- * 对齐安卓首页联赛 Tab：请求 /markets/list?league=<联赛名>&pageSize=20，再按 onePerEvent 归并。
+ * 用 /leagues、/leagues/hot 返回的 id 作为 leagueId 过滤 /markets/list。
  */
-export async function fetchHomeLeagueMatches(leagueName, pageNum = 1) {
+export async function fetchHomeLeagueMatches(leagueId, pageNum = 1) {
   const res = await get('/markets/list', {
-    league: leagueName,
+    leagueId,
     pageNum,
     pageSize: HOME_TAB_PAGE_SIZE,
   });
