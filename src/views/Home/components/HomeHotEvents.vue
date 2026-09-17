@@ -98,13 +98,17 @@ function loadMoreHot() {
 
 /** 将 /leagues/hot 转为 Tab：id 作 key，name 作 /markets/list 的 league 过滤值 */
 function mapHotLeagueTabs(leagues) {
-  return (leagues || []).map((l) => ({
-    key: l.id,
-    query: (l.name || '').trim() || (l.shortName || '').trim(),
-    labelKey: `${l.shortName || l.name}赛事`,
-    shortLabelKey: l.shortName || l.name,
-    icon: l.logoUrl || iconEventsUrl,
-  }));
+  return (leagues || []).map((l) => {
+    // PC/H5 均直接展示接口名称，不自行拼接「赛事」
+    const label = l.shortName || l.name;
+    return {
+      key: l.id,
+      query: (l.name || '').trim() || (l.shortName || '').trim(),
+      labelKey: label,
+      shortLabelKey: label,
+      icon: l.logoUrl || iconEventsUrl,
+    };
+  });
 }
 
 const dynamicLeagueTabs = ref(mapHotLeagueTabs(props.hotLeagues));
