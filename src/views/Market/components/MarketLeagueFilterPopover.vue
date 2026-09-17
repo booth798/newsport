@@ -11,6 +11,7 @@ import { Circle, CircleCheckBig } from 'lucide-vue-next';
 import { fetchLeagueList, fetchMarketListCounts } from '@/api/match';
 import { useLeagueFilterStore } from '@/store/modules/leagueFilter';
 import leagueFilterBackgroundUrl from '@/assets/images/common/league_filter_popover_bg.png';
+import { LEAGUE_INDEX_ENTRIES, getLeagueGroupInitial } from '@/utils/leaguePinyin';
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -35,15 +36,7 @@ const bodyRef = ref(null);
 /** 长文案截断时的悬浮完整提示（fixed，避免被 overflow 裁切） */
 const hoverTip = ref(null);
 
-const INDEX_ENTRIES = ['☆', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''), '#'];
-const PINYIN_REFS = [
-  ['A', '啊'], ['B', '八'], ['C', '嚓'], ['D', '哒'],
-  ['E', '鹅'], ['F', '发'], ['G', '旮'], ['H', '哈'],
-  ['J', '击'], ['K', '咔'], ['L', '垃'], ['M', '妈'],
-  ['N', '拿'], ['O', '噢'], ['P', '啪'], ['Q', '七'],
-  ['R', '日'], ['S', '撒'], ['T', '他'], ['W', '挖'],
-  ['X', '夕'], ['Y', '压'], ['Z', '匝'],
-];
+const INDEX_ENTRIES = LEAGUE_INDEX_ENTRIES;
 
 function leagueDisplayName(league) {
   const name = (league.name || '').trim();
@@ -86,19 +79,6 @@ function onPillMouseEnter(event, league) {
   };
 }
 
-function getPinyinInitial(str) {
-  if (!str) return '#';
-  const ch = str.charAt(0);
-  if (/[a-zA-Z]/.test(ch)) return ch.toUpperCase();
-  if (!/[\u4e00-\u9fff]/.test(ch)) return '#';
-  for (let i = PINYIN_REFS.length - 1; i >= 0; i--) {
-    if (ch.localeCompare(PINYIN_REFS[i][1], 'zh-Hans-CN-u-co-pinyin') >= 0) {
-      return PINYIN_REFS[i][0];
-    }
-  }
-  return 'A';
-}
-
 const groupedLeagues = computed(() => {
   const groups = new Map();
   const hotList = allLeagues.value.filter((l) => l.hot);
@@ -115,7 +95,8 @@ const groupedLeagues = computed(() => {
 
   for (const league of sorted) {
     const name = league.shortName || league.name || '';
-    const initial = getPinyinInitial(name);
+    // 拼音首字母 A–Z；不再使用 # 兜底分组
+    const initial = getLeagueGroupInitial(name);
     if (!groups.has(initial)) groups.set(initial, []);
     groups.get(initial).push(league);
   }
