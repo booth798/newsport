@@ -8,7 +8,7 @@ import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import { Circle, CircleCheckBig } from 'lucide-vue-next';
 
-import { fetchLeagueList, fetchMarketListCounts } from '@/api/match';
+import { fetchLeagueList } from '@/api/match';
 import { useLeagueFilterStore } from '@/store/modules/leagueFilter';
 import leagueFilterBackgroundUrl from '@/assets/images/common/league_filter_popover_bg.png';
 import { LEAGUE_INDEX_ENTRIES, getLeagueGroupInitial } from '@/utils/leaguePinyin';
@@ -28,9 +28,6 @@ const error = ref(false);
 const allLeagues = ref([]);
 const selectedIds = ref(new Set());
 const isSelectAll = ref(false);
-const previewCount = ref(0);
-const previewLoading = ref(false);
-let previewTimer = null;
 const rootRef = ref(null);
 const bodyRef = ref(null);
 /** 长文案截断时的悬浮完整提示（fixed，避免被 overflow 裁切） */
@@ -115,8 +112,11 @@ const groupedLeagues = computed(() => {
   return result;
 });
 
+/** 本地勾选数量（对齐 H5「已选」；不走场次统计接口） */
+const selectedCount = computed(() => selectedIds.value.size);
+
 const confirmLabel = computed(() => {
-  const n = previewCount.value;
+  const n = selectedCount.value;
   return n > 0 ? `${t('确定')}(${n})` : t('确定');
 });
 
@@ -130,12 +130,12 @@ function cancel() {
 }
 
 function toggleLeague(id) {
+  // 对齐 H5：勾选仅改本地状态，不请求场次统计接口
   const s = new Set(selectedIds.value);
   if (s.has(id)) s.delete(id);
   else s.add(id);
   selectedIds.value = s;
   isSelectAll.value = s.size > 0 && s.size === allLeagues.value.length;
-  schedulePreviewCount();
 }
 
 function onSelectAll() {
@@ -143,12 +143,10 @@ function onSelectAll() {
   if (isSelectAll.value) {
     selectedIds.value = new Set();
     isSelectAll.value = false;
-    schedulePreviewCount();
     return;
   }
   selectedIds.value = new Set(allLeagues.value.map((l) => l.id));
   isSelectAll.value = true;
-  schedulePreviewCount();
 }
 
 function onSelectCustom() {
@@ -157,10 +155,10 @@ function onSelectCustom() {
     selectedIds.value = new Set();
   }
   isSelectAll.value = false;
-  schedulePreviewCount();
 }
 
 function finish() {
+  // 对齐 H5：点确定才写入 store，市场列表再按筛选结果请求
   const names = isSelectAll.value
     ? []
     : allLeagues.value
@@ -198,52 +196,11 @@ async function loadLeagues() {
     const res = await fetchLeagueList();
     allLeagues.value = res.data || [];
     restoreFromStore();
-    await refreshPreviewCount();
   } catch {
     error.value = true;
   } finally {
     loading.value = false;
   }
-}
-
-/** 预估当前勾选对应的赛事场次，用于「确定(N)」展示（对齐设计稿） */
-async function refreshPreviewCount() {
-  previewLoading.value = true;
-  try {
-    if (isSelectAll.value) {
-      const res = await fetchMarketListCounts({ period: 'FT' }).catch(() => null);
-      const d = res?.data;
-      previewCount.value = Number(d?.all ?? d?.total ?? 0) || 0;
-      return;
-    }
-    // 全部不选：场次为 0
-    if (selectedIds.value.size === 0) {
-      previewCount.value = 0;
-      return;
-    }
-    const names = allLeagues.value
-      .filter((l) => selectedIds.value.has(l.id))
-      .map(leagueDisplayName);
-    const results = await Promise.all(
-      names.map((lg) =>
-        fetchMarketListCounts({ league: lg, period: 'FT' }).catch(() => null),
-      ),
-    );
-    previewCount.value = results.reduce((acc, r) => {
-      const d = r?.data;
-      if (!d) return acc;
-      return acc + Number(d.all ?? d.total ?? 0);
-    }, 0);
-  } finally {
-    previewLoading.value = false;
-  }
-}
-
-function schedulePreviewCount() {
-  if (previewTimer) clearTimeout(previewTimer);
-  previewTimer = setTimeout(() => {
-    refreshPreviewCount();
-  }, 280);
 }
 
 function onDocPointerDown(e) {
@@ -270,7 +227,6 @@ watch(
 
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', onDocPointerDown, true);
-  if (previewTimer) clearTimeout(previewTimer);
   clearHoverTip();
 });
 </script>
@@ -302,6 +258,10 @@ onBeforeUnmount(() => {
         class="league-filter-pop__body"
         @scroll="clearHoverTip"
       >
+        <!-- 对齐 H5：展示本地已勾选联赛数，不请求场次统计 -->
+        <p v-if="selectedCount > 0" class="league-filter-pop__hint">
+          {{ t('已选') }}（{{ selectedCount }}）
+        </p>
         <section
           v-for="group in groupedLeagues"
           :key="group.key"
@@ -390,7 +350,6 @@ onBeforeUnmount(() => {
           <button
             type="button"
             class="league-filter-pop__confirm"
-            :disabled="previewLoading"
             @click="finish"
           >
             {{ confirmLabel }}
@@ -427,9 +386,15 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  width: 416px;
-  height: 530px;
-  padding: 42px 18px 58px;
+  /*
+   * 背景图设计稿比例 416×530（资源 1248×1590 @3x）。
+   * 按约 1.2 倍等比放大，既略加宽又避免 background-size 拉伸变形导致内容左右不齐。
+   */
+  width: 500px;
+  height: 637px;
+  max-width: min(500px, calc(100vw - 48px));
+  max-height: min(637px, calc(100vh - 100px));
+  padding: 48px 22px 64px;
   background-position: center;
   background-repeat: no-repeat;
   background-size: 100% 100%;
@@ -477,6 +442,13 @@ onBeforeUnmount(() => {
   }
 }
 
+.league-filter-pop__hint {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #1c7bff;
+}
+
 .league-filter-pop__group + .league-filter-pop__group {
   margin-top: 20px;
 }
@@ -492,7 +464,7 @@ onBeforeUnmount(() => {
 .league-filter-pop__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  gap: 8px 10px;
 }
 
 .league-filter-pop__pill {
@@ -544,9 +516,11 @@ onBeforeUnmount(() => {
 
 .league-filter-pop__pill-label {
   min-width: 0;
+  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-align: left;
 }
 
 .league-filter-pop__footer {
