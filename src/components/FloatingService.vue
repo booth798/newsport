@@ -1,29 +1,30 @@
 <script setup>
-import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import iconDownloadAppActive from '@/assets/images/float/icon-download-app-active.svg';
-import iconDownloadAppDefault from '@/assets/images/float/icon-download-app-default.svg';
-import iconDownloadAppHover from '@/assets/images/float/icon-download-app-hover.svg';
+// 下载 APP 入口暂隐藏，保留资源与逻辑便于恢复
+// import { ref } from 'vue';
+// import iconDownloadAppActive from '@/assets/images/float/icon-download-app-active.svg';
+// import iconDownloadAppDefault from '@/assets/images/float/icon-download-app-default.svg';
+// import iconDownloadAppHover from '@/assets/images/float/icon-download-app-hover.svg';
+// import AppDownloadModal from '@/components/AppDownloadModal.vue';
 import iconServiceActive from '@/assets/images/float/icon-service-active.svg';
 import iconServiceDefault from '@/assets/images/float/icon-service-default.svg';
 import iconServiceHover from '@/assets/images/float/icon-service-hover.svg';
 import toolbarBg from '@/assets/images/float/toolbar-bg.svg';
-import AppDownloadModal from '@/components/AppDownloadModal.vue';
 import { useAppStore } from '@/store/modules/app';
 
 const { t } = useI18n();
 const appStore = useAppStore();
-/** PC 下载 APP 二维码弹窗 */
-const downloadModalOpen = ref(false);
+// /** PC 下载 APP 二维码弹窗 */
+// const downloadModalOpen = ref(false);
 
 function handleServiceOpen() {
   appStore.openCustomerServiceConfirm();
 }
 
-function handleDownloadApp() {
-  downloadModalOpen.value = true;
-}
+// function handleDownloadApp() {
+//   downloadModalOpen.value = true;
+// }
 </script>
 
 <template>
@@ -31,6 +32,7 @@ function handleDownloadApp() {
     <div class="floating-service__panel">
       <img class="floating-service__bg" :src="toolbarBg" alt="" draggable="false" />
       <div class="floating-service__actions">
+        <!-- 下载 APP 悬浮入口暂隐藏
         <button
           type="button"
           class="floating-service__btn"
@@ -59,6 +61,7 @@ function handleDownloadApp() {
           </span>
         </button>
         <div class="floating-service__divider" role="presentation" />
+        -->
         <button
           type="button"
           class="floating-service__btn"
@@ -90,7 +93,7 @@ function handleDownloadApp() {
       </div>
     </div>
 
-    <AppDownloadModal v-model="downloadModalOpen" />
+    <!-- <AppDownloadModal v-model="downloadModalOpen" /> -->
   </div>
 </template>
 
