@@ -4,8 +4,9 @@
  * - 顶栏：返回 + 标题 + 搜索（进搜索页 mode=match&phase=finished）
  * - 日期：复用 MonthSelector includeDay（对齐 DateSelectDialog）
  * - 卡片：联赛左、「完场」右；比分条内嵌；主客队分均为蓝色
+ * - 滚动触底加载下一页（PC / H5 共用）
  */
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
@@ -27,9 +28,16 @@ const { isMobile } = storeToRefs(appStore);
 
 const sideNavItems = [{ key: 'results', label: t('赛事结果') }];
 
+const PAGE_SIZE = 20;
 const matches = ref([]);
 const loading = ref(true);
+const loadingMore = ref(false);
 const error = ref(false);
+const pageNum = ref(1);
+const hasMore = ref(false);
+/** 列表底部哨兵：进入视口时触发下一页 */
+const loadMoreSentinelRef = ref(null);
+let loadMoreObserver = null;
 
 const beijingNow = ref('');
 let clockTimer = null;
@@ -87,23 +95,98 @@ function updateBeijingClock() {
   beijingNow.value = `${pick('year')}-${pick('month')}-${pick('day')} ${pick('hour')}:${pick('minute')}:${pick('second')}`;
 }
 
-async function loadMatches() {
-  try {
-    error.value = false;
+/** 依据分页元信息判断是否还有下一页 */
+function computeHasMore(page, requestedPage, recordsLen) {
+  if (!page) return recordsLen >= PAGE_SIZE;
+  const total = page.total;
+  const pages = page.pages;
+  const current = page.current || requestedPage;
+  const size = page.size || PAGE_SIZE;
+  return pages != null
+    ? current < pages
+    : total != null
+      ? current * size < total
+      : recordsLen >= PAGE_SIZE;
+}
+
+/**
+ * 拉取已完场赛事分页。
+ * @param {number} page 页码
+ * @param {boolean} append 是否追加
+ */
+async function loadPage(page, append = false) {
+  if (append) {
+    if (loadingMore.value || !hasMore.value) return;
+    loadingMore.value = true;
+  } else {
     loading.value = true;
+    error.value = false;
+  }
+  try {
     const res = await fetchMatchList({
       phase: 'finished',
       date: selectedDate.value,
-      pageSize: 50,
+      pageNum: page,
+      pageSize: PAGE_SIZE,
     });
-    matches.value = res.data?.records || [];
+    const records = res.data?.records || [];
+    matches.value = append ? [...matches.value, ...records] : records;
+    pageNum.value = page;
+    hasMore.value = computeHasMore(res.data, page, records.length);
+    error.value = false;
   } catch {
-    error.value = true;
-    matches.value = [];
+    if (!append) {
+      error.value = true;
+      matches.value = [];
+      hasMore.value = false;
+    }
   } finally {
     loading.value = false;
+    loadingMore.value = false;
   }
 }
+
+function loadMatches() {
+  return loadPage(1, false);
+}
+
+function loadMore() {
+  if (loading.value || loadingMore.value || !hasMore.value) return;
+  return loadPage(pageNum.value + 1, true);
+}
+
+function teardownLoadMoreObserver() {
+  if (loadMoreObserver) {
+    loadMoreObserver.disconnect();
+    loadMoreObserver = null;
+  }
+}
+
+/** 观察列表底部哨兵，进入视口即加载下一页（PC / H5） */
+async function setupLoadMoreObserver() {
+  teardownLoadMoreObserver();
+  await nextTick();
+  const el = loadMoreSentinelRef.value;
+  if (!el || typeof IntersectionObserver === 'undefined') return;
+  loadMoreObserver = new IntersectionObserver(
+    (entries) => {
+      if (entries.some((e) => e.isIntersecting)) loadMore();
+    },
+    { root: null, rootMargin: '120px 0px', threshold: 0 },
+  );
+  loadMoreObserver.observe(el);
+}
+
+watch(
+  () => [hasMore.value, resultMatches.value.length, loading.value],
+  () => {
+    if (!loading.value && hasMore.value && resultMatches.value.length) {
+      setupLoadMoreObserver();
+    } else {
+      teardownLoadMoreObserver();
+    }
+  },
+);
 
 function goBack() {
   if (window.history.length > 1) router.back();
@@ -118,6 +201,7 @@ function goSearch() {
   });
 }
 
+// 切换日期时从第一页重新拉取
 watch(selectedDate, () => {
   loadMatches();
 });
@@ -130,6 +214,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   if (clockTimer) window.clearInterval(clockTimer);
+  teardownLoadMoreObserver();
 });
 </script>
 
@@ -168,73 +253,86 @@ onBeforeUnmount(() => {
 
           <EmptyState v-else-if="!resultMatches.length" :text="t('暂无相关赛事')" />
 
-          <div v-else class="result-grid">
-            <article v-for="m in resultMatches" :key="m.id" class="result-card">
-              <div class="result-card__head">
-                <div class="result-card__league">
-                  <img
-                    v-if="m.leagueIcon"
-                    class="result-card__league-logo"
-                    :src="m.leagueIcon"
-                    alt=""
-                    width="18"
-                    height="18"
-                    @error="(e) => (e.target.style.display = 'none')"
-                  />
-                  <span class="result-card__league-name">{{ m.league }}</span>
-                </div>
-                <!-- 截图：右侧「完场」徽标 -->
-                <span class="result-card__badge">{{ t('完场') }}</span>
-              </div>
-
-              <div class="result-card__arena">
-                <img class="result-card__arena-bg" :src="matchScoreArenaBgUrl" alt="" aria-hidden="true" />
-                <div class="result-card__arena-inner">
-                  <div class="result-card__team result-card__team--home">
-                    <!-- 与首页一致：队名旁贴主/客角标 -->
-                    <span class="result-card__team-name">
-                      <span class="result-card__team-name-text">{{ m.homeTeam }}</span>
-                      <span class="result-card__side-tag result-card__side-tag--home">{{ t('主') }}</span>
-                    </span>
-                    <span class="result-card__logo-wrap">
-                      <img
-                        v-if="m.homeLogo"
-                        class="result-card__team-logo"
-                        :src="m.homeLogo"
-                        alt=""
-                        @error="(e) => (e.target.style.display = 'none')"
-                      />
-                    </span>
+          <template v-else>
+            <div class="result-grid">
+              <article v-for="m in resultMatches" :key="m.id" class="result-card">
+                <div class="result-card__head">
+                  <div class="result-card__league">
+                    <img
+                      v-if="m.leagueIcon"
+                      class="result-card__league-logo"
+                      :src="m.leagueIcon"
+                      alt=""
+                      width="18"
+                      height="18"
+                      @error="(e) => (e.target.style.display = 'none')"
+                    />
+                    <span class="result-card__league-name">{{ m.league }}</span>
                   </div>
+                  <!-- 截图：右侧「完场」徽标 -->
+                  <span class="result-card__badge">{{ t('完场') }}</span>
+                </div>
 
-                  <div class="result-card__center">
-                    <div class="result-card__score">
-                      <span>{{ m.homeScore }}</span>
-                      <span class="result-card__score-sep">:</span>
-                      <span>{{ m.awayScore }}</span>
+                <div class="result-card__arena">
+                  <img class="result-card__arena-bg" :src="matchScoreArenaBgUrl" alt="" aria-hidden="true" />
+                  <div class="result-card__arena-inner">
+                    <div class="result-card__team result-card__team--home">
+                      <!-- 与首页一致：队名旁贴主/客角标 -->
+                      <span class="result-card__team-name">
+                        <span class="result-card__team-name-text">{{ m.homeTeam }}</span>
+                        <span class="result-card__side-tag result-card__side-tag--home">{{ t('主') }}</span>
+                      </span>
+                      <span class="result-card__logo-wrap">
+                        <img
+                          v-if="m.homeLogo"
+                          class="result-card__team-logo"
+                          :src="m.homeLogo"
+                          alt=""
+                          @error="(e) => (e.target.style.display = 'none')"
+                        />
+                      </span>
                     </div>
-                    <span class="result-card__time">{{ m.time }}</span>
-                  </div>
 
-                  <div class="result-card__team result-card__team--away">
-                    <span class="result-card__logo-wrap">
-                      <img
-                        v-if="m.awayLogo"
-                        class="result-card__team-logo"
-                        :src="m.awayLogo"
-                        alt=""
-                        @error="(e) => (e.target.style.display = 'none')"
-                      />
-                    </span>
-                    <span class="result-card__team-name">
-                      <span class="result-card__team-name-text">{{ m.awayTeam }}</span>
-                      <span class="result-card__side-tag result-card__side-tag--away">{{ t('客') }}</span>
-                    </span>
+                    <div class="result-card__center">
+                      <div class="result-card__score">
+                        <span>{{ m.homeScore }}</span>
+                        <span class="result-card__score-sep">:</span>
+                        <span>{{ m.awayScore }}</span>
+                      </div>
+                      <span class="result-card__time">{{ m.time }}</span>
+                    </div>
+
+                    <div class="result-card__team result-card__team--away">
+                      <span class="result-card__logo-wrap">
+                        <img
+                          v-if="m.awayLogo"
+                          class="result-card__team-logo"
+                          :src="m.awayLogo"
+                          alt=""
+                          @error="(e) => (e.target.style.display = 'none')"
+                        />
+                      </span>
+                      <span class="result-card__team-name">
+                        <span class="result-card__team-name-text">{{ m.awayTeam }}</span>
+                        <span class="result-card__side-tag result-card__side-tag--away">{{ t('客') }}</span>
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </article>
-          </div>
+              </article>
+            </div>
+
+            <!-- 滚动加载哨兵 + 加载中提示（PC / H5） -->
+            <div
+              v-if="hasMore"
+              ref="loadMoreSentinelRef"
+              class="result-load-more"
+              aria-hidden="true"
+            >
+              <div v-if="loadingMore" class="result-spinner" />
+              <span v-if="loadingMore">{{ t('加载中') }}</span>
+            </div>
+          </template>
         </div>
       </main>
     </div>
@@ -623,5 +721,17 @@ onBeforeUnmount(() => {
   color: #1c7bff;
   font-size: 14px;
   cursor: pointer;
+}
+
+.result-load-more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  margin-top: 12px;
+  color: #7b92ad;
+  font-size: 13px;
 }
 </style>
