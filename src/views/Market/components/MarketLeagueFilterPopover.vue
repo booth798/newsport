@@ -3,7 +3,7 @@
  * PC 市场页联赛筛选弹层（对齐 Figma 下拉面板）。
  * 选择逻辑与 H5 `/market/filter` 一致，写入 leagueFilter store；仅用于桌面端。
  */
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import { Circle, CircleCheckBig } from 'lucide-vue-next';
@@ -212,21 +212,49 @@ function onDocPointerDown(e) {
   cancel();
 }
 
+/**
+ * 按视口剩余高度收缩弹层，避免小分辨率底部确定/取消被裁切。
+ * 首选高度约 480，且不超过「弹层顶边 → 视口底边」可用空间。
+ */
+function fitPanelToViewport() {
+  const el = rootRef.value;
+  if (!el) return;
+  const top = el.getBoundingClientRect().top;
+  const bottomGap = 24;
+  const available = Math.floor(window.innerHeight - top - bottomGap);
+  const preferred = 480;
+  const minH = 320;
+  const next = Math.max(minH, Math.min(preferred, available));
+  el.style.height = `${next}px`;
+  el.style.maxHeight = `${Math.max(minH, available)}px`;
+}
+
+function onViewportResize() {
+  if (!props.modelValue) return;
+  fitPanelToViewport();
+}
+
 watch(
   () => props.modelValue,
-  (open) => {
+  async (open) => {
     if (open) {
       loadLeagues();
       document.addEventListener('pointerdown', onDocPointerDown, true);
+      window.addEventListener('resize', onViewportResize);
+      // 等 v-show 渲染后再量测顶边位置
+      await nextTick();
+      fitPanelToViewport();
     } else {
       clearHoverTip();
       document.removeEventListener('pointerdown', onDocPointerDown, true);
+      window.removeEventListener('resize', onViewportResize);
     }
   },
 );
 
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', onDocPointerDown, true);
+  window.removeEventListener('resize', onViewportResize);
   clearHoverTip();
 });
 </script>
@@ -388,12 +416,12 @@ onBeforeUnmount(() => {
   box-sizing: border-box;
   /*
    * 背景图设计稿比例 416×530（资源 1248×1590 @3x）。
-   * 按约 1.2 倍等比放大，既略加宽又避免 background-size 拉伸变形导致内容左右不齐。
+   * 默认高度压到约 480，并靠 JS 按视口剩余空间再收缩，避免低分辨率底部按钮被裁切。
    */
   width: 500px;
-  height: 637px;
+  height: 480px;
   max-width: min(500px, calc(100vw - 48px));
-  max-height: min(637px, calc(100vh - 100px));
+  max-height: min(480px, calc(100dvh - 200px));
   padding: 48px 22px 64px;
   background-position: center;
   background-repeat: no-repeat;
