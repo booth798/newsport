@@ -91,9 +91,11 @@ export function clearToken() {
 // ─── ApiError ───
 
 export class ApiError extends Error {
-  constructor(code, msg, data) {
+  constructor(code, msg, data, msgCode = '') {
     super(msg || `API Error ${code}`);
     this.code = code;
+    // 保留后端原始业务错误码，避免多语言转换后无法进行稳定的业务判断。
+    this.msgCode = msgCode;
     this.data = data;
   }
 }
@@ -168,7 +170,7 @@ async function handleResponse(res, encrypted = false) {
     } catch { /* ignore */ }
     if (isForceLogoutCode(bodyMsg)) {
       checkForceLogout(bodyMsg);
-      throw new ApiError(res.status, resolveErrorMessage(bodyMsg, bodyData), bodyData);
+      throw new ApiError(res.status, resolveErrorMessage(bodyMsg, bodyData), bodyData, bodyMsg);
     }
     const ok = await tryRefreshToken();
     if (!ok) {
@@ -189,7 +191,7 @@ async function handleResponse(res, encrypted = false) {
   if (json.code === 401) {
     if (isForceLogoutCode(json.msg)) {
       checkForceLogout(json.msg);
-      throw new ApiError(json.code, resolveErrorMessage(json.msg, json.data), json.data);
+      throw new ApiError(json.code, resolveErrorMessage(json.msg, json.data), json.data, json.msg);
     }
     const ok = await tryRefreshToken();
     if (!ok) {
@@ -202,16 +204,20 @@ async function handleResponse(res, encrypted = false) {
   if (encrypted && json.iv && json.d) {
     const { decryptSessionResponse } = await import('./encrypt');
     const decrypted = await decryptSessionResponse(json);
+    // 仅开发环境输出完整明文响应，便于核对后端加密前的数据格式。
+    if (__DEV__) {
+      console.log('%c解密响应', 'font-weight:bold;color:#6a1b9a', decrypted);
+    }
     if (decrypted.code !== 200 && decrypted.code !== 0) {
       checkForceLogout(decrypted.msg);
-      throw new ApiError(decrypted.code, resolveErrorMessage(decrypted.msg, decrypted.data), decrypted.data);
+      throw new ApiError(decrypted.code, resolveErrorMessage(decrypted.msg, decrypted.data), decrypted.data, decrypted.msg);
     }
     return decrypted;
   }
 
   if (json.code !== 200 && json.code !== 0) {
     checkForceLogout(json.msg);
-    throw new ApiError(json.code, resolveErrorMessage(json.msg, json.data), json.data);
+    throw new ApiError(json.code, resolveErrorMessage(json.msg, json.data), json.data, json.msg);
   }
   return json;
 }
@@ -413,7 +419,7 @@ export async function request(url, options = {}, _retried = false) {
   try {
     const res = await fetch(fullUrl, fetchOpts);
     const result = await handleResponse(res, usedEncryption);
-
+    
     if (result === null && !_retried) {
       logResponse(null, { message: '401 → 自动续期重试' });
       // await 保证 finally 在重试结束后再 hide，整段续期只算一轮 loading
@@ -425,7 +431,6 @@ export async function request(url, options = {}, _retried = false) {
       logResponse(null, err);
       throw err;
     }
-
     logResponse(result);
     emitEvent('mysport:network-recover');
     return result;

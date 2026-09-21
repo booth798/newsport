@@ -491,10 +491,9 @@ async function confirmBuy() {
         expectedYield: latestYield,
       });
     } catch (firstErr) {
-      const errCode = firstErr?.code || firstErr?.response?.data?.code;
-      const errMsg = String(firstErr?.message || '');
-      const yieldChanged = errCode === 'YIELD_CHANGED' || errMsg.includes('YIELD_CHANGED');
-      if (!yieldChanged) throw firstErr;
+      // 优先使用请求层保留的原始业务错误码，兼容未经过统一请求层的异常结构。
+      const businessErrorCode = firstErr?.msgCode || firstErr?.response?.data?.msg;
+      if (businessErrorCode !== 'YIELD_CHANGED') throw firstErr;
       // 后端已返回当前最新倍率，无需再次请求收益率接口。
       latestYield = Number(firstErr?.data?.currentYield);
       if (!Number.isFinite(latestYield)) throw firstErr;
