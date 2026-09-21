@@ -170,7 +170,7 @@ export function useCustomerService() {
       return {
         identityKey: resolveGuestKey(),
         account: 'guest',
-        userName: '访客',
+        userName: 'guest',
         avatar: '',
       };
     }
@@ -256,6 +256,11 @@ export function useCustomerService() {
       visitorToken = await generateVisitorToken(identity.identityKey);
       if (gen !== generation) return;
 
+      // 访客昵称追加 token 后四位，便于客服区分不同访客
+      if (identity.identityKey.startsWith('guest:')) {
+        identity.userName = `访客${visitorToken.slice(-4)}`;
+      }
+      
       if (__DEV__) {
         console.log('[KF] CONNECT 身份', {
           account: identity.account,
