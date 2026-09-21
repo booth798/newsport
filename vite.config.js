@@ -16,6 +16,7 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'https://uniballcloud.com',
+        // target: 'https://h5.fqphysical.com',
         changeOrigin: true,
         secure: true,
         cookieDomainRewrite: { '*': '' },
