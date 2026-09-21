@@ -170,7 +170,7 @@ export function useCustomerService() {
       return {
         identityKey: resolveGuestKey(),
         account: 'guest',
-        userName: 'guest',
+        userName: '访客',
         avatar: '',
       };
     }
