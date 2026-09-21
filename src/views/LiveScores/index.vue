@@ -4,9 +4,10 @@
  * - 顶部返回栏 + 北京时间
  * - 左侧栏：Logo + 「即时比分」
  * - 右侧：进行中赛事两列卡片（H5 单列）
- * 数据源：/matches 列表，取进行中赛事展示实时比分。
+ * - 滚动触底加载下一页（PC / H5 共用）
+ * 数据源：/matches 列表，phase=live。
  */
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
@@ -25,9 +26,16 @@ const { isMobile } = storeToRefs(appStore);
 
 const sideNavItems = [{ key: 'live', label: t('即时比分') }];
 
+const PAGE_SIZE = 20;
 const matches = ref([]);
 const loading = ref(true);
+const loadingMore = ref(false);
 const error = ref(false);
+const pageNum = ref(1);
+const hasMore = ref(false);
+/** 列表底部哨兵：进入视口时触发下一页 */
+const loadMoreSentinelRef = ref(null);
+let loadMoreObserver = null;
 
 const beijingNow = ref('');
 let clockTimer = null;
@@ -94,20 +102,126 @@ function updateBeijingClock() {
   beijingNow.value = `${pick('year')}-${pick('month')}-${pick('day')} ${pick('hour')}:${pick('minute')}:${pick('second')}`;
 }
 
-async function loadMatches() {
-  try {
+/** 依据分页元信息判断是否还有下一页 */
+function computeHasMore(page, requestedPage, recordsLen) {
+  if (!page) return recordsLen >= PAGE_SIZE;
+  const total = page.total;
+  const pages = page.pages;
+  const current = page.current || requestedPage;
+  const size = page.size || PAGE_SIZE;
+  return pages != null
+    ? current < pages
+    : total != null
+      ? current * size < total
+      : recordsLen >= PAGE_SIZE;
+}
+
+/**
+ * 拉取即时比分页。
+ * @param {number} page 页码
+ * @param {boolean} append 是否追加到现有列表
+ */
+async function loadPage(page, append = false) {
+  if (append) {
+    if (loadingMore.value || !hasMore.value) return;
+    loadingMore.value = true;
+  } else {
+    loading.value = true;
     error.value = false;
-    if (!matches.value.length) loading.value = true;
-    // 使用服务端 phase=live 过滤进行中赛事（对齐安卓端 LiveScoreActivity）。
-    const res = await fetchMatchList({ phase: 'live', pageSize: 50 });
-    matches.value = res.data?.records || [];
+  }
+  try {
+    const res = await fetchMatchList({
+      phase: 'live',
+      pageNum: page,
+      pageSize: PAGE_SIZE,
+    });
+    const records = res.data?.records || [];
+    matches.value = append ? [...matches.value, ...records] : records;
+    pageNum.value = page;
+    hasMore.value = computeHasMore(res.data, page, records.length);
+    error.value = false;
   } catch {
-    error.value = true;
-    matches.value = [];
+    if (!append) {
+      error.value = true;
+      matches.value = [];
+      hasMore.value = false;
+    }
   } finally {
     loading.value = false;
+    loadingMore.value = false;
   }
 }
+
+function loadMatches() {
+  return loadPage(1, false);
+}
+
+function loadMore() {
+  if (loading.value || loadingMore.value || !hasMore.value) return;
+  return loadPage(pageNum.value + 1, true);
+}
+
+/**
+ * 定时软刷新：按已加载页数一次性回拉，保留当前列表长度并更新比分。
+ */
+async function softRefresh() {
+  if (loading.value || loadingMore.value) return;
+  try {
+    const size = Math.max(PAGE_SIZE * pageNum.value, matches.value.length, PAGE_SIZE);
+    const res = await fetchMatchList({
+      phase: 'live',
+      pageNum: 1,
+      pageSize: size,
+    });
+    const records = res.data?.records || [];
+    matches.value = records;
+    // 用「虚拟当前页」估算是否还有更多：已加载量 / PAGE_SIZE
+    const virtualPage = Math.max(1, Math.ceil(records.length / PAGE_SIZE) || 1);
+    pageNum.value = virtualPage;
+    if (res.data?.total != null) {
+      hasMore.value = records.length < Number(res.data.total);
+    } else if (res.data?.pages != null) {
+      hasMore.value = virtualPage < Number(res.data.pages);
+    } else {
+      hasMore.value = records.length >= size && records.length >= PAGE_SIZE;
+    }
+  } catch {
+    // 定时刷新失败不打断现有列表
+  }
+}
+
+function teardownLoadMoreObserver() {
+  if (loadMoreObserver) {
+    loadMoreObserver.disconnect();
+    loadMoreObserver = null;
+  }
+}
+
+/** 观察列表底部哨兵，进入视口即加载下一页（PC / H5 窗口滚动均适用） */
+async function setupLoadMoreObserver() {
+  teardownLoadMoreObserver();
+  await nextTick();
+  const el = loadMoreSentinelRef.value;
+  if (!el || typeof IntersectionObserver === 'undefined') return;
+  loadMoreObserver = new IntersectionObserver(
+    (entries) => {
+      if (entries.some((e) => e.isIntersecting)) loadMore();
+    },
+    { root: null, rootMargin: '120px 0px', threshold: 0 },
+  );
+  loadMoreObserver.observe(el);
+}
+
+watch(
+  () => [hasMore.value, liveMatches.value.length, loading.value],
+  () => {
+    if (!loading.value && hasMore.value && liveMatches.value.length) {
+      setupLoadMoreObserver();
+    } else {
+      teardownLoadMoreObserver();
+    }
+  },
+);
 
 function goBack() {
   if (window.history.length > 1) router.back();
@@ -118,12 +232,13 @@ onMounted(() => {
   updateBeijingClock();
   clockTimer = window.setInterval(updateBeijingClock, 1000);
   loadMatches();
-  refreshTimer = window.setInterval(loadMatches, 30000);
+  refreshTimer = window.setInterval(softRefresh, 30000);
 });
 
 onBeforeUnmount(() => {
   if (clockTimer) window.clearInterval(clockTimer);
   if (refreshTimer) window.clearInterval(refreshTimer);
+  teardownLoadMoreObserver();
 });
 </script>
 
@@ -160,49 +275,62 @@ onBeforeUnmount(() => {
         <EmptyState v-else-if="!liveMatches.length" :text="t('暂无相关赛事')" />
 
         <!-- 卡片列表 -->
-        <div v-else class="live-grid">
-          <article v-for="m in liveMatches" :key="m.id" class="live-card">
-            <div class="live-card__top">
-              <span class="live-card__league">
-                <svg class="live-card__gear" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <path d="M8 10a2 2 0 100-4 2 2 0 000 4z" stroke="#7b92ad" stroke-width="1.2"/>
-                  <path d="M8 1.5l1 1.6 1.9-.4.4 1.9 1.6 1-1 .9 1 .9-1.6 1-.4 1.9-1.9-.4-1 1.6-1-1.6-1.9.4-.4-1.9-1.6-1 1-.9-1-.9 1.6-1 .4-1.9 1.9.4 1-1.6z" stroke="#7b92ad" stroke-width="1" stroke-linejoin="round"/>
-                </svg>
-                <img v-if="m.leagueIcon" class="live-card__league-logo" :src="m.leagueIcon" alt="" width="18" height="18" @error="(e) => e.target.style.display='none'" />
-                <span class="live-card__league-name">{{ m.league }}</span>
-              </span>
-              <span class="live-card__badge">{{ m.badge }}</span>
-            </div>
-
-            <div class="live-card__body">
-              <div class="live-card__team live-card__team--home">
-                <!-- 与首页一致：队名旁贴主/客角标 -->
-                <span class="live-card__team-name">
-                  <span class="live-card__team-name-text">{{ m.homeTeam }}</span>
-                  <span class="live-card__side-tag live-card__side-tag--home">{{ t('主') }}</span>
+        <template v-else>
+          <div class="live-grid">
+            <article v-for="m in liveMatches" :key="m.id" class="live-card">
+              <div class="live-card__top">
+                <span class="live-card__league">
+                  <svg class="live-card__gear" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M8 10a2 2 0 100-4 2 2 0 000 4z" stroke="#7b92ad" stroke-width="1.2"/>
+                    <path d="M8 1.5l1 1.6 1.9-.4.4 1.9 1.6 1-1 .9 1 .9-1.6 1-.4 1.9-1.9-.4-1 1.6-1-1.6-1.9.4-.4-1.9-1.6-1 1-.9-1-.9 1.6-1 .4-1.9 1.9.4 1-1.6z" stroke="#7b92ad" stroke-width="1" stroke-linejoin="round"/>
+                  </svg>
+                  <img v-if="m.leagueIcon" class="live-card__league-logo" :src="m.leagueIcon" alt="" width="18" height="18" @error="(e) => e.target.style.display='none'" />
+                  <span class="live-card__league-name">{{ m.league }}</span>
                 </span>
-                <img v-if="m.homeLogo" class="live-card__team-logo" :src="m.homeLogo" alt="" width="28" height="28" @error="(e) => e.target.style.display='none'" />
+                <span class="live-card__badge">{{ m.badge }}</span>
               </div>
 
-              <div class="live-card__center">
-                <div class="live-card__score">
-                  <span class="live-card__score-home">{{ m.homeScore }}</span>
-                  <span class="live-card__score-sep">:</span>
-                  <span class="live-card__score-away">{{ m.awayScore }}</span>
+              <div class="live-card__body">
+                <div class="live-card__team live-card__team--home">
+                  <!-- 与首页一致：队名旁贴主/客角标 -->
+                  <span class="live-card__team-name">
+                    <span class="live-card__team-name-text">{{ m.homeTeam }}</span>
+                    <span class="live-card__side-tag live-card__side-tag--home">{{ t('主') }}</span>
+                  </span>
+                  <img v-if="m.homeLogo" class="live-card__team-logo" :src="m.homeLogo" alt="" width="28" height="28" @error="(e) => e.target.style.display='none'" />
                 </div>
-                <span class="live-card__time">{{ m.time }}</span>
-              </div>
 
-              <div class="live-card__team live-card__team--away">
-                <img v-if="m.awayLogo" class="live-card__team-logo" :src="m.awayLogo" alt="" width="28" height="28" @error="(e) => e.target.style.display='none'" />
-                <span class="live-card__team-name">
-                  <span class="live-card__team-name-text">{{ m.awayTeam }}</span>
-                  <span class="live-card__side-tag live-card__side-tag--away">{{ t('客') }}</span>
-                </span>
+                <div class="live-card__center">
+                  <div class="live-card__score">
+                    <span class="live-card__score-home">{{ m.homeScore }}</span>
+                    <span class="live-card__score-sep">:</span>
+                    <span class="live-card__score-away">{{ m.awayScore }}</span>
+                  </div>
+                  <span class="live-card__time">{{ m.time }}</span>
+                </div>
+
+                <div class="live-card__team live-card__team--away">
+                  <img v-if="m.awayLogo" class="live-card__team-logo" :src="m.awayLogo" alt="" width="28" height="28" @error="(e) => e.target.style.display='none'" />
+                  <span class="live-card__team-name">
+                    <span class="live-card__team-name-text">{{ m.awayTeam }}</span>
+                    <span class="live-card__side-tag live-card__side-tag--away">{{ t('客') }}</span>
+                  </span>
+                </div>
               </div>
-            </div>
-          </article>
-        </div>
+            </article>
+          </div>
+
+          <!-- 滚动加载哨兵 + 加载中提示（PC / H5） -->
+          <div
+            v-if="hasMore"
+            ref="loadMoreSentinelRef"
+            class="live-load-more"
+            aria-hidden="true"
+          >
+            <div v-if="loadingMore" class="live-spinner" />
+            <span v-if="loadingMore">{{ t('加载中') }}</span>
+          </div>
+        </template>
       </main>
     </div>
   </div>
@@ -532,5 +660,17 @@ onBeforeUnmount(() => {
   font-size: 12px;
   color: rgba(11, 52, 98, 0.45);
   line-height: 1;
+}
+
+.live-load-more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  margin-top: 12px;
+  color: #7b92ad;
+  font-size: 13px;
 }
 </style>

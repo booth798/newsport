@@ -300,9 +300,9 @@ async function refreshWalletBalance() {
   walletLoading.value = true;
   try {
     const res = await fetchBalance();
-    // 买入可用额度取主钱包 balance；并同步 WalletVO 三字段到 store
+    // 买入可用额度取账户余额 available（与个人中心一致）；并同步 WalletVO 三字段到 store
     const wallet = res.data || {};
-    walletBalance.value = wallet.balance ?? wallet.available ?? null;
+    walletBalance.value = wallet.available ?? wallet.balance ?? null;
     userStore.updateUserProfile({
       balance: wallet.balance,
       available: wallet.available,
@@ -408,7 +408,11 @@ function formatScoreOption(score) {
 
 function setQuickAmount(val) {
   if (val === 'all') {
-    buyAmount.value = loggedInAssetsFormatted.value.replace(/,/g, '');
+    // 「全部」填入账户余额（available），与展示口径一致
+    const raw = walletBalance.value != null
+      ? String(walletBalance.value)
+      : loggedInAssetsFormatted.value.replace(/,/g, '');
+    buyAmount.value = raw.replace(/,/g, '');
     return;
   }
   buyAmount.value = String(val);
@@ -506,8 +510,9 @@ async function confirmBuy() {
 
     if (res.walletBalance != null) {
       userStore.updateUserProfile({ balance: res.walletBalance });
-      walletBalance.value = res.walletBalance;
     }
+    // 下单成功后重拉 WalletVO，展示仍用账户余额 available
+    await refreshWalletBalance();
 
     const order = res.data || {};
     // 成功弹窗字段组装对齐安卓 BuyResultDialog / buildResultPayload
@@ -746,7 +751,7 @@ function onBackdropKeydown(e) {
               <span class="buy-sheet__wallet-id">{{ loggedInUserId || '' }}</span>
             </span>
             <span class="buy-sheet__wallet-pill">
-              <span class="buy-sheet__wallet-name">{{ t('主钱包') }}</span>
+              <span class="buy-sheet__wallet-name">{{ t('账户余额') }}</span>
               <strong class="buy-sheet__wallet-balance" v-if="walletLoading">--</strong>
               <strong class="buy-sheet__wallet-balance" v-else>{{ walletBalance != null ? Number(walletBalance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--' }}</strong>
             </span>

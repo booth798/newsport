@@ -8,6 +8,7 @@ import { fetchLeagueList } from '@/api/match';
 import { useAppStore } from '@/store/modules/app';
 import { useLeagueFilterStore } from '@/store/modules/leagueFilter';
 import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.svg?url';
+import { LEAGUE_INDEX_ENTRIES, getLeagueGroupInitial } from '@/utils/leaguePinyin';
 
 const { t, locale } = useI18n();
 const router = useRouter();
@@ -30,30 +31,7 @@ const selectedIds = ref(new Set());
 const isSelectAll = ref(false);
 const activeIndex = ref('☆');
 
-const INDEX_ENTRIES = ['☆', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''), '#'];
-
-// 拼音首字母参照字符，用于 localeCompare 归类
-const PINYIN_REFS = [
-  ['A', '啊'], ['B', '八'], ['C', '嚓'], ['D', '哒'],
-  ['E', '鹅'], ['F', '发'], ['G', '旮'], ['H', '哈'],
-  ['J', '击'], ['K', '咔'], ['L', '垃'], ['M', '妈'],
-  ['N', '拿'], ['O', '噢'], ['P', '啪'], ['Q', '七'],
-  ['R', '日'], ['S', '撒'], ['T', '他'], ['W', '挖'],
-  ['X', '夕'], ['Y', '压'], ['Z', '匝'],
-];
-
-function getPinyinInitial(str) {
-  if (!str) return '#';
-  const ch = str.charAt(0);
-  if (/[a-zA-Z]/.test(ch)) return ch.toUpperCase();
-  if (!/[\u4e00-\u9fff]/.test(ch)) return '#';
-  for (let i = PINYIN_REFS.length - 1; i >= 0; i--) {
-    if (ch.localeCompare(PINYIN_REFS[i][1], 'zh-Hans-CN-u-co-pinyin') >= 0) {
-      return PINYIN_REFS[i][0];
-    }
-  }
-  return 'A';
-}
+const INDEX_ENTRIES = LEAGUE_INDEX_ENTRIES;
 
 const groupedLeagues = computed(() => {
   const groups = new Map();
@@ -73,7 +51,8 @@ const groupedLeagues = computed(() => {
 
   for (const league of sorted) {
     const name = league.shortName || league.name || '';
-    const initial = getPinyinInitial(name);
+    // 拼音首字母 A–Z；不再使用 # 兜底分组
+    const initial = getLeagueGroupInitial(name);
     if (!groups.has(initial)) groups.set(initial, []);
     groups.get(initial).push(league);
   }
