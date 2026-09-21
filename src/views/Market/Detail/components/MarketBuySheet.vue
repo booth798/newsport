@@ -472,13 +472,12 @@ async function confirmBuy() {
     const marketId = props.row?._marketId;
     const score = getScoreKey();
 
-    // 直接用最新赔率下单；若仍 YIELD_CHANGED 则静默刷新后再试一次（不弹提示）
+    // 直接用最新赔率下单；若接口返回 YIELD_CHANGED，则使用响应中的 currentYield 重试一次。
     let latestYield = await resolveLatestYield();
     if (latestYield == null) {
       toast.error(t('提交失败，请重试'));
       return;
     }
-
     let res;
     try {
       res = await submitBuyOrder({
@@ -492,9 +491,11 @@ async function confirmBuy() {
       const errMsg = String(firstErr?.message || '');
       const yieldChanged = errCode === 'YIELD_CHANGED' || errMsg.includes('YIELD_CHANGED');
       if (!yieldChanged) throw firstErr;
-
-      latestYield = await resolveLatestYield();
-      if (latestYield == null) throw firstErr;
+      // 后端已返回当前最新倍率，无需再次请求收益率接口。
+      latestYield = Number(firstErr?.data?.currentYield);
+      if (!Number.isFinite(latestYield)) throw firstErr;
+      refreshedYield.value = latestYield;
+      
       res = await submitBuyOrder({
         marketId,
         score,
