@@ -153,6 +153,7 @@ function normalizeOrder(o) {
   const status = String(o.status || '').toUpperCase();
   // 处理中订单：下单 10 分钟内可撤
   const processing = ['PENDING_MATCH', 'PLACED', 'PENDING', 'CREATED'].includes(status);
+  const statusLabel = o.statusLabel || '';
   return {
     ...o,
     orderNo: o.orderNo || o.id,
@@ -168,11 +169,29 @@ function normalizeOrder(o) {
     amountFormatted: formatMoney(o.amount),
     tradeAmountFormatted: formatMoney(o.amount),
     yieldPercent: o.yieldAtBuy,
-    statusKey: o.statusLabel || o.status || '',
+    statusKey: statusLabel || o.status || '',
+    // 角标色：已失利 / 已退款 用红色 lost
+    statusTone: mapPurchaseStatusTone(status, statusLabel),
     tradeTime: placedAt,
     profitFormatted: formatMoney(o.estimatedPayout ?? o.payout),
     canCancel: processing && isWithinOrderCancelWindow(placedAt),
   };
+}
+
+/** 买入明细状态色：已失利 / 已退款 → lost（红） */
+function mapPurchaseStatusTone(status, statusLabel) {
+  const label = String(statusLabel || '');
+  if (['LOST', 'SETTLED_LOST'].includes(status) || /已失利/.test(label)) return 'lost';
+  if (status === 'REFUNDED' || /已退款/.test(label)) return 'lost';
+  if (['CANCELLED', 'CANCELED', 'FAILED', 'REJECTED', 'EXPIRED'].includes(status) || /已取消/.test(label)) {
+    return 'lost';
+  }
+  if (status === 'PENDING_MATCH' || /预约中/.test(label)) return 'scheduled';
+  if (['PLACED', 'PENDING', 'CREATED'].includes(status) || /待开奖|等结算/.test(label)) return 'pending';
+  if (['WON', 'SETTLED_WON', 'SETTLED'].includes(status) || /已结算|已获利|已中奖|已完成/.test(label)) {
+    return 'completed';
+  }
+  return 'pending';
 }
 
 function formatMoney(val) {

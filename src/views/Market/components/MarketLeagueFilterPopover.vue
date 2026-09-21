@@ -3,14 +3,15 @@
  * PC 市场页联赛筛选弹层（对齐 Figma 下拉面板）。
  * 选择逻辑与 H5 `/market/filter` 一致，写入 leagueFilter store；仅用于桌面端。
  */
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import { Circle, CircleCheckBig } from 'lucide-vue-next';
 
-import { fetchLeagueList, fetchMarketListCounts } from '@/api/match';
+import { fetchLeagueList } from '@/api/match';
 import { useLeagueFilterStore } from '@/store/modules/leagueFilter';
 import leagueFilterBackgroundUrl from '@/assets/images/common/league_filter_popover_bg.png';
+import { LEAGUE_INDEX_ENTRIES, getLeagueGroupInitial } from '@/utils/leaguePinyin';
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -27,23 +28,12 @@ const error = ref(false);
 const allLeagues = ref([]);
 const selectedIds = ref(new Set());
 const isSelectAll = ref(false);
-const previewCount = ref(0);
-const previewLoading = ref(false);
-let previewTimer = null;
 const rootRef = ref(null);
 const bodyRef = ref(null);
 /** 长文案截断时的悬浮完整提示（fixed，避免被 overflow 裁切） */
 const hoverTip = ref(null);
 
-const INDEX_ENTRIES = ['☆', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''), '#'];
-const PINYIN_REFS = [
-  ['A', '啊'], ['B', '八'], ['C', '嚓'], ['D', '哒'],
-  ['E', '鹅'], ['F', '发'], ['G', '旮'], ['H', '哈'],
-  ['J', '击'], ['K', '咔'], ['L', '垃'], ['M', '妈'],
-  ['N', '拿'], ['O', '噢'], ['P', '啪'], ['Q', '七'],
-  ['R', '日'], ['S', '撒'], ['T', '他'], ['W', '挖'],
-  ['X', '夕'], ['Y', '压'], ['Z', '匝'],
-];
+const INDEX_ENTRIES = LEAGUE_INDEX_ENTRIES;
 
 function leagueDisplayName(league) {
   const name = (league.name || '').trim();
@@ -86,19 +76,6 @@ function onPillMouseEnter(event, league) {
   };
 }
 
-function getPinyinInitial(str) {
-  if (!str) return '#';
-  const ch = str.charAt(0);
-  if (/[a-zA-Z]/.test(ch)) return ch.toUpperCase();
-  if (!/[\u4e00-\u9fff]/.test(ch)) return '#';
-  for (let i = PINYIN_REFS.length - 1; i >= 0; i--) {
-    if (ch.localeCompare(PINYIN_REFS[i][1], 'zh-Hans-CN-u-co-pinyin') >= 0) {
-      return PINYIN_REFS[i][0];
-    }
-  }
-  return 'A';
-}
-
 const groupedLeagues = computed(() => {
   const groups = new Map();
   const hotList = allLeagues.value.filter((l) => l.hot);
@@ -115,7 +92,8 @@ const groupedLeagues = computed(() => {
 
   for (const league of sorted) {
     const name = league.shortName || league.name || '';
-    const initial = getPinyinInitial(name);
+    // 拼音首字母 A–Z；不再使用 # 兜底分组
+    const initial = getLeagueGroupInitial(name);
     if (!groups.has(initial)) groups.set(initial, []);
     groups.get(initial).push(league);
   }
@@ -134,8 +112,11 @@ const groupedLeagues = computed(() => {
   return result;
 });
 
+/** 本地勾选数量（对齐 H5「已选」；不走场次统计接口） */
+const selectedCount = computed(() => selectedIds.value.size);
+
 const confirmLabel = computed(() => {
-  const n = previewCount.value;
+  const n = selectedCount.value;
   return n > 0 ? `${t('确定')}(${n})` : t('确定');
 });
 
@@ -149,12 +130,12 @@ function cancel() {
 }
 
 function toggleLeague(id) {
+  // 对齐 H5：勾选仅改本地状态，不请求场次统计接口
   const s = new Set(selectedIds.value);
   if (s.has(id)) s.delete(id);
   else s.add(id);
   selectedIds.value = s;
   isSelectAll.value = s.size > 0 && s.size === allLeagues.value.length;
-  schedulePreviewCount();
 }
 
 function onSelectAll() {
@@ -162,12 +143,10 @@ function onSelectAll() {
   if (isSelectAll.value) {
     selectedIds.value = new Set();
     isSelectAll.value = false;
-    schedulePreviewCount();
     return;
   }
   selectedIds.value = new Set(allLeagues.value.map((l) => l.id));
   isSelectAll.value = true;
-  schedulePreviewCount();
 }
 
 function onSelectCustom() {
@@ -176,10 +155,10 @@ function onSelectCustom() {
     selectedIds.value = new Set();
   }
   isSelectAll.value = false;
-  schedulePreviewCount();
 }
 
 function finish() {
+  // 对齐 H5：点确定才写入 store，市场列表再按筛选结果请求
   const names = isSelectAll.value
     ? []
     : allLeagues.value
@@ -217,52 +196,11 @@ async function loadLeagues() {
     const res = await fetchLeagueList();
     allLeagues.value = res.data || [];
     restoreFromStore();
-    await refreshPreviewCount();
   } catch {
     error.value = true;
   } finally {
     loading.value = false;
   }
-}
-
-/** 预估当前勾选对应的赛事场次，用于「确定(N)」展示（对齐设计稿） */
-async function refreshPreviewCount() {
-  previewLoading.value = true;
-  try {
-    if (isSelectAll.value) {
-      const res = await fetchMarketListCounts({ period: 'FT' }).catch(() => null);
-      const d = res?.data;
-      previewCount.value = Number(d?.all ?? d?.total ?? 0) || 0;
-      return;
-    }
-    // 全部不选：场次为 0
-    if (selectedIds.value.size === 0) {
-      previewCount.value = 0;
-      return;
-    }
-    const names = allLeagues.value
-      .filter((l) => selectedIds.value.has(l.id))
-      .map(leagueDisplayName);
-    const results = await Promise.all(
-      names.map((lg) =>
-        fetchMarketListCounts({ league: lg, period: 'FT' }).catch(() => null),
-      ),
-    );
-    previewCount.value = results.reduce((acc, r) => {
-      const d = r?.data;
-      if (!d) return acc;
-      return acc + Number(d.all ?? d.total ?? 0);
-    }, 0);
-  } finally {
-    previewLoading.value = false;
-  }
-}
-
-function schedulePreviewCount() {
-  if (previewTimer) clearTimeout(previewTimer);
-  previewTimer = setTimeout(() => {
-    refreshPreviewCount();
-  }, 280);
 }
 
 function onDocPointerDown(e) {
@@ -274,22 +212,49 @@ function onDocPointerDown(e) {
   cancel();
 }
 
+/**
+ * 按视口剩余高度收缩弹层，避免小分辨率底部确定/取消被裁切。
+ * 首选高度约 480，且不超过「弹层顶边 → 视口底边」可用空间。
+ */
+function fitPanelToViewport() {
+  const el = rootRef.value;
+  if (!el) return;
+  const top = el.getBoundingClientRect().top;
+  const bottomGap = 24;
+  const available = Math.floor(window.innerHeight - top - bottomGap);
+  const preferred = 480;
+  const minH = 320;
+  const next = Math.max(minH, Math.min(preferred, available));
+  el.style.height = `${next}px`;
+  el.style.maxHeight = `${Math.max(minH, available)}px`;
+}
+
+function onViewportResize() {
+  if (!props.modelValue) return;
+  fitPanelToViewport();
+}
+
 watch(
   () => props.modelValue,
-  (open) => {
+  async (open) => {
     if (open) {
       loadLeagues();
       document.addEventListener('pointerdown', onDocPointerDown, true);
+      window.addEventListener('resize', onViewportResize);
+      // 等 v-show 渲染后再量测顶边位置
+      await nextTick();
+      fitPanelToViewport();
     } else {
       clearHoverTip();
       document.removeEventListener('pointerdown', onDocPointerDown, true);
+      window.removeEventListener('resize', onViewportResize);
     }
   },
 );
 
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', onDocPointerDown, true);
-  if (previewTimer) clearTimeout(previewTimer);
+  window.removeEventListener('resize', onViewportResize);
   clearHoverTip();
 });
 </script>
@@ -321,6 +286,10 @@ onBeforeUnmount(() => {
         class="league-filter-pop__body"
         @scroll="clearHoverTip"
       >
+        <!-- 对齐 H5：展示本地已勾选联赛数，不请求场次统计 -->
+        <p v-if="selectedCount > 0" class="league-filter-pop__hint">
+          {{ t('已选') }}（{{ selectedCount }}）
+        </p>
         <section
           v-for="group in groupedLeagues"
           :key="group.key"
@@ -409,7 +378,6 @@ onBeforeUnmount(() => {
           <button
             type="button"
             class="league-filter-pop__confirm"
-            :disabled="previewLoading"
             @click="finish"
           >
             {{ confirmLabel }}
@@ -446,9 +414,15 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  width: 416px;
-  height: 530px;
-  padding: 42px 18px 58px;
+  /*
+   * 背景图设计稿比例 416×530（资源 1248×1590 @3x）。
+   * 默认高度压到约 480，并靠 JS 按视口剩余空间再收缩，避免低分辨率底部按钮被裁切。
+   */
+  width: 500px;
+  height: 480px;
+  max-width: min(500px, calc(100vw - 48px));
+  max-height: min(480px, calc(100dvh - 200px));
+  padding: 48px 22px 64px;
   background-position: center;
   background-repeat: no-repeat;
   background-size: 100% 100%;
@@ -496,6 +470,13 @@ onBeforeUnmount(() => {
   }
 }
 
+.league-filter-pop__hint {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #1c7bff;
+}
+
 .league-filter-pop__group + .league-filter-pop__group {
   margin-top: 20px;
 }
@@ -511,7 +492,7 @@ onBeforeUnmount(() => {
 .league-filter-pop__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  gap: 8px 10px;
 }
 
 .league-filter-pop__pill {
@@ -563,9 +544,11 @@ onBeforeUnmount(() => {
 
 .league-filter-pop__pill-label {
   min-width: 0;
+  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-align: left;
 }
 
 .league-filter-pop__footer {

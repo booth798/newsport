@@ -222,6 +222,22 @@ function mapOrderState(status) {
   return 'unknown';
 }
 
+/** 角标颜色：已失利 / 已退款 / 已取消 → 红色（PC/H5 共用） */
+function statusBadgeTone(status, statusKey) {
+  const s = String(status || '').toUpperCase();
+  const key = String(statusKey || '');
+  if (key === '已失利' || ['LOST', 'SETTLED_LOST'].includes(s)) return 'lost';
+  if (key === '已退款' || s === 'REFUNDED') return 'refunded';
+  if (key === '已取消' || ['CANCELLED', 'CANCELED', 'FAILED', 'REJECTED', 'EXPIRED'].includes(s)) {
+    return 'cancelled';
+  }
+  if (key === '等结算' || ['PENDING_MATCH', 'PLACED', 'PENDING', 'CREATED'].includes(s)) {
+    return 'processing';
+  }
+  if (key === '已结算' || ['WON', 'SETTLED_WON', 'SETTLED'].includes(s)) return 'completed';
+  return 'unknown';
+}
+
 /** 角标文案（账务列表）
  * 下注中→等结算；未中→已失利；中了→已结算；用户取消→已取消；比赛取消退回→已退款
  */
@@ -365,13 +381,16 @@ function normalizeOrder(o) {
     marketLabel = periodText;
   }
 
+  const badgeKey = statusBadgeKey(status, state);
+
   return {
     id: o.id,
     status,
     state,
     statusText: o.statusLabel || '',
-    // 角标优先细粒度文案；样式仍用 state（成功/处理中/已取消）
-    statusKey: statusBadgeKey(status, state),
+    // 角标优先细粒度文案；颜色按 badgeTone（已失利/已退款为红）
+    statusKey: badgeKey,
+    badgeTone: statusBadgeTone(status, badgeKey),
     amount,
     amountFormatted: formatMoney(amount),
     detailAmountFormatted: formatMoney(detailAmount),
@@ -392,7 +411,8 @@ function normalizeOrder(o) {
     marketLabel,
     orderNo: orderNo ? (String(orderNo).startsWith('NO.') ? orderNo : `NO.${orderNo}`) : '',
     cancelable: state === 'processing',
-    profitLabel: (status === 'WON' || status === 'SETTLED_WON') ? '盈利' : '预估盈利',
+    // 角标「已结算」显示盈利；等结算 / 已失利 / 已退款等显示预估盈利
+    profitLabel: badgeKey === '已结算' ? '盈利' : '预估盈利',
     _raw: o,
   };
 }
@@ -618,7 +638,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
             <span
               v-if="order.statusKey || order.statusText"
               class="ord__badge"
-              :class="`ord__badge--${order.state}`"
+              :class="`ord__badge--${order.badgeTone || order.state}`"
             >{{ order.statusKey ? t(order.statusKey) : order.statusText }}</span>
           </div>
 
@@ -1066,6 +1086,9 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
     color: #5d7899;
   }
 
+  /* 已失利 / 已退款 / 已取消：红色角标（PC + H5） */
+  &--lost,
+  &--refunded,
   &--cancelled {
     background: rgba(255, 45, 45, 0.12);
     color: #ff2d2d;

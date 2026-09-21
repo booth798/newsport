@@ -300,9 +300,9 @@ async function refreshWalletBalance() {
   walletLoading.value = true;
   try {
     const res = await fetchBalance();
-    // 买入可用额度取主钱包 balance；并同步 WalletVO 三字段到 store
+    // 买入可用额度取账户余额 available（与个人中心一致）；并同步 WalletVO 三字段到 store
     const wallet = res.data || {};
-    walletBalance.value = wallet.balance ?? wallet.available ?? null;
+    walletBalance.value = wallet.available ?? wallet.balance ?? null;
     userStore.updateUserProfile({
       balance: wallet.balance,
       available: wallet.available,
@@ -408,7 +408,11 @@ function formatScoreOption(score) {
 
 function setQuickAmount(val) {
   if (val === 'all') {
-    buyAmount.value = loggedInAssetsFormatted.value.replace(/,/g, '');
+    // 「全部」填入账户余额（available），与展示口径一致
+    const raw = walletBalance.value != null
+      ? String(walletBalance.value)
+      : loggedInAssetsFormatted.value.replace(/,/g, '');
+    buyAmount.value = raw.replace(/,/g, '');
     return;
   }
   buyAmount.value = String(val);
@@ -472,13 +476,12 @@ async function confirmBuy() {
     const marketId = props.row?._marketId;
     const score = getScoreKey();
 
-    // 直接用最新赔率下单；若仍 YIELD_CHANGED 则静默刷新后再试一次（不弹提示）
+    // 直接用最新赔率下单；若接口返回 YIELD_CHANGED，则使用响应中的 currentYield 重试一次。
     let latestYield = await resolveLatestYield();
     if (latestYield == null) {
       toast.error(t('提交失败，请重试'));
       return;
     }
-
     let res;
     try {
       res = await submitBuyOrder({
@@ -492,9 +495,11 @@ async function confirmBuy() {
       const errMsg = String(firstErr?.message || '');
       const yieldChanged = errCode === 'YIELD_CHANGED' || errMsg.includes('YIELD_CHANGED');
       if (!yieldChanged) throw firstErr;
-
-      latestYield = await resolveLatestYield();
-      if (latestYield == null) throw firstErr;
+      // 后端已返回当前最新倍率，无需再次请求收益率接口。
+      latestYield = Number(firstErr?.data?.currentYield);
+      if (!Number.isFinite(latestYield)) throw firstErr;
+      refreshedYield.value = latestYield;
+      
       res = await submitBuyOrder({
         marketId,
         score,
@@ -505,8 +510,9 @@ async function confirmBuy() {
 
     if (res.walletBalance != null) {
       userStore.updateUserProfile({ balance: res.walletBalance });
-      walletBalance.value = res.walletBalance;
     }
+    // 下单成功后重拉 WalletVO，展示仍用账户余额 available
+    await refreshWalletBalance();
 
     const order = res.data || {};
     // 成功弹窗字段组装对齐安卓 BuyResultDialog / buildResultPayload
@@ -745,7 +751,7 @@ function onBackdropKeydown(e) {
               <span class="buy-sheet__wallet-id">{{ loggedInUserId || '' }}</span>
             </span>
             <span class="buy-sheet__wallet-pill">
-              <span class="buy-sheet__wallet-name">{{ t('主钱包') }}</span>
+              <span class="buy-sheet__wallet-name">{{ t('账户余额') }}</span>
               <strong class="buy-sheet__wallet-balance" v-if="walletLoading">--</strong>
               <strong class="buy-sheet__wallet-balance" v-else>{{ walletBalance != null ? Number(walletBalance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--' }}</strong>
             </span>

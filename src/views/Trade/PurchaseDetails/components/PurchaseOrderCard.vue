@@ -65,18 +65,25 @@ const homeLogoUrl = computed(() => resolveTeamLogoUrl(props.order.homeTeam, prop
 const awayLogoUrl = computed(() => resolveTeamLogoUrl(props.order.awayTeam, props.order.awayTeamLogo));
 const chevronSrc = computed(() => (props.expanded ? iconChevronUpUrl : iconChevronDownUrl));
 
-const statusClass = computed(() => `purchase-card__status--${props.order.statusTone}`);
+const statusClass = computed(() => {
+  // 兜底：接口未带 statusTone 时，按状态文案推断红色角标
+  const tone = props.order.statusTone
+    || (/已失利|已退款|已取消/.test(String(props.order.statusKey || props.order.statusLabel || ''))
+      ? 'lost'
+      : 'pending');
+  return `purchase-card__status--${tone}`;
+});
 
-/** 仅中奖订单显示「盈利」，其余状态统一「预估盈利」 */
-function isWonOrder(order) {
-  const status = String(order?.status || '').toUpperCase();
-  if (['WON', 'SETTLED_WON'].includes(status)) return true;
+/** 仅「已结算」显示「盈利」，其余状态统一「预估盈利」 */
+function isSettledProfitOrder(order) {
   const label = String(order?.statusKey || order?.statusLabel || '');
-  return /已获利|已中奖|中奖/.test(label) || /^WON$/i.test(label);
+  if (label === '已结算' || /已结算/.test(label)) return true;
+  const status = String(order?.status || '').toUpperCase();
+  return ['WON', 'SETTLED_WON', 'SETTLED'].includes(status);
 }
 
 const summaryProfitLabelKey = computed(() => (
-  isWonOrder(props.order) ? '盈利' : '预估盈利'
+  isSettledProfitOrder(props.order) ? '盈利' : '预估盈利'
 ));
 
 /** 处理中且下单 10 分钟内才展示取消 */
@@ -357,7 +364,8 @@ async function copyOrderNo() {
       background: rgba(11, 52, 98, 0.1);
     }
 
-    &--lost {
+    &--lost,
+    &--refunded {
       color: #ff2d2d;
       background: rgba(255, 45, 45, 0.12);
     }
