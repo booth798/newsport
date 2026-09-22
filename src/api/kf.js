@@ -13,6 +13,7 @@ const __DEV__ = import.meta.env.DEV;
  * 将原始 base 规范化为 https://{host}/kf/ 结尾。
  */
 export function normalizeKfBase(rawBase) {
+  // return 'https://uniballcloud.com/kf/';
   let base = rawBase.trim().replace(/\/+$/, '');
   if (!base.startsWith('https://') && !base.startsWith('http://')) {
     base = `https://${base}`;
