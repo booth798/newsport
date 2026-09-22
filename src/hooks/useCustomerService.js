@@ -379,6 +379,8 @@ export function useCustomerService() {
     const text = json.text || extend?.text || '';
     const clientTempId = extend?.tempId || json.tempId;
     const serverMessageId = json.messageId;
+    // 保存服务端 localId，撤回通知通过该字段定位原消息。
+    const serverLocalId = json.localId || extend?.localId || null;
 
     // 自己发送的消息回显，更新本地状态而不重复插入
     if (clientTempId) {
@@ -405,6 +407,7 @@ export function useCustomerService() {
     const msg = reactive({
       clientTempId: clientTempId || generateTempId(),
       serverMessageId,
+      serverLocalId,
       direction,
       contentType,
       text,
@@ -527,13 +530,16 @@ export function useCustomerService() {
   function handleWithdraw(json) {
     const extend = typeof json.extend === 'string' ? tryParseJson(json.extend) : (json.extend || null);
     const localIdFields = ['localId', 'serverLocalId', 'withdrawLocalId', 'targetLocalId'];
-    const msgIdFields = ['targetMessageId', 'withdrawMessageId'];
+    const msgIdFields = ['targetMessageId', 'withdrawMessageId', 'messageId'];
 
-    // 尝试按 localId 删除
+    // 撤回通知可能把 localId 放在 extend 中，统一转字符串避免类型差异导致匹配失败。
     for (const field of localIdFields) {
-      const val = extend?.[field] || json[field];
-      if (val) {
-        const idx = messages.value.findIndex((m) => m.serverLocalId === val);
+      const val = extend?.[field] ?? json[field];
+      if (val != null && String(val).trim()) {
+        const targetId = String(val);
+        const idx = messages.value.findIndex(
+          (m) => m.serverLocalId != null && String(m.serverLocalId) === targetId,
+        );
         if (idx >= 0) {
           messages.value.splice(idx, 1);
           return;
@@ -543,9 +549,12 @@ export function useCustomerService() {
 
     // 按 serverMessageId 删除
     for (const field of msgIdFields) {
-      const val = extend?.[field] || json[field];
-      if (val) {
-        const idx = messages.value.findIndex((m) => m.serverMessageId === val);
+      const val = extend?.[field] ?? json[field];
+      if (val != null && String(val).trim()) {
+        const targetId = String(val);
+        const idx = messages.value.findIndex(
+          (m) => m.serverMessageId != null && String(m.serverMessageId) === targetId,
+        );
         if (idx >= 0) {
           messages.value.splice(idx, 1);
           return;
