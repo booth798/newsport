@@ -109,6 +109,7 @@ export const FORCE_LOGOUT_CODES = new Set([
   'TOKEN_REVOKED',
   'ACCOUNT_DISABLED',
   'CUSTOMER_BLACKLISTED',
+  'UNAUTHORIZED'
 ]);
 
 export function isForceLogoutCode(code) {
