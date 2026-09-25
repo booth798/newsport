@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
@@ -441,6 +441,19 @@ function finishEditAmounts() {
 function closeSheet() {
   emit('close');
 }
+
+// 登录会话失效时先关闭买入弹层，避免与全局登录过期提示重叠。
+function onSessionExpired() {
+  if (props.visible) closeSheet();
+}
+
+onMounted(() => {
+  window.addEventListener('mysport:session-expired', onSessionExpired);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('mysport:session-expired', onSessionExpired);
+});
 
 const submitting = ref(false);
 

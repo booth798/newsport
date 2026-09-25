@@ -1,4 +1,5 @@
 <script setup>
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
@@ -9,7 +10,14 @@ import iconDialogInfoUrl from '@/assets/images/common/icon_dialog_info.svg?url';
 const { t } = useI18n();
 const router = useRouter();
 const appStore = useAppStore();
-const { forceLogoutAlertOpen } = storeToRefs(appStore);
+const { forceLogoutAlertOpen, forceLogoutCode } = storeToRefs(appStore);
+
+// 仅未授权错误提示登录过期，其余强制退出原因沿用异地登录文案。
+const alertMessage = computed(() => (
+  forceLogoutCode.value === 'UNAUTHORIZED'
+    ? t('您的登录已过期，请重新登录')
+    : t('您的账号已在其他设备登录，本次登录已下线')
+));
 
 function confirm() {
   appStore.closeForceLogoutAlert();
@@ -30,7 +38,7 @@ function confirm() {
       <span class="force-logout-dialog__info" aria-hidden="true">
         <img :src="iconDialogInfoUrl" width="20" height="20" alt="" />
       </span>
-      <p>{{ t('您的账号已在其他设备登录，本次登录已下线') }}</p>
+      <p>{{ alertMessage }}</p>
     </div>
     <div class="force-logout-dialog__actions">
       <button type="button" class="force-logout-dialog__btn" @click="confirm">

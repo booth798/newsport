@@ -5,7 +5,7 @@ const FALLBACK_MAP = {
   SESSION_JWT_MISMATCH: { zhCN: '会话校验失败，请重新登录', enUS: 'Session verification failed, please log in again' },
   TOKEN_EXPIRED:        { zhCN: '登录已过期，请重新登录', enUS: 'Login expired, please log in again' },
   TOKEN_REVOKED:        { zhCN: '登录已失效，请重新登录', enUS: 'Login revoked, please log in again' },
-  UNAUTHORIZED:         { zhCN: '请先登录', enUS: 'Please log in first' },
+  UNAUTHORIZED:         { zhCN: '您的登录已过期，请重新登录', enUS: 'Your login has expired. Please log in again' },
   LOGGED_IN_ELSEWHERE:  { zhCN: '您的账号已在其他设备登录，本次登录已下线', enUS: 'Your account has logged in on another device; this session was signed out' },
   ACCOUNT_DISABLED:     { zhCN: '账号已被禁用', enUS: 'Account disabled' },
   CUSTOMER_BLACKLISTED: { zhCN: '账户已被拉黑', enUS: 'Account blacklisted' },

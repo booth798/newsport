@@ -110,14 +110,15 @@ watch(
 watch(() => route.fullPath, syncDocumentTitle);
 
 function onSessionExpired() {
-  const wasLoggedIn = isLoggedIn.value;
   userStore.clearWebLogin();
-  if (wasLoggedIn) appStore.openLoginModal();
+  // clearToken 触发会话失效时，统一展示需要重新登录的提示。
+  appStore.openForceLogoutAlert();
 }
 
-function onForceLogout() {
+function onForceLogout(event) {
   userStore.clearWebLogin();
-  appStore.openForceLogoutAlert();
+  // 透传后端业务错误码，供强制退出弹窗区分登录过期与异地登录。
+  appStore.openForceLogoutAlert(event.detail?.code || '');
 }
 
 onMounted(async () => {

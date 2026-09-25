@@ -620,5 +620,6 @@ export default {
   暂无记录: 'No records',
   状态: 'Status',
   '您的账号已在其他设备登录，本次登录已下线': 'Your account has logged in on another device; this session was signed out',
+  '您的登录已过期，请重新登录': 'Your login has expired. Please log in again',
   知道了: 'Got it',
 };

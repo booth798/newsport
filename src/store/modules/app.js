@@ -17,6 +17,7 @@ export const useAppStore = defineStore('app', {
     customerServiceConfirmOpen: false,
     loginConfirmOpen: false,
     forceLogoutAlertOpen: false,
+    forceLogoutCode: '',
     // 侧栏「个人资料」打开头像/昵称弹窗（不再进入 /profile/info 页）
     profileUserInfoModalOpen: false,
     // 未设置提现密码：确认弹窗 → 安全设置（提现 tab）
@@ -81,11 +82,14 @@ export const useAppStore = defineStore('app', {
     closeCustomerServiceConfirm() {
       this.customerServiceConfirmOpen = false;
     },
-    openForceLogoutAlert() {
+    openForceLogoutAlert(code = '') {
+      // 保存后端业务错误码，由弹窗按退出原因展示对应文案。
+      this.forceLogoutCode = code;
       this.forceLogoutAlertOpen = true;
     },
     closeForceLogoutAlert() {
       this.forceLogoutAlertOpen = false;
+      this.forceLogoutCode = '';
     },
     openProfileUserInfoModal() {
       this.profileUserInfoModalOpen = true;

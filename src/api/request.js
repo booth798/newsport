@@ -148,7 +148,8 @@ function checkForceLogout(msgCode) {
   if (!isForceLogoutCode(msgCode)) return;
   forceLogoutFired = true;
   clearToken();
-  emitEvent('mysport:session-expired');
+  // clearToken 已派发会话失效事件，此处仅补充具体强制退出原因。
+  forceLogoutFired = false;
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('mysport:force-logout', { detail: { code: msgCode } }));
   }
@@ -419,7 +420,6 @@ export async function request(url, options = {}, _retried = false) {
   try {
     const res = await fetch(fullUrl, fetchOpts);
     const result = await handleResponse(res, usedEncryption);
-    
     if (result === null && !_retried) {
       logResponse(null, { message: '401 → 自动续期重试' });
       // await 保证 finally 在重试结束后再 hide，整段续期只算一轮 loading
