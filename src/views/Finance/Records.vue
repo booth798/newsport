@@ -11,6 +11,7 @@ import { fetchOrderList, cancelOrder } from '@/api/order';
 import { useToast } from '@/hooks/useToast';
 import { resolveTeamLogoUrl } from '@/constants/teamLogos';
 import { isWithinOrderCancelWindow } from '@/constants/orderCancel';
+import { resolveRefundStatusKey } from '@/constants/orderRefund';
 
 import leagueUclUrl from '@/assets/images/common/league_ucl.svg?url';
 import orderCopyIconUrl from '@/assets/images/finance/icon_order_copy.svg?url';
@@ -227,7 +228,8 @@ function statusBadgeTone(status, statusKey) {
   const s = String(status || '').toUpperCase();
   const key = String(statusKey || '');
   if (key === '已失利' || ['LOST', 'SETTLED_LOST'].includes(s)) return 'lost';
-  if (key === '已退款' || s === 'REFUNDED') return 'refunded';
+  // 具体退款原因文案也含「已退款」，与 REFUNDED 同为红色
+  if (/已退款/.test(key) || s === 'REFUNDED') return 'refunded';
   if (key === '已取消' || ['CANCELLED', 'CANCELED', 'FAILED', 'REJECTED', 'EXPIRED'].includes(s)) {
     return 'cancelled';
   }
@@ -239,15 +241,16 @@ function statusBadgeTone(status, statusKey) {
 }
 
 /** 角标文案（账务列表）
- * 下注中→等结算；未中→已失利；中了→已结算；用户取消→已取消；比赛取消退回→已退款
+ * 下注中→等结算；未中→已失利；中了→已结算；用户取消→已取消；
+ * 已退款按 refundReason 展示具体原因
  */
-function statusBadgeKey(status, state) {
+function statusBadgeKey(status, state, refundReason) {
   const s = String(status || '').toUpperCase();
   if (s === 'WON' || s === 'SETTLED_WON') return '已结算';
   if (s === 'LOST' || s === 'SETTLED_LOST') return '已失利';
   // 笼统 SETTLED 按已结算展示
   if (s === 'SETTLED') return '已结算';
-  if (s === 'REFUNDED') return '已退款';
+  if (s === 'REFUNDED') return resolveRefundStatusKey(refundReason);
   if (['CANCELLED', 'CANCELED', 'FAILED', 'REJECTED', 'EXPIRED'].includes(s)) return '已取消';
   if (state === 'processing' || ['PENDING_MATCH', 'PLACED', 'PENDING', 'CREATED'].includes(s)) {
     return '等结算';
@@ -381,7 +384,7 @@ function normalizeOrder(o) {
     marketLabel = periodText;
   }
 
-  const badgeKey = statusBadgeKey(status, state);
+  const badgeKey = statusBadgeKey(status, state, o.refundReason);
 
   return {
     id: o.id,

@@ -1,5 +1,6 @@
 import { get, post, del } from './request';
 import { isWithinOrderCancelWindow } from '@/constants/orderCancel';
+import { resolveRefundStatusKey } from '@/constants/orderRefund';
 
 const IDEMPOTENCY_STORAGE_KEY = 'mysport:idempotency';
 
@@ -154,6 +155,10 @@ function normalizeOrder(o) {
   // 处理中订单：下单 10 分钟内可撤
   const processing = ['PENDING_MATCH', 'PLACED', 'PENDING', 'CREATED'].includes(status);
   const statusLabel = o.statusLabel || '';
+  // 已退款按 refundReason 展示具体原因，覆盖接口笼统 statusLabel
+  const statusKey = status === 'REFUNDED'
+    ? resolveRefundStatusKey(o.refundReason)
+    : (statusLabel || o.status || '');
   return {
     ...o,
     orderNo: o.orderNo || o.id,
@@ -169,9 +174,9 @@ function normalizeOrder(o) {
     amountFormatted: formatMoney(o.amount),
     tradeAmountFormatted: formatMoney(o.amount),
     yieldPercent: o.yieldAtBuy,
-    statusKey: statusLabel || o.status || '',
-    // 角标色：已失利 / 已退款 用红色 lost
-    statusTone: mapPurchaseStatusTone(status, statusLabel),
+    statusKey,
+    // 角标色：已失利 / 已退款（含具体原因）用红色 lost
+    statusTone: mapPurchaseStatusTone(status, statusKey),
     tradeTime: placedAt,
     profitFormatted: formatMoney(o.estimatedPayout ?? o.payout),
     canCancel: processing && isWithinOrderCancelWindow(placedAt),
