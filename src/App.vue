@@ -24,6 +24,7 @@ import i18n from '@/i18n';
 import { useAppStore } from '@/store/modules/app';
 import { useUserStore } from '@/store/modules/user';
 import { useWalletWs } from '@/hooks/useWalletWs';
+import { useAuthStorageSync } from '@/hooks/useAuthStorageSync';
 import { loadErrorCodes } from '@/api/errorCodes';
 
 function getRouteDepth(path) {
@@ -157,6 +158,16 @@ useWalletWs({
       i18n.global.t('派奖到账', { amount }) || `派奖到账 ${amount}`,
       { type: 'success' },
     );
+  },
+});
+
+// 多标签：他页换号/退出时同步本页登录态与资料，无需手动刷新
+useAuthStorageSync({
+  onAccountSwitch() {
+    toastRef.value?.show(i18n.global.t('账号已在其他标签页切换'), { type: 'info' });
+  },
+  onLogout() {
+    toastRef.value?.show(i18n.global.t('账号已在其他标签页退出'), { type: 'info' });
   },
 });
 </script>
