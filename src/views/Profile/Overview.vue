@@ -65,6 +65,7 @@ const iconBalanceRefreshPc = profileImage('pc_icon_balance_refresh.svg');
 // 概览展示统一读取用户 store，页面不再维护重复的用户资料副本。
 const defaultOverview = () => ({
   nickname: '',
+  username: '',
   memberId: '',
   balance: '',
   currency: 'CNY',
@@ -79,10 +80,15 @@ const overview = computed(() => ({
 }));
 const avatarDisplayUrl = computed(() => overview.value.avatarUrl || '');
 
+/** 我的页展示账号：固定用 username，不用 nickname */
 const displayName = computed(
-  () => overview.value.nickname || loggedInUserId.value || '—',
+  () => overview.value.username
+    || userStore.customer?.username
+    || '—',
 );
 const displayMemberId = computed(() => overview.value.memberId || loggedInUserId.value || '—');
+/** 资料弹窗仍编辑昵称，与页面展示的 username 分开 */
+const editNickname = computed(() => overview.value.nickname || '');
 
 // WalletVO：主钱包=balance，锁定=frozen，账户余额=available
 const mobileMainWallet = computed(() => (
@@ -593,7 +599,7 @@ onMounted(() => {
       </template>
     </template>
 
-    <ProfileUserInfoModal v-model="showUserInfoModal" :nickname="displayName"
+    <ProfileUserInfoModal v-model="showUserInfoModal" :nickname="editNickname"
       :avatar-url="avatarDisplayUrl" />
     <MessageCenterModal
       v-model="showMessageCenterModal"
