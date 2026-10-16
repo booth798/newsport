@@ -41,6 +41,17 @@ export async function ensureSessionReady() {
   if (restorePromise) await restorePromise;
 }
 
+/**
+ * 从 localStorage 重新载入加密会话到内存。
+ * 用于多标签切换账号：他页已写入新 sid/aesKey，本页内存仍是旧会话。
+ */
+export async function reloadSessionFromStorage() {
+  sessionAesKey = null;
+  sessionId = null;
+  restorePromise = doRestore();
+  await restorePromise;
+}
+
 export async function hasSession() {
   await ensureSessionReady();
   return Boolean(sessionId && sessionAesKey);

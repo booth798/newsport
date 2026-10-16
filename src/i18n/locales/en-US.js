@@ -563,6 +563,8 @@ export default {
   金额必须大于零: 'Amount must be greater than zero',
   请输入有效金额: 'Please enter a valid amount',
   登录成功: 'Login successful',
+  账号已在其他标签页切换: 'Account switched. Synced to the current login.',
+  账号已在其他标签页退出: 'Signed out in another tab',
   注册成功: 'Registration successful',
   请完成滑动验证: 'Please complete slide verification',
 

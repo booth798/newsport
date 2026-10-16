@@ -1,15 +1,21 @@
 import { defineStore } from 'pinia';
 
-import { clearSession } from '@/api/encrypt';
+import { clearSession, reloadSessionFromStorage } from '@/api/encrypt';
 import { clearToken, setToken } from '@/api/request';
 import { fetchBalance } from '@/api/finance';
 import { fetchProfileSummary, fetchVipLevels } from '@/api/user';
 import { resolveAvatarUrl } from '@/api/upload';
 
 const CUSTOMER_STORAGE_KEY = 'mysport:customer';
+const TOKEN_STORAGE_KEY = 'mysport:token';
 let vipLevelsRequest = null;
 let userProfileRequest = null;
 let walletRequest = null;
+/** 资料 / 钱包请求世代号：换号时作废进行中的旧请求结果 */
+let userProfileLoadGen = 0;
+let walletLoadGen = 0;
+/** 本页最近同步过的 token，用于识别他页换号 / 退出 */
+let lastSyncedToken = localStorage.getItem(TOKEN_STORAGE_KEY) || '';
 
 function formatMoney(value) {
   // 金额展示对齐安卓 AppTools.formatAmount：Locale.US 千分位 + 固定两位小数。
@@ -151,9 +157,12 @@ export const useUserStore = defineStore('user', {
 
       // 新账号登录时原子替换身份资料，避免继承上一账号的缓存。
       setToken(finalToken, refreshToken);
+      lastSyncedToken = finalToken;
       this.isLoggedIn = true;
       this.customer = customer || null;
       this.userProfile = null;
+      userProfileRequest = null;
+      walletRequest = null;
       persistCustomer(this.customer);
     },
     async loadUserProfile({ force = false } = {}) {
@@ -161,9 +170,13 @@ export const useUserStore = defineStore('user', {
       if (this.userProfile && !force) return this.userProfile;
       if (userProfileRequest && !force) return userProfileRequest;
 
+      const loadGen = ++userProfileLoadGen;
       userProfileRequest = (async () => {
         const res = await fetchProfileSummary();
-        const previous = this.userProfile || this.customer || {};
+        // 换号后旧请求回包丢弃，避免串号覆盖
+        if (loadGen !== userProfileLoadGen) return this.userProfile;
+        // force 换号后勿沿用上一账号 previous，避免昵称/余额串号
+        const previous = force ? (this.customer || {}) : (this.userProfile || this.customer || {});
         this.userProfile = normalizeUserProfile(res.data, previous);
         this.customer = { ...(this.customer || {}), ...this.userProfile };
         persistCustomer(this.customer);
@@ -171,7 +184,7 @@ export const useUserStore = defineStore('user', {
         await this.refreshUserBalance().catch(() => {});
         return this.userProfile;
       })().finally(() => {
-        userProfileRequest = null;
+        if (loadGen === userProfileLoadGen) userProfileRequest = null;
       });
 
       return userProfileRequest;
@@ -191,8 +204,10 @@ export const useUserStore = defineStore('user', {
       // 对齐安卓 MineFragment.loadWalletData / refreshWallet：只拉 GET /wallet。
       if (walletRequest) return walletRequest;
 
+      const loadGen = ++walletLoadGen;
       walletRequest = (async () => {
         const res = await fetchBalance();
+        if (loadGen !== walletLoadGen) return this.userProfile?.balance ?? '0.00';
         const wallet = res?.data || {};
         const patch = walletDisplayPatch(
           wallet,
@@ -207,22 +222,74 @@ export const useUserStore = defineStore('user', {
         persistCustomer(this.customer);
         return this.userProfile?.balance ?? '0.00';
       })().finally(() => {
-        walletRequest = null;
+        if (loadGen === walletLoadGen) walletRequest = null;
       });
 
       return walletRequest;
     },
-    clearWebLogin() {
-      const hasToken = Boolean(localStorage.getItem('mysport:token'));
+    /**
+     * @param {{ syncOnly?: boolean }} [opts]
+     * syncOnly：他页已改写 localStorage，本页只清内存，避免再清掉新账号会话。
+     */
+    clearWebLogin({ syncOnly = false } = {}) {
       this.isLoggedIn = false;
       this.customer = null;
       this.userProfile = null;
       userProfileRequest = null;
       walletRequest = null;
+      if (syncOnly) {
+        lastSyncedToken = '';
+        return;
+      }
+      const hasToken = Boolean(localStorage.getItem(TOKEN_STORAGE_KEY));
       // 请求层可能已清除 token 并派发失效事件，避免重复派发造成递归清理。
       if (hasToken) clearToken();
+      lastSyncedToken = '';
       clearSession();
       persistCustomer(null);
+    },
+    /**
+     * 多标签：对齐 localStorage 中的最新登录态（换号 / 退出）。
+     * @returns {Promise<'logout'|'switch'|'noop'>}
+     */
+    async syncAuthFromStorage() {
+      const token = localStorage.getItem(TOKEN_STORAGE_KEY) || '';
+      if (token === lastSyncedToken) {
+        // token 未变时仍同步 customer 缓存（他页可能只刷新了余额）
+        if (token && this.isLoggedIn) {
+          const cached = loadCachedCustomer();
+          if (cached) {
+            this.customer = { ...(this.customer || {}), ...cached };
+            if (this.userProfile) {
+              this.userProfile = { ...this.userProfile, ...cached };
+            }
+          }
+        }
+        return 'noop';
+      }
+
+      lastSyncedToken = token;
+      // 作废进行中的旧账号请求
+      userProfileLoadGen += 1;
+      walletLoadGen += 1;
+      userProfileRequest = null;
+      walletRequest = null;
+      // 加密会话跟 storage 对齐，避免仍用旧 sid/aesKey 请求
+      await reloadSessionFromStorage().catch(() => {});
+
+      if (!token) {
+        this.clearWebLogin({ syncOnly: true });
+        return 'logout';
+      }
+
+      // 换号：先落地新 customer 缓存，再强制重拉资料与钱包
+      this.isLoggedIn = true;
+      this.customer = loadCachedCustomer();
+      this.userProfile = null;
+      try {
+        await this.loadUserProfile({ force: true });
+      } catch { /* 资料失败仍保留登录态与缓存 customer */ }
+      return 'switch';
     },
     async loadVipLevels({ force = false } = {}) {
       if (this.vipLevels.length > 0 && !force) return this.vipLevels;
