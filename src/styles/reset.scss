@@ -10,6 +10,15 @@ html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   scroll-behavior: smooth;
+  color-scheme: light only;
+}
+
+/* 表单控件单独声明，避免安卓暗黑模式把输入框、按钮底色反转 */
+input,
+textarea,
+select,
+button {
+  color-scheme: light only;
 }
 
 html,

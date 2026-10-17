@@ -3,6 +3,8 @@
 @use '@/styles/tokens.scss';
 
 html {
+  color-scheme: light only;
+
   // 移动端以 375 稿为基准：
   // 1. 屏幕比 375 更窄时，根字号随屏宽缩小，避免小屏内容过挤
   // 2. 到了 375 及以上时，根字号封顶为 37.5px，不再继续放大
@@ -20,6 +22,7 @@ body {
   font-family: $font-family-base;
   color: var(--theme-text);
   background: var(--theme-bg);
+  color-scheme: light only;
   -webkit-overflow-scrolling: touch;
   // 防止 iOS 橡皮筋回弹拉出底色
   overscroll-behavior-y: none;

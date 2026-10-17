@@ -1,6 +1,7 @@
 // 基础设计变量。
 :root {
-  color-scheme: light;
+  /* light only：禁止浏览器按系统暗黑模式改写色值（安卓 Chrome / WebView） */
+  color-scheme: light only;
   --theme-primary: #1C7BFF; // 主题色
   --theme-bg: #E3ECFB; // 背景色
   --theme-page-base: #E3ECFB; // 页面底色
