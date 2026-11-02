@@ -16,6 +16,10 @@ const FALLBACK_MAP = {
     zhCN: '提领尚需消除流水 {outstanding}',
     enUS: 'Withdrawal requires remaining turnover {outstanding}',
   },
+  BANK_NOT_SUPPORTED: {
+    zhCN: '暂不支持该银行，请从列表中选择',
+    enUS: 'Bank not supported, please choose one from the list',
+  },
 };
 
 let remoteMap = {};

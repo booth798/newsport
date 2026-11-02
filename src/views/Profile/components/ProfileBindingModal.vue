@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { addBankCard, addWallet } from '@/api/user';
+import { addBankCard, addWallet, fetchBanks } from '@/api/user';
 import { useToast } from '@/hooks/useToast';
 import BaseInput from '@/components/BaseInput.vue';
 import BaseModal from '@/components/BaseModal.vue';
@@ -18,12 +18,15 @@ const emit = defineEmits(['update:modelValue', 'saved']);
 const { t } = useI18n();
 const toast = useToast();
 
-const BANK_OPTIONS = ['中国银行', '中国工商银行', '中国农业银行', '中国建设银行', '交通银行', '招商银行'];
 const WALLET_OPTIONS = ['TRC20', 'ERC20'];
 
 const activeTab = ref('bank');
 const holderName = ref('');
-const bankName = ref('');
+/** 选中银行的 code，提交绑卡时传 bankCode */
+const bankCode = ref('');
+const banks = ref([]);
+const banksLoading = ref(false);
+const banksError = ref(false);
 const bankAccount = ref('');
 const walletType = ref('');
 const walletAddress = ref('');
@@ -31,13 +34,35 @@ const walletConfirmAddress = ref('');
 const selectOpen = ref(false);
 const submitting = ref(false);
 
-const options = computed(() => activeTab.value === 'bank' ? BANK_OPTIONS : WALLET_OPTIONS);
-const selectedValue = computed(() => activeTab.value === 'bank' ? bankName.value : walletType.value);
+const options = computed(() => (activeTab.value === 'bank' ? banks.value : WALLET_OPTIONS));
+const selectedBank = computed(() => banks.value.find((item) => item.code === bankCode.value) || null);
+const selectedValue = computed(() => (
+  activeTab.value === 'bank' ? (selectedBank.value?.name || '') : walletType.value
+));
 const selectPlaceholder = computed(() => activeTab.value === 'bank' ? t('请选择银行') : t('请选择钱包类型'));
+
+/** 进绑卡时拉一次后台银行列表，展示 name、提交 code */
+async function loadBanks() {
+  banksLoading.value = true;
+  banksError.value = false;
+  try {
+    const res = await fetchBanks();
+    const list = Array.isArray(res?.data) ? res.data : [];
+    banks.value = list.filter((item) => item?.code && item?.name);
+    if (bankCode.value && !banks.value.some((item) => item.code === bankCode.value)) {
+      bankCode.value = '';
+    }
+  } catch {
+    banksError.value = true;
+    banks.value = [];
+  } finally {
+    banksLoading.value = false;
+  }
+}
 
 function resetForm() {
   holderName.value = '';
-  bankName.value = '';
+  bankCode.value = '';
   bankAccount.value = '';
   walletType.value = '';
   walletAddress.value = '';
@@ -48,11 +73,12 @@ function resetForm() {
 function switchTab(tab) {
   activeTab.value = tab;
   selectOpen.value = false;
+  if (tab === 'bank') loadBanks();
 }
 
 function selectOption(option) {
-  if (activeTab.value === 'bank') bankName.value = option;
-  else walletType.value = option;
+  if (activeTab.value === 'bank') bankCode.value = option?.code || '';
+  else walletType.value = option || '';
   selectOpen.value = false;
 }
 
@@ -62,16 +88,16 @@ function close() {
 
 async function submitBankCard() {
   if (!holderName.value.trim()) { toast.error(t('请输入持卡人姓名')); return; }
-  if (!bankName.value) { toast.error(t('请选择银行')); return; }
-  // 卡号对齐 OpenAPI BankCardBindReq：15-19 位数字
-  if (!/^\d{15,19}$/.test(bankAccount.value.trim())) { toast.error(t('请输入有效卡号')); return; }
+  if (!bankCode.value) { toast.error(t('请选择银行')); return; }
+  // 卡号对齐 BankCardBindReq：15-19 位数字；确认卡号与卡号一致
+  const accountNo = bankAccount.value.trim();
+  if (!/^\d{15,19}$/.test(accountNo)) { toast.error(t('请输入有效卡号')); return; }
 
-  // 支行名称已取消必填，不再提交 branch
   const res = await addBankCard({
     holderName: holderName.value.trim(),
-    accountNo: bankAccount.value.trim(),
-    accountNoConfirm: bankAccount.value.trim(),
-    bankName: bankName.value,
+    accountNo,
+    accountNoConfirm: accountNo,
+    bankCode: bankCode.value,
   });
   return res.data;
 }
@@ -118,6 +144,7 @@ watch(
     if (!visible) return;
     activeTab.value = props.initialTab === 'wallet' ? 'wallet' : 'bank';
     resetForm();
+    if (activeTab.value === 'bank') loadBanks();
   },
 );
 </script>
@@ -167,8 +194,23 @@ watch(
                 <i aria-hidden="true" />
               </button>
               <div v-if="selectOpen" class="profile-binding-modal__options">
-                <button type="button" class="placeholder" @click="selectOption('')">{{ selectPlaceholder }}</button>
-                <button v-for="option in options" :key="option" type="button" @click="selectOption(option)">{{ t(option) }}</button>
+                <template v-if="activeTab === 'bank'">
+                  <button v-if="banksLoading" type="button" class="placeholder" disabled>{{ t('加载中') }}</button>
+                  <button v-else-if="banksError" type="button" @click.stop="loadBanks">{{ t('加载失败') }}，{{ t('重试') }}</button>
+                  <button v-else-if="!banks.length" type="button" class="placeholder" disabled>{{ t('暂无数据') }}</button>
+                  <template v-else>
+                    <button
+                      v-for="bank in banks"
+                      :key="bank.code"
+                      type="button"
+                      @click="selectOption(bank)"
+                    >{{ bank.name }}</button>
+                  </template>
+                </template>
+                <template v-else>
+                  <button type="button" class="placeholder" @click="selectOption('')">{{ selectPlaceholder }}</button>
+                  <button v-for="option in options" :key="option" type="button" @click="selectOption(option)">{{ option }}</button>
+                </template>
               </div>
             </div>
           </div>

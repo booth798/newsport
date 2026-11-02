@@ -247,7 +247,12 @@ export async function fetchBindings() {
   return get('/bindings');
 }
 
-/** 绑定银行卡 */
+/** 可绑定银行列表（后台配置，进绑卡页拉取，不要写死） */
+export async function fetchBanks() {
+  return get('/banks');
+}
+
+/** 绑定银行卡：新版传 bankCode，不再传 bankName */
 export async function addBankCard(cardData) {
   return post('/bindings/bank-card', cardData);
 }
