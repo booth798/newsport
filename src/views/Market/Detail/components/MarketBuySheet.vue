@@ -15,9 +15,9 @@ import iconGermaryUrl from '@/assets/images/events/icon_germary.svg?url';
 import iconItalyUrl from '@/assets/images/events/icon_italy.svg?url';
 import iconSpainUrl from '@/assets/images/events/icon_spain.svg?url';
 import iconUkUrl from '@/assets/images/events/icon_uk.svg?url';
-import iconTradeSuccessUrl from '@/assets/images/common/icon_trade_success.svg?url';
-import iconBuySettingsUrl from '@/assets/images/common/icon_buy_settings.svg?url';
-import iconInvestingUrl from '@/assets/images/common/icon_investing.svg?url';
+import iconTradeSuccessUrl from '@/assets/images/common/icon_trade_success.png?url';
+import iconBuySettingsUrl from '@/assets/images/common/icon_buy_settings.png?url';
+import iconInvestingUrl from '@/assets/images/common/icon_investing.png?url';
 import iconBuySettingsGrayUrl from '@/assets/images/common/icon_buy_settings_gray.svg?url';
 import { useAppStore } from '@/store/modules/app';
 import { useUserStore } from '@/store/modules/user';
@@ -757,8 +757,8 @@ function onBackdropKeydown(e) {
           <div class="buy-sheet__wallet">
             <span class="buy-sheet__wallet-account">
               <svg class="buy-sheet__wallet-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                <circle cx="10" cy="7" r="3.2" fill="#8AA0BC" />
-                <path d="M4 16.2c0-3 2.7-5.2 6-5.2s6 2.2 6 5.2" fill="#8AA0BC" />
+                <circle cx="10" cy="7" r="3.2" fill="var(--theme-text-muted)" />
+                <path d="M4 16.2c0-3 2.7-5.2 6-5.2s6 2.2 6 5.2" fill="var(--theme-text-muted)" />
               </svg>
               <span class="buy-sheet__wallet-id">{{ loggedInUserId || '' }}</span>
             </span>
@@ -817,7 +817,7 @@ function onBackdropKeydown(e) {
   &__backdrop {
     position: absolute;
     inset: 0;
-    background: rgba(11, 52, 98, 0.55);
+    background: rgba(var(--theme-text-rgb), 0.55);
     backdrop-filter: blur(4px);
   }
 
@@ -934,10 +934,10 @@ function onBackdropKeydown(e) {
     max-height: calc(100dvh - 56px);
     box-sizing: border-box;
     border-radius: 24px;
-    border: 0.8px solid rgba(214, 224, 235, 1);
+    border: 0.8px solid rgba(var(--theme-divider-rgb), 1);
     background:
-      radial-gradient(100% 100% at 50% 100%, #68b3fd 0%, #0d6cfb 100%);
-    box-shadow: 0 12px 40px rgba(21, 58, 118, 0.28);
+      radial-gradient(100% 100% at 50% 100%, var(--theme-primary-end) 0%, var(--theme-primary) 100%);
+    box-shadow: 0 12px 40px rgba(var(--theme-shadow-rgb), 0.28);
     padding: 12px;
     display: flex;
     flex-direction: column;
@@ -1013,11 +1013,11 @@ function onBackdropKeydown(e) {
     min-height: 44px;
     padding: 7px 10px;
     border-radius: 30px;
-    background: #eaf1f9;
+    background: var(--surface-card);
     border: 0.8px solid #fff;
-    box-shadow: 0 4px 10px rgba(21, 58, 119, 0.18);
+    box-shadow: 0 4px 10px rgba(var(--theme-shadow-rgb), 0.18);
     font-size: 14px;
-    color: #0b3462;
+    color: var(--theme-text);
     flex-shrink: 0;
   }
 
@@ -1041,7 +1041,7 @@ function onBackdropKeydown(e) {
   }
 
   &__invest-option {
-    color: #ff2d2d;
+    color: var(--auxiliary-2);
     font-weight: 500;
     white-space: nowrap;
   }
@@ -1052,8 +1052,8 @@ function onBackdropKeydown(e) {
     margin-left: auto;
     padding: 4px 10px;
     border-radius: 6px;
-    background: rgba(255, 45, 45, 0.15);
-    color: #ff2d2d;
+    background: rgba(var(--theme-primary-rgb), 0.15);
+    color: var(--auxiliary-2);
     font-size: 12px;
     font-weight: 400;
     flex-shrink: 0;
@@ -1075,14 +1075,14 @@ function onBackdropKeydown(e) {
   &__match-league {
     font-size: 14px;
     font-weight: 600;
-    color: #0b3462;
+    color: var(--theme-text);
   }
 
   &__match-date {
     margin: 0 0 8px;
     font-family: $font-family-num;
     font-size: 12px;
-    color: rgba(11, 52, 98, 0.55);
+    color: rgba(var(--theme-text-rgb), 0.55);
   }
 
   &__match-arena {
@@ -1094,8 +1094,8 @@ function onBackdropKeydown(e) {
     position: relative;
     overflow: hidden;
     min-height: 100px;
-    background-color: #f3f8ff;
-    background-image: url('@/assets/images/events/bg_score.svg');
+    background-color: var(--surface-tint);
+    background-image: url('@/assets/images/events/bg_grid_pattern.png');
     background-repeat: no-repeat;
     background-position: center;
     background-size: cover;
@@ -1140,7 +1140,7 @@ function onBackdropKeydown(e) {
   &__match-name {
     font-size: 11px;
     font-weight: 500;
-    color: #0b3462;
+    color: var(--theme-text);
     text-align: center;
     line-height: 1.2;
   }
@@ -1148,7 +1148,7 @@ function onBackdropKeydown(e) {
   &__match-vs {
     font-size: 18px;
     font-weight: 700;
-    color: #1c7bff;
+    color: var(--theme-primary);
   }
 
   &__side-tag {
@@ -1165,11 +1165,11 @@ function onBackdropKeydown(e) {
     vertical-align: middle;
 
     &--home {
-      background: #1c7bff;
+      background: var(--theme-primary);
     }
 
     &--away {
-      background: rgba(11, 52, 98, 0.5);
+      background: rgba(var(--theme-text-rgb), 0.5);
     }
 
     &--after {
@@ -1204,19 +1204,19 @@ function onBackdropKeydown(e) {
   &__panel-title {
     font-size: 14px;
     font-weight: 400;
-    color: rgba(11, 52, 98, 0.5);
+    color: rgba(var(--theme-text-rgb), 0.5);
   }
 
   &__panel-yield {
     font-size: 14px;
     font-weight: 500;
-    color: #1c7bff;
+    color: var(--theme-primary);
   }
 
   &__profit-link {
     border: none;
     background: transparent;
-    color: #1c7bff;
+    color: var(--theme-primary);
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
@@ -1229,7 +1229,7 @@ function onBackdropKeydown(e) {
     gap: 8px;
     padding: 8px 10px;
     border-radius: 10px;
-    border: 1.5px solid #1c7bff;
+    border: 1.5px solid var(--theme-primary);
     background: #fff;
     margin-bottom: 6px;
     overflow: hidden;
@@ -1237,7 +1237,7 @@ function onBackdropKeydown(e) {
     max-width: 100%;
 
     &--plain {
-      border-color: rgba(228, 240, 254, 0.95);
+      border-color: rgba(var(--theme-divider-rgb), 0.95);
     }
   }
 
@@ -1245,14 +1245,14 @@ function onBackdropKeydown(e) {
     flex-shrink: 0;
     font-family: $font-family-num;
     font-size: 13px;
-    color: rgba(11, 52, 98, 0.55);
+    color: rgba(var(--theme-text-rgb), 0.55);
   }
 
   &__formula-suffix {
     flex-shrink: 0;
     font-family: $font-family-num;
     font-size: 12px;
-    color: rgba(11, 52, 98, 0.5);
+    color: rgba(var(--theme-text-rgb), 0.5);
     white-space: nowrap;
   }
 
@@ -1261,7 +1261,7 @@ function onBackdropKeydown(e) {
     font-family: $font-family-num;
     font-size: 14px;
     font-weight: 500;
-    color: #1c7bff;
+    color: var(--theme-primary);
     white-space: nowrap;
   }
 
@@ -1274,7 +1274,7 @@ function onBackdropKeydown(e) {
     font-family: $font-family-base;
     font-size: 14px;
     font-weight: 400;
-    color: #0b3462;
+    color: var(--theme-text);
     text-align: left;
     outline: none;
     box-sizing: border-box;
@@ -1284,7 +1284,7 @@ function onBackdropKeydown(e) {
     }
 
     &::placeholder {
-      color: rgba(11, 52, 98, 0.5);
+      color: rgba(var(--theme-text-rgb), 0.5);
       font-weight: 400;
     }
   }
@@ -1293,14 +1293,14 @@ function onBackdropKeydown(e) {
     margin: 0 0 10px;
     font-size: 12px;
     font-weight: 300;
-    color: #ff2d2d;
+    color: var(--auxiliary-2);
     text-align: right;
   }
 
   &__fee-inline {
     margin-left: 8px;
     font-size: 11px;
-    color: #ff2d2d;
+    color: var(--auxiliary-2);
   }
 
   &__chips {
@@ -1317,15 +1317,15 @@ function onBackdropKeydown(e) {
     padding: 0 6px;
     border-radius: 12px;
     border: none;
-    background: #eaf1f9;
-    color: rgba(11, 52, 98, 0.5);
+    background: var(--surface-card);
+    color: rgba(var(--theme-text-rgb), 0.5);
     font-family: $font-family-base;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
 
     &:last-child {
-      color: #0b3462;
+      color: var(--theme-text);
     }
 
     &--icon {
@@ -1349,7 +1349,7 @@ function onBackdropKeydown(e) {
 
     &--icon-editing {
       border-radius: 12px;
-      background: #eaf1f9;
+      background: var(--surface-card);
 
       img {
         width: 22px;
@@ -1363,9 +1363,9 @@ function onBackdropKeydown(e) {
       height: 36px;
       padding: 0 6px;
       border-radius: 12px;
-      border: 0.8px solid #d6e0eb;
+      border: 0.8px solid var(--border-light);
       background: #fff;
-      color: #0b3462;
+      color: var(--theme-text);
       font-family: $font-family-base;
       font-size: 14px;
       font-weight: 500;
@@ -1374,13 +1374,13 @@ function onBackdropKeydown(e) {
       box-sizing: border-box;
 
       &:focus {
-        border-color: #1c7bff;
+        border-color: var(--theme-primary);
       }
     }
 
     &--done,
     &--done:last-child {
-      background: #1c7bff;
+      background: var(--theme-primary);
       color: #fff;
     }
   }
@@ -1388,24 +1388,24 @@ function onBackdropKeydown(e) {
   &__scheduled-meta {
     padding-bottom: 10px;
     margin-bottom: 10px;
-    border-bottom: 1px solid rgba(11, 52, 98, 0.08);
+    border-bottom: 1px solid rgba(var(--theme-text-rgb), 0.08);
   }
 
   &__scheduled-row {
     display: flex;
     justify-content: space-between;
     font-size: 13px;
-    color: rgba(11, 52, 98, 0.65);
+    color: rgba(var(--theme-text-rgb), 0.65);
     margin-bottom: 6px;
 
     strong {
-      color: #0b3462;
+      color: var(--theme-text);
       font-weight: 600;
     }
   }
 
   &__scheduled-profit {
-    color: #1c7bff !important;
+    color: var(--theme-primary) !important;
   }
 
   &__scheduled-range {
@@ -1418,7 +1418,7 @@ function onBackdropKeydown(e) {
 
   &__scheduled-range-label {
     font-size: 13px;
-    color: rgba(11, 52, 98, 0.65);
+    color: rgba(var(--theme-text-rgb), 0.65);
     flex-shrink: 0;
   }
 
@@ -1435,31 +1435,31 @@ function onBackdropKeydown(e) {
     height: 32px;
     padding: 0 8px;
     border-radius: 8px;
-    border: 1px solid rgba(228, 240, 254, 0.95);
+    border: 1px solid rgba(var(--theme-divider-rgb), 0.95);
     background: #fff;
     font-family: $font-family-num;
     font-size: 16px;
     text-align: center;
-    color: #0b3462;
+    color: var(--theme-text);
     outline: none;
     box-sizing: border-box;
   }
 
   &__range-sep {
-    color: rgba(11, 52, 98, 0.45);
+    color: rgba(var(--theme-text-rgb), 0.45);
   }
 
   &__scheduled-tip {
     margin: 0;
     font-size: 11px;
     line-height: 1.4;
-    color: #ff2d2d;
+    color: var(--auxiliary-2);
   }
 
   &__est {
     margin: 8px 0 0;
     font-size: 12px;
-    color: #1c7bff;
+    color: var(--theme-primary);
     font-weight: 500;
   }
 
@@ -1471,7 +1471,7 @@ function onBackdropKeydown(e) {
     height: 36px;
     padding: 4px 8px;
     border-radius: 22px;
-    background: #eaf1f9;
+    background: var(--surface-card);
     flex-shrink: 0;
     width: 100%;
     box-sizing: border-box;
@@ -1491,7 +1491,7 @@ function onBackdropKeydown(e) {
   &__wallet-id {
     font-size: 12px;
     font-weight: 500;
-    color: rgba(11, 52, 98, 0.5);
+    color: rgba(var(--theme-text-rgb), 0.5);
     white-space: nowrap;
   }
 
@@ -1507,7 +1507,7 @@ function onBackdropKeydown(e) {
 
   &__wallet-name {
     font-size: 14px;
-    color: rgba(11, 52, 98, 0.5);
+    color: rgba(var(--theme-text-rgb), 0.5);
     white-space: nowrap;
   }
 
@@ -1515,7 +1515,7 @@ function onBackdropKeydown(e) {
     font-family: $font-family-num;
     font-size: 14px;
     font-weight: 500;
-    color: #1c7bff;
+    color: var(--theme-primary);
     white-space: nowrap;
   }
 
@@ -1525,7 +1525,7 @@ function onBackdropKeydown(e) {
     flex-shrink: 0;
   }
 
-  /* H5：取消/确定在蓝色弹框外、蒙层上 */
+  /* H5：取消/确定在品牌弹框外、蒙层上 */
   &__actions--outer {
     width: 100%;
     flex-shrink: 0;
@@ -1542,16 +1542,16 @@ function onBackdropKeydown(e) {
     }
   }
 
-  /* PC：蓝边蓝字取消钮（沿用原样式） */
+  /* PC：品牌色描边与文字取消钮 */
   @include web-only {
     &__cancel-btn {
-      border: 1.5px solid #1c7bff;
-      color: #1c7bff;
+      border: 1.5px solid var(--theme-primary);
+      color: var(--theme-primary);
       background: #fff;
     }
   }
 
-  /* H5：白底红字取消 + 蓝底白字确定（设计稿，在弹框外部） */
+  /* H5：白底红字取消 + 品牌底白字确定（设计稿，在弹框外部） */
   @include mobile-only {
     &__actions--outer.norem {
       gap: 11px;
@@ -1589,10 +1589,10 @@ function onBackdropKeydown(e) {
     position: relative;
     padding: 12px;
     overflow: hidden;
-    border: 0.8px solid rgba(214, 224, 235, 1);
+    border: 0.8px solid rgba(var(--theme-divider-rgb), 1);
     border-radius: 24px;
-    background: radial-gradient(100% 100% at 50% 100%, #68b3fd 0%, #0d6cfb 100%);
-    box-shadow: 0 12px 40px rgba(21, 58, 118, 0.28);
+    background: radial-gradient(100% 100% at 50% 100%, var(--theme-primary-end) 0%, var(--theme-primary) 100%);
+    box-shadow: 0 12px 40px rgba(var(--theme-shadow-rgb), 0.28);
     gap: 0;
 
     @include web-only {
@@ -1603,16 +1603,14 @@ function onBackdropKeydown(e) {
     }
 
     &::before {
-      content: 'UNIBET';
+      content: '';
       position: absolute;
       top: 6px;
       left: 0;
       right: 0;
       text-align: center;
-      font-size: 52px;
-      font-weight: 800;
-      letter-spacing: 2px;
-      color: rgba(255, 255, 255, 0.1);
+      height: 80px;
+      background: url('@/assets/images/common/modal_opacity_logo.png') center top / contain no-repeat;
       pointer-events: none;
       z-index: 0;
     }
@@ -1669,20 +1667,20 @@ function onBackdropKeydown(e) {
 
   &__success-field {
     padding: 12px 0 10px;
-    border-bottom: 0.8px solid #eaf1f9;
+    border-bottom: 0.8px solid var(--surface-card);
   }
 
   &__success-label {
     display: block;
     font-size: 12px;
-    color: rgba(11, 52, 98, 0.5);
+    color: rgba(var(--theme-text-rgb), 0.5);
     margin-bottom: 6px;
   }
 
   &__success-val {
     font-size: 15px;
     font-weight: 600;
-    color: #0b3462;
+    color: var(--theme-text);
     word-break: break-all;
   }
 
@@ -1699,10 +1697,10 @@ function onBackdropKeydown(e) {
     gap: 6px;
     padding: 6px 8px;
     border-radius: 8px;
-    background: #eaf1f9;
+    background: var(--surface-card);
     font-size: 14px;
     font-weight: 500;
-    color: #0b3462;
+    color: var(--theme-text);
 
     img {
       width: 20px;
@@ -1725,7 +1723,7 @@ function onBackdropKeydown(e) {
     margin-top: 12px;
     padding: 12px;
     border-radius: 12px;
-    background: #eaf1f9;
+    background: var(--surface-card);
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -1739,21 +1737,21 @@ function onBackdropKeydown(e) {
 
   &__success-summary-label {
     font-size: 12px;
-    color: rgba(11, 52, 98, 0.5);
+    color: rgba(var(--theme-text-rgb), 0.5);
   }
 
   &__success-summary-val {
     font-family: $font-family-num;
     font-size: 15px;
     font-weight: 600;
-    color: #0b3462;
+    color: var(--theme-text);
 
     &--rate {
-      color: #ff2d2d;
+      color: var(--auxiliary-2);
     }
 
     &--profit {
-      color: #1c7bff;
+      color: var(--theme-primary);
     }
   }
 

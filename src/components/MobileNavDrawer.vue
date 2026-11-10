@@ -10,13 +10,13 @@ import { ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 
-import logoUrl from '@/assets/images/common/logo_nav.png';
-import chevronUp from '@/assets/images/common/icon_drawer_section_chevron_up.svg';
-import chevronDown from '@/assets/images/common/icon_drawer_section_chevron_down.svg';
-import bgScoreUrl from '@/assets/images/events/bg_score.svg?url';
+import logoUrl from '@/assets/images/common/logo_brand.png';
+import chevronUp from '@/assets/images/common/icon_drawer_section_chevron_up.png';
+import chevronDown from '@/assets/images/common/icon_drawer_section_chevron_down.png';
+import bgScoreUrl from '@/assets/images/events/bg_grid_pattern.png?url';
 
 import iconDeposit from '@/assets/images/menu/icon_deposit.svg';
-import iconWithdraw from '@/assets/images/common/icon_withdraw.svg';
+import iconWithdraw from '@/assets/images/common/icon_withdraw.png';
 import iconVipTransfer from '@/assets/images/profile/vip_transfer_icon.svg';
 
 import iconMarketList from '@/assets/images/menu/icon_market_list.svg';
@@ -26,10 +26,10 @@ import iconLiveScores from '@/assets/images/menu/icon_live_scores.svg';
 import iconVipBenefits from '@/assets/images/profile/vip_benefits_icon.svg';
 import iconAbout from '@/assets/images/menu/icon_about_unibet.svg';
 
-import iconMy from '@/assets/images/menu/icon_my.svg';
+import iconMy from '@/assets/images/menu/icon_my.png';
 import iconPersonalProfile from '@/assets/images/menu/icon_personal_profile.svg';
 import iconSettings from '@/assets/images/menu/icon_settings.svg';
-import iconContact from '@/assets/images/menu/icon_my_contact_support.svg';
+import iconContact from '@/assets/images/menu/icon_my_contact_support.png';
 
 import { useAppStore } from '@/store/modules/app';
 import { useUserStore } from '@/store/modules/user';
@@ -182,7 +182,7 @@ function onContact() {
             <div class="nav-drawer__scroll">
               <header class="nav-drawer__header">
                 <div class="nav-drawer__logo-wrap">
-                  <img class="nav-drawer__logo" :src="logoUrl" alt="UNIBET" />
+                  <img class="nav-drawer__logo" :src="logoUrl" alt="Ladbrokes" />
                 </div>
               </header>
 
@@ -272,10 +272,10 @@ $divider-gap: 16px;
   width: $tile-w;
   height: $tile-h;
   background:
-    linear-gradient(360deg, rgba(104, 136, 186, 0) 0%, rgba(104, 136, 186, 0.15) 100%),
+    linear-gradient(360deg, rgba(var(--theme-primary-rgb), 0) 0%, rgba(var(--theme-primary-rgb), 0.15) 100%),
     linear-gradient(0deg, #ffffff, #ffffff);
   border: 0.8px solid #ffffff;
-  box-shadow: 0 2px 6px 0 rgba(21, 58, 119, 0.1);
+  box-shadow: 0 2px 6px 0 rgba(var(--theme-shadow-rgb), 0.1);
   border-radius: $tile-radius;
 }
 
@@ -298,7 +298,7 @@ $divider-gap: 16px;
 .nav-drawer__backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(17, 24, 39, 0.45);
+  background: rgba(var(--theme-shadow-rgb), 0.45);
 }
 
 .nav-drawer__panel {
@@ -311,7 +311,7 @@ $divider-gap: 16px;
   border-radius: 16px 0 0 16px;
   overflow: hidden;
   background: #fff;
-  box-shadow: -6px 0 24px rgba(21, 58, 119, 0.12);
+  box-shadow: -6px 0 24px rgba(var(--theme-shadow-rgb), 0.12);
 }
 
 .nav-drawer__arena {
@@ -392,7 +392,7 @@ $divider-gap: 16px;
   -webkit-tap-highlight-color: transparent;
 
   &.is-active {
-    border-color: rgba(28, 123, 255, 0.75);
+    border-color: rgba(var(--theme-primary-rgb), 0.75);
     color: var(--theme-primary);
   }
 
@@ -445,7 +445,7 @@ $divider-gap: 16px;
   font-size: 14px;
   font-weight: 500;
   line-height: 1;
-  color: #1c7bff;
+  color: var(--theme-primary);
 }
 
 .nav-drawer__section-chevron {

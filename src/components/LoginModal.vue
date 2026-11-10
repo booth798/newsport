@@ -2,7 +2,8 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import logoLoginUrl from '@/assets/images/common/logo_login.svg?url';
+import logoLoginUrl from '@/assets/images/common/logo_login.png?url';
+import logoWatermarkUrl from '@/assets/images/common/modal_opacity_logo.png?url';
 import iconLoginUserUrl from '@/assets/images/login/icon_login_user.svg?url';
 import iconLoginLockUrl from '@/assets/images/login/icon_login_lock.svg?url';
 import iconEyeClosedUrl from '@/assets/images/login/icon_login_eye_closed.svg?url';
@@ -233,10 +234,10 @@ const passwordInputType = computed(() => (showPassword.value ? 'text' : 'passwor
       <div v-if="visible" class="login-overlay" @click.self="close">
         <div class="login-overlay__stack">
           <div class="login-modal" role="dialog" aria-modal="true" :aria-label="isLogin ? t('会员登入') : t('会员注册')">
-            <div class="login-modal__watermark" aria-hidden="true">UNIBET</div>
+            <img class="login-modal__watermark" :src="logoWatermarkUrl" alt="" aria-hidden="true" />
 
             <div class="login-modal__brand">
-              <img class="login-modal__logo" :src="logoLoginUrl" width="100" height="36" alt="UNIBET" />
+              <img class="login-modal__logo" :src="logoLoginUrl" width="132" height="36" alt="Ladbrokes" />
             </div>
 
             <div class="login-modal__panel">
@@ -428,16 +429,16 @@ const passwordInputType = computed(() => (showPassword.value ? 'text' : 'passwor
 <style lang="scss" scoped>
 @use '@/styles/tools.scss' as *;
 
-// Figma：外框线性渐变 上深 #0D6CFB → 下浅 #68B3FD
-$login-frame-grad-top: #0d6cfb;
-$login-frame-grad-bottom: #68b3fd;
-$login-frame-border: #d6e0eb;
-$login-input-border: #e4f0fe;
+// Ladbrokes 品牌框：与 PC / H5 弹窗导出稿一致的红色渐变。
+$login-frame-grad-top: var(--theme-primary);
+$login-frame-grad-bottom: var(--theme-primary-end);
+$login-frame-border: var(--border-light);
+$login-input-border: var(--theme-divider);
 $login-panel-bg: #ffffff;
-$login-cta-blue: #0d6cfb;
-$login-placeholder: rgba(11, 52, 98, 0.5);
-$login-label: rgba(11, 52, 98, 0.45);
-$login-input-text: rgba(11, 52, 98, 1);
+$login-cta-color: var(--theme-primary);
+$login-placeholder: rgba(var(--theme-text-rgb), 0.5);
+$login-label: rgba(var(--theme-text-rgb), 0.45);
+$login-input-text: rgba(var(--theme-text-rgb), 1);
 
 .login-overlay {
   position: fixed;
@@ -528,13 +529,13 @@ $login-input-text: rgba(11, 52, 98, 1);
   padding: 20px 12px;
   border-radius: 28px;
   border: 0.8px solid $login-frame-border;
-  background: linear-gradient(180deg, #{$login-frame-grad-top} 0%, #{$login-frame-grad-bottom} 100%);
-  box-shadow: 0 28px 72px rgba(8, 60, 140, 0.35);
+  background: linear-gradient(180deg, $login-frame-grad-top 0%, $login-frame-grad-bottom 100%);
+  box-shadow: 0 28px 72px rgba(var(--theme-shadow-rgb), 0.35);
 
   @include web-only {
     width: 400px;
     max-width: 400px;
-    // 去掉滑块后按内容撑开，避免蓝区大块留白
+    // 去掉滑块后按内容撑开。
     min-height: 0;
     border-radius: 32px;
     overflow: hidden;
@@ -550,20 +551,13 @@ $login-input-text: rgba(11, 52, 98, 1);
   &__watermark {
     position: absolute;
     left: 50%;
-    // 锚在顶部蓝区（logo 一带），避免整卡垂直居中导致大半落在白卡后面「看不见」
-    top: 58px;
-    transform: translate(-50%, -50%);
+    top: 0;
+    width: 100%;
+    height: 80px;
+    object-fit: contain;
+    transform: translateX(-50%);
     z-index: 0;
     pointer-events: none;
-    white-space: nowrap;
-    font-family: $font-family-num, $font-family-base;
-    font-size: clamp(60px, 21vw, 108px);
-    font-weight: 900;
-    line-height: 1;
-    letter-spacing: 0.06em;
-    // 略偏冷白，在渐变蓝底上更接近稿图 2 的水印层次
-    color: rgba(232, 244, 255, 0.14);
-    text-transform: uppercase;
     user-select: none;
   }
 
@@ -583,13 +577,13 @@ $login-input-text: rgba(11, 52, 98, 1);
 
   &__logo {
     display: block;
-    width: 100px;
+    width: 132px;
     height: 36px;
     object-fit: contain;
 
     @include mobile-only {
-      width: 80px;
-      height: 28px;
+      width: 110px;
+      height: 30px;
     }
   }
 
@@ -670,7 +664,7 @@ $login-input-text: rgba(11, 52, 98, 1);
     pointer-events: none;
 
     &:focus-visible {
-      outline: 2px solid rgba(13, 108, 251, 0.45);
+      outline: 2px solid rgba(var(--theme-primary-rgb), 0.45);
       outline-offset: 2px;
     }
   }
@@ -681,7 +675,7 @@ $login-input-text: rgba(11, 52, 98, 1);
     width: 18px;
     height: 18px;
     box-sizing: border-box;
-    border: 1.5px solid $login-cta-blue;
+    border: 1.5px solid $login-cta-color;
     border-radius: 50%;
     background: #fff;
 
@@ -692,8 +686,8 @@ $login-input-text: rgba(11, 52, 98, 1);
       top: 2px;
       width: 5px;
       height: 9px;
-      border-right: 1.7px solid $login-cta-blue;
-      border-bottom: 1.7px solid $login-cta-blue;
+      border-right: 1.7px solid $login-cta-color;
+      border-bottom: 1.7px solid $login-cta-color;
       transform: rotate(45deg) scale(0);
       transform-origin: center;
       transition: transform 0.15s ease;
@@ -745,7 +739,7 @@ $login-input-text: rgba(11, 52, 98, 1);
     margin-top: 0;
 
     a {
-      color: $login-cta-blue;
+      color: $login-cta-color;
       font-weight: 500;
       text-decoration: none;
       margin-left: 2px;
@@ -818,26 +812,26 @@ $login-input-text: rgba(11, 52, 98, 1);
   }
 }
 
-// 登入：白底蓝字（稿图底部主按钮），覆盖全局 .btn--primary
+// 登入：白底品牌红字，覆盖全局 .btn--primary
 .login-modal .login-modal__submit--inverse.btn.btn--primary {
   background: #ffffff;
-  color: $login-cta-blue;
+  color: $login-cta-color;
   border: 0.8px solid $login-frame-border;
   border-image: none;
-  box-shadow: 0 2px 12px rgba(13, 108, 251, 0.15);
+  box-shadow: 0 2px 12px rgba(var(--theme-primary-rgb), 0.15);
 
   &::after {
     display: none;
   }
 
   &:disabled {
-    color: rgba(11, 52, 98, 0.35);
+    color: rgba(var(--theme-text-rgb), 0.35);
     background: rgba(255, 255, 255, 0.78);
   }
 
   &.login-modal__submit--ready:not(:disabled) {
-    box-shadow: 0 4px 18px rgba(13, 108, 251, 0.28);
-    border-color: rgba(13, 108, 251, 0.4);
+    box-shadow: 0 4px 18px rgba(var(--theme-primary-rgb), 0.28);
+    border-color: rgba(var(--theme-primary-rgb), 0.4);
   }
 }
 
@@ -921,7 +915,7 @@ $login-input-text: rgba(11, 52, 98, 1);
   }
 
   &:focus-visible {
-    outline: 2px solid rgba(13, 108, 251, 0.45);
+    outline: 2px solid rgba(var(--theme-primary-rgb), 0.45);
     outline-offset: 1px;
   }
 }
@@ -958,7 +952,7 @@ $login-input-text: rgba(11, 52, 98, 1);
   }
 
   &:focus {
-    border-color: rgba(13, 108, 251, 0.45);
+    border-color: rgba(var(--theme-primary-rgb), 0.45);
     background-color: #fff;
   }
 

@@ -59,8 +59,8 @@ function confirmGoService() {
 
   p {
     margin: 0;
-    // 与登录确认弹窗文案一致：16px / Regular / #0B3462
-    color: #0b3462;
+    // 与登录确认弹窗文案一致：16px / Regular / var(--theme-text)
+    color: var(--theme-text);
     font-size: 16px;
     font-weight: 400;
     line-height: 1.4;

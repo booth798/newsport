@@ -47,13 +47,13 @@ const hideSidebarOnHome = computed(() => isProfileHome.value || isMobile.value);
     @include web-only {
       padding-top: 16px;
       padding-bottom: 60px;
-      background: #e3ecfb;
+      background: var(--theme-bg);
     }
 
     @include mobile-only {
       padding-top: 8px;
       padding-bottom: 0;
-      background: #e3ecfb;
+      background: var(--theme-bg);
     }
 
     .profile-layout__inner {
@@ -89,7 +89,7 @@ const hideSidebarOnHome = computed(() => isProfileHome.value || isMobile.value);
   &__placeholder {
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, var(--theme-primary), #5696f5);
+    background: linear-gradient(135deg, var(--theme-primary), var(--theme-primary-end));
     color: #fff;
     display: flex;
     align-items: center;

@@ -11,7 +11,7 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
-import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.svg?url';
+import iconNavBackMarketUrl from '@/assets/images/common/icon_back_white.png?url';
 import AppSideNav from '@/components/AppSideNav.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import { fetchMatchList } from '@/api/match';
@@ -141,8 +141,8 @@ onBeforeUnmount(() => {
             <div class="upcoming-card__top">
               <span class="upcoming-card__league">
                 <svg class="upcoming-card__gear" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <path d="M8 10a2 2 0 100-4 2 2 0 000 4z" stroke="#7b92ad" stroke-width="1.2"/>
-                  <path d="M8 1.5l1 1.6 1.9-.4.4 1.9 1.6 1-1 .9 1 .9-1.6 1-.4 1.9-1.9-.4-1 1.6-1-1.6-1.9.4-.4-1.9-1.6-1 1-.9-1-.9 1.6-1 .4-1.9 1.9.4 1-1.6z" stroke="#7b92ad" stroke-width="1" stroke-linejoin="round"/>
+                  <path d="M8 10a2 2 0 100-4 2 2 0 000 4z" stroke="var(--theme-text-muted)" stroke-width="1.2"/>
+                  <path d="M8 1.5l1 1.6 1.9-.4.4 1.9 1.6 1-1 .9 1 .9-1.6 1-.4 1.9-1.9-.4-1 1.6-1-1.6-1.9.4-.4-1.9-1.6-1 1-.9-1-.9 1.6-1 .4-1.9 1.9.4 1-1.6z" stroke="var(--theme-text-muted)" stroke-width="1" stroke-linejoin="round"/>
                 </svg>
                 <img v-if="m.leagueIcon" class="upcoming-card__league-logo" :src="m.leagueIcon" alt="" width="18" height="18" @error="(e) => e.target.style.display='none'" />
                 <span class="upcoming-card__league-name">{{ m.league }}</span>
@@ -179,7 +179,7 @@ onBeforeUnmount(() => {
 .upcoming-page {
   min-height: 100dvh;
   box-sizing: border-box;
-  background: linear-gradient(180deg, #e3ecfb 0%, var(--theme-bg) 220px);
+  background: linear-gradient(180deg, var(--theme-bg) 0%, var(--theme-bg) 220px);
 
   @include web-only {
     padding: 30px 30px 60px;
@@ -207,7 +207,7 @@ onBeforeUnmount(() => {
   font-family: $font-family-num, $font-family-base;
   font-size: 12px;
   font-weight: 500;
-  color: rgba(11, 52, 98, 0.48);
+  color: rgba(var(--theme-text-rgb), 0.48);
   white-space: nowrap;
 }
 
@@ -221,7 +221,7 @@ onBeforeUnmount(() => {
     padding: 0 32px;
     border: 0.8px solid var(--auxiliary-1);
     border-radius: 40px;
-    background: var(--surface-card);
+    background: var(--theme-primary);
   }
 
   @include mobile-only {
@@ -230,7 +230,7 @@ onBeforeUnmount(() => {
     padding: 0 8px;
     border: 0.8px solid #fff;
     border-radius: 30px;
-    background: var(--surface-card);
+    background: var(--theme-primary);
   }
 }
 
@@ -264,7 +264,7 @@ onBeforeUnmount(() => {
   margin: 0;
   font-size: 14px;
   font-weight: 700;
-  color: #0b3462;
+  color: var(--auxiliary-1);
   white-space: nowrap;
 }
 
@@ -303,15 +303,15 @@ onBeforeUnmount(() => {
   justify-content: center;
   min-height: 260px;
   gap: 12px;
-  color: #7b92ad;
+  color: var(--theme-text-muted);
   font-size: 14px;
 }
 
 .upcoming-spinner {
   width: 24px;
   height: 24px;
-  border: 3px solid #e4f0fe;
-  border-top-color: #1c7bff;
+  border: 3px solid var(--theme-divider);
+  border-top-color: var(--theme-primary);
   border-radius: 50%;
   animation: upcoming-spin 0.8s linear infinite;
 }
@@ -323,10 +323,10 @@ onBeforeUnmount(() => {
 .upcoming-retry {
   height: 32px;
   padding: 0 20px;
-  border: 1px solid #1c7bff;
+  border: 1px solid var(--theme-primary);
   border-radius: 16px;
   background: transparent;
-  color: #1c7bff;
+  color: var(--theme-primary);
   font-size: 14px;
   cursor: pointer;
 }
@@ -350,7 +350,7 @@ onBeforeUnmount(() => {
   border-radius: 14px;
   background: #fff;
   border: 0.8px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 0 2px 12px rgba(21, 58, 118, 0.06);
+  box-shadow: 0 2px 12px rgba(var(--theme-shadow-rgb), 0.06);
   box-sizing: border-box;
 }
 
@@ -383,13 +383,13 @@ onBeforeUnmount(() => {
 
 .upcoming-card__league-name {
   font-size: 13px;
-  color: #5d7899;
+  color: var(--theme-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* 未开赛：绿色徽标区分进行中（蓝色）与已结束（灰色） */
+/* 未开赛：绿色徽标区分进行中（品牌色）与已结束（灰色） */
 .upcoming-card__badge {
   display: inline-flex;
   align-items: center;
@@ -426,7 +426,7 @@ onBeforeUnmount(() => {
 .upcoming-card__team-name {
   font-size: 14px;
   font-weight: 500;
-  color: #0b3462;
+  color: var(--theme-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -453,13 +453,13 @@ onBeforeUnmount(() => {
   font-size: 16px;
   font-weight: 700;
   line-height: 1;
-  color: #1c7bff;
+  color: var(--theme-primary);
 }
 
 .upcoming-card__time {
   font-family: $font-family-num, $font-family-base;
   font-size: 12px;
-  color: rgba(11, 52, 98, 0.45);
+  color: rgba(var(--theme-text-rgb), 0.45);
   line-height: 1;
   white-space: nowrap;
 }

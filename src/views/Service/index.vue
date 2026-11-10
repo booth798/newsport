@@ -20,7 +20,7 @@ import {
 } from '@/hooks/useCustomerService';
 import { KfConnectionState } from '@/hooks/useKfWebSocket';
 import BaseModal from '@/components/BaseModal.vue';
-import iconBackUrl from '@/assets/images/common/icon_back.svg?url';
+import iconBackUrl from '@/assets/images/common/icon_back_white.png?url';
 import avatarDefaultUrl from '@/assets/images/common/avatar_default.png?url';
 import iconDialogInfoUrl from '@/assets/images/common/icon_dialog_info.svg?url';
 import iconEmojiUrl from '@/assets/images/service/icon_emoji.png';
@@ -600,7 +600,7 @@ onMounted(() => {
                 @click="openImagePicker"
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                  <path d="M19.9746 3.41016C20.9918 3.41016 21.8165 4.23491 21.8164 5.25195V18.75C21.8164 19.7671 20.9918 20.5917 19.9746 20.5918H4.02148C3.00432 20.5918 2.17969 19.7673 2.17969 18.75V5.25195C2.17969 4.23479 3.00444 3.41016 4.02148 3.41016H19.9746ZM15.8291 11.8018C14.3576 11.8018 12.6575 13.1378 11.0137 14.4297C9.39313 15.7037 7.86225 16.9062 6.43262 16.9062C5.20695 16.9062 4.14315 16.3591 3.40723 15.8379V18.751C3.40726 18.9138 3.47178 19.0704 3.58691 19.1855C3.70193 19.3004 3.85794 19.3651 4.02051 19.3652H19.9756C20.1381 19.3651 20.2942 19.3004 20.4092 19.1855C20.5243 19.0704 20.5888 18.9138 20.5889 18.751V14.1377L20.5791 14.1465C20.5461 14.1091 18.4588 11.8018 15.8291 11.8018ZM4.02051 4.6377C3.85784 4.63786 3.70197 4.70238 3.58691 4.81738C3.47185 4.9324 3.40745 5.0883 3.40723 5.25098V14.2471C3.81657 14.6427 5.02327 15.6787 6.43262 15.6787C7.43755 15.6785 8.86984 14.5524 10.2549 13.4639C12.0628 12.0429 13.9328 10.5732 15.8291 10.5732C17.8856 10.5733 19.5999 11.6672 20.5889 12.4785V5.25098C20.5888 5.08832 20.5242 4.93242 20.4092 4.81738C20.2942 4.70237 20.1382 4.63783 19.9756 4.6377H4.02051ZM7.27148 6.88672C8.63589 6.88672 9.74217 7.99291 9.74219 9.35742C9.74219 10.7219 8.6359 11.8281 7.27148 11.8281C5.90697 11.8281 4.80078 10.7219 4.80078 9.35742C4.80078 7.99292 5.90698 6.88673 7.27148 6.88672ZM7.28027 8.12012C6.60117 8.12032 6.05078 8.67133 6.05078 9.35059C6.05079 10.0298 6.60118 10.5809 7.28027 10.5811C7.95954 10.5811 8.51073 10.03 8.51074 9.35059C8.51074 8.6712 7.95977 8.12012 7.28027 8.12012Z" fill="#0B3462"/>
+                  <path d="M19.9746 3.41016C20.9918 3.41016 21.8165 4.23491 21.8164 5.25195V18.75C21.8164 19.7671 20.9918 20.5917 19.9746 20.5918H4.02148C3.00432 20.5918 2.17969 19.7673 2.17969 18.75V5.25195C2.17969 4.23479 3.00444 3.41016 4.02148 3.41016H19.9746ZM15.8291 11.8018C14.3576 11.8018 12.6575 13.1378 11.0137 14.4297C9.39313 15.7037 7.86225 16.9062 6.43262 16.9062C5.20695 16.9062 4.14315 16.3591 3.40723 15.8379V18.751C3.40726 18.9138 3.47178 19.0704 3.58691 19.1855C3.70193 19.3004 3.85794 19.3651 4.02051 19.3652H19.9756C20.1381 19.3651 20.2942 19.3004 20.4092 19.1855C20.5243 19.0704 20.5888 18.9138 20.5889 18.751V14.1377L20.5791 14.1465C20.5461 14.1091 18.4588 11.8018 15.8291 11.8018ZM4.02051 4.6377C3.85784 4.63786 3.70197 4.70238 3.58691 4.81738C3.47185 4.9324 3.40745 5.0883 3.40723 5.25098V14.2471C3.81657 14.6427 5.02327 15.6787 6.43262 15.6787C7.43755 15.6785 8.86984 14.5524 10.2549 13.4639C12.0628 12.0429 13.9328 10.5732 15.8291 10.5732C17.8856 10.5733 19.5999 11.6672 20.5889 12.4785V5.25098C20.5888 5.08832 20.5242 4.93242 20.4092 4.81738C20.2942 4.70237 20.1382 4.63783 19.9756 4.6377H4.02051ZM7.27148 6.88672C8.63589 6.88672 9.74217 7.99291 9.74219 9.35742C9.74219 10.7219 8.6359 11.8281 7.27148 11.8281C5.90697 11.8281 4.80078 10.7219 4.80078 9.35742C4.80078 7.99292 5.90698 6.88673 7.27148 6.88672ZM7.28027 8.12012C6.60117 8.12032 6.05078 8.67133 6.05078 9.35059C6.05079 10.0298 6.60118 10.5809 7.28027 10.5811C7.95954 10.5811 8.51073 10.03 8.51074 9.35059C8.51074 8.6712 7.95977 8.12012 7.28027 8.12012Z" fill="var(--theme-text)"/>
                 </svg>
               </button>
 
@@ -653,7 +653,7 @@ onMounted(() => {
   min-height: 100dvh;
   overflow-x: hidden;
   background: var(--theme-bg);
-  color: #173b61;
+  color: var(--theme-text);
   box-sizing: border-box;
 
   @include web-only {
@@ -760,7 +760,7 @@ onMounted(() => {
   position: relative;
   display: flex;
   align-items: center;
-  background: linear-gradient(90deg, #63b7ff 0%, #0d6cfb 100%);
+  background: var(--theme-primary);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
   box-sizing: border-box;
   color: #fff;
@@ -948,7 +948,7 @@ onMounted(() => {
   flex-direction: column;
   box-sizing: border-box;
   overflow: hidden;
-  background: rgba(243, 249, 255, 0.58);
+  background: rgba(255, 255, 255, 0.58);
 
   @include web-only {
     width: 800px;
@@ -956,7 +956,7 @@ onMounted(() => {
     min-height: 720px;
     border: 1px solid rgba(255, 255, 255, 0.9);
     border-radius: 48px;
-    box-shadow: 0 12px 30px rgba(21, 58, 119, 0.1);
+    box-shadow: 0 12px 30px rgba(var(--theme-shadow-rgb), 0.1);
   }
 
   @include mobile-only {
@@ -1008,10 +1008,10 @@ onMounted(() => {
     padding: 12px 36px;
     border-radius: 24px;
     background: #fff;
-    color: #171e24;
+    color: var(--theme-text);
     font-size: 16px;
     line-height: 1.25;
-    box-shadow: 0 2px 6px rgba(21, 58, 119, 0.04);
+    box-shadow: 0 2px 6px rgba(var(--theme-shadow-rgb), 0.04);
 
     @include mobile-only {
       padding: 9px 18px;
@@ -1068,7 +1068,7 @@ onMounted(() => {
   padding: 4px 16px;
   border-radius: 12px;
   background: rgba(0, 0, 0, 0.05);
-  color: #8e9aaa;
+  color: var(--theme-text-muted);
   font-size: 12px;
   line-height: 1.5;
   text-align: center;
@@ -1081,7 +1081,7 @@ onMounted(() => {
   overflow: hidden;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 1px 4px rgba(21, 58, 119, 0.08);
+  box-shadow: 0 1px 4px rgba(var(--theme-shadow-rgb), 0.08);
 
   @include mobile-only {
     width: 35px;
@@ -1097,7 +1097,7 @@ onMounted(() => {
 }
 
 .service-msg__avatar--self {
-  background: #e9f0f8;
+  background: var(--surface-card);
   overflow: hidden;
 
   img {
@@ -1122,12 +1122,12 @@ onMounted(() => {
   padding: 14px 18px;
   border-radius: 18px;
   background: #fff;
-  color: #171e24;
-  box-shadow: 0 2px 8px rgba(21, 58, 119, 0.04);
+  color: var(--theme-text);
+  box-shadow: 0 2px 8px rgba(var(--theme-shadow-rgb), 0.04);
   word-break: break-word;
 
   .service-msg--self & {
-    background: #1f7cff;
+    background: var(--theme-primary);
     color: #fff;
   }
 
@@ -1191,7 +1191,7 @@ onMounted(() => {
 }
 
 .service-msg__link {
-  color: #1f7cff;
+  color: var(--theme-primary);
   text-decoration: underline;
   word-break: break-all;
   font-size: 14px;
@@ -1213,7 +1213,7 @@ onMounted(() => {
 }
 
 .service-msg__time {
-  color: rgba(11, 52, 98, 0.42);
+  color: rgba(var(--theme-text-rgb), 0.42);
   font-size: 11px;
 
   .service-msg--self & {
@@ -1298,10 +1298,10 @@ onMounted(() => {
   max-height: 260px;
   overflow-y: auto;
   padding: 10px;
-  border: 1px solid rgba(21, 58, 119, 0.12);
+  border: 1px solid rgba(var(--theme-shadow-rgb), 0.12);
   border-radius: 12px;
   background: #fff;
-  box-shadow: 0 8px 24px rgba(21, 58, 119, 0.16);
+  box-shadow: 0 8px 24px rgba(var(--theme-shadow-rgb), 0.16);
   box-sizing: border-box;
 }
 
@@ -1328,7 +1328,7 @@ onMounted(() => {
   }
 
   &:hover {
-    background: rgba(31, 124, 255, 0.1);
+    background: rgba(var(--theme-primary-rgb), 0.1);
   }
 }
 
@@ -1358,7 +1358,7 @@ onMounted(() => {
   }
 
   &--active {
-    background: rgba(31, 124, 255, 0.12);
+    background: rgba(var(--theme-primary-rgb), 0.12);
   }
 
   &:disabled {
@@ -1383,13 +1383,13 @@ onMounted(() => {
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: #5d7899;
+  color: var(--theme-text-muted);
   cursor: pointer;
   transition: color 0.2s, background 0.2s;
 
   &:hover:not(:disabled) {
     background: rgba(0, 0, 0, 0.04);
-    color: #1f7cff;
+    color: var(--theme-primary);
   }
 
   &:disabled {
@@ -1428,7 +1428,7 @@ onMounted(() => {
 
   &[data-empty='true']::before {
     content: attr(data-placeholder);
-    color: rgba(23, 59, 97, 0.28);
+    color: rgba(var(--theme-text-rgb), 0.28);
     pointer-events: none;
   }
 
@@ -1483,8 +1483,8 @@ onMounted(() => {
 
   p {
     margin: 0;
-    // 与登录确认弹窗文案一致：16px / Regular / #0B3462
-    color: #0b3462;
+    // 与登录确认弹窗文案一致：16px / Regular / var(--theme-text)
+    color: var(--theme-text);
     font-size: 16px;
     font-weight: 400;
     line-height: 1.4;

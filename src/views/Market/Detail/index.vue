@@ -13,9 +13,9 @@ import MarketDetailScoreSection from '@/views/Market/Detail/components/MarketDet
 import MarketBuySheet from '@/views/Market/Detail/components/MarketBuySheet.vue';
 import HomeMatchCard from '@/views/Home/components/HomeMatchCard.vue';
 
-import iconArrowRightUrl from '@/assets/images/common/icon_arrow_right.svg?url';
+import iconArrowRightUrl from '@/assets/images/common/icon_arrow_right.png?url';
 import iconVolumeThumbUpUrl from '@/assets/images/common/icon_volume_thumb_up.svg?url';
-import logoMarketUrl from '@/assets/images/common/logo-market.svg?url';
+import logoMarketUrl from '@/assets/images/common/logo_brand.png?url';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -426,7 +426,7 @@ function formatScoreLabel(score) {
   @include web-only {
     padding-top: 16px;
     /* 与侧栏 1px 白边形成对比 */
-    background: #e3ecfb;
+    background: var(--theme-bg);
     border-radius: 0;
     box-sizing: border-box;
   }
@@ -506,7 +506,7 @@ function formatScoreLabel(score) {
       background: #fff;
       border-radius: 32px;
       border: 1px solid #fff;
-      box-shadow: 0 6px 20px 0 rgba(21, 58, 118, 0.18);
+      box-shadow: 0 6px 20px 0 rgba(var(--theme-shadow-rgb), 0.18);
       position: sticky;
       top: 0;
       align-self: start;
@@ -531,7 +531,7 @@ function formatScoreLabel(score) {
       background: #fff;
       border-radius: 20px;
       border: 1px solid #fff;
-      box-shadow: 0 4px 16px rgba(21, 58, 118, 0.12);
+      box-shadow: 0 4px 16px rgba(var(--theme-shadow-rgb), 0.12);
     }
   }
 
@@ -598,7 +598,7 @@ function formatScoreLabel(score) {
     @include web-only {
       height: 1px;
       margin: 10px 14px;
-      background: rgba(11, 52, 98, 0.12);
+      background: rgba(var(--theme-text-rgb), 0.12);
       flex-shrink: 0;
     }
 
@@ -615,7 +615,7 @@ function formatScoreLabel(score) {
     background: transparent;
     font-size: 18px;
     font-weight: 400;
-    color: #0b3462;
+    color: var(--theme-text);
     cursor: pointer;
     text-align: center;
     transition:
@@ -637,12 +637,12 @@ function formatScoreLabel(score) {
       font-size: 22px;
 
       &:hover:not(.market-detail__side-tab--active) {
-        background: rgba(28, 123, 255, 0.04);
-        color: #0b3462;
+        background: rgba(var(--theme-primary-rgb), 0.04);
+        color: var(--theme-text);
       }
 
       &:focus-visible {
-        outline: 2px solid rgba(28, 123, 255, 0.45);
+        outline: 2px solid rgba(var(--theme-primary-rgb), 0.45);
         outline-offset: 2px;
       }
     }
@@ -652,7 +652,7 @@ function formatScoreLabel(score) {
       padding: 8px 14px;
       font-size: 13px;
       font-weight: 600;
-      border: 1.5px solid rgb(228, 240, 254);
+      border: 1.5px solid rgb(var(--theme-divider-rgb));
       background: #fff;
       text-align: left;
     }
@@ -661,22 +661,22 @@ function formatScoreLabel(score) {
       @include web-only {
         z-index: 1;
         font-weight: 400;
-        color: #1c7bff;
-        /* Figma：#1C7BFF 10% */
-        background: rgba(28, 123, 255, 0.1);
+        color: var(--theme-primary);
+        /* Figma：var(--theme-primary) 10% */
+        background: rgba(var(--theme-primary-rgb), 0.1);
         box-shadow: none;
-        border-left: 4px solid #1c7bff;
+        border-left: 4px solid var(--theme-primary);
         padding-left: 14px;
 
         &:hover {
-          background: rgba(28, 123, 255, 0.14);
-          color: #1c7bff;
+          background: rgba(var(--theme-primary-rgb), 0.14);
+          color: var(--theme-primary);
         }
       }
 
       @include mobile-only {
-        border-color: #1c7bff;
-        background: #1c7bff;
+        border-color: var(--theme-primary);
+        background: var(--theme-primary);
         color: #fff;
         box-shadow: none;
       }
@@ -706,7 +706,7 @@ function formatScoreLabel(score) {
     padding-bottom: calc($mobile-tab-bar-offset + $spacing-3xl);
     padding-left: 12px;
     padding-right: 12px;
-    background: #e3ecfb;
+    background: var(--theme-bg);
   }
 
   &__layout--m {
@@ -776,12 +776,12 @@ function formatScoreLabel(score) {
       height: 28px;
       padding: 0;
       border-radius: 48px;
-      border: 0.8px solid #d6e0eb;
+      border: 0.8px solid var(--border-light);
       background: #fff;
       font-family: $font-family-base;
       font-size: 12px;
       font-weight: 350;
-      color: #0b3462;
+      color: var(--theme-text);
       cursor: pointer;
       transition:
         background 0.2s ease,
@@ -791,11 +791,11 @@ function formatScoreLabel(score) {
 
     &--active {
       @include mobile-only {
-        background: #1c7bff;
-        border-color: #1c7bff;
+        background: var(--theme-primary);
+        border-color: var(--theme-primary);
         color: #fff;
         font-weight: 500;
-        box-shadow: 0 3px 8px rgba(21, 58, 119, 0.1);
+        box-shadow: 0 3px 8px rgba(var(--theme-shadow-rgb), 0.1);
       }
     }
   }
@@ -810,7 +810,7 @@ function formatScoreLabel(score) {
       height: 28px;
       border-radius: 35px;
       border: 0.5px solid #fff;
-      background: #ff2d2d;
+      background: var(--auxiliary-2);
       color: #fff;
       flex-shrink: 0;
       box-shadow:
@@ -859,7 +859,7 @@ function formatScoreLabel(score) {
       height: 40px;
       padding: 0 14px;
       border-radius: 12px;
-      background: #eaf1f9;
+      background: var(--surface-card);
       cursor: pointer;
       box-sizing: border-box;
       transition:
@@ -869,13 +869,13 @@ function formatScoreLabel(score) {
 
     &:active {
       @include mobile-only {
-        background: rgba(28, 123, 255, 0.12);
+        background: rgba(var(--theme-primary-rgb), 0.12);
       }
     }
 
     &--active {
       @include mobile-only {
-        background: rgba(28, 123, 255, 0.12);
+        background: rgba(var(--theme-primary-rgb), 0.12);
       }
     }
 
@@ -891,7 +891,7 @@ function formatScoreLabel(score) {
   &__cell {
     @include mobile-only {
       font-size: 14px;
-      color: #0b3462;
+      color: var(--theme-text);
       min-width: 0;
     }
 
@@ -907,7 +907,7 @@ function formatScoreLabel(score) {
       @include mobile-only {
         font-family: $font-family-base;
         font-weight: 700;
-        color: #1c7bff;
+        color: var(--theme-primary);
       }
     }
 
@@ -917,14 +917,14 @@ function formatScoreLabel(score) {
         font-weight: 400;
         text-align: right;
         margin-right: 6px;
-        color: #0b3462;
+        color: var(--theme-text);
       }
     }
   }
 
   &__row--halftime &__cell--prob {
     @include mobile-only {
-      color: #1c7bff;
+      color: var(--theme-primary);
     }
   }
 
@@ -944,14 +944,14 @@ function formatScoreLabel(score) {
 .score-table {
   border-radius: 20px;
   overflow: hidden;
-  border: 1px solid rgb(228, 240, 254);
+  border: 1px solid rgb(var(--theme-divider-rgb));
   background: #fff;
 
   @include web-only {
     overflow: visible;
     padding: 25px 44px 32px;
     border-radius: 32px;
-    border: 1px solid rgb(228, 240, 254);
+    border: 1px solid rgb(var(--theme-divider-rgb));
     background: #fff;
     box-shadow: var(--shadow-card);
   }
@@ -963,9 +963,9 @@ function formatScoreLabel(score) {
     padding: 12px 14px;
     font-size: 13px;
     font-weight: 600;
-    color: rgba(11, 52, 98, 0.65);
-    background: #f3f8ff;
-    border-bottom: 1px solid rgb(228, 240, 254);
+    color: rgba(var(--theme-text-rgb), 0.65);
+    background: var(--surface-tint);
+    border-bottom: 1px solid rgb(var(--theme-divider-rgb));
 
     @include web-only {
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr) 24px;
@@ -985,7 +985,7 @@ function formatScoreLabel(score) {
       font-size: 16px;
       font-weight: 500;
       line-height: 1;
-      color: #0b3462;
+      color: var(--theme-text);
     }
 
     &--score {
@@ -1017,11 +1017,11 @@ function formatScoreLabel(score) {
       padding: 0 10px;
       border-radius: 49.58px;
       border: 1px solid #fff;
-      background: rgba(255, 45, 45, 1);
+      background: rgba(var(--theme-primary-rgb), 1);
       color: #fff;
       justify-self: end;
       box-shadow:
-        0 4px 12px rgba(255, 45, 45, 0.28),
+        0 4px 12px rgba(var(--theme-primary-rgb), 0.28),
         inset 6px 6px 12px 0 rgba(255, 255, 255, 0.2),
         inset 3px 2px 10px 0 rgba(255, 255, 255, 0.2);
     }
@@ -1062,7 +1062,7 @@ function formatScoreLabel(score) {
   &--halftime {
     @include web-only {
       .score-table__cell--prob {
-        color: #1c7bff;
+        color: var(--theme-primary);
       }
     }
   }
@@ -1073,7 +1073,7 @@ function formatScoreLabel(score) {
     gap: 8px;
     align-items: center;
     padding: 12px 14px;
-    border-bottom: 1px solid rgb(240, 246, 255);
+    border-bottom: 1px solid var(--theme-divider);
     cursor: pointer;
     transition:
       background 0.15s ease,
@@ -1087,7 +1087,7 @@ function formatScoreLabel(score) {
       border-bottom: none;
       border-radius: 16px;
       background: rgba(240, 247, 255, 0.92);
-      border: 1px solid rgba(228, 240, 254, 0.9);
+      border: 1px solid rgba(var(--theme-divider-rgb), 0.9);
     }
 
     &:last-child {
@@ -1095,21 +1095,21 @@ function formatScoreLabel(score) {
     }
 
     &:hover {
-      background: rgba(28, 123, 255, 0.04);
+      background: rgba(var(--theme-primary-rgb), 0.04);
 
       @include web-only {
-        background: rgba(228, 240, 254, 0.98);
-        box-shadow: 0 2px 8px rgba(21, 58, 118, 0.08);
+        background: rgba(var(--theme-divider-rgb), 0.98);
+        box-shadow: 0 2px 8px rgba(var(--theme-shadow-rgb), 0.08);
       }
     }
 
     &--active {
-      background: rgba(28, 123, 255, 0.08);
+      background: rgba(var(--theme-primary-rgb), 0.08);
 
       @include web-only {
-        background: rgba(28, 123, 255, 0.12);
-        border-color: rgba(28, 123, 255, 0.28);
-        box-shadow: 0 2px 10px rgba(28, 123, 255, 0.12);
+        background: rgba(var(--theme-primary-rgb), 0.12);
+        border-color: rgba(var(--theme-primary-rgb), 0.28);
+        box-shadow: 0 2px 10px rgba(var(--theme-primary-rgb), 0.12);
       }
     }
 
@@ -1122,7 +1122,7 @@ function formatScoreLabel(score) {
 
   &__cell {
     font-size: $font-size-md;
-    color: #0b3462;
+    color: var(--theme-text);
 
     @include web-only {
       font-size: 16px;
@@ -1139,7 +1139,7 @@ function formatScoreLabel(score) {
     }
 
     &--prob {
-      color: #1c7bff;
+      color: var(--theme-primary);
 
       @include web-only {
         font-family: $font-family-num;
@@ -1153,12 +1153,12 @@ function formatScoreLabel(score) {
     &--vol {
       font-family: $font-family-num;
       font-weight: 600;
-      color: #1c7bff;
+      color: var(--theme-primary);
       font-size: 13px;
 
       @include web-only {
         font-weight: 500;
-        color: #0b3462;
+        color: var(--theme-text);
         text-align: right;
       }
     }
@@ -1168,7 +1168,7 @@ function formatScoreLabel(score) {
     text-align: center;
     font-size: 22px;
     font-weight: 700;
-    color: #1c7bff;
+    color: var(--theme-primary);
     line-height: 1;
 
     @include web-only {

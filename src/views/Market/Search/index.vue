@@ -18,6 +18,7 @@ import HomeMatchCard from '@/views/Home/components/HomeMatchCard.vue';
 import { resolveTeamLogoUrl } from '@/constants/teamLogos';
 
 import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.svg?url';
+import iconBackWhiteUrl from '@/assets/images/common/icon_back_white.png?url';
 import matchScoreArenaBgUrl from '@/assets/images/common/match_score_arena_bg.png';
 
 const PAGE_SIZE = 20;
@@ -254,15 +255,15 @@ onMounted(async () => {
     <template v-if="isMobile">
       <header class="search-page__m-header">
         <button type="button" class="search-page__m-back" :aria-label="t('返回')" @click="goBack">
-          <img :src="iconNavBackMarketUrl" width="36" height="36" alt="" />
+          <img :src="iconBackWhiteUrl" width="36" height="36" alt="" />
         </button>
         <span class="search-page__m-title">{{ t('搜索') }}</span>
       </header>
       <div class="search-page__m-search">
         <label class="search-page__search-box">
           <svg class="search-page__search-icon" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <circle cx="8" cy="8" r="5.25" stroke="#94A8C4" stroke-width="1.2"/>
-            <path d="M12.5 12.5L16 16" stroke="#94A8C4" stroke-width="1.2" stroke-linecap="round"/>
+            <circle cx="8" cy="8" r="5.25" stroke="var(--theme-text-muted)" stroke-width="1.2"/>
+            <path d="M12.5 12.5L16 16" stroke="var(--theme-text-muted)" stroke-width="1.2" stroke-linecap="round"/>
           </svg>
           <input
             ref="searchInputRef"
@@ -287,7 +288,7 @@ onMounted(async () => {
             @click="clearInput"
           >
             <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <circle cx="10" cy="10" r="8" fill="#C3CFDF"/>
+              <circle cx="10" cy="10" r="8" fill="var(--border-light)"/>
               <path d="M7.5 7.5l5 5M12.5 7.5l-5 5" stroke="#fff" stroke-width="1.3" stroke-linecap="round"/>
             </svg>
           </button>
@@ -303,8 +304,8 @@ onMounted(async () => {
         </button>
         <label class="search-page__search-box">
           <svg class="search-page__search-icon" width="16" height="16" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <circle cx="8" cy="8" r="5.25" stroke="#94A8C4" stroke-width="1.2"/>
-            <path d="M12.5 12.5L16 16" stroke="#94A8C4" stroke-width="1.2" stroke-linecap="round"/>
+            <circle cx="8" cy="8" r="5.25" stroke="var(--theme-text-muted)" stroke-width="1.2"/>
+            <path d="M12.5 12.5L16 16" stroke="var(--theme-text-muted)" stroke-width="1.2" stroke-linecap="round"/>
           </svg>
           <input
             ref="searchInputRef"
@@ -419,7 +420,7 @@ onMounted(async () => {
 .search-page {
   min-height: 100vh;
   min-height: 100dvh;
-  background: #e3ecfb;
+  background: var(--theme-bg);
   box-sizing: border-box;
 
   @include mobile-only {
@@ -452,7 +453,7 @@ onMounted(async () => {
     @include mobile-only {
       height: 48px;
       padding: 0 8px;
-      background: #eaf1f9;
+      background: var(--surface-card);
       border: 0.8px solid #fff;
       border-radius: 30px;
       box-sizing: border-box;
@@ -492,13 +493,13 @@ onMounted(async () => {
     height: 34px;
     padding: 0 10px;
     background: #fff;
-    border: 0.8px solid #d6e0eb;
+    border: 0.8px solid var(--border-light);
     border-radius: 48px;
     box-sizing: border-box;
     cursor: text;
 
     &:focus-within {
-      border-color: rgba(28, 123, 255, 0.45);
+      border-color: rgba(var(--theme-primary-rgb), 0.45);
     }
   }
 
@@ -515,10 +516,10 @@ onMounted(async () => {
     outline: none;
     background: transparent;
     font-size: 14px;
-    color: #0b3462;
+    color: var(--theme-text);
 
     &::placeholder {
-      color: rgba(11, 52, 98, 0.4);
+      color: rgba(var(--theme-text-rgb), 0.4);
     }
 
     &::-webkit-search-cancel-button {
@@ -533,7 +534,7 @@ onMounted(async () => {
     background: transparent;
     font-size: 14px;
     font-weight: 500;
-    color: #1c7bff;
+    color: var(--theme-primary);
     cursor: pointer;
     white-space: nowrap;
   }
@@ -548,7 +549,7 @@ onMounted(async () => {
     height: 52px;
     margin: 8px 8px 0;
     padding: 0 8px;
-    background: #eaf1f9;
+    background: var(--theme-primary);
     border: 0.8px solid #fff;
     border-radius: 30px;
     box-sizing: border-box;
@@ -580,7 +581,7 @@ onMounted(async () => {
     text-align: center;
     font-size: 15px;
     font-weight: 700;
-    color: #0b3462;
+    color: var(--auxiliary-1);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -594,7 +595,7 @@ onMounted(async () => {
       padding: 0 12px;
       gap: 8px;
       border-radius: 14px;
-      border-color: #d6e0eb;
+      border-color: var(--border-light);
     }
 
     .search-page__search-input {
@@ -662,10 +663,10 @@ onMounted(async () => {
     margin: 0 0 12px;
     padding: 0 8px;
     font-size: 13px;
-    color: rgba(11, 52, 98, 0.55);
+    color: rgba(var(--theme-text-rgb), 0.55);
 
     strong {
-      color: #1c7bff;
+      color: var(--theme-primary);
       font-weight: 600;
     }
   }
@@ -725,7 +726,7 @@ onMounted(async () => {
 .match-card__league-name {
   font-size: 14px;
   font-weight: 400;
-  color: rgba(11, 52, 98, 0.5);
+  color: rgba(var(--theme-text-rgb), 0.5);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -739,10 +740,10 @@ onMounted(async () => {
   height: 22px;
   padding: 0 10px;
   border-radius: 48px;
-  background: #eef2f7;
+  background: var(--surface-card);
   font-size: 12px;
   font-weight: 400;
-  color: rgba(11, 52, 98, 0.55);
+  color: rgba(var(--theme-text-rgb), 0.55);
 }
 
 .match-card__arena {
@@ -793,7 +794,7 @@ onMounted(async () => {
 .match-card__team-name {
   font-size: 13px;
   font-weight: 500;
-  color: #0b3462;
+  color: var(--theme-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -838,7 +839,7 @@ onMounted(async () => {
   font-family: $font-family-num, $font-family-base;
   font-size: 22px;
   font-weight: 700;
-  color: #1c7bff;
+  color: var(--theme-primary);
   line-height: 1.1;
 }
 
@@ -849,6 +850,6 @@ onMounted(async () => {
 
 .match-card__time {
   font-size: 12px;
-  color: rgba(11, 52, 98, 0.45);
+  color: rgba(var(--theme-text-rgb), 0.45);
 }
 </style>

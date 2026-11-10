@@ -2,9 +2,9 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import iconArrowRightUrl from '@/assets/images/common/icon_arrow_right.svg?url';
-import iconChevronDownUrl from '@/assets/images/common/icon_drawer_section_chevron_down.svg?url';
-import iconChevronUpUrl from '@/assets/images/common/icon_drawer_section_chevron_up.svg?url';
+import iconArrowRightUrl from '@/assets/images/common/icon_arrow_right.png?url';
+import iconChevronDownUrl from '@/assets/images/common/icon_drawer_section_chevron_down.png?url';
+import iconChevronUpUrl from '@/assets/images/common/icon_drawer_section_chevron_up.png?url';
 import iconVolumeThumbUpUrl from '@/assets/images/common/icon_volume_thumb_up.svg?url';
 
 const props = defineProps({
@@ -96,7 +96,7 @@ function formatScoreLabel(score) {
 .score-section {
   background: #fff;
   border-radius: 16px;
-  border: 1px solid rgb(228, 240, 254);
+  border: 1px solid rgb(var(--theme-divider-rgb));
   box-shadow: var(--shadow-card);
   overflow: hidden;
 
@@ -119,7 +119,7 @@ function formatScoreLabel(score) {
     font-size: 16px;
     font-weight: 600;
     line-height: 1.2;
-    color: #0b3462;
+    color: var(--theme-text);
   }
 
   &__vol {
@@ -132,11 +132,11 @@ function formatScoreLabel(score) {
     padding: 0 10px;
     border-radius: 49.58px;
     border: 1px solid #fff;
-    background: rgba(255, 45, 45, 1);
+    background: rgba(var(--theme-primary-rgb), 1);
     color: #fff;
     flex-shrink: 0;
     box-shadow:
-      0 3px 8px rgba(255, 45, 45, 0.24),
+      0 3px 8px rgba(var(--theme-primary-rgb), 0.24),
       inset 4px 4px 8px 0 rgba(255, 255, 255, 0.18),
       inset 2px 1px 6px 0 rgba(255, 255, 255, 0.18);
   }
@@ -188,21 +188,21 @@ function formatScoreLabel(score) {
     padding: 10px 12px;
     border-radius: 16px;
     background: rgba(240, 247, 255, 0.95);
-    border: 1px solid rgba(228, 240, 254, 0.95);
+    border: 1px solid rgba(var(--theme-divider-rgb), 0.95);
     cursor: pointer;
     transition:
       background 0.15s ease,
       border-color 0.15s ease;
 
     &--active {
-      background: rgba(28, 123, 255, 0.1);
-      border-color: rgba(28, 123, 255, 0.28);
+      background: rgba(var(--theme-primary-rgb), 0.1);
+      border-color: rgba(var(--theme-primary-rgb), 0.28);
     }
   }
 
   &__cell {
     font-size: 14px;
-    color: #0b3462;
+    color: var(--theme-text);
     min-width: 0;
 
     &--score {
@@ -226,7 +226,7 @@ function formatScoreLabel(score) {
 
   &__row--fulltime &__cell--prob,
   &__row--halftime &__cell--prob {
-    color: #1c7bff;
+    color: var(--theme-primary);
   }
 
   &__arrow {

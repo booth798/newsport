@@ -10,7 +10,7 @@ import EmptyState from '@/components/EmptyState.vue';
 import { useAppStore } from '@/store/modules/app';
 import PurchaseOrderCard from '@/views/Trade/PurchaseDetails/components/PurchaseOrderCard.vue';
 
-import logoMarketUrl from '@/assets/images/common/logo-market.svg?url';
+import logoMarketUrl from '@/assets/images/common/logo_brand.png?url';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -221,7 +221,7 @@ function handleCancelled(orderId) {
 
   @include web-only {
     padding-top: 16px;
-    background: #e3ecfb;
+    background: var(--theme-bg);
     box-sizing: border-box;
   }
 
@@ -252,7 +252,7 @@ function handleCancelled(orderId) {
       background: #fff;
       border-radius: 32px;
       border: 1px solid #fff;
-      box-shadow: 0 6px 20px 0 rgba(21, 58, 118, 0.18);
+      box-shadow: 0 6px 20px 0 rgba(var(--theme-shadow-rgb), 0.18);
       position: sticky;
       top: 0;
       align-self: start;
@@ -297,7 +297,7 @@ function handleCancelled(orderId) {
     @include web-only {
       height: 1px;
       margin: 10px 14px;
-      background: rgba(11, 52, 98, 0.12);
+      background: rgba(var(--theme-text-rgb), 0.12);
     }
 
     @include mobile-only {
@@ -309,7 +309,7 @@ function handleCancelled(orderId) {
     width: 100%;
     border: none;
     background: transparent;
-    color: #0b3462;
+    color: var(--theme-text);
     cursor: pointer;
     text-align: center;
     transition:
@@ -331,9 +331,9 @@ function handleCancelled(orderId) {
       font-weight: 400;
 
       &--active {
-        color: #1c7bff;
-        background: rgba(28, 123, 255, 0.1);
-        border-left: 4px solid #1c7bff;
+        color: var(--theme-primary);
+        background: rgba(var(--theme-primary-rgb), 0.1);
+        border-left: 4px solid var(--theme-primary);
         padding-left: 14px;
       }
     }

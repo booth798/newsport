@@ -63,7 +63,7 @@ function confirmGoSet() {
 
   p {
     margin: 0;
-    color: #0b3462;
+    color: var(--theme-text);
     font-size: 16px;
     font-weight: 400;
     line-height: 1.4;

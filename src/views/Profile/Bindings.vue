@@ -260,7 +260,7 @@ onMounted(() => {
         @remove="requestDelete"
         @add="openAdd"
       >
-        <template #add-icon><img :src="getImageUrl('profile/add_address_icon.svg')" alt=""></template>
+        <template #add-icon><img :src="getImageUrl('profile/add_address_icon.png')" alt=""></template>
       </BindingListPanel>
     </main>
 
@@ -303,7 +303,7 @@ onMounted(() => {
     margin: -18px -8px 0;
     padding: 0 8px 20px;
     box-sizing: border-box;
-    background: #eaf1f9;
+    background: var(--surface-card);
   }
 }
 
@@ -312,7 +312,7 @@ onMounted(() => {
   min-height: calc(100dvh - 88px);
   border-radius: 16px;
   // 新增入口在 PC 使用浅蓝背景，H5 按设计保持白色。
-  --binding-list-add-bg: #e4f0fe;
+  --binding-list-add-bg: var(--theme-divider);
 
   @include mobile-only {
     --binding-list-add-bg: #fff;
@@ -326,15 +326,15 @@ onMounted(() => {
   justify-content: center;
   gap: 12px;
   min-height: 220px;
-  color: #7b92ad;
+  color: var(--theme-text-muted);
   font-size: 14px;
 }
 
 .bindings-spinner {
   width: 24px;
   height: 24px;
-  border: 3px solid #e4f0fe;
-  border-top-color: #1c7bff;
+  border: 3px solid var(--theme-divider);
+  border-top-color: var(--theme-primary);
   border-radius: 50%;
   animation: bindings-spin 0.8s linear infinite;
 }
@@ -346,10 +346,10 @@ onMounted(() => {
 .bindings-retry {
   height: 32px;
   padding: 0 16px;
-  border: 1px solid #1c7bff;
+  border: 1px solid var(--theme-primary);
   border-radius: 16px;
   background: transparent;
-  color: #1c7bff;
+  color: var(--theme-primary);
   font-size: 14px;
   cursor: pointer;
 }
@@ -362,7 +362,7 @@ onMounted(() => {
   padding: 0 8px;
   border-radius: 12px;
   background: #fff;
-  color: #0b3462;
+  color: var(--theme-text);
   font-size: 16px;
   font-weight: 500;
   text-align: center;

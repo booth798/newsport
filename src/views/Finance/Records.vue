@@ -836,7 +836,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   }
 }
 
-// --- 时间筛选（Figma：浅蓝胶囊轨 + 选中蓝底白字） ---
+// --- 时间筛选（Figma：浅色胶囊轨 + 选中品牌底白字） ---
 .fin-time-tabs {
   display: flex;
   align-items: center;
@@ -845,9 +845,9 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   height: 48px;
   padding: 6px;
   border-radius: 30px;
-  background: #eaf1f9;
+  background: var(--surface-card);
   border: 0.8px solid #fff;
-  box-shadow: 0 2px 10px rgba(21, 58, 118, 0.06);
+  box-shadow: 0 2px 10px rgba(var(--theme-shadow-rgb), 0.06);
   box-sizing: border-box;
 
   @include web-only {
@@ -862,7 +862,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   border: none;
   border-radius: 20px;
   background: transparent;
-  color: #1c3a76;
+  color: var(--theme-text);
   font-size: 13px;
   font-weight: 500;
   line-height: 1;
@@ -871,10 +871,10 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   transition: background 0.15s ease, color 0.15s ease;
 
   &--active {
-    background: #1c7bff;
+    background: var(--theme-primary);
     color: #fff;
     font-weight: 600;
-    box-shadow: 0 2px 8px rgba(28, 123, 255, 0.35);
+    box-shadow: 0 2px 8px rgba(var(--theme-primary-rgb), 0.35);
   }
 }
 
@@ -886,7 +886,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   border-radius: 16px;
   background: #fff;
   border: 0.8px solid #fff;
-  box-shadow: 0 4px 16px rgba(21, 58, 118, 0.08);
+  box-shadow: 0 4px 16px rgba(var(--theme-shadow-rgb), 0.08);
   box-sizing: border-box;
 
   @include web-only {
@@ -899,7 +899,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
     min-height: 90px;
     // 保持原 H5 样式：白底 + 顶部淡蓝渐变，内嵌三块浅蓝卡
     background:
-      linear-gradient(180deg, rgba(28, 123, 255, 0.2) 0%, rgba(28, 123, 255, 0) 100%),
+      linear-gradient(180deg, rgba(var(--theme-primary-rgb), 0.2) 0%, rgba(var(--theme-primary-rgb), 0) 100%),
       #fff;
   }
 }
@@ -912,7 +912,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   gap: 4px;
   padding: 10px 4px;
   border-radius: 10px;
-  background: #dbe9fb;
+  background: var(--surface-brand);
   min-width: 0;
 
   @include web-only {
@@ -924,7 +924,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
 
 .fin-summary__label {
   font-size: 13px;
-  color: #7b92ad;
+  color: var(--theme-text-muted);
   line-height: 1.2;
 }
 
@@ -935,9 +935,9 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   line-height: 1.2;
   white-space: nowrap;
 
-  &--income { color: #1c7bff; }
-  &--expense { color: #ff2d2d; }
-  &--profit { color: #1c7bff; }
+  &--income { color: var(--theme-primary); }
+  &--expense { color: var(--auxiliary-2); }
+  &--profit { color: var(--theme-primary); }
 }
 
 // --- 状态 ---
@@ -948,15 +948,15 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   justify-content: center;
   min-height: 200px;
   gap: 12px;
-  color: #7b92ad;
+  color: var(--theme-text-muted);
   font-size: 14px;
 }
 
 .fin-spinner {
   width: 24px;
   height: 24px;
-  border: 3px solid #e4f0fe;
-  border-top-color: #1c7bff;
+  border: 3px solid var(--theme-divider);
+  border-top-color: var(--theme-primary);
   border-radius: 50%;
   animation: fin-spin 0.8s linear infinite;
 }
@@ -968,10 +968,10 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
 .fin-retry {
   height: 32px;
   padding: 0 20px;
-  border: 1px solid #1c7bff;
+  border: 1px solid var(--theme-primary);
   border-radius: 16px;
   background: transparent;
-  color: #1c7bff;
+  color: var(--theme-primary);
   font-size: 14px;
   cursor: pointer;
 }
@@ -981,7 +981,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   height: 44px;
   border: none;
   border-radius: 22px;
-  background: #1c7bff;
+  background: var(--theme-primary);
   color: #fff;
   font-size: 18px;
   font-weight: 600;
@@ -993,7 +993,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   padding: 0 24px;
   border: 0;
   background: transparent;
-  color: #7b92ad;
+  color: var(--theme-text-muted);
   font-size: 13px;
   cursor: pointer;
 }
@@ -1027,7 +1027,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
 .ord {
   padding: 14px 16px 16px;
   border-radius: 16px;
-  background: #eaf1f9;
+  background: var(--surface-card);
   border: 0.8px solid #fff;
   box-sizing: border-box;
 
@@ -1056,14 +1056,14 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
 .ord__platform {
   font-size: 15px;
   font-weight: 700;
-  color: #0b3462;
+  color: var(--theme-text);
   flex-shrink: 0;
 }
 
 .ord__kickoff {
   flex: 1;
   font-size: 13px;
-  color: #0b3462;
+  color: var(--theme-text);
   min-width: 0;
 }
 
@@ -1080,26 +1080,26 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   flex-shrink: 0;
 
   &--processing {
-    background: rgba(28, 123, 255, 0.15);
-    color: #1c7bff;
+    background: rgba(var(--theme-primary-rgb), 0.15);
+    color: var(--theme-primary);
   }
 
   &--completed {
-    background: rgba(11, 52, 98, 0.1);
-    color: #5d7899;
+    background: rgba(var(--theme-text-rgb), 0.1);
+    color: var(--theme-text-muted);
   }
 
   /* 已失利 / 已退款 / 已取消：红色角标（PC + H5） */
   &--lost,
   &--refunded,
   &--cancelled {
-    background: rgba(255, 45, 45, 0.12);
-    color: #ff2d2d;
+    background: rgba(var(--theme-primary-rgb), 0.12);
+    color: var(--auxiliary-2);
   }
 
   &--unknown {
-    background: rgba(11, 52, 98, 0.1);
-    color: #0b3462;
+    background: rgba(var(--theme-text-rgb), 0.1);
+    color: var(--theme-text);
   }
 }
 
@@ -1128,7 +1128,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
 .ord__league-name {
   font-size: 16px;
   font-weight: 700;
-  color: #0b3462;
+  color: var(--theme-text);
 }
 
 .ord__panel {
@@ -1200,7 +1200,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   font-size: 14px;
   font-weight: 500;
   line-height: 20px;
-  color: #0b3462;
+  color: var(--theme-text);
   text-align: center;
 }
 
@@ -1226,11 +1226,11 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   color: #fff;
 
   &--home {
-    background: #1c7bff;
+    background: var(--theme-primary);
   }
 
   &--away {
-    background: rgba(11, 52, 98, 0.5);
+    background: rgba(var(--theme-text-rgb), 0.5);
   }
 }
 
@@ -1257,12 +1257,12 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   line-height: 1;
 
   &--default {
-    background-image: url('@/assets/images/events/bg_score_default.svg');
-    color: #0b3462;
+    background-image: url('@/assets/images/events/bg_score_default.png');
+    color: var(--theme-text);
   }
 
   &--high {
-    background-image: url('@/assets/images/events/bg_score_high.svg');
+    background-image: url('@/assets/images/events/bg_score_high.png');
     color: #fff;
   }
 
@@ -1276,7 +1276,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
 .ord__vs {
   font-size: 24px;
   font-weight: 700;
-  color: #1c7bff;
+  color: var(--theme-primary);
 }
 
 // --- 金额摘要 ---
@@ -1287,7 +1287,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   margin: 0 12px;
   padding: 0 12px;
   border-radius: 12px;
-  background: #eaf1f9;
+  background: var(--surface-card);
 }
 
 .ord__money-row {
@@ -1303,16 +1303,16 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
 
 .ord__money-label {
   font-size: 12px;
-  color: rgba(11, 52, 98, 0.5);
+  color: rgba(var(--theme-text-rgb), 0.5);
 }
 
 .ord__money-val {
   font-family: $font-family-num, $font-family-base;
   font-size: 14px;
   font-weight: 600;
-  color: #0b3462;
+  color: var(--theme-text);
 
-  &--profit { color: #1c7bff; }
+  &--profit { color: var(--theme-primary); }
 }
 
 // --- 展开详情 ---
@@ -1331,14 +1331,14 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   font-size: 12px;
 
   &:not(:last-of-type) {
-    border-bottom: 1px solid rgba(11, 52, 98, 0.06);
+    border-bottom: 1px solid rgba(var(--theme-text-rgb), 0.06);
   }
 }
 
 .ord__detail-label {
   width: 56px;
   flex-shrink: 0;
-  color: rgba(11, 52, 98, 0.5);
+  color: rgba(var(--theme-text-rgb), 0.5);
 }
 
 .ord__detail-val {
@@ -1346,7 +1346,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   text-align: left;
   font-size: 12px;
   font-weight: 500;
-  color: #0b3462;
+  color: var(--theme-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1377,10 +1377,10 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   max-width: 88px;
   height: 32px;
   margin: 0;
-  border: 1px solid #ff2d2d;
+  border: 1px solid var(--auxiliary-2);
   border-radius: 32px;
   background: transparent;
-  color: #ff2d2d;
+  color: var(--auxiliary-2);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -1427,14 +1427,14 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
 
 @include web-only {
   .fin-summary__item {
-    background: #eaf1f9;
+    background: var(--surface-card);
   }
 
   .fin-load-more {
-    border: 1px solid #e4f0fe;
+    border: 1px solid var(--theme-divider);
     border-radius: 18px;
     background: #fff;
-    color: #1c7bff;
+    color: var(--theme-primary);
   }
 
   // 未展开且列表无展开项时：操作区沉底，同行左右卡内容对齐

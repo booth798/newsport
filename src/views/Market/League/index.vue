@@ -178,14 +178,14 @@ watch(
     @include web-only {
       border-radius: 50px;
       padding: 40px 24px;
-      box-shadow: 0 4px 8px 0 rgba(21, 58, 119, 0.18);
+      box-shadow: 0 4px 8px 0 rgba(var(--theme-shadow-rgb), 0.18);
     }
 
     @include mobile-only {
       border-radius: 20px;
       padding: 15px 12px 16px;
-      background: #EAF1F9;
-      box-shadow: 0 4px 8px 0 rgba(21, 58, 119, 0.18);
+      background: var(--surface-card);
+      box-shadow: 0 4px 8px 0 rgba(var(--theme-shadow-rgb), 0.18);
     }
   }
 
@@ -231,7 +231,7 @@ watch(
     font-weight: 700;
     line-height: 1;
     letter-spacing: 0;
-    background: radial-gradient(circle at 50% 100%, #68b3fd, #0d6cfb);
+    background: radial-gradient(circle at 50% 100%, var(--theme-primary-end), var(--theme-primary));
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -256,7 +256,7 @@ watch(
     height: 44px;
     padding: 0 16px;
     border-radius: $radius-pill;
-    border: 1px solid #d6e0eb;
+    border: 1px solid var(--border-light);
     background: #fff;
     box-sizing: border-box;
     cursor: text;
@@ -267,8 +267,8 @@ watch(
     }
 
     &:focus-within {
-      border-color: rgba(31, 124, 255, 0.45);
-      box-shadow: 0 0 0 2px rgba(31, 124, 255, 0.08);
+      border-color: rgba(var(--theme-primary-rgb), 0.45);
+      box-shadow: 0 0 0 2px rgba(var(--theme-primary-rgb), 0.08);
     }
   }
 
@@ -276,7 +276,7 @@ watch(
     flex-shrink: 0;
     width: 18px;
     height: 18px;
-    background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 18 18' fill='none'%3E%3Ccircle cx='8' cy='8' r='5.25' stroke='%2394A8C4' stroke-width='1.2'/%3E%3Cpath d='M12.5 12.5L16 16' stroke='%2394A8C4' stroke-width='1.2' stroke-linecap='round'/%3E%3C/svg%3E");
+    background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 18 18' fill='none'%3E%3Ccircle cx='8' cy='8' r='5.25' stroke='%23999999' stroke-width='1.2'/%3E%3Cpath d='M12.5 12.5L16 16' stroke='%23999999' stroke-width='1.2' stroke-linecap='round'/%3E%3C/svg%3E");
   }
 
   &__search-input {
@@ -286,10 +286,10 @@ watch(
     outline: none;
     background: transparent;
     font-size: $font-size-md;
-    color: #0b3462;
+    color: var(--theme-text);
 
     &::placeholder {
-      color: rgba(11, 52, 98, 0.4);
+      color: rgba(var(--theme-text-rgb), 0.4);
     }
 
     &::-webkit-search-cancel-button {

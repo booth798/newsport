@@ -89,7 +89,7 @@ function confirm() {
   width: 100%;
   flex: 1;
   background: transparent;
-  color: #171e24;
+  color: var(--theme-text);
   text-align: left;
   cursor: pointer;
   @include web-only {
@@ -99,7 +99,7 @@ function confirm() {
     font-size: 14px;
   }
   &:focus-visible {
-    outline: 2px solid #0d6cfb;
+    outline: 2px solid var(--theme-primary);
     outline-offset: -2px;
   }
 
@@ -110,17 +110,17 @@ function confirm() {
     width: 18px;
     height: 18px;
     box-sizing: border-box;
-    border: 1.5px solid rgba(11, 52, 98, 0.48);
+    border: 1.5px solid rgba(var(--theme-text-rgb), 0.48);
     border-radius: 50%;
 
     &.is-selected {
-      border-color: #0d6cfb;
+      border-color: var(--theme-primary);
 
       &::after {
         width: 10px;
         height: 5px;
-        border-bottom: 1.5px solid #0d6cfb;
-        border-left: 1.5px solid #0d6cfb;
+        border-bottom: 1.5px solid var(--theme-primary);
+        border-left: 1.5px solid var(--theme-primary);
         content: '';
         transform: translateY(-1px) rotate(-45deg);
       }
@@ -150,6 +150,6 @@ function confirm() {
 
 .language-setting-modal__confirm {
   background: #fff;
-  color: #0d6cfb;
+  color: var(--theme-primary);
 }
 </style>

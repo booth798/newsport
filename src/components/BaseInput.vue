@@ -121,7 +121,7 @@ function handleBlur(event) {
 }
 
 .base-input__control::placeholder {
-  color: #0B346280;
+  color: var(--theme-text-1);
   font-weight: 400;
   @include mobile-only {
     font-size: 14px;

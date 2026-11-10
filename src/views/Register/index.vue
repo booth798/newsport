@@ -106,7 +106,7 @@ shuffleAccounts();
   <div class="register-page">
     <div class="register-phone">
       <header class="register-title">
-        <img class="register-title__logo" :src="logoUrl" alt="UNIBET" />
+        <img class="register-title__logo" :src="logoUrl" alt="Ladbrokes" />
         <h1>{{ t('注册会员') }}</h1>
       </header>
 
@@ -202,10 +202,10 @@ shuffleAccounts();
 .register-page {
   min-height: 100vh;
   min-height: 100dvh;
-  background: #eaf3fd;
+  background: var(--surface-tint);
   display: flex;
   justify-content: center;
-  color: #173b61;
+  color: var(--theme-text);
   font-family: $font-family-base;
 }
 
@@ -216,7 +216,7 @@ shuffleAccounts();
   min-height: 100dvh;
   padding: 13px 11px 22px;
   box-sizing: border-box;
-  background: #eaf3fd;
+  background: var(--surface-tint);
 }
 
 .register-title {
@@ -225,10 +225,10 @@ shuffleAccounts();
   margin: 6px 0 10px;
   border: 1px solid rgba(255, 255, 255, 0.95);
   border-radius: 34px;
-  background: rgba(247, 251, 255, 0.56);
+  background: rgba(255, 255, 255, 0.56);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 1px 0 rgba(184, 206, 232, 0.28);
+    0 1px 0 rgba(var(--theme-shadow-rgb), 0.28);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -238,7 +238,7 @@ shuffleAccounts();
     font-size: 23px;
     line-height: 1;
     font-weight: 800;
-    color: #153a61;
+    color: var(--theme-text);
     letter-spacing: 0;
   }
 }
@@ -254,10 +254,10 @@ shuffleAccounts();
   box-sizing: border-box;
   border: 1px solid rgba(255, 255, 255, 0.86);
   border-radius: 16px;
-  background: rgba(243, 249, 255, 0.38);
+  background: rgba(255, 255, 255, 0.38);
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.18),
-    0 1px 2px rgba(94, 132, 178, 0.08);
+    0 1px 2px rgba(var(--theme-shadow-rgb), 0.08);
 }
 
 .register-form {
@@ -273,7 +273,7 @@ shuffleAccounts();
   height: 52px;
   border-radius: 16px;
   background: #fff;
-  box-shadow: 0 2px 10px rgba(72, 115, 166, 0.03);
+  box-shadow: 0 2px 10px rgba(var(--theme-shadow-rgb), 0.03);
 }
 
 .register-field__input {
@@ -285,7 +285,7 @@ shuffleAccounts();
   box-sizing: border-box;
   padding: 0 16px 0 52px;
   outline: 0;
-  color: #173b61;
+  color: var(--theme-text);
   font-family: $font-family-base;
   font-size: 17px;
   font-weight: 400;
@@ -293,7 +293,7 @@ shuffleAccounts();
   letter-spacing: 0;
 
   &::placeholder {
-    color: rgba(23, 59, 97, 0.36);
+    color: rgba(var(--theme-text-rgb), 0.36);
     font-weight: 400;
   }
 
@@ -335,7 +335,7 @@ shuffleAccounts();
   font-size: 23px;
   font-weight: 700;
   line-height: 1;
-  box-shadow: 0 7px 18px rgba(40, 119, 240, 0.2);
+  box-shadow: 0 7px 18px rgba(var(--theme-primary-rgb), 0.2);
   cursor: pointer;
 
   &:disabled {
@@ -349,7 +349,7 @@ shuffleAccounts();
 
 .register-login-link {
   margin: 0;
-  color: rgba(23, 59, 97, 0.46);
+  color: rgba(var(--theme-text-rgb), 0.46);
   font-size: 13px;
   text-align: center;
 
@@ -380,6 +380,8 @@ shuffleAccounts();
     height: 80px;
     margin: 30px auto 20px;
     border-radius: 40px;
+    background: var(--theme-primary);
+    border-color: var(--theme-primary);
   }
 
   .register-title__logo {
@@ -387,7 +389,7 @@ shuffleAccounts();
     left: 38px;
     top: 50%;
     display: block;
-    width: 100px;
+    width: 132px;
     height: 36px;
     object-fit: contain;
     transform: translateY(-50%);
@@ -395,6 +397,7 @@ shuffleAccounts();
 
   .register-title h1 {
     font-size: 24px;
+    color: var(--auxiliary-1);
   }
 
   .register-card {
@@ -403,10 +406,10 @@ shuffleAccounts();
     margin: 0 auto;
     padding: 80px 200px 44px;
     border-radius: 48px;
-    background: rgba(243, 249, 255, 0.62);
+    background: rgba(255, 255, 255, 0.62);
     box-shadow:
       inset 0 0 0 1px rgba(255, 255, 255, 0.28),
-      0 12px 30px rgba(21, 58, 119, 0.08);
+      0 12px 30px rgba(var(--theme-shadow-rgb), 0.08);
   }
 
   .register-form {
@@ -446,7 +449,7 @@ shuffleAccounts();
 // 注册页新稿：账号候选 + 双密码确认。
 .register-card__title {
   margin: 0 0 28px;
-  color: #153a61;
+  color: var(--theme-text);
   font-size: 18px;
   font-weight: 700;
   line-height: 1;
@@ -458,7 +461,7 @@ shuffleAccounts();
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
-  color: #173b61;
+  color: var(--theme-text);
   font-size: 14px;
   font-weight: 500;
 
@@ -491,7 +494,7 @@ shuffleAccounts();
     border: 1px solid transparent;
     border-radius: 10px;
     background: #fff;
-    color: rgba(23, 59, 97, 0.42);
+    color: rgba(var(--theme-text-rgb), 0.42);
     font-family: $font-family-num, $font-family-base;
     font-size: 13px;
     cursor: pointer;
@@ -500,12 +503,12 @@ shuffleAccounts();
     &:hover,
     &.active {
       border-color: var(--theme-primary);
-      background: #f7fbff;
+      background: var(--surface-tint);
       color: var(--theme-primary);
     }
 
     &:focus-visible {
-      outline: 2px solid rgba(28, 123, 255, 0.28);
+      outline: 2px solid rgba(var(--theme-primary-rgb), 0.28);
       outline-offset: 2px;
     }
   }
@@ -527,7 +530,7 @@ shuffleAccounts();
 
 .register-field__label {
   margin-bottom: 8px;
-  color: #173b61;
+  color: var(--theme-text);
   font-size: 14px;
   font-weight: 500;
   line-height: 1;
@@ -587,12 +590,14 @@ shuffleAccounts();
   .register-title {
     height: 52px;
     margin: 4px 0 8px;
+    background: var(--theme-primary);
+    border-color: var(--theme-primary);
   }
 
   .register-title__logo {
     display: block;
-    width: 86px;
-    height: 31px;
+    width: 110px;
+    height: 30px;
     object-fit: contain;
   }
 
@@ -640,7 +645,7 @@ shuffleAccounts();
 @include web-only {
   .register-page,
   .register-phone {
-    background: #e3ecfb;
+    background: var(--theme-bg);
   }
 
   .register-title {
@@ -669,7 +674,7 @@ shuffleAccounts();
     button {
       height: 52px;
       border-radius: 16px;
-      color: rgba(11, 52, 98, 0.5);
+      color: rgba(var(--theme-text-rgb), 0.5);
       font-size: 16px;
       font-weight: 400;
       line-height: 1;

@@ -63,7 +63,7 @@ function handleLogout() {
   margin: -18px -8px 0;
   padding: 0 8px 20px;
   box-sizing: border-box;
-  background: #eaf1f9;
+  background: var(--surface-card);
 }
 
 .settings-mobile-list {
@@ -85,9 +85,9 @@ function handleLogout() {
   height: 48px;
   padding: 0 16px;
   border: none;
-  border-bottom: 1px solid rgba(214, 224, 235, 0.42);
+  border-bottom: 1px solid rgba(var(--theme-divider-rgb), 0.42);
   background: transparent;
-  color: #0b3462;
+  color: var(--theme-text);
   font-size: 14px;
   font-weight: 500;
   text-align: left;
@@ -100,8 +100,8 @@ function handleLogout() {
   i {
     width: 8px;
     height: 8px;
-    border-top: 1.5px solid rgba(11, 52, 98, 0.42);
-    border-right: 1.5px solid rgba(11, 52, 98, 0.42);
+    border-top: 1.5px solid rgba(var(--theme-text-rgb), 0.42);
+    border-right: 1.5px solid rgba(var(--theme-text-rgb), 0.42);
     transform: rotate(45deg);
   }
 }
@@ -109,7 +109,7 @@ function handleLogout() {
 .settings-mobile-row__value {
   margin-left: auto;
   margin-right: 16px;
-  color: #0b3462;
+  color: var(--theme-text);
   font-size: 12px;
 }
 </style>

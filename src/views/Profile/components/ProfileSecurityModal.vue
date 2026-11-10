@@ -277,7 +277,7 @@ watch(
   height: 48px;
   padding: 6px 8px;
   border-radius: 30px;
-  background: #EAF1F9;
+  background: var(--surface-card);
 
   button {
     border-radius: 32px;
@@ -309,7 +309,7 @@ watch(
   background: #FB5C0D1A;
 
   strong {
-    color: #fb5c0d;
+    color: var(--auxiliary-3);
     font-size: 14px;
     font-weight: 400;
     display: flex;
@@ -329,7 +329,7 @@ watch(
   span {
     font-size: 12px;
     padding-left: 20px;
-    color: #0B346280;
+    color: var(--theme-text-1);
   }
 }
 
@@ -340,7 +340,7 @@ watch(
   margin-bottom: 12px;
 
   > span:first-child {
-    color: #0B346280;
+    color: var(--theme-text-1);
     font-weight: 400;
     @include web-only {
       font-size: 16px;
@@ -351,7 +351,7 @@ watch(
   }
 
   b {
-    color: #ff2d2d;
+    color: var(--auxiliary-2);
     font-weight: 400;
   }
 }

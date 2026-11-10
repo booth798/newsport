@@ -273,7 +273,7 @@ function handlePanelScroll() {
   align-items: center;
   width: 100%;
   background: #FEEEE6;
-  color: #FB5C0D;
+  color: var(--auxiliary-3);
   cursor: pointer;
   img {
     width: 18px;
@@ -293,7 +293,7 @@ function handlePanelScroll() {
     border-top: 1.5px solid currentColor;
     border-right: 1.5px solid currentColor;
     transform: rotate(45deg);
-    color: #0C3462;
+    color: var(--theme-text);
   }
 
   @include web-only {
@@ -331,7 +331,7 @@ function handlePanelScroll() {
   justify-content: center;
   min-height: 260px;
   gap: 12px;
-  color: rgba(11, 52, 98, 0.5);
+  color: rgba(var(--theme-text-rgb), 0.5);
   font-size: 14px;
 }
 
@@ -360,7 +360,7 @@ function handlePanelScroll() {
 
 .deposit-order-card {
   box-sizing: border-box;
-  background: #e7f1ff;
+  background: var(--surface-tint);
 
   @include web-only {
     padding: 17px 16px;
@@ -381,7 +381,7 @@ function handlePanelScroll() {
   margin-bottom: 10px;
 
   time {
-    color: rgba(11, 52, 98, 0.8);
+    color: rgba(var(--theme-text-rgb), 0.8);
     font-family: $font-family-num, $font-family-base;
     font-size: 14px;
   }
@@ -391,7 +391,7 @@ function handlePanelScroll() {
     height: 30px;
     padding: 0 10px;
     border-radius: 6px;
-    background: rgba(199, 214, 232, 0.62);
+    background: rgba(var(--theme-shadow-rgb), 0.62);
     color: var(--theme-text);
     font-size: 14px;
     line-height: 30px;
@@ -407,7 +407,7 @@ function handlePanelScroll() {
 
   @include mobile-only {
     padding: 0 14px;
-    background: #eaf2fb;
+    background: var(--surface-brand);
   }
 
   div {
@@ -427,7 +427,7 @@ function handlePanelScroll() {
   }
 
   dt {
-    color: rgba(11, 52, 98, 0.45);
+    color: rgba(var(--theme-text-rgb), 0.45);
     font-size: 14px;
   }
 
@@ -441,7 +441,7 @@ function handlePanelScroll() {
 
 .deposit-record-more {
   padding: 8px 0 2px;
-  color: rgba(11, 52, 98, 0.45);
+  color: rgba(var(--theme-text-rgb), 0.45);
   font-size: 14px;
   text-align: center;
 }

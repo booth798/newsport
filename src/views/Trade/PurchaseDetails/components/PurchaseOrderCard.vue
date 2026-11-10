@@ -11,8 +11,8 @@ import iconGermaryUrl from '@/assets/images/events/icon_germary.svg?url';
 import iconItalyUrl from '@/assets/images/events/icon_italy.svg?url';
 import iconSpainUrl from '@/assets/images/events/icon_spain.svg?url';
 import iconUkUrl from '@/assets/images/events/icon_uk.svg?url';
-import iconChevronDownUrl from '@/assets/images/common/icon_drawer_section_chevron_down.svg?url';
-import iconChevronUpUrl from '@/assets/images/common/icon_drawer_section_chevron_up.svg?url';
+import iconChevronDownUrl from '@/assets/images/common/icon_drawer_section_chevron_down.png?url';
+import iconChevronUpUrl from '@/assets/images/common/icon_drawer_section_chevron_up.png?url';
 import { resolveTeamLogoUrl } from '@/constants/teamLogos';
 import { isWithinOrderCancelWindow } from '@/constants/orderCancel';
 
@@ -258,8 +258,8 @@ async function copyOrderNo() {
   padding: 16px;
   border-radius: 24px;
   border: 1px solid rgba(255, 255, 255, 0.92);
-  background: linear-gradient(180deg, #f8fbff 0%, #f0f7ff 100%);
-  box-shadow: 0 6px 20px 0 rgba(21, 58, 118, 0.1);
+  background: linear-gradient(180deg, var(--surface-tint) 0%, var(--surface-tint) 100%);
+  box-shadow: 0 6px 20px 0 rgba(var(--theme-shadow-rgb), 0.1);
 
   @include mobile-only {
     padding: 12px;
@@ -284,7 +284,7 @@ async function copyOrderNo() {
 
     @include mobile-only {
       margin: 8px 0 10px;
-      background: rgba(11, 52, 98, 0.08);
+      background: rgba(var(--theme-text-rgb), 0.08);
     }
   }
 
@@ -331,7 +331,7 @@ async function copyOrderNo() {
     font-size: 14px;
     font-weight: 600;
     line-height: 1.2;
-    color: #0b3462;
+    color: var(--theme-text);
     white-space: nowrap;
   }
 
@@ -340,7 +340,7 @@ async function copyOrderNo() {
     font-size: 13px;
     font-weight: 500;
     line-height: 1.2;
-    color: rgba(11, 52, 98, 0.45);
+    color: rgba(var(--theme-text-rgb), 0.45);
     white-space: nowrap;
   }
 
@@ -354,24 +354,24 @@ async function copyOrderNo() {
     white-space: nowrap;
 
     &--pending {
-      color: #1c7bff;
-      background: rgba(28, 123, 255, 0.12);
+      color: var(--theme-primary);
+      background: rgba(var(--theme-primary-rgb), 0.12);
       border-radius: 6px;
     }
 
     &--completed {
-      color: rgba(11, 52, 98, 0.55);
-      background: rgba(11, 52, 98, 0.1);
+      color: rgba(var(--theme-text-rgb), 0.55);
+      background: rgba(var(--theme-text-rgb), 0.1);
     }
 
     &--lost,
     &--refunded {
-      color: #ff2d2d;
-      background: rgba(255, 45, 45, 0.12);
+      color: var(--auxiliary-2);
+      background: rgba(var(--theme-primary-rgb), 0.12);
     }
 
     &--scheduled {
-      color: #fb5c0d;
+      color: var(--auxiliary-3);
       background: rgba(251, 92, 13, 0.14);
     }
   }
@@ -395,7 +395,7 @@ async function copyOrderNo() {
     font-size: 15px;
     font-weight: 600;
     line-height: 1.2;
-    color: #0b3462;
+    color: var(--theme-text);
   }
 
   &__arena {
@@ -408,8 +408,8 @@ async function copyOrderNo() {
     position: relative;
     overflow: hidden;
     min-height: 118px;
-    background-color: #f3f8ff;
-    background-image: url('@/assets/images/events/bg_score.svg');
+    background-color: var(--surface-tint);
+    background-image: url('@/assets/images/events/bg_grid_pattern.png');
     background-repeat: no-repeat;
     background-position: center;
     background-size: cover;
@@ -470,7 +470,7 @@ async function copyOrderNo() {
   &__team-placeholder {
     display: block;
     background: rgba(255, 255, 255, 0.85);
-    border: 1px solid rgba(228, 240, 254, 0.95);
+    border: 1px solid rgba(var(--theme-divider-rgb), 0.95);
   }
 
   &__team-name {
@@ -479,7 +479,7 @@ async function copyOrderNo() {
     font-size: 12px;
     font-weight: 500;
     line-height: 1.3;
-    color: #0b3462;
+    color: var(--theme-text);
     text-align: center;
     word-break: break-word;
   }
@@ -493,7 +493,7 @@ async function copyOrderNo() {
     height: 16px;
     padding: 0 3px;
     border-radius: 3px;
-    background: #1c7bff;
+    background: var(--theme-primary);
     font-size: 10px;
     font-weight: 500;
     line-height: 1;
@@ -505,7 +505,7 @@ async function copyOrderNo() {
     font-size: 20px;
     font-weight: 700;
     line-height: 1;
-    color: #1c7bff;
+    color: var(--theme-primary);
     flex-shrink: 0;
     align-self: center;
   }
@@ -516,13 +516,13 @@ async function copyOrderNo() {
     gap: 0;
     padding: 12px 14px;
     border-radius: 14px;
-    background: rgba(228, 240, 254, 0.55);
+    background: rgba(var(--theme-divider-rgb), 0.55);
     border: 1px solid rgba(255, 255, 255, 0.85);
 
     @include mobile-only {
       padding: 10px 12px;
       border-radius: 10px;
-      background: #ebf2f9;
+      background: var(--surface-card);
       border: none;
     }
   }
@@ -540,7 +540,7 @@ async function copyOrderNo() {
       border-bottom: 1px solid #fff;
 
       @include mobile-only {
-        border-bottom-color: rgba(11, 52, 98, 0.08);
+        border-bottom-color: rgba(var(--theme-text-rgb), 0.08);
       }
     }
   }
@@ -551,7 +551,7 @@ async function copyOrderNo() {
     font-size: 14px;
     font-weight: 500;
     line-height: 1.2;
-    color: rgba(11, 52, 98, 0.55);
+    color: rgba(var(--theme-text-rgb), 0.55);
   }
 
   &__summary-val {
@@ -559,10 +559,10 @@ async function copyOrderNo() {
     font-size: 16px;
     font-weight: 600;
     line-height: 1.2;
-    color: #0b3462;
+    color: var(--theme-text);
 
     &--profit {
-      color: #1c7bff;
+      color: var(--theme-primary);
       font-size: 18px;
       font-weight: 700;
     }
@@ -587,10 +587,10 @@ async function copyOrderNo() {
     &--circle {
       width: 32px;
       height: 32px;
-      border: 1px solid rgba(28, 123, 255, 0.28);
+      border: 1px solid rgba(var(--theme-primary-rgb), 0.28);
       border-radius: 50%;
       background: #fff;
-      box-shadow: 0 1px 4px rgba(21, 58, 118, 0.08);
+      box-shadow: 0 1px 4px rgba(var(--theme-shadow-rgb), 0.08);
     }
 
     &--foot,
@@ -615,7 +615,7 @@ async function copyOrderNo() {
     padding: 14px;
     border-radius: 14px;
     background: rgba(240, 247, 255, 0.6);
-    border: 1px solid rgba(228, 240, 254, 0.9);
+    border: 1px solid rgba(var(--theme-divider-rgb), 0.9);
 
     @include mobile-only {
       gap: 0;
@@ -644,7 +644,7 @@ async function copyOrderNo() {
     @include mobile-only {
       min-height: 40px;
       padding: 8px 0;
-      border-bottom: 1px solid rgba(11, 52, 98, 0.1);
+      border-bottom: 1px solid rgba(var(--theme-text-rgb), 0.1);
 
       &--last {
         border-bottom: none;
@@ -666,7 +666,7 @@ async function copyOrderNo() {
     font-size: 13px;
     font-weight: 500;
     line-height: 1.3;
-    color: #0b3462;
+    color: var(--theme-text);
     text-align: right;
     min-width: 0;
     word-break: break-all;
@@ -680,7 +680,7 @@ async function copyOrderNo() {
 
     &--profit,
     &--return {
-      color: #1c7bff;
+      color: var(--theme-primary);
       font-weight: 600;
     }
   }
@@ -699,13 +699,13 @@ async function copyOrderNo() {
     border: none;
     border-radius: 4px;
     background: transparent;
-    color: #1c7bff;
+    color: var(--theme-primary);
     cursor: pointer;
     flex-shrink: 0;
     transition: background 0.18s ease;
 
     &:hover {
-      background: rgba(28, 123, 255, 0.08);
+      background: rgba(var(--theme-primary-rgb), 0.08);
     }
   }
 
@@ -714,8 +714,8 @@ async function copyOrderNo() {
     padding: 8px 16px;
     border: none;
     border-radius: 999px;
-    background: rgba(255, 45, 45, 0.1);
-    color: #ff2d2d;
+    background: rgba(var(--theme-primary-rgb), 0.1);
+    color: var(--auxiliary-2);
     font-size: 14px;
     font-weight: 500;
     line-height: 1.2;
@@ -723,7 +723,7 @@ async function copyOrderNo() {
     transition: background 0.15s ease;
 
     &:hover {
-      background: rgba(255, 45, 45, 0.16);
+      background: rgba(var(--theme-primary-rgb), 0.16);
     }
 
     @include mobile-only {
@@ -740,14 +740,14 @@ async function copyOrderNo() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(11, 52, 98, 0.4);
+  background: rgba(var(--theme-text-rgb), 0.4);
   backdrop-filter: blur(4px);
 
   &__card {
     background: #fff;
     border-radius: $radius-lg;
     padding: 28px 24px 20px;
-    box-shadow: 0 12px 40px rgba(21, 58, 118, 0.2);
+    box-shadow: 0 12px 40px rgba(var(--theme-shadow-rgb), 0.2);
     max-width: 320px;
     width: 80%;
     text-align: center;
@@ -780,7 +780,7 @@ async function copyOrderNo() {
     }
 
     &--yes {
-      background: #ff2d2d;
+      background: var(--auxiliary-2);
       color: #fff;
 
       &:disabled {

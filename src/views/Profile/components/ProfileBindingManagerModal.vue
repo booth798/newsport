@@ -161,7 +161,7 @@ watch(
       <BindingListPanel v-else class="binding-manager__list-panel" :tabs="tabs" :active-tab="activeTab"
         :items="displayItems" :selectable="false" removable :add-text="addText"
         @update:active-tab="activeTab = $event" @remove="requestDelete" @add="addModalOpen = true">
-        <template #add-icon><img :src="getImageUrl('profile/add_address_icon.svg')" alt=""></template>
+        <template #add-icon><img :src="getImageUrl('profile/add_address_icon.png')" alt=""></template>
       </BindingListPanel>
     </div>
   </BaseModal>
@@ -187,8 +187,8 @@ watch(
   min-height: 440px;
   padding: 0;
   background: transparent;
-  --binding-list-tabs-bg: #eaf1f9;
-  --binding-list-add-bg: #e4f0fe;
+  --binding-list-tabs-bg: var(--surface-card);
+  --binding-list-add-bg: var(--theme-divider);
 }
 
 .binding-manager__state {
@@ -200,7 +200,7 @@ watch(
   gap: 12px;
   border-radius: 20px;
   background: #fff;
-  color: rgba(11, 52, 98, 0.55);
+  color: rgba(var(--theme-text-rgb), 0.55);
 }
 
 .binding-manager__state button {
@@ -235,8 +235,8 @@ watch(
   box-sizing: border-box;
   border-radius: 20px;
   background: #fff;
-  // 与登录确认弹窗文案一致：16px / Regular / #0B3462
-  color: #0b3462;
+  // 与登录确认弹窗文案一致：16px / Regular / var(--theme-text)
+  color: var(--theme-text);
   font-size: 16px;
   font-weight: 400;
   line-height: 1.4;

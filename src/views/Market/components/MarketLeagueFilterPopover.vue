@@ -426,7 +426,7 @@ onBeforeUnmount(() => {
   background-position: center;
   background-repeat: no-repeat;
   background-size: 100% 100%;
-  filter: drop-shadow(0 6px 20px rgba(21, 58, 119, 0.18));
+  filter: drop-shadow(0 6px 20px rgba(var(--theme-shadow-rgb), 0.18));
 }
 
 .league-filter-pop__state {
@@ -437,15 +437,15 @@ onBeforeUnmount(() => {
   gap: 12px;
   flex: 1;
   min-height: 0;
-  color: #0b3462;
+  color: var(--theme-text);
   font-size: 14px;
 }
 
 .league-filter-pop__spinner {
   width: 28px;
   height: 28px;
-  border: 3px solid #d6e0eb;
-  border-top-color: #1c7bff;
+  border: 3px solid var(--border-light);
+  border-top-color: var(--theme-primary);
   border-radius: 50%;
   animation: league-filter-spin 0.8s linear infinite;
 }
@@ -453,9 +453,9 @@ onBeforeUnmount(() => {
 .league-filter-pop__retry {
   padding: 6px 18px;
   border-radius: 999px;
-  border: 1px solid #1c7bff;
+  border: 1px solid var(--theme-primary);
   background: transparent;
-  color: #1c7bff;
+  color: var(--theme-primary);
   cursor: pointer;
 }
 
@@ -474,7 +474,7 @@ onBeforeUnmount(() => {
   margin: 0 0 12px;
   font-size: 14px;
   font-weight: 400;
-  color: #1c7bff;
+  color: var(--theme-primary);
 }
 
 .league-filter-pop__group + .league-filter-pop__group {
@@ -486,7 +486,7 @@ onBeforeUnmount(() => {
   font-size: 16px;
   line-height: 24px;
   font-weight: 500;
-  color: #0b3462;
+  color: var(--theme-text);
 }
 
 .league-filter-pop__grid {
@@ -505,7 +505,7 @@ onBeforeUnmount(() => {
   border: 0;
   border-radius: 6px;
   background: #fff;
-  color: #0b3462;
+  color: var(--theme-text);
   font-size: 14px;
   font-weight: 400;
   cursor: pointer;
@@ -514,16 +514,16 @@ onBeforeUnmount(() => {
     color 0.15s ease;
 
   &:hover {
-    box-shadow: inset 0 0 0 1px rgba(28, 123, 255, 0.35);
+    box-shadow: inset 0 0 0 1px rgba(var(--theme-primary-rgb), 0.35);
   }
 
   &--selected {
     background: #fff;
-    color: #0b3462;
+    color: var(--theme-text);
   }
 
   &:focus-visible {
-    outline: 2px solid rgba(28, 123, 255, 0.45);
+    outline: 2px solid rgba(var(--theme-primary-rgb), 0.45);
     outline-offset: 1px;
   }
 }
@@ -534,10 +534,10 @@ onBeforeUnmount(() => {
   width: 18px;
   height: 18px;
   color: #fff;
-  fill: #1c7bff;
+  fill: var(--theme-primary);
 
   &--empty {
-    color: rgba(11, 52, 98, 0.5);
+    color: rgba(var(--theme-text-rgb), 0.5);
     fill: none;
   }
 }
@@ -579,12 +579,12 @@ onBeforeUnmount(() => {
   padding: 0;
   border: none;
   background: transparent;
-  color: #0b3462;
+  color: var(--theme-text);
   font-size: 16px;
   cursor: pointer;
 
   &--active {
-    color: #1c7bff;
+    color: var(--theme-primary);
     font-weight: 500;
   }
 }
@@ -594,10 +594,10 @@ onBeforeUnmount(() => {
   width: 18px;
   height: 18px;
   color: #fff;
-  fill: #1c7bff;
+  fill: var(--theme-primary);
 
   &--empty {
-    color: rgba(11, 52, 98, 0.5);
+    color: rgba(var(--theme-text-rgb), 0.5);
     fill: none;
   }
 }
@@ -612,10 +612,10 @@ onBeforeUnmount(() => {
   width: 108px;
   height: 36px;
   padding: 0 8px;
-  border: 1px solid #1c7bff;
+  border: 1px solid var(--theme-primary);
   border-radius: 8px;
   background: #fff;
-  color: #1c7bff;
+  color: var(--theme-primary);
   font-size: 16px;
   font-weight: 400;
   cursor: pointer;
@@ -631,10 +631,10 @@ onBeforeUnmount(() => {
   width: 88px;
   height: 36px;
   padding: 0 8px;
-  border: 1px solid #ff2d2d;
+  border: 1px solid var(--auxiliary-2);
   border-radius: 8px;
   background: #fff;
-  color: #ff2d2d;
+  color: var(--auxiliary-2);
   font-size: 16px;
   font-weight: 400;
   cursor: pointer;
@@ -654,9 +654,9 @@ onBeforeUnmount(() => {
   max-width: min(280px, calc(100vw - 24px));
   padding: 8px 12px;
   border-radius: 8px;
-  border: 1px solid rgba(28, 123, 255, 0.28);
+  border: 1px solid rgba(var(--theme-primary-rgb), 0.28);
   background: #fff;
-  color: #0b3462;
+  color: var(--theme-text);
   font-size: 13px;
   font-weight: 500;
   line-height: 1.4;
@@ -666,7 +666,7 @@ onBeforeUnmount(() => {
   pointer-events: none;
   transform: translate(-50%, -100%);
   box-shadow:
-    0 4px 16px rgba(21, 58, 119, 0.14),
+    0 4px 16px rgba(var(--theme-shadow-rgb), 0.14),
     0 0 0 0.8px rgba(255, 255, 255, 0.8) inset;
 
   &::after {
@@ -676,8 +676,8 @@ onBeforeUnmount(() => {
     bottom: -5px;
     width: 10px;
     height: 10px;
-    border-right: 1px solid rgba(28, 123, 255, 0.28);
-    border-bottom: 1px solid rgba(28, 123, 255, 0.28);
+    border-right: 1px solid rgba(var(--theme-primary-rgb), 0.28);
+    border-bottom: 1px solid rgba(var(--theme-primary-rgb), 0.28);
     background: #fff;
     transform: translateX(-50%) rotate(45deg);
   }

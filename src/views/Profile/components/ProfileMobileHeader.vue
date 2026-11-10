@@ -6,7 +6,7 @@
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 
-import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.svg?url';
+import iconNavBackMarketUrl from '@/assets/images/common/icon_back_white.png?url';
 
 defineProps({
   title: { type: String, required: true },
@@ -65,7 +65,7 @@ function goBack() {
   padding: 0 12px;
   border: 0.8px solid #fff;
   border-radius: 30px;
-  background: #eaf1f9;
+  background: var(--theme-primary);
   box-sizing: border-box;
 }
 
@@ -102,7 +102,7 @@ function goBack() {
   overflow: hidden;
   font-size: 14px;
   font-weight: 500;
-  color: #0b3462;
+  color: var(--auxiliary-1);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -113,14 +113,14 @@ function goBack() {
   padding: 0 4px;
   border: 0;
   background: transparent;
-  color: #1c7bff;
+  color: var(--auxiliary-1);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   flex-shrink: 0;
 
   &:disabled {
-    color: rgba(11, 52, 98, 0.35);
+    color: rgba(255, 255, 255, 0.5);
     cursor: default;
   }
 }

@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { SITE_CONFIG } from '@/config/site';
 
 export const LOCALE_STORAGE_KEY = 'mysport:locale';
 export const DEFAULT_LOCALE = 'zh-CN';
@@ -45,7 +46,7 @@ export const useAppStore = defineStore('app', {
     csHours: (state) => state.publicConfig['customer-service.hours'] || '',
     csQQ: (state) => state.publicConfig['customer-service.qq'] || '',
     csEmail: (state) => state.publicConfig['customer-service.email'] || '',
-    brandName: (state) => state.publicConfig['app.brand-name'] || 'UNIBET',
+    brandName: () => SITE_CONFIG.siteName,
     appCopyright: (state) => state.publicConfig['app.copyright'] || '',
     announcementBanner: (state) => state.publicConfig['announcement.banner'] || '',
   },

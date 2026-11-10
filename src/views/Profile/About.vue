@@ -3,21 +3,20 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
-import aboutTitleUrl from '@/assets/images/about-title.png';
 import logoAboutUrl from '@/assets/images/common/logo_about.png?url';
-import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.svg?url';
+import iconNavBackMarketUrl from '@/assets/images/common/icon_back_white.png?url';
 import AppSideNav from '@/components/AppSideNav.vue';
 import { getImageUrl } from '@/utils/common';
 import { useAppStore } from '@/store/modules/app';
 
-const { t, locale } = useI18n();
+const { t } = useI18n();
 const router = useRouter();
 const appStore = useAppStore();
 const { isMobile, brandName } = storeToRefs(appStore);
 
 const sideNavItems = [{ key: 'about', label: t('关于我们') }];
-const titleLeftIcon = getImageUrl('vip/title_left_icon.svg');
-const titleRightIcon = getImageUrl('vip/title_right_icon.svg');
+const titleLeftIcon = getImageUrl('vip/title_left_icon.png');
+const titleRightIcon = getImageUrl('vip/title_right_icon.png');
 // H5 版本号展示与设计稿一致。
 const appVersion = 'V1.0.0';
 
@@ -42,19 +41,10 @@ function goBack() {
       <AppSideNav v-if="!isMobile" :items="sideNavItems" active-key="about" />
 
       <main class="about-content">
-        <!-- PC：保留原标题图 / 文案标题 -->
         <h1 v-if="!isMobile" class="about-content__title">
-          <img
-            v-if="locale === 'zh-CN'"
-            class="about-content__title-image"
-            :src="aboutTitleUrl"
-            :alt="t('关于我们')"
-          />
-          <template v-else>
-            <img :src="titleLeftIcon" alt="" />
-            <span>{{ t('关于我们') }}</span>
-            <img :src="titleRightIcon" alt="" />
-          </template>
+          <img :src="titleLeftIcon" alt="" />
+          <span>{{ t('关于我们') }}</span>
+          <img :src="titleRightIcon" alt="" />
         </h1>
 
         <!-- H5：品牌 Logo + 名称 + 版本号 -->
@@ -91,7 +81,7 @@ function goBack() {
     margin: -18px -8px 0;
     padding: 0 8px 20px;
     box-sizing: border-box;
-    background: #eaf1f9;
+    background: var(--surface-card);
   }
 }
 
@@ -112,7 +102,7 @@ function goBack() {
   padding: 0 12px;
   border: 0.8px solid #fff;
   border-radius: 30px;
-  background: #eaf1f9;
+  background: var(--theme-primary);
   box-sizing: border-box;
 }
 
@@ -147,7 +137,7 @@ function goBack() {
   margin: 0;
   font-size: 14px;
   font-weight: 500;
-  color: #0b3462;
+  color: var(--auxiliary-1);
   white-space: nowrap;
 }
 
@@ -188,7 +178,7 @@ function goBack() {
   justify-content: center;
   gap: 14px;
   margin: 0;
-  color: var(--theme-primary);
+  color: var(--theme-text);
   font-size: 22px;
   font-weight: 600;
   line-height: 1.4;
@@ -199,10 +189,6 @@ function goBack() {
     object-fit: contain;
   }
 
-  .about-content__title-image {
-    width: 144px;
-    height: 29px;
-  }
 }
 
 .about-brand {
@@ -219,15 +205,15 @@ function goBack() {
   border-radius: 16px;
   object-fit: contain;
   /* Logo 外轮廓：浅边框 + 柔和投影，贴近 App 图标质感 */
-  border: 1px solid rgba(11, 52, 98, 0.08);
+  border: 1px solid rgba(var(--theme-text-rgb), 0.08);
   box-shadow:
-    0 2px 8px rgba(11, 52, 98, 0.12),
-    0 8px 20px rgba(11, 52, 98, 0.08);
+    0 2px 8px rgba(var(--theme-text-rgb), 0.12),
+    0 8px 20px rgba(var(--theme-text-rgb), 0.08);
 }
 
 .about-brand__name {
   margin: 12px 0 0;
-  color: #0b3462;
+  color: var(--theme-text);
   font-size: 18px;
   font-weight: 700;
   line-height: 1.2;
@@ -235,7 +221,7 @@ function goBack() {
 
 .about-brand__version {
   margin: 6px 0 0;
-  color: rgba(11, 52, 98, 0.45);
+  color: rgba(var(--theme-text-rgb), 0.45);
   font-size: 12px;
   font-weight: 400;
   line-height: 1.2;
@@ -259,7 +245,7 @@ function goBack() {
     margin-top: 0;
 
     p {
-      color: #0b3462;
+      color: var(--theme-text);
       font-size: 14px;
       font-weight: 400;
       line-height: 1.85;

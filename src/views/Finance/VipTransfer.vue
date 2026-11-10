@@ -463,7 +463,7 @@ async function loadMore() {
   align-items: flex-start;
   box-sizing: border-box;
   background: rgba(251, 92, 13, 0.1);
-  color: rgba(11, 52, 98, 0.5);
+  color: rgba(var(--theme-text-rgb), 0.5);
 
   .vip-transfer-notice__content {
     margin-top: 3px;
@@ -472,7 +472,7 @@ async function loadMore() {
     strong {
       display: block;
       margin-bottom: 5px;
-      color: #fb5c0d;
+      color: var(--auxiliary-3);
       font-size: 12px;
       font-weight: 400;
     }
@@ -480,7 +480,7 @@ async function loadMore() {
     p {
       font-size: 12px;
       line-height: 20px;
-      color: #0B346280;
+      color: var(--theme-text-1);
     }
   }
 
@@ -502,7 +502,7 @@ async function loadMore() {
   position: relative;
   display: flex;
   flex-direction: column;
-  color: #0B346280;
+  color: var(--theme-text-1);
   
   @include web-only {
     gap: 10px;
@@ -515,7 +515,7 @@ async function loadMore() {
   }
 
   small {
-    color: rgba(11, 52, 98, 0.5);
+    color: rgba(var(--theme-text-rgb), 0.5);
     font-size: 12px;
     font-weight: 400;
 
@@ -561,15 +561,15 @@ async function loadMore() {
   justify-content: center;
   gap: 12px;
   min-height: 120px;
-  color: #7b92ad;
+  color: var(--theme-text-muted);
   font-size: 14px;
 }
 
 .vip-transfer-spinner {
   width: 24px;
   height: 24px;
-  border: 3px solid #e4f0fe;
-  border-top-color: #1c7bff;
+  border: 3px solid var(--theme-divider);
+  border-top-color: var(--theme-primary);
   border-radius: 50%;
   animation: vip-transfer-spin 0.8s linear infinite;
 }
@@ -598,7 +598,7 @@ async function loadMore() {
   padding: 16px;
   border: 1px solid var(--theme-divider);
   border-radius: 16px;
-  background: linear-gradient(180deg, rgba(28, 123, 255, 0.2), rgba(28, 123, 255, 0) 100px), #fff;
+  background: linear-gradient(180deg, rgba(var(--theme-primary-rgb), 0.2), rgba(var(--theme-primary-rgb), 0) 100px), #fff;
   font-size: 14px;
 
   strong {
@@ -606,7 +606,7 @@ async function loadMore() {
     height: 38px;
     padding: 7px 10px;
     border-radius: 6px;
-    background: rgba(28, 123, 255, 0.1);
+    background: rgba(var(--theme-primary-rgb), 0.1);
     color: var(--theme-primary);
     font-size: 20px;
     font-weight: 500;
@@ -655,7 +655,7 @@ async function loadMore() {
   border: 1px solid var(--auxiliary-1);
   border-radius: 16px;
   background: var(--auxiliary-1);
-  box-shadow: 0 4px 14px rgba(21, 58, 119, 0.18);
+  box-shadow: 0 4px 14px rgba(var(--theme-shadow-rgb), 0.18);
 
   button {
     height: 48px;
@@ -669,7 +669,7 @@ async function loadMore() {
 
     &:hover,
     &.active {
-      background: #eaf1f9;
+      background: var(--surface-card);
     }
   }
 }
@@ -678,7 +678,7 @@ async function loadMore() {
   box-sizing: border-box;
   padding: 16px;
   border-radius: 16px;
-  background: rgba(28, 123, 255, 0.1);
+  background: rgba(var(--theme-primary-rgb), 0.1);
 
   @include mobile-only {
     background: var(--auxiliary-1);
@@ -701,7 +701,7 @@ async function loadMore() {
     min-width: 56px;
     padding: 4px 12px;
     border-radius: 6px;
-    background: rgba(11, 52, 98, 0.1);
+    background: rgba(var(--theme-text-rgb), 0.1);
     font-size: 14px;
     text-align: center;
   }
@@ -730,7 +730,7 @@ async function loadMore() {
   }
 
   dt {
-    color: rgba(11, 52, 98, 0.5);
+    color: rgba(var(--theme-text-rgb), 0.5);
     font-size: 14px;
   }
 
@@ -745,7 +745,7 @@ async function loadMore() {
   padding: 8px 20px;
   border: 0;
   background: transparent;
-  color: rgba(11, 52, 98, 0.5);
+  color: rgba(var(--theme-text-rgb), 0.5);
   font-size: 14px;
   cursor: pointer;
 }

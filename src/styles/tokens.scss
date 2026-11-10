@@ -1,25 +1,33 @@
-// 基础设计变量。
+// Ladbrokes：色值取自本地 PC / H5 UI 标准规范与导出素材。
 :root {
   /* light only：禁止浏览器按系统暗黑模式改写色值（安卓 Chrome / WebView） */
   color-scheme: light only;
-  --theme-primary: #1C7BFF; // 主题色
-  --theme-bg: #E3ECFB; // 背景色
-  --theme-page-base: #E3ECFB; // 页面底色
-  --theme-text: #0B3462; // 主文字
-  --theme-text-1: #0B346280; // 次文字
-  --theme-divider: #E4F0FE; // 分割线
+  --theme-primary: #FF0004; // 品牌红（导出稿取样值）
+  --theme-primary-rgb: 255, 0, 4;
+  --theme-primary-end: #FF7375; // 品牌卡片的浅红端点
+  --theme-primary-soft: #FFCCCD;
+  --theme-bg: #FFFFFF; // 页面背景
+  --theme-page-base: #FFFFFF;
+  --theme-text: #282828;
+  --theme-text-rgb: 40, 40, 40;
+  --theme-text-1: #28282880;
+  --theme-text-muted: #999999;
+  --theme-divider: #FEE4E4;
+  --theme-divider-rgb: 254, 228, 228;
+  --theme-shadow-rgb: 0, 0, 0;
   --auxiliary-1: #FFFFFF; // 辅助色1（白色/卡片表面）
-  --auxiliary-2: #FF2D2D; // 辅助色2（红色状态）
+  --auxiliary-2: #FF0004; // 辅助色2（红色状态）
   --auxiliary-3: #FB5C0D; // 辅助色3（橙色状态）
 
-  --surface-tint: #F0F7FF; // 浅色调背景（i18n选择器、标签等）
-  --surface-card: #EAF1F9; // 卡片主背景
-  --border-light: #D6E0EB; // 浅色边框
-  --text-nav: #171E24; // 导航文字色
-  --shadow-card: 0px 3px 8px 0px rgba(21, 58, 119, 0.1); // 卡片阴影
-  --shadow-primary-btn: 0px 2px 6px 0px rgba(28, 123, 255, 0.3); // 主按钮阴影
-  /* PC 首页通知条文案色（稿图 #0D6CFB），与全站主题主色区分 */
-  --announcement-text-pc: #0d6cfb;
+  --surface-tint: #FFF7F7;
+  --surface-brand: #F9EAEA;
+  --surface-card: #F3F3F3;
+  --surface-muted: #EDEDED;
+  --border-light: #E5E5E5;
+  --text-nav: #FFFFFF;
+  --shadow-card: 0px 3px 8px 0px rgba(0, 0, 0, 0.1);
+  --shadow-primary-btn: 0px 2px 6px 0px rgba(0, 0, 0, 0.12);
+  --announcement-text-pc: #282828;
 
   // 主卡片背景颜色
   .card-primary {
@@ -62,7 +70,7 @@
 
       &:hover {
         opacity: 1;
-        box-shadow: 0 4px 16px rgba(28, 123, 255, 0.35);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
       }
     }
 

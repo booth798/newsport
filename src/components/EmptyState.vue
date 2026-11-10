@@ -51,7 +51,7 @@ const displayText = computed(() => props.text || t('暂无数据'));
   width: 100%;
   min-height: 220px;
   padding: 32px 16px;
-  color: rgba(11, 52, 98, 0.45);
+  color: rgba(var(--theme-text-rgb), 0.45);
   text-align: center;
 }
 
@@ -66,7 +66,7 @@ const displayText = computed(() => props.text || t('暂无数据'));
   margin: 0;
   font-size: 14px;
   line-height: 1.4;
-  color: rgba(11, 52, 98, 0.45);
+  color: rgba(var(--theme-text-rgb), 0.45);
 }
 
 .empty-state__action {

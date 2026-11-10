@@ -117,8 +117,8 @@ function openService() {
             />
             <defs>
               <linearGradient id="tabBarServiceGrad" x1="24" y1="2" x2="24" y2="42" gradientUnits="userSpaceOnUse">
-                <stop stop-color="#93C0FF" />
-                <stop offset="1" stop-color="#2E83FB" />
+                <stop stop-color="var(--theme-primary-end)" />
+                <stop offset="1" stop-color="var(--theme-primary)" />
               </linearGradient>
             </defs>
           </svg>
@@ -221,7 +221,7 @@ function openService() {
   flex-shrink: 0;
   width: 48px;
   height: 48px;
-  filter: drop-shadow(0 2px 4px rgba(167, 184, 204, 0.9));
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.12));
 }
 
 .mobile-tab-bar__service-icon {

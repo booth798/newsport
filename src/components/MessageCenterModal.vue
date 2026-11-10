@@ -7,8 +7,8 @@ import { fetchMessages, markAllRead } from '@/api/user';
 import BaseModal from '@/components/BaseModal.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import { useToast } from '@/hooks/useToast';
-import iconSystemMessage from '@/assets/images/common/icon_announcement.svg';
-import clean_all_read_icon from '@/assets/images/profile/clean_all_read_icon.svg';
+import iconSystemMessage from '@/assets/images/common/icon_announcement.png';
+import clean_all_read_icon from '@/assets/images/profile/clean_all_read_icon.png';
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -177,7 +177,7 @@ watch(
   }
 
   &__content {
-    background: #EAF1F9;
+    background: var(--surface-card);
     border-radius: 16px;
     height: 100%;
     overflow-y: auto;
@@ -223,7 +223,7 @@ watch(
     display: flex;
     align-items: center;
     border-bottom: 1px solid rgba(255, 255, 255, 0.7);
-    color: #174274;
+    color: var(--theme-text);
     cursor: pointer;
     text-align: left;
     cursor: pointer;
@@ -285,7 +285,7 @@ watch(
     }
 
     span {
-      color: #7790ae;
+      color: var(--theme-text-muted);
       line-height: 1.4;
       font-weight: 300;
     }
@@ -295,7 +295,7 @@ watch(
   &__arrow {
     flex: 0 0 22px;
     margin-left: 12px;
-    color: #9fb2c9;
+    color: var(--theme-text-muted);
   }
 
   &__state {
@@ -304,15 +304,15 @@ watch(
     align-items: center;
     justify-content: center;
     gap: 10px;
-    color: #7790ae;
+    color: var(--theme-text-muted);
     font-size: 15px;
   }
 
   &__spinner {
     width: 20px;
     height: 20px;
-    border: 2px solid #c6d7ea;
-    border-top-color: #246fec;
+    border: 2px solid var(--border-light);
+    border-top-color: var(--theme-primary);
     border-radius: 50%;
     animation: message-center-spin .8s linear infinite;
   }
@@ -320,7 +320,7 @@ watch(
   &__retry {
     border: 0;
     background: transparent;
-    color: #246fec;
+    color: var(--theme-primary);
     cursor: pointer;
     font: inherit;
   }

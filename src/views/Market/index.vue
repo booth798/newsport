@@ -284,8 +284,8 @@ watch(() => filterStore.teamSearchNonce, () => {
               @click="goToLeagueFilter"
             >
               <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <rect x="0.5" y="0.5" width="39" height="39" rx="19.5" stroke="#1C7BFF" stroke-width="1"/>
-                <path d="M25.154 21.538H29.769M29.769 26.154H25.154M25.154 30.769H29.769M9.231 9.231H29.744L22.051 19.259V33.846L16.069 31.111V19.259L9.231 9.231Z" stroke="#1C7BFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <rect x="0.5" y="0.5" width="39" height="39" rx="19.5" stroke="var(--theme-primary)" stroke-width="1"/>
+                <path d="M25.154 21.538H29.769M29.769 26.154H25.154M25.154 30.769H29.769M9.231 9.231H29.744L22.051 19.259V33.846L16.069 31.111V19.259L9.231 9.231Z" stroke="var(--theme-primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </button>
             <MarketLeagueFilterPopover v-model="filterPanelOpen" />
@@ -331,8 +331,8 @@ watch(() => filterStore.teamSearchNonce, () => {
           @click="goToLeagueFilter"
         >
           <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <rect x="0.4" y="0.4" width="31.2" height="31.2" rx="15.6" stroke="#1C7BFF" stroke-width="0.8"/>
-            <path d="M20.9232 17.2307H24.6155M24.6155 20.923H20.9232M20.9232 24.6153H24.6155M7.38477 7.38452H23.795L17.6412 15.4073V27.0768L12.8549 24.8888V15.4073L7.38477 7.38452Z" stroke="#1C7BFF" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="0.4" y="0.4" width="31.2" height="31.2" rx="15.6" stroke="var(--theme-primary)" stroke-width="0.8"/>
+            <path d="M20.9232 17.2307H24.6155M24.6155 20.923H20.9232M20.9232 24.6153H24.6155M7.38477 7.38452H23.795L17.6412 15.4073V27.0768L12.8549 24.8888V15.4073L7.38477 7.38452Z" stroke="var(--theme-primary)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
         <button
@@ -425,14 +425,14 @@ watch(() => filterStore.teamSearchNonce, () => {
       overflow: visible;
       border-radius: 50px;
       padding: 32px 24px 40px;
-      box-shadow: 0 4px 8px 0 rgba(21, 58, 119, 0.18);
+      box-shadow: 0 4px 8px 0 rgba(var(--theme-shadow-rgb), 0.18);
     }
 
     @include mobile-only {
-      // Figma 热门赛事容器：浅蓝底 + 白描边
+      // Figma 热门赛事容器：浅灰底 + 白描边
       border-radius: 16px;
       padding: 16px 12px 12px;
-      background: #eaf1f9;
+      background: var(--surface-card);
       border: 0.8px solid #fff;
       box-shadow: none;
     }
@@ -508,20 +508,20 @@ watch(() => filterStore.teamSearchNonce, () => {
     flex: 0 0 auto;
     height: 32px;
     padding: 0 14px;
-    border: 0.8px solid #d6e0eb;
+    border: 0.8px solid var(--border-light);
     border-radius: 48px;
     background: #fff;
-    color: #0b3462;
+    color: var(--theme-text);
     font-family: $font-family-base;
     font-size: 12px;
     font-weight: 350;
     white-space: nowrap;
     cursor: pointer;
-    box-shadow: 0 3px 8px rgba(21, 58, 119, 0.1);
+    box-shadow: 0 3px 8px rgba(var(--theme-shadow-rgb), 0.1);
 
     &--active {
-      border-color: #1c7bff;
-      background: #1c7bff;
+      border-color: var(--theme-primary);
+      background: var(--theme-primary);
       color: #fff;
       font-weight: 500;
     }
@@ -530,20 +530,20 @@ watch(() => filterStore.teamSearchNonce, () => {
     @include web-only {
       height: 40px;
       padding: 0 20px;
-      border: 1px solid #d6e0eb;
+      border: 1px solid var(--border-light);
       font-size: 16px;
       font-weight: 400;
-      color: #1c7bff;
-      box-shadow: 0 3px 8px rgba(21, 58, 119, 0.1);
+      color: var(--theme-primary);
+      box-shadow: 0 3px 8px rgba(var(--theme-shadow-rgb), 0.1);
 
       &:not(.market-leagues__filter-tag--active) {
         background: #fff;
-        border-color: rgba(28, 123, 255, 0.35);
+        border-color: rgba(var(--theme-primary-rgb), 0.35);
       }
 
       &--active {
-        border-color: #1c7bff;
-        background: #1c7bff;
+        border-color: var(--theme-primary);
+        background: var(--theme-primary);
         color: #fff;
         font-weight: 500;
       }
@@ -560,11 +560,11 @@ watch(() => filterStore.teamSearchNonce, () => {
     height: 44px;
     padding: 0 16px;
     border-radius: $radius-pill;
-    border: 1px solid #d6e0eb;
+    border: 1px solid var(--border-light);
     background: #fff;
     box-sizing: border-box;
     cursor: text;
-    box-shadow: 0 3px 8px rgba(21, 58, 119, 0.08);
+    box-shadow: 0 3px 8px rgba(var(--theme-shadow-rgb), 0.08);
 
     @include web-only {
       width: 320px;
@@ -572,8 +572,8 @@ watch(() => filterStore.teamSearchNonce, () => {
     }
 
     &:focus-within {
-      border-color: rgba(31, 124, 255, 0.45);
-      box-shadow: 0 0 0 2px rgba(31, 124, 255, 0.08);
+      border-color: rgba(var(--theme-primary-rgb), 0.45);
+      box-shadow: 0 0 0 2px rgba(var(--theme-primary-rgb), 0.08);
     }
   }
 
@@ -581,7 +581,7 @@ watch(() => filterStore.teamSearchNonce, () => {
     flex-shrink: 0;
     width: 18px;
     height: 18px;
-    background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 18 18' fill='none'%3E%3Ccircle cx='8' cy='8' r='5.25' stroke='%2394A8C4' stroke-width='1.2'/%3E%3Cpath d='M12.5 12.5L16 16' stroke='%2394A8C4' stroke-width='1.2' stroke-linecap='round'/%3E%3C/svg%3E");
+    background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 18 18' fill='none'%3E%3Ccircle cx='8' cy='8' r='5.25' stroke='%23999999' stroke-width='1.2'/%3E%3Cpath d='M12.5 12.5L16 16' stroke='%23999999' stroke-width='1.2' stroke-linecap='round'/%3E%3C/svg%3E");
   }
 
   &__search-input {
@@ -591,9 +591,9 @@ watch(() => filterStore.teamSearchNonce, () => {
     outline: none;
     background: transparent;
     font-size: $font-size-md;
-    color: #0b3462;
+    color: var(--theme-text);
 
-    &::placeholder { color: rgba(11, 52, 98, 0.4); }
+    &::placeholder { color: rgba(var(--theme-text-rgb), 0.4); }
     &::-webkit-search-cancel-button { display: none; }
   }
 
@@ -614,10 +614,10 @@ watch(() => filterStore.teamSearchNonce, () => {
   &__load-more-btn {
     height: 36px;
     padding: 0 24px;
-    border: 1px solid #e4f0fe;
+    border: 1px solid var(--theme-divider);
     border-radius: 18px;
     background: #fff;
-    color: #1c7bff;
+    color: var(--theme-primary);
     font-size: 13px;
     cursor: pointer;
   }
@@ -634,7 +634,7 @@ watch(() => filterStore.teamSearchNonce, () => {
 
     &--empty p {
       margin: 0;
-      color: rgba(11, 52, 98, 0.45);
+      color: rgba(var(--theme-text-rgb), 0.45);
       font-size: $font-size-base;
       text-align: center;
     }

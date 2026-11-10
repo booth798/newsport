@@ -54,7 +54,7 @@ function close() {
   padding: 20px;
   border-radius: 20px;
   background: var(--auxiliary-1);
-  color: #89a0bc;
+  color: var(--theme-text-muted);
   font-size: 16px;
   line-height: 1.55;
   li {

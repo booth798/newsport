@@ -587,7 +587,7 @@ onBeforeUnmount(() => {
   padding: 0 12px;
   border: 0;
   border-radius: 18px;
-  background: rgba(28, 123, 255, 0.9);
+  background: rgba(var(--theme-primary-rgb), 0.9);
   color: var(--auxiliary-1);
   font-size: 12px;
   cursor: pointer;
@@ -647,7 +647,7 @@ onBeforeUnmount(() => {
   padding: 0 14px;
   border-radius: 16px;
   background: rgba(251, 92, 13, 0.1);
-  color: #fb5c0d;
+  color: var(--auxiliary-3);
   font-size: 13px;
   cursor: pointer;
 }
@@ -671,12 +671,12 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  color: rgba(11, 52, 98, 0.5);
+  color: rgba(var(--theme-text-rgb), 0.5);
   font-size: 14px;
 }
 
 .wc-field__label {
-  color: rgba(11, 52, 98, 0.5);
+  color: rgba(var(--theme-text-rgb), 0.5);
 }
 
 .wc-field__hint {
@@ -728,7 +728,7 @@ onBeforeUnmount(() => {
   padding: 16px;
   border: 1px solid var(--theme-divider);
   border-radius: 16px;
-  background: linear-gradient(180deg, rgba(28, 123, 255, 0.2), rgba(28, 123, 255, 0) 100px), #fff;
+  background: linear-gradient(180deg, rgba(var(--theme-primary-rgb), 0.2), rgba(var(--theme-primary-rgb), 0) 100px), #fff;
   font-size: 14px;
 
   strong {
@@ -736,7 +736,7 @@ onBeforeUnmount(() => {
     height: 38px;
     padding: 7px 10px;
     border-radius: 6px;
-    background: rgba(28, 123, 255, 0.1);
+    background: rgba(var(--theme-primary-rgb), 0.1);
     color: var(--theme-primary);
     font-size: 20px;
     font-weight: 500;
@@ -791,7 +791,7 @@ onBeforeUnmount(() => {
   overflow: hidden;
   border-radius: 16px;
   background: var(--auxiliary-1);
-  box-shadow: 0 4px 14px rgba(21, 58, 119, 0.18);
+  box-shadow: 0 4px 14px rgba(var(--theme-shadow-rgb), 0.18);
 
   button {
     height: 44px;
@@ -805,7 +805,7 @@ onBeforeUnmount(() => {
 
     &:hover,
     &.active {
-      background: #eaf1f9;
+      background: var(--surface-card);
     }
   }
 }
@@ -817,15 +817,15 @@ onBeforeUnmount(() => {
   justify-content: center;
   min-height: 160px;
   gap: 12px;
-  color: #7b92ad;
+  color: var(--theme-text-muted);
   font-size: 14px;
 }
 
 .wc-spinner {
   width: 24px;
   height: 24px;
-  border: 3px solid #e4f0fe;
-  border-top-color: #1c7bff;
+  border: 3px solid var(--theme-divider);
+  border-top-color: var(--theme-primary);
   border-radius: 50%;
   animation: wc-spin 0.8s linear infinite;
 }
@@ -839,10 +839,10 @@ onBeforeUnmount(() => {
 .wc-retry {
   height: 32px;
   padding: 0 20px;
-  border: 1px solid #1c7bff;
+  border: 1px solid var(--theme-primary);
   border-radius: 16px;
   background: transparent;
-  color: #1c7bff;
+  color: var(--theme-primary);
   font-size: 14px;
   cursor: pointer;
 }
@@ -851,11 +851,11 @@ onBeforeUnmount(() => {
   box-sizing: border-box;
   padding: 16px;
   border-radius: 16px;
-  background: rgba(28, 123, 255, 0.1);
+  background: rgba(var(--theme-primary-rgb), 0.1);
 
   @include mobile-only {
     background: var(--auxiliary-1);
-    box-shadow: 0 2px 12px rgba(21, 58, 118, 0.06);
+    box-shadow: 0 2px 12px rgba(var(--theme-shadow-rgb), 0.06);
   }
 }
 
@@ -881,20 +881,20 @@ onBeforeUnmount(() => {
   text-align: center;
 
   &--completed {
-    background: rgba(11, 52, 98, 0.1);
-    color: #5d7899;
+    background: rgba(var(--theme-text-rgb), 0.1);
+    color: var(--theme-text-muted);
   }
 
   &--pending,
   &--paying,
   &--processing {
-    background: rgba(28, 123, 255, 0.15);
-    color: #1c7bff;
+    background: rgba(var(--theme-primary-rgb), 0.15);
+    color: var(--theme-primary);
   }
 
   &--cancelled {
-    background: rgba(255, 45, 45, 0.12);
-    color: #ff2d2d;
+    background: rgba(var(--theme-primary-rgb), 0.12);
+    color: var(--auxiliary-2);
   }
 }
 
@@ -924,7 +924,7 @@ onBeforeUnmount(() => {
 
   dt {
     flex-shrink: 0;
-    color: rgba(11, 52, 98, 0.5);
+    color: rgba(var(--theme-text-rgb), 0.5);
     font-size: 14px;
   }
 
@@ -944,7 +944,7 @@ onBeforeUnmount(() => {
 }
 
 .wc-record__reason {
-  color: #ff2d2d !important;
+  color: var(--auxiliary-2) !important;
   font-size: 13px !important;
   font-weight: 400 !important;
   line-height: 1.4;
@@ -955,7 +955,7 @@ onBeforeUnmount(() => {
   padding: 8px 20px;
   border: 0;
   background: transparent;
-  color: rgba(11, 52, 98, 0.5);
+  color: rgba(var(--theme-text-rgb), 0.5);
   font-size: 14px;
   cursor: pointer;
 }

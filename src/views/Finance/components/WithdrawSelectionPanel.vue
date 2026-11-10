@@ -10,7 +10,7 @@ import { getImageUrl } from '@/utils/common';
 
 import BaseModal from '@/components/BaseModal.vue';
 import BindingListPanel from '@/components/BindingListPanel.vue';
-import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.svg?url';
+import iconNavBackMarketUrl from '@/assets/images/common/icon_back_white.png?url';
 import { useAppStore } from '@/store/modules/app';
 
 const props = defineProps({
@@ -78,7 +78,7 @@ function add() {
       <main class="selection-page__content">
         <BindingListPanel :items="props.items" :selected-id="tempId" :add-text="props.addText" @select="pick"
           @add="add">
-          <template #add-icon><img :src="getImageUrl('profile/add_address_icon.svg')" alt=""></template>
+          <template #add-icon><img :src="getImageUrl('profile/add_address_icon.png')" alt=""></template>
         </BindingListPanel>
       </main>
     </div>
@@ -96,7 +96,7 @@ function add() {
     <div class="selection-modal">
       <BindingListPanel :items="props.items" :selected-id="tempId" :add-text="props.addText" @select="pick"
         @add="add">
-        <template #add-icon><img :src="getImageUrl('profile/add_address_icon.svg')" alt=""></template>
+        <template #add-icon><img :src="getImageUrl('profile/add_address_icon.png')" alt=""></template>
       </BindingListPanel>
     </div>
   </BaseModal>
@@ -113,7 +113,7 @@ function add() {
   box-sizing: border-box;
   overflow-y: auto;
   padding: calc(8px + env(safe-area-inset-top, 0px)) 8px calc(24px + env(safe-area-inset-bottom, 0px));
-  background: #eaf1f9;
+  background: var(--surface-card);
   color: var(--theme-text);
 }
 
@@ -128,12 +128,12 @@ function add() {
   padding: 0 8px;
   border: 1px solid #fff;
   border-radius: 30px;
-  background: #eaf1f9;
+  background: var(--theme-primary);
 
   h2 {
     margin: 0;
     overflow: hidden;
-    color: var(--theme-text);
+    color: var(--auxiliary-1);
     font-size: 14px;
     font-weight: 500;
     text-align: center;
@@ -163,12 +163,12 @@ function add() {
 }
 
 .selection-page__done {
-  color: var(--theme-primary);
+  color: var(--auxiliary-1);
   font-size: 14px;
   font-weight: 500;
 
   &:disabled {
-    color: rgba(11, 52, 98, 0.35);
+    color: rgba(255, 255, 255, 0.5);
   }
 }
 

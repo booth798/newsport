@@ -258,7 +258,7 @@ watch(
   height: 48px;
   padding: 6px 8px;
   border-radius: 30px;
-  background: #eaf1f9;
+  background: var(--surface-card);
 
   button {
     border-radius: 32px;
@@ -291,13 +291,13 @@ watch(
     display: flex;
     align-items: center;
     gap: 4px;
-    color: #fb5c0d;
+    color: var(--auxiliary-3);
     font-size: 14px;
     font-weight: 400;
   }
 
   img { width: 16px; height: 16px; }
-  span { padding-left: 20px; color: rgba(11, 52, 98, 0.5); font-size: 12px; }
+  span { padding-left: 20px; color: rgba(var(--theme-text-rgb), 0.5); font-size: 12px; }
 }
 
 .profile-binding-modal__field {
@@ -308,12 +308,12 @@ watch(
   margin-bottom: 14px;
 
   > span:first-child {
-    color: rgba(11, 52, 98, 0.5);
+    color: rgba(var(--theme-text-rgb), 0.5);
     font-size: 14px;
     font-weight: 400;
   }
 
-  b { color: #ff2d2d; font-weight: 400; }
+  b { color: var(--auxiliary-2); font-weight: 400; }
 }
 
 .profile-binding-modal__select { position: relative; z-index: 2; }
@@ -334,7 +334,7 @@ watch(
   text-align: left;
   cursor: pointer;
 
-  .placeholder { color: rgba(11, 52, 98, 0.5); }
+  .placeholder { color: rgba(var(--theme-text-rgb), 0.5); }
 
   i {
     position: relative;
@@ -374,10 +374,10 @@ watch(
   z-index: 5;
   max-height: 210px;
   overflow-y: auto;
-  border: 1px solid #dce9f8;
+  border: 1px solid var(--surface-brand);
   border-radius: 0 0 16px 16px;
   background: #fff;
-  box-shadow: 0 6px 12px rgba(11, 52, 98, 0.14);
+  box-shadow: 0 6px 12px rgba(var(--theme-text-rgb), 0.14);
 
   button {
     display: block;
@@ -386,14 +386,14 @@ watch(
     padding: 0 16px;
     border: 0;
     background: #fff;
-    color: #0b3462;
+    color: var(--theme-text);
     font-size: 14px;
     text-align: left;
     cursor: pointer;
   }
 
-  button:hover { background: #edf5ff; }
-  button.placeholder { background: #edf5ff; color: rgba(11, 52, 98, 0.42); }
+  button:hover { background: var(--surface-tint); }
+  button.placeholder { background: var(--surface-tint); color: rgba(var(--theme-text-rgb), 0.42); }
 }
 
 @include web-only {

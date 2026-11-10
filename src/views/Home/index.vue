@@ -113,7 +113,7 @@ onMounted(async () => {
 
   &:hover {
     border-color: var(--theme-primary);
-    box-shadow: 0 2px 12px rgba(28, 123, 255, 0.18);
+    box-shadow: 0 2px 12px rgba(var(--theme-primary-rgb), 0.18);
   }
 
   &__icon {

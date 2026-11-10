@@ -107,7 +107,7 @@ function saveAccountInfo() {
 .register-success-modal__hint {
   margin: 0;
   text-align: center;
-  color: #0b3462;
+  color: var(--theme-text);
   font-size: 15px;
   font-weight: 400;
   line-height: 1.4;
@@ -116,7 +116,7 @@ function saveAccountInfo() {
 .register-success-modal__info {
   padding: 8px 0;
   border-radius: 12px;
-  background: #f3f7fd;
+  background: var(--surface-tint);
 }
 
 .register-success-modal__row {
@@ -125,7 +125,7 @@ function saveAccountInfo() {
   gap: 12px;
   min-height: 40px;
   padding: 0 16px;
-  color: #0b3462;
+  color: var(--theme-text);
   font-size: 14px;
   line-height: 1.3;
 }
@@ -148,7 +148,7 @@ function saveAccountInfo() {
   height: 44px;
   border: none;
   border-radius: 22px;
-  background: #1c7bff;
+  background: var(--theme-primary);
   color: #fff;
   font-size: 16px;
   font-weight: 500;
@@ -161,7 +161,7 @@ function saveAccountInfo() {
   border: none;
   border-radius: 22px;
   background: #fff;
-  color: #1c7bff;
+  color: var(--theme-primary);
   font-size: 16px;
   font-weight: 400;
   cursor: pointer;

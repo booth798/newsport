@@ -5,10 +5,10 @@
   <g mask="url(#mask_login_eye_open)">
     <path
       d="M13.7083 19.25C17.5961 19.25 22.1667 14 22.1667 14C22.1667 14 17.5961 8.75 13.7083 8.75C9.82059 8.75 5.25 14 5.25 14C5.25 14 9.82059 19.25 13.7083 19.25Z"
-      stroke="#0B3462"
+      stroke="#282828"
       stroke-opacity="0.5"
       stroke-width="0.933333"
     />
-    <circle cx="13.9993" cy="14" r="2.33333" stroke="#0B3462" stroke-opacity="0.5" stroke-width="0.933333" />
+    <circle cx="13.9993" cy="14" r="2.33333" stroke="#282828" stroke-opacity="0.5" stroke-width="0.933333" />
   </g>
 </svg>

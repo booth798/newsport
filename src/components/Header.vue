@@ -5,12 +5,12 @@ import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
 import logoUrl from '@/assets/images/common/logo_nav.png';
-import navbarHomeIcon from '@/assets/images/common/navbar_home.svg';
-import navbarHomeMutedIcon from '@/assets/images/common/navbar_home_muted.svg';
-import loginIconUrl from '@/assets/images/common/icon_login.svg?url';
-import moreIconUrl from '@/assets/images/common/icon_more.svg?url';
+import navbarHomeIcon from '@/assets/images/common/navbar_home.png';
+import navbarHomeMutedIcon from '@/assets/images/common/navbar_home_muted.png';
+import loginIconUrl from '@/assets/images/common/icon_login.png?url';
+import moreIconUrl from '@/assets/images/common/icon_more.png?url';
 import avatarDefaultUrl from '@/assets/images/common/avatar_default.png?url';
-import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.svg?url';
+import iconNavBackMarketUrl from '@/assets/images/common/icon_back_white.png?url';
 import MobileNavDrawer from '@/components/MobileNavDrawer.vue';
 import MessageCenterModal from '@/components/MessageCenterModal.vue';
 import MonthSelector from '@/components/MonthSelector.vue';
@@ -22,11 +22,11 @@ import { fetchUnreadCount } from '@/api/user';
 
 
 import iconMarketList from '@/assets/images/menu/icon_market_list.svg';
-import iconMy from '@/assets/images/menu/icon_my.svg';
+import iconMy from '@/assets/images/menu/icon_my.png';
 import iconPersonalProfile from '@/assets/images/menu/icon_personal_profile.svg';
 import iconPurchaseDetails from '@/assets/images/menu/icon_purchase_details.svg';
 import iconSettings from '@/assets/images/menu/icon_settings.svg';
-import profileHeaderSettingsIconUrl from '@/assets/images/profile/icon_profile_header_settings.svg?url';
+import profileHeaderSettingsIconUrl from '@/assets/images/profile/icon_profile_header_settings.png?url';
 import iconTransactionRecords from '@/assets/images/menu/icon_transaction_records.svg';
 
 const { t } = useI18n();
@@ -306,7 +306,7 @@ watch(isLoggedIn, (loggedIn) => {
         <img class="header-market-back-btn__img" :src="iconNavBackMarketUrl" width="40" height="40" alt="" />
       </RouterLink>
       <span v-if="isMobile && isCompactDetailHeader" class="header-mobile-compact-title">{{ compactTitle }}</span>
-      <img v-if="isMobile && !isCompactDetailHeader" class="logo" :src="logoUrl" alt="logo" />
+      <img v-if="isMobile && !isCompactDetailHeader" class="logo" :src="logoUrl" alt="Ladbrokes" />
 
       <RouterLink
         v-if="!isMobile && isCompactDetailHeader"
@@ -323,7 +323,7 @@ watch(isLoggedIn, (loggedIn) => {
           <img class="header-market-back-btn__img" :src="iconNavBackMarketUrl" width="48" height="48" alt="" />
         </a>
       </RouterLink>
-      <img v-else-if="!isMobile" class="logo" :src="logoUrl" alt="logo" />
+      <img v-else-if="!isMobile" class="logo" :src="logoUrl" alt="Ladbrokes" />
 
       <div class="navbar" v-if="!isMobile && !isCompactDetailHeader">
         <RouterLink
@@ -527,6 +527,8 @@ watch(isLoggedIn, (loggedIn) => {
     align-items: center;
     width: 100%;
     box-sizing: border-box;
+    background: var(--theme-primary);
+    border-color: var(--theme-primary);
   }
 
   @include container;
@@ -542,12 +544,12 @@ watch(isLoggedIn, (loggedIn) => {
       min-height: 52px;
       padding: 0 12px;
       border-radius: 30px;
-      background: var(--surface-card);
-      border: 0.8px solid var(--auxiliary-1);
+      background: var(--theme-primary);
+      border: 0.8px solid var(--theme-primary);
       justify-content: space-between;
       gap: 12px;
 
-      // H5 市场搜索：挂在 .norem 下，占位 14px / #8599B0 不被 pxtorem 放大
+      // H5 市场搜索：挂在 .norem 下，占位 14px / var(--theme-text-muted) 不被 pxtorem 放大
       .header-market-search {
         display: inline-flex;
         align-items: center;
@@ -566,7 +568,7 @@ watch(isLoggedIn, (loggedIn) => {
         flex-shrink: 0;
         width: 24px;
         height: 24px;
-        background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'%3E%3Ccircle cx='11' cy='11' r='6.5' stroke='%2394A8C4' stroke-width='1.5'/%3E%3Cpath d='M16.5 16.5L20 20' stroke='%2394A8C4' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+        background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'%3E%3Ccircle cx='11' cy='11' r='6.5' stroke='%23999999' stroke-width='1.5'/%3E%3Cpath d='M16.5 16.5L20 20' stroke='%23999999' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
       }
 
       .header-market-search__input {
@@ -579,7 +581,7 @@ watch(isLoggedIn, (loggedIn) => {
         font-size: 14px;
         font-weight: 300;
         line-height: 1.2;
-        color: #0b3462;
+        color: var(--theme-text);
         -webkit-appearance: none;
         appearance: none;
 
@@ -587,22 +589,22 @@ watch(isLoggedIn, (loggedIn) => {
           font-size: 14px;
           font-weight: 300;
           line-height: 1.2;
-          color: #8599b0;
+          color: var(--theme-text-muted);
           opacity: 1;
-          -webkit-text-fill-color: #8599b0;
+          -webkit-text-fill-color: var(--theme-text-muted);
         }
 
         &::-webkit-input-placeholder {
           font-size: 14px;
           font-weight: 300;
-          color: #8599b0;
-          -webkit-text-fill-color: #8599b0;
+          color: var(--theme-text-muted);
+          -webkit-text-fill-color: var(--theme-text-muted);
         }
 
         &::-moz-placeholder {
           font-size: 14px;
           font-weight: 300;
-          color: #8599b0;
+          color: var(--theme-text-muted);
           opacity: 1;
         }
 
@@ -618,7 +620,7 @@ watch(isLoggedIn, (loggedIn) => {
         padding: 0;
         border: none;
         border-radius: 50%;
-        background: #c5d3e6 center / 10px 10px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10' fill='none'%3E%3Cpath d='M2 2L8 8M8 2L2 8' stroke='%23fff' stroke-width='1.4' stroke-linecap='round'/%3E%3C/svg%3E");
+        background: var(--border-light) center / 10px 10px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10' fill='none'%3E%3Cpath d='M2 2L8 8M8 2L2 8' stroke='%23fff' stroke-width='1.4' stroke-linecap='round'/%3E%3C/svg%3E");
         cursor: pointer;
 
         &--hidden {
@@ -630,8 +632,8 @@ watch(isLoggedIn, (loggedIn) => {
 
     .logo {
       display: block;
-      width: 78px;
-      height: 28px;
+      width: 110px;
+      height: 30px;
       object-fit: contain;
       flex-shrink: 0;
     }
@@ -646,7 +648,7 @@ watch(isLoggedIn, (loggedIn) => {
       font-size: 14px;
       font-weight: 300;
       line-height: 1.2;
-      color: #8599b0;
+      color: var(--theme-text-muted);
     }
 
     &.header--market-list .card-primary.norem {
@@ -668,7 +670,7 @@ watch(isLoggedIn, (loggedIn) => {
       background: #fff;
       border: 1px solid var(--border-light);
       border-radius: 999px;
-      box-shadow: 0 1px 8px rgba(13, 108, 251, 0.1);
+      box-shadow: 0 1px 8px rgba(var(--theme-primary-rgb), 0.1);
 
       .header-user-strip__avatar {
         width: 32px;
@@ -682,7 +684,7 @@ watch(isLoggedIn, (loggedIn) => {
         flex-shrink: 0;
         font-size: 13px;
         font-weight: 500;
-        color: rgba(11, 52, 98, 0.58);
+        color: rgba(var(--theme-text-rgb), 0.58);
         line-height: 1.2;
         max-width: 72px;
         overflow: hidden;
@@ -699,14 +701,14 @@ watch(isLoggedIn, (loggedIn) => {
         min-width: 0;
         padding: 4px 8px;
         border-radius: 999px;
-        background: rgba(228, 240, 254, 0.98);
-        border: 0.8px solid rgba(13, 108, 251, 0.14);
+        background: rgba(var(--theme-divider-rgb), 0.98);
+        border: 0.8px solid rgba(var(--theme-primary-rgb), 0.14);
       }
 
       .header-user-strip__assets-label {
         font-size: 11px;
         font-weight: 500;
-        color: rgba(11, 52, 98, 0.48);
+        color: rgba(var(--theme-text-rgb), 0.48);
         white-space: nowrap;
       }
 
@@ -714,7 +716,7 @@ watch(isLoggedIn, (loggedIn) => {
         font-family: $font-family-num, $font-family-base;
         font-size: 12px;
         font-weight: 700;
-        color: #0d6cfb;
+        color: var(--theme-primary);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -735,7 +737,7 @@ watch(isLoggedIn, (loggedIn) => {
       padding: 0 4px;
       font-size: 14px;
       font-weight: 500;
-      color: #0b3462;
+      color: var(--auxiliary-1);
     }
 
     // 月份筛选页：让 .card-primary 成为绝对定位标题的包含块，
@@ -750,7 +752,7 @@ watch(isLoggedIn, (loggedIn) => {
       right: 64px;
       top: 50%;
       transform: translateY(-50%);
-      color: #0b3462;
+      color: var(--auxiliary-1);
       font-size: 14px;
       font-weight: 700;
       line-height: 1;
@@ -829,11 +831,11 @@ watch(isLoggedIn, (loggedIn) => {
       height: 40px;
       min-width: 40px;
       padding: 0;
-      border: 1px solid #d6e0eb;
+      border: 1px solid var(--auxiliary-1);
       border-radius: 50%;
-      background: radial-gradient(circle at 50% 100%, #68b3fd 0%, #0d6cfb 100%);
-      box-shadow: 0 4px 8px rgba(21, 58, 119, 0.12);
-      color: #fff;
+      background: var(--auxiliary-1);
+      box-shadow: none;
+      color: var(--theme-primary);
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
@@ -850,8 +852,8 @@ watch(isLoggedIn, (loggedIn) => {
       height: 36px;
       border: 0;
       border-radius: 50%;
-      background: linear-gradient(180deg, #3ba0ff 0%, #0d6cfb 100%);
-      box-shadow: 0 4px 8px rgba(21, 58, 119, 0.12);
+      background: linear-gradient(180deg, var(--theme-primary-end) 0%, var(--theme-primary) 100%);
+      box-shadow: 0 4px 8px rgba(var(--theme-shadow-rgb), 0.12);
       cursor: pointer;
       text-decoration: none;
 
@@ -888,7 +890,7 @@ watch(isLoggedIn, (loggedIn) => {
         height: 7px;
         border-left: 2px solid #fff;
         border-bottom: 2px solid #fff;
-        background: #1b7cff;
+        background: var(--theme-primary);
         transform: rotate(-28deg);
       }
 
@@ -932,11 +934,11 @@ watch(isLoggedIn, (loggedIn) => {
     .card-primary.norem {
       height: 80px;
       border-radius: 40px;
-      padding: 0 44px;
+      padding: 0 32px;
       overflow: visible;
 
       .logo {
-        width: 100px;
+        width: 132px;
         height: 36px;
         cursor: pointer;
         flex-shrink: 0;
@@ -946,7 +948,7 @@ watch(isLoggedIn, (loggedIn) => {
         .navbar {
         display: flex;
         align-items: center;
-        margin-left: 20px;
+        margin-left: 8px;
         position: relative;
         z-index: 2;
         overflow: visible;
@@ -965,8 +967,8 @@ watch(isLoggedIn, (loggedIn) => {
           font-size: 17px;
           font-weight: 400;
           line-height: 1;
-          color: #171e24;
-          opacity: 0.5;
+          color: var(--text-nav);
+          opacity: 1;
           text-decoration: none;
           cursor: pointer;
           white-space: nowrap;
@@ -995,13 +997,13 @@ watch(isLoggedIn, (loggedIn) => {
             opacity: 1;
             font-weight: 500;
             color: var(--theme-primary);
-            border-color: #1f7cff;
-            background: var(--surface-tint);
-            box-shadow: var(--shadow-card);
+            border-color: transparent;
+            background: var(--auxiliary-1);
+            box-shadow: none;
           }
 
           &:focus-visible {
-            outline: 2px solid var(--theme-primary);
+            outline: 2px solid var(--auxiliary-1);
             outline-offset: 2px;
           }
         }
@@ -1013,7 +1015,7 @@ watch(isLoggedIn, (loggedIn) => {
 
           &.active {
             border-color: transparent;
-            background: transparent;
+            background: var(--auxiliary-1);
             box-shadow: none;
             color: var(--theme-primary);
           }
@@ -1057,7 +1059,7 @@ watch(isLoggedIn, (loggedIn) => {
         background: #ffffff;
         border: 1px solid var(--border-light);
         border-radius: 38px;
-        box-shadow: 0 1px 10px rgba(13, 108, 251, 0.1);
+        box-shadow: 0 1px 10px rgba(var(--theme-primary-rgb), 0.1);
       }
 
       .header-user-strip__avatar {
@@ -1072,7 +1074,7 @@ watch(isLoggedIn, (loggedIn) => {
         flex-shrink: 0;
         font-size: 16px;
         font-weight: 500;
-        color: rgba(11, 52, 98, 0.58);
+        color: rgba(var(--theme-text-rgb), 0.58);
         line-height: 1.2;
         max-width: 128px;
         overflow: hidden;
@@ -1088,15 +1090,15 @@ watch(isLoggedIn, (loggedIn) => {
         flex-shrink: 0;
         padding: 5px 14px 5px 12px;
         border-radius: 28px;
-        background: rgba(228, 240, 254, 0.98);
-        border: 0.8px solid rgba(13, 108, 251, 0.14);
+        background: rgba(var(--theme-divider-rgb), 0.98);
+        border: 0.8px solid rgba(var(--theme-primary-rgb), 0.14);
         min-width: 0;
       }
 
       .header-user-strip__assets-label {
         font-size: 13px;
         font-weight: 500;
-        color: rgba(11, 52, 98, 0.48);
+        color: rgba(var(--theme-text-rgb), 0.48);
         white-space: nowrap;
       }
 
@@ -1104,7 +1106,7 @@ watch(isLoggedIn, (loggedIn) => {
         font-family: $font-family-num, $font-family-base;
         font-size: 16px;
         font-weight: 700;
-        color: #0d6cfb;
+        color: var(--theme-primary);
         letter-spacing: 0.02em;
         white-space: nowrap;
       }
@@ -1132,8 +1134,8 @@ watch(isLoggedIn, (loggedIn) => {
 
         &:hover,
         &:focus-visible {
-          transform: translateY(-5px);
-          box-shadow: 0 4px 8px 0 rgba(21, 58, 119, 0.18);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 8px 0 rgba(var(--theme-shadow-rgb), 0.18);
         }
 
         &:focus-visible {
@@ -1174,7 +1176,7 @@ watch(isLoggedIn, (loggedIn) => {
     }
 
     &:focus-visible {
-      outline: 2px solid rgba(28, 123, 255, 0.45);
+      outline: 2px solid rgba(var(--theme-primary-rgb), 0.45);
       outline-offset: 2px;
       border-radius: 8px;
     }
@@ -1184,6 +1186,7 @@ watch(isLoggedIn, (loggedIn) => {
       width: 48px;
       height: 48px;
       pointer-events: none;
+      filter: brightness(0) invert(1);
     }
 
     &--m {
@@ -1210,7 +1213,7 @@ watch(isLoggedIn, (loggedIn) => {
       font-size: 12px;
       font-weight: 500;
       line-height: 1.2;
-      color: rgba(11, 52, 98, 0.48);
+      color: rgba(var(--theme-text-rgb), 0.48);
       white-space: nowrap;
     }
   }
@@ -1231,7 +1234,7 @@ watch(isLoggedIn, (loggedIn) => {
   }
 
   &.header--market-detail {
-    background: linear-gradient(180deg, #e3ecfb 0%, var(--theme-bg) 100%);
+    background: linear-gradient(180deg, var(--theme-bg) 0%, var(--theme-bg) 100%);
 
     @include web-only {
       height: auto;
@@ -1241,7 +1244,7 @@ watch(isLoggedIn, (loggedIn) => {
     }
 
     @include mobile-only {
-      background: #e3ecfb;
+      background: var(--theme-bg);
       padding-top: 0;
       padding-bottom: 8px;
     }

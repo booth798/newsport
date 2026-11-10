@@ -18,7 +18,7 @@ export default {
   即时比分: '即时比分',
   VIP规则: 'VIP规则',
   规则说明: '规则说明',
-  关于UNIBET: '关于UNIBET',
+  关于UNIBET: '关于Ladbrokes',
   设置: '设置',
   管理: '管理',
   删除: '删除',

@@ -18,7 +18,7 @@ export default {
   即时比分: 'Live Scores',
   VIP规则: 'VIP Rules',
   规则说明: 'Rules',
-  关于UNIBET: 'About UNIBET',
+  关于UNIBET: 'About Ladbrokes',
   设置: 'Settings',
   管理: 'Manage',
   删除: 'Delete',

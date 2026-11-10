@@ -3,7 +3,7 @@
  * 赛事结果 — UI 对齐 Figma 截图 / 安卓 EventResultsActivity
  * - 顶栏：返回 + 标题 + 搜索（进搜索页 mode=match&phase=finished）
  * - 日期：复用 MonthSelector includeDay（对齐 DateSelectDialog）
- * - 卡片：联赛左、「完场」右；比分条内嵌；主客队分均为蓝色
+ * - 卡片：联赛左、「完场」右；比分条内嵌；主客队分均为品牌色
  * - 滚动触底加载下一页（PC / H5 共用）
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
@@ -11,7 +11,7 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
-import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.svg?url';
+import iconNavBackMarketUrl from '@/assets/images/common/icon_back_white.png?url';
 import matchScoreArenaBgUrl from '@/assets/images/common/match_score_arena_bg.png';
 import AppSearchButton from '@/components/AppSearchButton.vue';
 import AppSideNav from '@/components/AppSideNav.vue';
@@ -345,7 +345,7 @@ onBeforeUnmount(() => {
 .result-page {
   min-height: 100dvh;
   box-sizing: border-box;
-  background: linear-gradient(180deg, #e3ecfb 0%, var(--theme-bg) 220px);
+  background: linear-gradient(180deg, var(--theme-bg) 0%, var(--theme-bg) 220px);
 
   @include web-only {
     padding: 30px 30px 60px;
@@ -372,7 +372,7 @@ onBeforeUnmount(() => {
   font-family: $font-family-num, $font-family-base;
   font-size: 12px;
   font-weight: 500;
-  color: rgba(11, 52, 98, 0.48);
+  color: rgba(var(--theme-text-rgb), 0.48);
   white-space: nowrap;
 }
 
@@ -386,7 +386,7 @@ onBeforeUnmount(() => {
     padding: 0 24px 0 32px;
     border: 0.8px solid var(--auxiliary-1);
     border-radius: 40px;
-    background: var(--surface-card);
+    background: var(--theme-primary);
   }
 
   @include mobile-only {
@@ -395,7 +395,7 @@ onBeforeUnmount(() => {
     padding: 0 8px;
     border: 0.8px solid #fff;
     border-radius: 30px;
-    background: var(--surface-card);
+    background: var(--theme-primary);
   }
 }
 
@@ -426,7 +426,7 @@ onBeforeUnmount(() => {
   margin: 0;
   font-size: 14px;
   font-weight: 700;
-  color: #0b3462;
+  color: var(--auxiliary-1);
   white-space: nowrap;
 }
 
@@ -467,7 +467,7 @@ onBeforeUnmount(() => {
   padding: 10px;
   border-radius: 16px;
   border: 0.8px solid #fff;
-  background: #eaf1f9;
+  background: var(--surface-card);
 }
 
 .result-date-row {
@@ -521,7 +521,7 @@ onBeforeUnmount(() => {
 .result-card__league-name {
   font-size: 14px;
   font-weight: 400;
-  color: rgba(11, 52, 98, 0.5);
+  color: rgba(var(--theme-text-rgb), 0.5);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -535,8 +535,8 @@ onBeforeUnmount(() => {
   height: 18px;
   padding: 0 10px;
   border-radius: 12px;
-  background: #eaf1f9;
-  color: rgba(11, 52, 98, 0.5);
+  background: var(--surface-card);
+  color: rgba(var(--theme-text-rgb), 0.5);
   font-size: 10px;
   font-weight: 400;
   line-height: 1;
@@ -550,7 +550,7 @@ onBeforeUnmount(() => {
   height: 52px;
   border-radius: 16px;
   overflow: hidden;
-  background: #eaf1f9;
+  background: var(--surface-card);
 }
 
 .result-card__arena-bg {
@@ -596,7 +596,7 @@ onBeforeUnmount(() => {
   min-width: 0;
   font-size: 14px;
   font-weight: 400;
-  color: #0b3462;
+  color: var(--theme-text);
   line-height: 1.2;
 }
 
@@ -622,11 +622,11 @@ onBeforeUnmount(() => {
   color: #fff;
 
   &--home {
-    background: #1c7bff;
+    background: var(--theme-primary);
   }
 
   &--away {
-    background: rgba(11, 52, 98, 0.5);
+    background: rgba(var(--theme-text-rgb), 0.5);
   }
 }
 
@@ -640,7 +640,7 @@ onBeforeUnmount(() => {
   box-sizing: border-box;
   border-radius: 50%;
   background: #fff;
-  border: 0.5px solid #e4f0fe;
+  border: 0.5px solid var(--theme-divider);
   flex-shrink: 0;
 }
 
@@ -660,7 +660,7 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 
-/* 截图：比分整体蓝色 */
+/* 比分使用品牌色 */
 .result-card__score {
   display: inline-flex;
   align-items: center;
@@ -670,18 +670,18 @@ onBeforeUnmount(() => {
   font-size: 20px;
   font-weight: 700;
   line-height: 1;
-  color: #1c7bff;
+  color: var(--theme-primary);
 }
 
 .result-card__score-sep {
-  color: #1c7bff;
+  color: var(--theme-primary);
 }
 
 .result-card__time {
   margin-top: 1px;
   font-family: $font-family-num, $font-family-base;
   font-size: 12px;
-  color: rgba(11, 52, 98, 0.5);
+  color: rgba(var(--theme-text-rgb), 0.5);
   line-height: 1;
   text-align: center;
 }
@@ -693,15 +693,15 @@ onBeforeUnmount(() => {
   justify-content: center;
   min-height: 260px;
   gap: 12px;
-  color: #7b92ad;
+  color: var(--theme-text-muted);
   font-size: 14px;
 }
 
 .result-spinner {
   width: 24px;
   height: 24px;
-  border: 3px solid #e4f0fe;
-  border-top-color: #1c7bff;
+  border: 3px solid var(--theme-divider);
+  border-top-color: var(--theme-primary);
   border-radius: 50%;
   animation: result-spin 0.8s linear infinite;
 }
@@ -715,10 +715,10 @@ onBeforeUnmount(() => {
 .result-retry {
   height: 32px;
   padding: 0 20px;
-  border: 1px solid #1c7bff;
+  border: 1px solid var(--theme-primary);
   border-radius: 16px;
   background: transparent;
-  color: #1c7bff;
+  color: var(--theme-primary);
   font-size: 14px;
   cursor: pointer;
 }
@@ -731,7 +731,7 @@ onBeforeUnmount(() => {
   gap: 8px;
   min-height: 48px;
   margin-top: 12px;
-  color: #7b92ad;
+  color: var(--theme-text-muted);
   font-size: 13px;
 }
 </style>

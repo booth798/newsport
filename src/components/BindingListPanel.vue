@@ -3,8 +3,8 @@
  * 收款绑定列表：统一银行卡/区块链 Tab、选择态、移除态和新增入口。
  * 接口请求、删除确认和保存动作由业务父组件处理。
  */
-import checkboxCheckedUrl from '@/assets/images/common/icon_checkbox_checked.svg?url';
-import checkboxUncheckedUrl from '@/assets/images/common/icon_checkbox_unchecked.svg?url';
+import checkboxCheckedUrl from '@/assets/images/common/icon_checkbox_checked.png?url';
+import checkboxUncheckedUrl from '@/assets/images/common/icon_checkbox_unchecked.png?url';
 import addressRemoveUrl from '@/assets/images/common/address_remove_icon.svg?url';
 
 defineProps({
@@ -75,8 +75,8 @@ const emit = defineEmits(['update:activeTab', 'select', 'remove', 'add']);
   margin-bottom: 12px;
   padding: 6px 8px;
   border-radius: 30px;
-  background: var(--binding-list-tabs-bg, #eaf1f9);
-  box-shadow: 0px 4px 10px 0px #153A772E;
+  background: var(--binding-list-tabs-bg, var(--surface-card));
+  box-shadow: 0px 4px 10px 0px rgba(var(--theme-shadow-rgb), 0.18);
 }
 
 .binding-list-panel__tab {
@@ -92,7 +92,7 @@ const emit = defineEmits(['update:activeTab', 'select', 'remove', 'add']);
 .binding-list-panel__tab.active {
   background: var(--theme-primary);
   color: #fff;
-  box-shadow: 0 3px 9px rgba(28, 123, 255, 0.3);
+  box-shadow: 0 3px 9px rgba(var(--theme-primary-rgb), 0.3);
 }
 
 .binding-list-panel__list {
@@ -107,7 +107,7 @@ const emit = defineEmits(['update:activeTab', 'select', 'remove', 'add']);
   align-items: center;
   min-height: 58px;
   padding: 0 16px;
-  border: 1px solid #d8e6f5;
+  border: 1px solid var(--border-light);
   border-radius: 16px;
   background: #fff;
 }
@@ -152,7 +152,7 @@ const emit = defineEmits(['update:activeTab', 'select', 'remove', 'add']);
 }
 
 .binding-list-panel__info span {
-  color: rgba(11, 52, 98, 0.5);
+  color: rgba(var(--theme-text-rgb), 0.5);
   font-size: 12px;
 }
 
@@ -189,7 +189,7 @@ const emit = defineEmits(['update:activeTab', 'select', 'remove', 'add']);
   min-height: 58px;
   border: 0;
   border-radius: 16px;
-  background: var(--binding-list-add-bg, #eaf1f9);
+  background: var(--binding-list-add-bg, var(--surface-card));
   color: var(--theme-primary);
   font-size: 14px;
   font-weight: 500;

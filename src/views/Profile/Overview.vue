@@ -43,24 +43,23 @@ const unreadCount = ref(0);
 const profileImage = (name) => getImageUrl(`profile/${name}`);
 const commonImage = (name) => getImageUrl(`common/${name}`);
 
-const profileCardBgH5 = profileImage('profile_card_bg_h5.svg');
-const profileCardBg = profileImage('profile_card_bg.svg');
-const sunshineBg = profileImage('sunshine_bg.svg');
+const profileCardBgH5 = profileImage('profile_card_bg_h5.png');
+const profileCardBg = profileImage('profile_card_bg.png');
 const avatarDefaultUrl = commonImage('avatar_default.png');
-const iconProfileDeposit = profileImage('icon_profile_deposit.svg');
-const iconProfileDepositPc = profileImage('pc_icon_profile_deposit.svg');
-const iconProfileWithdraw = profileImage('icon_profile_withdraw.svg');
+const iconProfileDeposit = profileImage('icon_profile_deposit.png');
+const iconProfileDepositPc = profileImage('pc_icon_profile_deposit.png');
+const iconProfileWithdraw = profileImage('icon_profile_withdraw.png');
 const iconProfileInfo = commonImage('icon_profile_info.svg');
 const iconVipBenefits = profileImage('vip_benefits_icon.svg');
 const iconVipTransfer = profileImage('vip_transfer_icon.svg');
 const iconLanguageSetting = profileImage('language_setting_icon.svg');
-const iconProfileMessages = commonImage('icon_profile_messages.svg');
-const iconProfileSecurity = commonImage('icon_profile_security.svg');
+const iconProfileMessages = commonImage('icon_profile_messages.png');
+const iconProfileSecurity = commonImage('icon_profile_security.png');
 const iconProfileBindinfo = commonImage('icon_profile_bindinfo.svg');
-const iconProfileService = commonImage('icon_profile_service.svg');
-const iconProfileLogout = commonImage('icon_profile_logout.svg');
-const iconBalanceRefresh = profileImage('icon_balance_refresh.svg');
-const iconBalanceRefreshPc = profileImage('pc_icon_balance_refresh.svg');
+const iconProfileService = commonImage('icon_profile_service.png');
+const iconProfileLogout = commonImage('icon_profile_logout.png');
+const iconBalanceRefresh = profileImage('icon_balance_refresh.png');
+const iconBalanceRefreshPc = profileImage('pc_icon_balance_refresh.png');
 
 // 概览展示统一读取用户 store，页面不再维护重复的用户资料副本。
 const defaultOverview = () => ({
@@ -412,7 +411,6 @@ onMounted(() => {
       <template v-if="isMobile">
         <section class="profile-h5-card" aria-label="profile-summary">
           <img class="profile-h5-card__bg" :src="profileCardBgH5" alt="" aria-hidden="true" />
-          <img class="profile-card__sunshine" :src="sunshineBg" alt="" aria-hidden="true" />
           <button type="button" class="profile-h5-card__user" @click="handleHeroClick">
             <img class="profile-h5-card__avatar" :src="avatarDisplayUrl || avatarDefaultUrl" width="58" height="58"
               alt="" />
@@ -502,7 +500,6 @@ onMounted(() => {
         <section class="profile-home__hero" aria-label="profile-summary">
           <div class="profile-home__hero-bg" aria-hidden="true">
             <img class="profile-home__hero-bg-img" :src="profileCardBg" alt="" />
-            <img class="profile-card__sunshine" :src="sunshineBg" alt="" />
           </div>
 
           <div class="profile-home__hero-main">
@@ -620,7 +617,7 @@ onMounted(() => {
   width: 100%;
   height: 148px;
   overflow: hidden;
-  background: radial-gradient(100% 100% at 50% 100%, #68B3FD 0%, #0D6CFB 100%);
+  background: radial-gradient(100% 100% at 50% 100%, var(--theme-primary-end) 0%, var(--theme-primary) 100%);
   border-radius: 16px;
   border: 1px solid #FFFFFF;
 }
@@ -631,14 +628,6 @@ onMounted(() => {
   height: 100%;
   pointer-events: none;
   user-select: none;
-}
-
-.profile-card__sunshine {
-  width: 275px;
-  height: 275px;
-  position: absolute;
-  top: -34px;
-  left: 0px;
 }
 
 .profile-h5-card__user {
@@ -829,7 +818,7 @@ onMounted(() => {
 
   h2 {
     margin: 0;
-    color: #0b3462;
+    color: var(--theme-text);
     font-size: 16px;
     font-weight: 500;
     line-height: 1.1;
@@ -870,7 +859,7 @@ onMounted(() => {
   justify-content: center;
   gap: 8px;
   margin: 10px 0 10px;
-  color: #1c7bff;
+  color: var(--theme-primary);
 
   strong {
     font-family: $font-family-num, $font-family-base;
@@ -898,12 +887,12 @@ onMounted(() => {
     justify-content: center;
     gap: 2px;
     border-radius: 6px;
-    background: #e3eefb;
-    color: #0b3462;
+    background: var(--surface-brand);
+    color: var(--theme-text);
   }
 
   span {
-    color: #0B346280;
+    color: var(--theme-text-1);
     font-size: 12px;
     font-weight: 500;
   }
@@ -927,10 +916,10 @@ onMounted(() => {
   justify-content: center;
   gap: 4px;
   height: 44px;
-  border: 1px solid #1c7bff;
+  border: 1px solid var(--theme-primary);
   border-radius: 32px;
   background: transparent;
-  color: #1c7bff;
+  color: var(--theme-primary);
   font-size: 18px;
   font-weight: 400;
 
@@ -941,13 +930,13 @@ onMounted(() => {
   }
 
   &--primary {
-    background: #1c7bff;
+    background: var(--theme-primary);
     color: #fff;
-    box-shadow: 0 3px 8px rgba(21, 58, 119, 0.1);
+    box-shadow: 0 3px 8px rgba(var(--theme-shadow-rgb), 0.1);
   }
 
   &:nth-child(2) {
-    background: #EAF1F9;
+    background: var(--surface-card);
   }
 }
 
@@ -966,9 +955,9 @@ onMounted(() => {
   height: 44px;
   padding: 0;
   border: none;
-  border-bottom: 1px solid #E4F0FE;
+  border-bottom: 1px solid var(--theme-divider);
   background: transparent;
-  color: #0b3462;
+  color: var(--theme-text);
   font-size: 14px;
   font-weight: 400;
   text-align: left;
@@ -981,8 +970,8 @@ onMounted(() => {
     width: 8px;
     height: 8px;
     flex-shrink: 0;
-    border-top: 2px solid #0B346280;
-    border-right: 2px solid #0B346280;
+    border-top: 2px solid var(--theme-text-1);
+    border-right: 2px solid var(--theme-text-1);
     transform: rotate(45deg);
   }
 }
@@ -1049,7 +1038,7 @@ onMounted(() => {
     margin: 0 auto;
     overflow: hidden;
     height: 360px;
-    box-shadow: 0px 6px 20px 0px #153A772E;
+    box-shadow: 0px 6px 20px 0px rgba(var(--theme-shadow-rgb), 0.18);
 
     @include web-only {
       border-radius: 32px;
@@ -1064,11 +1053,6 @@ onMounted(() => {
     pointer-events: none;
     border-radius: 32px;
     border: 1px solid #FFFFFF;
-    z-index: 2;
-
-    .profile-card__sunshine {
-      top: -24px;
-    }
   }
 
   .profile-home__hero-bg-img {
@@ -1086,7 +1070,7 @@ onMounted(() => {
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
-    background: radial-gradient(100% 100% at 50% 100%, #68B3FD 0%, #0D6CFB 100%);
+    background: transparent;
     padding: 24px;
   }
 
@@ -1106,7 +1090,7 @@ onMounted(() => {
     align-items: center;
     padding: 0 24px;
     box-sizing: border-box;
-    background: #EAF1F9;
+    background: var(--surface-brand);
   }
 
   .profile-home__user {
@@ -1361,13 +1345,13 @@ onMounted(() => {
     text-align: center;
 
     &:not(:last-child) {
-      border-right: 1.5px solid #0B346280;
+      border-right: 1.5px solid var(--theme-text-1);
     }
   }
 
   .profile-home__stat-label {
     font-size: 14px;
-    color: #0B3462;
+    color: var(--theme-text);
   }
 
   .profile-home__stat-value {
@@ -1382,7 +1366,7 @@ onMounted(() => {
     padding: 22px 24px;
     border-radius: 32px;
     background: #fff;
-    box-shadow: 0px 6px 20px 0px #153A772E;
+    box-shadow: 0px 6px 20px 0px rgba(var(--theme-shadow-rgb), 0.18);
     height: 474px;
   }
 
@@ -1402,7 +1386,7 @@ onMounted(() => {
     align-items: center;
     gap: 8px;
     border-radius: 24px;
-    background: #eaf1f9;
+    background: var(--surface-card);
     cursor: pointer;
     text-align: center;
     transition: transform 0.1s ease, opacity 0.2s ease;
@@ -1452,7 +1436,7 @@ onMounted(() => {
 
   .profile-home__menu-label {
     font-size: 18px;
-    color: #0b3462;
+    color: var(--theme-text);
   }
 
 }

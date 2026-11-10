@@ -90,7 +90,7 @@ onMounted(() => {
 .message-page {
   min-height: calc(100dvh - 120px);
   box-sizing: border-box;
-  color: #0b3462;
+  color: var(--theme-text);
   background: var(--theme-bg);
 
   @include web-only {
@@ -111,7 +111,7 @@ onMounted(() => {
   border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: 40px;
   background: #fff;
-  box-shadow: 0 10px 24px rgba(21, 58, 119, 0.14);
+  box-shadow: 0 10px 24px rgba(var(--theme-shadow-rgb), 0.14);
 
   @include mobile-only {
     width: 100%;
@@ -128,14 +128,14 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  color: rgba(11, 52, 98, 0.55);
+  color: rgba(var(--theme-text-rgb), 0.55);
   font-size: 16px;
 }
 
 .message-page__spinner {
   width: 28px;
   height: 28px;
-  border: 3px solid #e4f0fe;
+  border: 3px solid var(--theme-divider);
   border-top-color: var(--theme-primary);
   border-radius: 50%;
   animation: message-page-spin 0.8s linear infinite;
@@ -191,7 +191,7 @@ onMounted(() => {
 .message-detail__title,
 .message-detail__text {
   margin: 0;
-  color: #0b3462;
+  color: var(--theme-text);
   font-weight: 400;
   white-space: pre-line;
   overflow-wrap: anywhere;

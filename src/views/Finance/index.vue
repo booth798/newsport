@@ -193,7 +193,7 @@ onMounted(loadWithdrawMethods);
 .finance-tab.active {
   background: var(--theme-primary);
   color: var(--auxiliary-1);
-  box-shadow: 0 3px 9px rgba(28, 123, 255, 0.35);
+  box-shadow: 0 3px 9px rgba(var(--theme-primary-rgb), 0.35);
 }
 
 .finance-content {

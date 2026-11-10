@@ -70,7 +70,7 @@ function qrSrc(url) {
           <div class="app-dl__frame">
             <img
               class="app-dl__watermark"
-              :src="getImageUrl('common/modal_opacity_logo.svg')"
+              :src="getImageUrl('common/modal_opacity_logo.png')"
               alt=""
               aria-hidden="true"
             />
@@ -124,7 +124,7 @@ function qrSrc(url) {
 .app-dl__backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(11, 52, 98, 0.62);
+  background: rgba(var(--theme-text-rgb), 0.62);
   backdrop-filter: blur(6px);
 }
 
@@ -162,8 +162,8 @@ function qrSrc(url) {
   padding: 32px 40px 40px;
   border-radius: 28px;
   border: 1px solid #fff;
-  background: radial-gradient(120% 120% at 50% 100%, #68b3fd 0%, #0d6cfb 55%, #0b5be0 100%);
-  box-shadow: 0 24px 64px rgba(11, 52, 98, 0.35);
+  background: radial-gradient(120% 120% at 50% 100%, var(--theme-primary-end) 0%, var(--theme-primary) 55%, var(--theme-primary) 100%);
+  box-shadow: 0 24px 64px rgba(var(--theme-text-rgb), 0.35);
   box-sizing: border-box;
 }
 
@@ -195,7 +195,7 @@ function qrSrc(url) {
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: 0.02em;
-  text-shadow: 0 2px 8px rgba(11, 52, 98, 0.25);
+  text-shadow: 0 2px 8px rgba(var(--theme-text-rgb), 0.25);
 }
 
 .app-dl__subtitle {
@@ -223,7 +223,7 @@ function qrSrc(url) {
   padding: 28px 24px 32px;
   border-radius: 24px;
   background: #fff;
-  box-shadow: 0 16px 40px rgba(11, 52, 98, 0.16);
+  box-shadow: 0 16px 40px rgba(var(--theme-text-rgb), 0.16);
   box-sizing: border-box;
 }
 
@@ -241,11 +241,11 @@ function qrSrc(url) {
   color: #fff;
 
   &--android {
-    background: linear-gradient(135deg, #1c7bff 0%, #0d6cfb 100%);
+    background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-primary) 100%);
   }
 
   &--ios {
-    background: linear-gradient(135deg, #0b3462 0%, #1a4f8c 100%);
+    background: linear-gradient(135deg, var(--theme-text) 0%, var(--theme-text) 100%);
   }
 }
 
@@ -256,7 +256,7 @@ function qrSrc(url) {
   width: 240px;
   height: 240px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(28, 123, 255, 0.16) 0%, rgba(28, 123, 255, 0) 70%);
+  background: radial-gradient(circle, rgba(var(--theme-primary-rgb), 0.16) 0%, rgba(var(--theme-primary-rgb), 0) 70%);
   transform: translateX(-50%);
   pointer-events: none;
 }
@@ -270,8 +270,8 @@ function qrSrc(url) {
   height: 288px;
   padding: 14px;
   border-radius: 20px;
-  border: 1px solid rgba(28, 123, 255, 0.18);
-  background: linear-gradient(180deg, #f3f8ff 0%, #ffffff 100%);
+  border: 1px solid rgba(var(--theme-primary-rgb), 0.18);
+  background: linear-gradient(180deg, var(--surface-tint) 0%, #ffffff 100%);
   box-sizing: border-box;
 }
 

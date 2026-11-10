@@ -1,7 +1,7 @@
 <script setup>
 import { RouterLink } from 'vue-router';
 
-import logoUrl from '@/assets/images/common/logo_nav.png';
+import logoUrl from '@/assets/images/common/logo_brand.png';
 
 defineProps({
   items: {
@@ -25,7 +25,7 @@ function selectItem(item) {
 
 <template>
   <aside class="app-side-nav">
-    <img class="app-side-nav__logo" :src="logoUrl" alt="UNIBET" width="100" height="36" />
+    <img class="app-side-nav__logo" :src="logoUrl" alt="Ladbrokes" width="100" height="36" />
     <nav class="app-side-nav__list">
       <component
         :is="item.to ? RouterLink : 'button'"
@@ -54,7 +54,7 @@ function selectItem(item) {
     box-sizing: border-box;
     border: 1px solid rgba(255, 255, 255, 0.9);
     border-radius: 25px;
-    background: var(--auxiliary-1);
+    background: linear-gradient(180deg, var(--theme-primary-soft), var(--auxiliary-1) 112px);
     box-shadow: var(--shadow-card);
   }
 
@@ -109,7 +109,7 @@ function selectItem(item) {
 
   &:hover,
   &.active {
-    background: #e8f2ff;
+    background: var(--surface-brand);
     color: var(--theme-primary);
   }
 

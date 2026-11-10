@@ -2,11 +2,11 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 import bannerDefault from '@/assets/images/slide/banner.png';
-import slideLeftIcon from '@/assets/images/common/icon_slide-left.svg';
-import slideLeftHoverIcon from '@/assets/images/common/icon_slide-left_hover.svg';
-import slideRightIcon from '@/assets/images/common/icon_slide-right.svg';
-import slideRightHoverIcon from '@/assets/images/common/icon_slide-right_hover.svg';
-import logoUrl from '@/assets/images/common/logo_nav.png?url';
+import slideLeftIcon from '@/assets/images/common/icon_slide-left.png';
+import slideLeftHoverIcon from '@/assets/images/common/icon_slide-left_hover.png';
+import slideRightIcon from '@/assets/images/common/icon_slide-right.png';
+import slideRightHoverIcon from '@/assets/images/common/icon_slide-right_hover.png';
+import logoUrl from '@/assets/images/common/logo_brand.png?url';
 import { reportBannerClick } from '@/api/match';
 
 const props = defineProps({
@@ -192,9 +192,8 @@ function onTouchEnd() {
   @include web-only {
     border-radius: 40px;
     height: 520px;
-    border: 1px solid;
-    border-image-source: linear-gradient(135deg, #E3EDF9 0%, #2E5A9D 35%, #242538 100%);
-    box-shadow: 0 6px 20px rgba(21, 58, 119, 0.18);
+    border: 1px solid var(--border-light);
+    box-shadow: 0 6px 20px rgba(var(--theme-shadow-rgb), 0.18);
   }
 
   @include mobile-only {
@@ -215,7 +214,7 @@ function onTouchEnd() {
     align-items: center;
     justify-content: center;
     gap: 12px;
-    background: linear-gradient(135deg, #d6e8ff 0%, #eaf3fd 50%, #d1e3fa 100%);
+    background: var(--surface-card);
     border-radius: inherit;
   }
 
@@ -335,7 +334,7 @@ function onTouchEnd() {
     border-radius: 3px;
     background: rgba(255, 255, 255, 0.4);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background-color 0.2s ease;
 
     &.active {
       width: 28px;

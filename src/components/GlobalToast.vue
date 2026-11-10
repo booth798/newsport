@@ -102,9 +102,9 @@ defineExpose({ show });
     }
 
     &--info {
-      background: #eff6ff;
-      color: #2563eb;
-      border: 1px solid rgba(37, 99, 235, 0.2);
+      background: var(--surface-tint);
+      color: var(--theme-primary);
+      border: 1px solid rgba(var(--theme-primary-rgb), 0.2);
     }
 
     .global-toast__icon {
@@ -129,7 +129,7 @@ defineExpose({ show });
     }
 
     &--info .global-toast__icon {
-      background: #2563eb;
+      background: var(--theme-primary);
       color: #fff;
     }
   }

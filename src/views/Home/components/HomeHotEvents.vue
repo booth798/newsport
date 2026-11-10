@@ -16,7 +16,8 @@ import {
 } from '@/api/match';
 
 import iconEventsUrl from '@/assets/images/events/icon_events.svg?url';
-import iconHotUrl from '@/assets/images/events/icon_hot.svg?url';
+import iconHotEventsUrl from '@/assets/images/common/icon_hot_events.png?url';
+import iconHotUrl from '@/assets/images/events/icon_hot.png?url';
 import iconMoreUrl from '@/assets/images/events/icon_more.svg?url';
 
 const { t } = useI18n();
@@ -206,7 +207,7 @@ function retry() {
   <section class="hot-events">
     <div class="hot-events__head">
       <div class="hot-events__title-wrap">
-        <img class="hot-events__title-icon" :src="iconEventsUrl" alt="" />
+        <img class="hot-events__title-icon" :src="iconHotEventsUrl" alt="" />
         <h2 class="hot-events__title">{{ t('热门赛事') }}</h2>
       </div>
 
@@ -278,15 +279,15 @@ function retry() {
   @include web-only {
     border-radius: 50px;
     padding: 40px 24px;
-    box-shadow: 0 4px 8px 0 rgba(21, 58, 119, 0.18);
+    box-shadow: 0 4px 8px 0 rgba(var(--theme-shadow-rgb), 0.18);
   }
 
   @include mobile-only {
     border-radius: 20px;
     /* 稿：上 15px、左右 12px（与标题区标注一致） */
     padding: 15px 12px 16px;
-    background: #EAF1F9;
-    box-shadow: 0 4px 8px 0 rgba(21, 58, 119, 0.18);
+    background: var(--surface-card);
+    box-shadow: 0 4px 8px 0 rgba(var(--theme-shadow-rgb), 0.18);
   }
 
   &__head {
@@ -344,11 +345,7 @@ function retry() {
     font-weight: 700;
     line-height: 1;
     letter-spacing: 0;
-    background: radial-gradient(circle at 50% 100%, #68b3fd, #0d6cfb);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: transparent;
+    color: var(--theme-primary);
 
     @include mobile-only {
       font-size: 18px;
@@ -382,8 +379,8 @@ function retry() {
     line-height: 26px;
     white-space: nowrap;
     text-decoration: none;
-    background: #1c7bff;
-    box-shadow: 0 3px 8px rgba(21, 58, 119, 0.1);
+    background: var(--theme-primary);
+    box-shadow: 0 3px 8px rgba(var(--theme-shadow-rgb), 0.1);
     transition:
       opacity 0.2s ease,
       transform 0.2s ease;
@@ -397,7 +394,7 @@ function retry() {
     }
 
     &:focus-visible {
-      outline: 2px solid #1c7bff;
+      outline: 2px solid var(--theme-primary);
       outline-offset: 2px;
     }
 
@@ -419,9 +416,7 @@ function retry() {
         width: 96px;
         height: 22px;
         border-radius: 38px;
-        background: #a6b5fe;
-        filter: blur(16px);
-        transform: translateX(-50%);
+        display: none;
       }
 
       &::after {
@@ -531,9 +526,9 @@ function retry() {
       padding: 10px 14px;
       gap: 10px;
       border-radius: 48px;
-      border: 1px solid #d6e0eb;
-      background: #EAF1F9;
-      box-shadow: 0 2px 8px rgba(21, 58, 119, 0.1);
+      border: 1px solid var(--border-light);
+      background: var(--surface-card);
+      box-shadow: 0 2px 8px rgba(var(--theme-shadow-rgb), 0.1);
       font-size: 16px;
       font-weight: 400;
       line-height: 1;
@@ -541,16 +536,16 @@ function retry() {
       color: var(--theme-text);
 
       &:hover:not(.hot-events__tab--active) {
-        border-color: rgba(31, 124, 255, 0.45);
-        background: #f5f9ff;
-        box-shadow: 0 3px 10px rgba(21, 58, 119, 0.12);
+        border-color: rgba(var(--theme-primary-rgb), 0.45);
+        background: var(--surface-tint);
+        box-shadow: 0 3px 10px rgba(var(--theme-shadow-rgb), 0.12);
       }
 
       &--active {
-        border-color: #1f7cff;
-        background: #f0f7ff;
-        color: #1f7cff;
-        box-shadow: 0 3px 10px rgba(21, 58, 119, 0.14);
+        border-color: var(--theme-primary);
+        background: var(--surface-tint);
+        color: var(--theme-primary);
+        box-shadow: 0 3px 10px rgba(var(--theme-shadow-rgb), 0.14);
       }
     }
 
@@ -560,7 +555,7 @@ function retry() {
       padding: 0 10px;
       gap: 4px;
       border-radius: 48px;
-      border: 1px solid rgba(214, 224, 235, 0.55);
+      border: 1px solid rgba(var(--theme-divider-rgb), 0.55);
       background: transparent;
       box-shadow: none;
       font-size: 12px;
@@ -569,10 +564,10 @@ function retry() {
       color: var(--theme-text);
 
       &--active {
-        border: 1px solid #1f7cff;
+        border: 1px solid var(--theme-primary);
         background: #fff;
-        color: #1f7cff;
-        box-shadow: 0 3px 8px 0 rgba(21, 58, 119, 0.1);
+        color: var(--theme-primary);
+        box-shadow: 0 3px 8px 0 rgba(var(--theme-shadow-rgb), 0.1);
       }
     }
   }

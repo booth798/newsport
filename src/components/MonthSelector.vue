@@ -562,7 +562,7 @@ watch(
   border: 1px solid var(--auxiliary-1);
   border-radius: 18px;
   background: var(--auxiliary-1);
-  box-shadow: 0 5px 18px rgba(21, 58, 119, 0.2);
+  box-shadow: 0 5px 18px rgba(var(--theme-shadow-rgb), 0.2);
   scrollbar-width: none;
 
   &::-webkit-scrollbar {
@@ -584,7 +584,7 @@ watch(
 
     &:hover,
     &.active {
-      background: #eaf1f9;
+      background: var(--surface-card);
     }
   }
 }
@@ -620,8 +620,8 @@ watch(
   top: 50%;
   height: 44px;
   transform: translateY(-50%);
-  border-top: 1px solid rgba(28, 123, 255, 0.25);
-  border-bottom: 1px solid rgba(28, 123, 255, 0.25);
+  border-top: 1px solid rgba(var(--theme-primary-rgb), 0.25);
+  border-bottom: 1px solid rgba(var(--theme-primary-rgb), 0.25);
   pointer-events: none;
 }
 
@@ -648,13 +648,13 @@ watch(
   justify-content: center;
   height: 44px;
   scroll-snap-align: center;
-  color: rgba(11, 52, 98, 0.35);
+  color: rgba(var(--theme-text-rgb), 0.35);
   font-family: $font-family-num, $font-family-base;
   font-size: 18px;
   transition: color 0.15s ease, font-weight 0.15s ease;
 
   &.active {
-    color: #0b3462;
+    color: var(--theme-text);
     font-weight: 600;
   }
 }

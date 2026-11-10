@@ -7,11 +7,11 @@ import { useI18n } from 'vue-i18n';
 import { useAppStore } from '@/store/modules/app';
 import { useCountdown } from '@/hooks/useCountdown';
 
-import bgGridPatternUrl from '@/assets/images/events/bg_grid_pattern.svg?url';
+import bgGridPatternUrl from '@/assets/images/events/bg_grid_pattern.png?url';
 import bgMatchDetailHeroH5Url from '@/assets/images/events/bg_match_detail_hero_h5.png';
 import bgMatchDetailHeroPcUrl from '@/assets/images/events/bg_match_detail_hero_pc.png';
-import bgScoreDefaultUrl from '@/assets/images/events/bg_score_default.svg?url';
-import bgScoreHighUrl from '@/assets/images/events/bg_score_high.svg?url';
+import bgScoreDefaultUrl from '@/assets/images/events/bg_score_default.png?url';
+import bgScoreHighUrl from '@/assets/images/events/bg_score_high.png?url';
 import iconChampionUrl from '@/assets/images/events/icon_champion.svg?url';
 import iconUkUrl from '@/assets/images/events/icon_uk.svg?url';
 import iconItalyUrl from '@/assets/images/events/icon_italy.svg?url';
@@ -275,7 +275,7 @@ function formatPoolScore(score) {
             <span class="match-card__enter-pill">
               <span class="match-card__enter-pill-text">{{ t('进入比赛') }}</span>
               <svg class="match-card__enter-pill-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M4.5 2.5L8 6L4.5 9.5" stroke="#1C7BFF" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M4.5 2.5L8 6L4.5 9.5" stroke="var(--theme-primary)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </span>
           </div>
@@ -322,8 +322,8 @@ function formatPoolScore(score) {
                         fill="none"
                         xmlns="http://www.w3.org/2000/svg"
                       >
-                        <circle cx="17" cy="17" r="15" fill="#F0F7FF" stroke="#E4F0FE" stroke-width="0.5" />
-                        <text x="17" y="21" text-anchor="middle" fill="#1C7BFF" font-size="12" font-weight="600">
+                        <circle cx="17" cy="17" r="15" fill="var(--surface-tint)" stroke="var(--theme-divider)" stroke-width="0.5" />
+                        <text x="17" y="21" text-anchor="middle" fill="var(--theme-primary)" font-size="12" font-weight="600">
                           {{ match.homeTeam.charAt(0) }}
                         </text>
                       </svg>
@@ -348,8 +348,8 @@ function formatPoolScore(score) {
                         fill="none"
                         xmlns="http://www.w3.org/2000/svg"
                       >
-                        <circle cx="17" cy="17" r="15" fill="#F0F7FF" stroke="#E4F0FE" stroke-width="0.5" />
-                        <text x="17" y="21" text-anchor="middle" fill="#1C7BFF" font-size="12" font-weight="600">
+                        <circle cx="17" cy="17" r="15" fill="var(--surface-tint)" stroke="var(--theme-divider)" stroke-width="0.5" />
+                        <text x="17" y="21" text-anchor="middle" fill="var(--theme-primary)" font-size="12" font-weight="600">
                           {{ match.awayTeam.charAt(0) }}
                         </text>
                       </svg>
@@ -406,7 +406,7 @@ function formatPoolScore(score) {
           <span v-if="!detailMode" class="match-card__enter-pill">
             <span class="match-card__enter-pill-text">{{ t('进入比赛') }}</span>
             <svg class="match-card__enter-pill-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4.5 2.5L8 6L4.5 9.5" stroke="#1C7BFF" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M4.5 2.5L8 6L4.5 9.5" stroke="var(--theme-primary)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </span>
         </div>
@@ -464,8 +464,8 @@ function formatPoolScore(score) {
                       fill="none"
                       xmlns="http://www.w3.org/2000/svg"
                     >
-                      <circle cx="17" cy="17" r="15" fill="#F0F7FF" stroke="#E4F0FE" stroke-width="0.5" />
-                      <text x="17" y="21" text-anchor="middle" fill="#1C7BFF" font-size="12" font-weight="600">
+                      <circle cx="17" cy="17" r="15" fill="var(--surface-tint)" stroke="var(--theme-divider)" stroke-width="0.5" />
+                      <text x="17" y="21" text-anchor="middle" fill="var(--theme-primary)" font-size="12" font-weight="600">
                         {{ match.homeTeam.charAt(0) }}
                       </text>
                     </svg>
@@ -490,8 +490,8 @@ function formatPoolScore(score) {
                       fill="none"
                       xmlns="http://www.w3.org/2000/svg"
                     >
-                      <circle cx="17" cy="17" r="15" fill="#F0F7FF" stroke="#E4F0FE" stroke-width="0.5" />
-                      <text x="17" y="21" text-anchor="middle" fill="#1C7BFF" font-size="12" font-weight="600">
+                      <circle cx="17" cy="17" r="15" fill="var(--surface-tint)" stroke="var(--theme-divider)" stroke-width="0.5" />
+                      <text x="17" y="21" text-anchor="middle" fill="var(--theme-primary)" font-size="12" font-weight="600">
                         {{ match.awayTeam.charAt(0) }}
                       </text>
                     </svg>
@@ -543,14 +543,14 @@ function formatPoolScore(score) {
   background: var(--auxiliary-1);
   border-radius: 32px;
   border: 1.5px solid rgba(255, 255, 255, 1);
-  box-shadow: 0 8px 20px 0 rgba(21, 58, 118, 0.18);
+  box-shadow: 0 8px 20px 0 rgba(var(--theme-shadow-rgb), 0.18);
   overflow: hidden;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
 
   &:hover {
-    box-shadow: 0 12px 28px rgba(21, 58, 118, 0.22);
+    box-shadow: 0 12px 28px rgba(var(--theme-shadow-rgb), 0.22);
   }
 
   @include web-only {
@@ -559,11 +559,11 @@ function formatPoolScore(score) {
     border-radius: 16px;
     background: #fff;
     border: 1.5px solid #fff;
-    box-shadow: 0 4px 16px rgba(21, 58, 118, 0.1);
+    box-shadow: 0 4px 16px rgba(var(--theme-shadow-rgb), 0.1);
 
     &:hover {
       transform: translateY(-4px);
-      box-shadow: 0 8px 24px rgba(21, 58, 118, 0.16);
+      box-shadow: 0 8px 24px rgba(var(--theme-shadow-rgb), 0.16);
     }
   }
 
@@ -588,18 +588,18 @@ function formatPoolScore(score) {
       border: none;
       border-radius: 32px;
       background: transparent;
-      box-shadow: 0 8px 20px rgba(21, 58, 118, 0.18);
+      box-shadow: 0 8px 20px rgba(var(--theme-shadow-rgb), 0.18);
 
       &:hover {
         transform: none;
-        box-shadow: 0 8px 20px 0 rgba(21, 58, 118, 0.18);
+        box-shadow: 0 8px 20px 0 rgba(var(--theme-shadow-rgb), 0.18);
       }
     }
 
     @include mobile-only {
       &:hover {
         transform: none;
-        box-shadow: 0 8px 20px 0 rgba(21, 58, 118, 0.18);
+        box-shadow: 0 8px 20px 0 rgba(var(--theme-shadow-rgb), 0.18);
       }
     }
   }
@@ -879,7 +879,7 @@ function formatPoolScore(score) {
     font-family: $font-family-base;
     font-size: 18px;
     font-weight: 600;
-    color: #1c7bff;
+    color: var(--theme-primary);
   }
 
   &__detail-hero-name-row {
@@ -925,11 +925,11 @@ function formatPoolScore(score) {
     color: #fff;
 
     &--home {
-      background: #1c7bff;
+      background: var(--theme-primary);
     }
 
     &--away {
-      background: rgba(11, 52, 98, 0.5);
+      background: rgba(var(--theme-text-rgb), 0.5);
     }
   }
 
@@ -992,7 +992,7 @@ function formatPoolScore(score) {
       width: 24px;
       height: 24px;
       border-radius: 50%;
-      border: 0.43px solid #e1e9f3;
+      border: 0.43px solid var(--theme-divider);
     }
   }
 
@@ -1000,7 +1000,7 @@ function formatPoolScore(score) {
     @include mobile-only {
       font-size: 16px;
       font-weight: 500;
-      color: #0b3462;
+      color: var(--theme-text);
     }
   }
 
@@ -1033,7 +1033,7 @@ function formatPoolScore(score) {
       padding: 0 8px;
       gap: 2px;
       border-radius: 6px;
-      background: rgba(31, 124, 255, 0.15);
+      background: rgba(var(--theme-primary-rgb), 0.15);
       justify-content: center;
       box-sizing: border-box;
 
@@ -1041,14 +1041,14 @@ function formatPoolScore(score) {
         font-size: 12px;
         font-weight: 400;
         line-height: 1;
-        color: rgba(11, 52, 98, 0.5);
+        color: rgba(var(--theme-text-rgb), 0.5);
       }
 
       .match-card__pill-lab-sep {
         font-size: 12px;
         font-weight: 400;
         line-height: 1;
-        color: rgba(11, 52, 98, 0.5);
+        color: rgba(var(--theme-text-rgb), 0.5);
       }
 
       .match-card__pill-time {
@@ -1056,7 +1056,7 @@ function formatPoolScore(score) {
         font-size: 16px;
         font-weight: 600;
         line-height: 1;
-        color: #1c7bff;
+        color: var(--theme-primary);
       }
     }
   }
@@ -1068,7 +1068,7 @@ function formatPoolScore(score) {
       font-size: 16px;
       font-weight: 700;
       line-height: 1.2;
-      color: #0b3462;
+      color: var(--theme-text);
     }
   }
 
@@ -1079,7 +1079,7 @@ function formatPoolScore(score) {
     flex-shrink: 0;
     width: auto;
     max-width: 100%;
-    border: 0.5px solid #1c7bff;
+    border: 0.5px solid var(--theme-primary);
     border-radius: 16px;
     background: transparent;
     gap: 0;
@@ -1101,7 +1101,7 @@ function formatPoolScore(score) {
     font-family: $font-family-base;
     font-weight: 400;
     line-height: 1;
-    color: #1c7bff;
+    color: var(--theme-primary);
     white-space: nowrap;
 
     @include mobile-only {
@@ -1129,7 +1129,7 @@ function formatPoolScore(score) {
       width: 14px;
       height: 14px;
       border-radius: 3px;
-      background: #1c7bff;
+      background: var(--theme-primary);
       font-family: $font-family-base;
       font-size: 10px;
       font-weight: 500;
@@ -1155,11 +1155,11 @@ function formatPoolScore(score) {
     color: #fff;
 
     &--home {
-      background: #1c7bff;
+      background: var(--theme-primary);
     }
 
     &--away {
-      background: rgba(11, 52, 98, 0.5);
+      background: rgba(var(--theme-text-rgb), 0.5);
     }
   }
 
@@ -1203,7 +1203,7 @@ function formatPoolScore(score) {
     font-size: 12px;
     font-weight: 400;
     line-height: 1;
-    color: rgba(11, 52, 98, 0.5);
+    color: rgba(var(--theme-text-rgb), 0.5);
     white-space: nowrap;
   }
 
@@ -1212,14 +1212,14 @@ function formatPoolScore(score) {
     font-size: $font-size-md;
     font-weight: 700;
     line-height: 1;
-    color: #1c7bff;
+    color: var(--theme-primary);
     white-space: nowrap;
   }
 
   &__divider {
     display: block;
     height: 1px;
-    background: #e4f0fe;
+    background: var(--theme-divider);
     flex-shrink: 0;
 
     @include mobile-only {
@@ -1258,21 +1258,21 @@ function formatPoolScore(score) {
       width: 24px;
       height: 24px;
       border-radius: 50%;
-      border: 0.43px solid #e1e9f3;
+      border: 0.43px solid var(--theme-divider);
     }
 
     @include web-only {
       width: 24px;
       height: 24px;
       border-radius: 50%;
-      border: 0.43px solid #e1e9f3;
+      border: 0.43px solid var(--theme-divider);
     }
   }
 
   &__league-name {
     font-family: $font-family-base;
     font-weight: 500;
-    color: #0b3462;
+    color: var(--theme-text);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1292,7 +1292,7 @@ function formatPoolScore(score) {
     font-weight: 700;
     font-style: normal;
     line-height: 1;
-    color: #0b3462;
+    color: var(--theme-text);
     letter-spacing: 0;
     min-width: 0;
 
@@ -1312,7 +1312,7 @@ function formatPoolScore(score) {
     gap: 10px;
     padding: 10px 14px;
     border-radius: 14px;
-    background: rgba(31, 124, 255, 0.2);
+    background: rgba(var(--theme-primary-rgb), 0.2);
     box-sizing: border-box;
     min-height: 38px;
 
@@ -1323,7 +1323,7 @@ function formatPoolScore(score) {
       padding: 0 8px;
       gap: 4px;
       border-radius: 6px;
-      background: rgba(31, 124, 255, 0.15);
+      background: rgba(var(--theme-primary-rgb), 0.15);
       justify-content: center;
       white-space: nowrap;
     }
@@ -1335,7 +1335,7 @@ function formatPoolScore(score) {
       padding: 0 10px;
       gap: 6px;
       border-radius: 6px;
-      background: rgba(31, 124, 255, 0.15);
+      background: rgba(var(--theme-primary-rgb), 0.15);
       justify-content: center;
       white-space: nowrap;
     }
@@ -1348,7 +1348,7 @@ function formatPoolScore(score) {
     font-size: 12px;
     font-weight: 500;
     line-height: 1;
-    color: #1f7cff;
+    color: var(--theme-primary);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -1359,7 +1359,7 @@ function formatPoolScore(score) {
     font-size: 12px;
     font-weight: 600;
     line-height: 1;
-    color: #1f7cff;
+    color: var(--theme-primary);
   }
 
   &__pill--w &__pill-lab {
@@ -1369,7 +1369,7 @@ function formatPoolScore(score) {
     font-size: 13px;
     font-weight: 500;
     line-height: 1;
-    color: #1f7cff;
+    color: var(--theme-primary);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -1380,7 +1380,7 @@ function formatPoolScore(score) {
     font-size: 13px;
     font-weight: 600;
     line-height: 1;
-    color: #1f7cff;
+    color: var(--theme-primary);
   }
 
   &__pill-lab {
@@ -1389,7 +1389,7 @@ function formatPoolScore(score) {
     font-weight: 500;
     font-style: normal;
     line-height: 1;
-    color: #1f7cff;
+    color: var(--theme-primary);
   }
 
   &__pill-time {
@@ -1398,7 +1398,7 @@ function formatPoolScore(score) {
     font-weight: 700;
     font-style: normal;
     line-height: 1;
-    color: #1f7cff;
+    color: var(--theme-primary);
   }
 
   &__body {
@@ -1424,7 +1424,7 @@ function formatPoolScore(score) {
 
     @include mobile-only {
       border-radius: 16px;
-      border: 1px solid #e4f0fe;
+      border: 1px solid var(--theme-divider);
     }
 
     &--w {
@@ -1532,13 +1532,13 @@ function formatPoolScore(score) {
     overflow: hidden;
     border-radius: 50%;
     background: #fff;
-    border: 0.5px solid rgb(228, 240, 254);
+    border: 0.5px solid rgb(var(--theme-divider-rgb));
     box-sizing: border-box;
 
     @include mobile-only {
       width: 44px;
       height: 44px;
-      border: 0.5px solid #e4f0fe;
+      border: 0.5px solid var(--theme-divider);
     }
 
     @include web-only {
@@ -1576,7 +1576,7 @@ function formatPoolScore(score) {
     font-style: normal;
     line-height: 1;
     letter-spacing: 0;
-    color: #0b3462;
+    color: var(--theme-text);
     text-align: center;
 
     @include web-only {
@@ -1608,7 +1608,7 @@ function formatPoolScore(score) {
     font-weight: 700;
     font-style: normal;
     line-height: 1;
-    color: #1c7bff;
+    color: var(--theme-primary);
     font-size: $font-size-lg;
 
     @include web-only {
@@ -1661,7 +1661,7 @@ function formatPoolScore(score) {
     font-weight: 600;
     font-style: normal;
     line-height: 1;
-    color: #0b3462;
+    color: var(--theme-text);
     letter-spacing: 0;
   }
 
@@ -1681,7 +1681,7 @@ function formatPoolScore(score) {
     justify-content: center;
     height: 36px;
     border-radius: 6px;
-    background: #e4f0fe;
+    background: var(--theme-divider);
     gap: 2px;
     cursor: pointer;
     transition: background 0.15s ease;
@@ -1696,11 +1696,11 @@ function formatPoolScore(score) {
     }
 
     &:hover {
-      background: rgba(28, 123, 255, 0.14);
+      background: rgba(var(--theme-primary-rgb), 0.14);
     }
 
     &:active {
-      background: rgba(28, 123, 255, 0.18);
+      background: rgba(var(--theme-primary-rgb), 0.18);
     }
   }
 
@@ -1710,7 +1710,7 @@ function formatPoolScore(score) {
     font-weight: 600;
     letter-spacing: 0.1em;
     line-height: 1;
-    color: rgba(11, 52, 98, 0.5);
+    color: rgba(var(--theme-text-rgb), 0.5);
   }
 
   &__odds-pill-prob {
@@ -1718,7 +1718,7 @@ function formatPoolScore(score) {
     font-size: 12px;
     font-weight: 600;
     line-height: 1;
-    color: #0b3462;
+    color: var(--theme-text);
   }
 
   &__foot {

@@ -7,10 +7,10 @@ import { useI18n } from 'vue-i18n';
 // import iconDownloadAppDefault from '@/assets/images/float/icon-download-app-default.svg';
 // import iconDownloadAppHover from '@/assets/images/float/icon-download-app-hover.svg';
 // import AppDownloadModal from '@/components/AppDownloadModal.vue';
-import iconServiceActive from '@/assets/images/float/icon-service-active.svg';
-import iconServiceDefault from '@/assets/images/float/icon-service-default.svg';
-import iconServiceHover from '@/assets/images/float/icon-service-hover.svg';
-import toolbarBg from '@/assets/images/float/toolbar-bg.svg';
+import iconServiceActive from '@/assets/images/float/icon-service-active.png';
+import iconServiceDefault from '@/assets/images/float/icon-service-default.png';
+import iconServiceHover from '@/assets/images/float/icon-service-hover.png';
+import toolbarBg from '@/assets/images/float/toolbar-bg.png';
 import { useAppStore } from '@/store/modules/app';
 
 const { t } = useI18n();
@@ -109,17 +109,23 @@ function handleServiceOpen() {
     right: 14px;
     bottom: 120px;
     display: block;
-    filter: drop-shadow(8px 14px 24px rgba(21, 102, 210, 0.28));
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.12));
   }
 
   &__panel {
     position: relative;
     width: 58px;
+    height: 177px;
   }
 
   &__bg {
+    // 按导出图的实际按钮边界抵消阴影留白，避免被全局 max-width 缩小。
+    position: absolute;
+    top: -26px;
+    left: -32px;
     display: block;
-    width: 100%;
+    max-width: none;
+    width: 138px;
     height: auto;
     pointer-events: none;
     user-select: none;

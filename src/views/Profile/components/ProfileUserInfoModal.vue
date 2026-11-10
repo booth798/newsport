@@ -9,7 +9,7 @@ import { useUserStore } from '@/store/modules/user';
 import BaseInput from '@/components/BaseInput.vue';
 import BaseModal from '@/components/BaseModal.vue';
 
-import iconProfileAvatarAdd from '@/assets/images/profile/icon_profile_avatar_add.svg?url';
+import iconProfileAvatarAdd from '@/assets/images/profile/icon_profile_avatar_add.png?url';
 
 const props = defineProps({
   modelValue: {
@@ -172,7 +172,7 @@ async function handleSave() {
 .profile-user-info-sheet__panel-title {
   font-size: 14px;
   font-weight: 400;
-  color: var(--primary-color);
+  color: var(--theme-primary);
 }
 
 .profile-user-info-sheet__upload {
@@ -205,13 +205,13 @@ async function handleSave() {
   font-size: 14px;
   text-align: center;
   font-weight: 350;
-  color: var(--theme-color);
+  color: var(--theme-primary);
 }
 
 .profile-user-info-sheet__upload-hint {
   font-size: 12px;
   text-align: center;
-  color: #0B346280;
+  color: var(--theme-text-1);
 }
 
 .profile-user-info-sheet__file {

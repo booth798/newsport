@@ -98,7 +98,7 @@ function confirm() { emit('confirm'); }
         <div class="base-modal__panel-wrap">
           <img v-if="props.showClose" class="base-modal__close-icon" :src="getImageUrl('common/modal_close_icon.svg')" :aria-label="t('关闭')" @click="close" >
           <div class="base-modal__frame">
-            <img class="base-modal__opacity-logo" :src="getImageUrl('common/modal_opacity_logo.svg')" alt="">
+            <img class="base-modal__opacity-logo" :src="getImageUrl('common/modal_opacity_logo.png')" alt="">
             <div class="base-modal__body">
               <template v-if="$slots.header">
                 <slot name="header" />
@@ -146,7 +146,7 @@ function confirm() { emit('confirm'); }
   &__backdrop {
     position: absolute;
     inset: 0;
-    background: rgba(11, 52, 98, 0.55);
+    background: rgba(var(--theme-text-rgb), 0.55);
     backdrop-filter: blur(4px);
   }
 
@@ -194,7 +194,7 @@ function confirm() { emit('confirm'); }
     box-sizing: border-box;
     border-radius: 24px;
     border: 1px solid #FFFFFF;
-    background: radial-gradient(100% 100% at 50% 100%, #68B3FD 0%, #0D6CFB 100%);
+    background: radial-gradient(100% 100% at 50% 100%, var(--theme-primary-end) 0%, var(--theme-primary) 100%);
     padding: 0 12px 12px;
     display: flex;
     flex-direction: column;

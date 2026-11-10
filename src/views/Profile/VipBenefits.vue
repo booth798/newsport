@@ -296,9 +296,9 @@ onBeforeUnmount(() => {
       <div class="vip-details-navbar">
         <img class="back-icon" :src="getImageUrl('common/icon_nav_back_market.svg')" @click="router.back()">
         <div class="title-container">
-          <img :src="getImageUrl('vip/title_left_icon.svg')">
+          <img :src="getImageUrl('vip/title_left_icon.png')">
           <span>{{ t('VIP详情') }}</span>
-          <img :src="getImageUrl('vip/title_right_icon.svg')">
+          <img :src="getImageUrl('vip/title_right_icon.png')">
         </div>
       </div>
     </div>
@@ -417,7 +417,7 @@ onBeforeUnmount(() => {
 @use '@/styles/tools.scss' as *;
 
 .vip-benefits {
-  color: #0b3462;
+  color: var(--theme-text);
 
   @include web-only {
     min-height: 100vh;
@@ -429,7 +429,7 @@ onBeforeUnmount(() => {
     margin: -18px -8px 0;
     padding-top: 20px;
     padding-bottom: 20px;
-    background: #D1DFFA;
+    background: var(--surface-brand);
   }
 
   .sticky-container {
@@ -462,7 +462,7 @@ onBeforeUnmount(() => {
       gap: 16px;
       font-size: 16px;
       font-weight: 500;
-      color: #0B3462;
+      color: var(--theme-text);
       position: absolute;
       left: 50%;
       top: 50%;
@@ -493,7 +493,7 @@ onBeforeUnmount(() => {
 
 .vip-panel {
   background: #fff;
-  box-shadow: 0 6px 20px rgba(21, 58, 119, .18);
+  box-shadow: 0 6px 20px rgba(var(--theme-shadow-rgb), .18);
 }
 
 .vip-benefits__content {
@@ -518,8 +518,8 @@ onBeforeUnmount(() => {
     padding: 34px 30px;
     border: 1px solid #fff;
     border-radius: 32px;
-    box-shadow: 0 6px 20px rgba(21, 58, 119, .18);
-    background: linear-gradient(90deg, #307CFB 0%, #D1DEFC 100%);
+    box-shadow: 0 6px 20px rgba(var(--theme-shadow-rgb), .18);
+    background: linear-gradient(90deg, var(--theme-primary) 0%, var(--surface-brand) 100%);
   }
 
   @include mobile-only {
@@ -642,8 +642,8 @@ onBeforeUnmount(() => {
     padding: 6px 8px;
     border: 1px solid #fff;
     border-radius: 30px;
-    box-shadow: 0 4px 10px #153A772E;
-    background: #EAF1F9;
+    box-shadow: 0 4px 10px rgba(var(--theme-shadow-rgb), 0.18);
+    background: var(--surface-card);
   }
 
   button {
@@ -651,7 +651,7 @@ onBeforeUnmount(() => {
       flex: 1;
       height: 36px;
       border-radius: 32px;
-      color: #1c7bff;
+      color: var(--theme-primary);
       font-size: 16px;
       cursor: pointer;
     }
@@ -686,7 +686,7 @@ onBeforeUnmount(() => {
     }
 
     @include mobile-only {
-      color: #1c7bff;
+      color: var(--theme-primary);
       font-size: 16px;
     }
   }
@@ -701,7 +701,7 @@ onBeforeUnmount(() => {
     margin-top: 14px;
     .vip-level-card__name {
       font-size: 14px;
-      color: #0B3462;
+      color: var(--theme-text);
       font-weight: 400;
     }
     b span {
@@ -718,7 +718,7 @@ onBeforeUnmount(() => {
 
 .vip-level-card {
   position: relative;
-  border: 1px solid #e4f0fe;
+  border: 1px solid var(--theme-divider);
 
   @include web-only {
     display: grid;
@@ -764,7 +764,7 @@ onBeforeUnmount(() => {
   }
 
   span {
-    color: rgba(11, 52, 98, .5);
+    color: rgba(var(--theme-text-rgb), .5);
 
     @include web-only {
       font-size: 14px;
@@ -776,7 +776,7 @@ onBeforeUnmount(() => {
   }
 
   b {
-    color: #1c7bff;
+    color: var(--theme-primary);
 
     @include web-only {
       font-size: 16px;
@@ -784,7 +784,7 @@ onBeforeUnmount(() => {
 
     @include mobile-only {
       margin-top: 2px;
-      color: #0B3462;
+      color: var(--theme-text);
       font-size: 10px;
     }
   }
@@ -824,9 +824,9 @@ onBeforeUnmount(() => {
   }
 
   .vip-privilege-levels__item {
-    border: 1px solid #e4f0fe;
+    border: 1px solid var(--theme-divider);
     border-radius: 12px;
-    color: #0b3462;
+    color: var(--theme-text);
     background: #fff;
     cursor: pointer;
    
@@ -849,10 +849,10 @@ onBeforeUnmount(() => {
     }
 
     &.vip-privilege-levels__item--active {
-      border-color: #1c7bff !important;
+      border-color: var(--theme-primary) !important;
 
       .vip-name {
-        color: #1C7BFF;
+        color: var(--theme-primary);
       }
     }
 
@@ -907,12 +907,12 @@ onBeforeUnmount(() => {
     }
 
     +div {
-      border-top: 1px solid #e4f0fe;
+      border-top: 1px solid var(--theme-divider);
     }
   }
 
   dt {
-    color: rgba(11, 52, 98, .5);
+    color: rgba(var(--theme-text-rgb), .5);
 
     @include web-only {
       font-size: 14px;
@@ -924,7 +924,7 @@ onBeforeUnmount(() => {
   }
 
   dd {
-    color: #1c7bff;
+    color: var(--theme-primary);
     font-weight: 400;
 
     @include web-only {
@@ -949,7 +949,7 @@ onBeforeUnmount(() => {
   }
 
   h2 {
-    color: #1c7bff;
+    color: var(--theme-primary);
 
     @include web-only {
       font-size: 18px;
@@ -964,7 +964,7 @@ onBeforeUnmount(() => {
 
   p {
     margin: 8px 0 0;
-    color: #0B3462;
+    color: var(--theme-text);
 
     @include web-only {
       font-size: 14px;
@@ -980,13 +980,13 @@ onBeforeUnmount(() => {
 
 .vip-level-notes {
   h2 {
-    color: #1c7bff;
+    color: var(--theme-primary);
     font-weight: 400;
   }
 
   p {
     margin: 8px 0 0;
-    color: #0b3462;
+    color: var(--theme-text);
 
     @include web-only {
       font-size: 14px;

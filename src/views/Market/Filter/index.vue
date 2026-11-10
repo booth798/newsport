@@ -7,7 +7,7 @@ import { storeToRefs } from 'pinia';
 import { fetchLeagueList } from '@/api/match';
 import { useAppStore } from '@/store/modules/app';
 import { useLeagueFilterStore } from '@/store/modules/leagueFilter';
-import iconNavBackMarketUrl from '@/assets/images/common/icon_nav_back_market.svg?url';
+import iconNavBackMarketUrl from '@/assets/images/common/icon_back_white.png?url';
 import { LEAGUE_INDEX_ENTRIES, getLeagueGroupInitial } from '@/utils/leaguePinyin';
 
 const { t, locale } = useI18n();
@@ -301,7 +301,7 @@ onMounted(() => {
     display: flex;
     align-items: center;
     height: 48px;
-    background: #eaf1f9;
+    background: var(--theme-primary);
     border: 0.8px solid #fff;
     border-radius: 30px;
     padding: 0 14px;
@@ -340,7 +340,7 @@ onMounted(() => {
     text-align: center;
     font-family: $font-family-base;
     font-weight: 500;
-    color: #0b3462;
+    color: var(--auxiliary-1);
     white-space: nowrap;
 
     @include mobile-only {
@@ -359,15 +359,15 @@ onMounted(() => {
     justify-content: center;
     gap: $spacing-md;
     min-height: 300px;
-    color: rgba(11, 52, 98, 0.6);
+    color: rgba(var(--theme-text-rgb), 0.6);
     font-size: $font-size-md;
   }
 
   &__spinner {
     width: 28px;
     height: 28px;
-    border: 3px solid rgba(11, 52, 98, 0.12);
-    border-top-color: #1c7bff;
+    border: 3px solid rgba(var(--theme-text-rgb), 0.12);
+    border-top-color: var(--theme-primary);
     border-radius: 50%;
     animation: filter-spin 0.8s linear infinite;
   }
@@ -375,14 +375,14 @@ onMounted(() => {
   &__retry-btn {
     padding: 8px 24px;
     border-radius: $radius-pill;
-    border: 1.5px solid #1c7bff;
+    border: 1.5px solid var(--theme-primary);
     background: transparent;
-    color: #1c7bff;
+    color: var(--theme-primary);
     font-size: $font-size-md;
     cursor: pointer;
 
     &:hover {
-      background: #1c7bff;
+      background: var(--theme-primary);
       color: #fff;
     }
   }
@@ -406,7 +406,7 @@ onMounted(() => {
     margin: 0 0 $spacing-md;
     font-size: $font-size-md;
     font-weight: 400;
-    color: #1c7bff;
+    color: var(--theme-primary);
   }
 
   &__groups {
@@ -471,8 +471,8 @@ onMounted(() => {
     }
 
     &--selected {
-      background: rgba(31, 124, 255, 0.2);
-      color: #1c7bff;
+      background: rgba(var(--theme-primary-rgb), 0.2);
+      color: var(--theme-primary);
     }
   }
 
@@ -504,13 +504,13 @@ onMounted(() => {
     font-family: $font-family-base;
     font-size: $font-size-xs;
     font-weight: 500;
-    color: rgba(11, 52, 98, 0.5);
+    color: rgba(var(--theme-text-rgb), 0.5);
     cursor: pointer;
     border-radius: 50%;
     transition: color 0.15s;
 
     &--active {
-      color: #1c7bff;
+      color: var(--theme-primary);
       font-weight: 700;
     }
   }
@@ -524,7 +524,7 @@ onMounted(() => {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: #eaf1f9;
+    background: var(--surface-card);
     border: 0.8px solid #fff;
     border-radius: 16px 16px 0 0;
     box-sizing: border-box;
@@ -540,7 +540,7 @@ onMounted(() => {
       max-width: calc($web-content-max + 60px);
       margin: 0 auto;
       padding: 0 $spacing-xl;
-      box-shadow: 0 -2px 8px rgba(21, 58, 119, 0.06);
+      box-shadow: 0 -2px 8px rgba(var(--theme-shadow-rgb), 0.06);
     }
   }
 
@@ -568,14 +568,14 @@ onMounted(() => {
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    border: 1.5px solid #c8d0d9;
+    border: 1.5px solid var(--border-light);
     box-sizing: border-box;
     flex-shrink: 0;
     transition: background 0.15s, border-color 0.15s;
 
     .filter-page__check--active & {
-      border-color: #1c7bff;
-      background: #1c7bff;
+      border-color: var(--theme-primary);
+      background: var(--theme-primary);
 
       &::after {
         content: '';
@@ -599,7 +599,7 @@ onMounted(() => {
     height: 36px;
     border: none;
     border-radius: $radius-xl;
-    background: #1c7bff;
+    background: var(--theme-primary);
     color: #fff;
     font-family: $font-family-base;
     font-size: $font-size-md;

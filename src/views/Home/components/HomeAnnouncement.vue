@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import noticeIconUrl from '@/assets/images/common/notice.svg?url';
+import noticeIconUrl from '@/assets/images/common/notice.png?url';
 
 const { t } = useI18n();
 
@@ -91,7 +91,7 @@ onBeforeUnmount(() => resizeObs?.disconnect());
     padding: 7px 12px 7px 10px;
     min-height: 44px;
     box-sizing: border-box;
-    box-shadow: 0 4px 8px 0 rgba(21, 58, 119, 0.18);
+    box-shadow: 0 4px 8px 0 rgba(var(--theme-shadow-rgb), 0.18);
   }
 
   &__icon {
@@ -137,7 +137,7 @@ onBeforeUnmount(() => resizeObs?.disconnect());
 
   &__text {
     margin: 0;
-    color: var(--theme-primary);
+    color: var(--theme-text);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

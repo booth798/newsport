@@ -11,12 +11,12 @@ function resolveApiBaseUrl() {
 }
 
 export const SITE_CONFIG = {
-  siteName: 'UNIBET',
+  siteName: 'Ladbrokes',
   /** 当前域名；勿再写死 api 子域，避免跨域与部署域名不一致 */
   get apiBaseUrl() {
     return resolveApiBaseUrl();
   },
-  brandColor: '#0b6bcb',
+  brandColor: '#FF0004',
   /**
    * PC「下载 APP」二维码对应链接（占位：百度；上线前换成真实安卓包 / App Store）
    */

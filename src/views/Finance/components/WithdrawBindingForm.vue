@@ -231,7 +231,7 @@ watch(
   display: flex;
   align-items: center;
   gap: 4px;
-  color: #fb5c0d;
+  color: var(--auxiliary-3);
   font-size: 14px;
   font-weight: 400;
 }
@@ -243,7 +243,7 @@ watch(
 
 .binding-form__tip span {
   padding-left: 20px;
-  color: rgba(11, 52, 98, 0.5);
+  color: rgba(var(--theme-text-rgb), 0.5);
   font-size: 12px;
 }
 
@@ -256,12 +256,12 @@ watch(
 }
 
 .binding-field>span {
-  color: rgba(11, 52, 98, 0.5);
+  color: rgba(var(--theme-text-rgb), 0.5);
   font-size: 14px;
 }
 
 .binding-field b {
-  color: #ff2d2d;
+  color: var(--auxiliary-2);
   font-weight: 400;
 }
 
@@ -290,7 +290,7 @@ watch(
 }
 
 .binding-select .placeholder {
-  color: rgba(11, 52, 98, 0.5);
+  color: rgba(var(--theme-text-rgb), 0.5);
 }
 
 .binding-select i {
@@ -308,10 +308,10 @@ watch(
   left: 0;
   max-height: 190px;
   overflow-y: auto;
-  border: 1px solid #dce9f8;
+  border: 1px solid var(--surface-brand);
   border-radius: 0 0 14px 14px;
   background: #fff;
-  box-shadow: 0 6px 12px rgba(11, 52, 98, 0.14);
+  box-shadow: 0 6px 12px rgba(var(--theme-text-rgb), 0.14);
 }
 
 .binding-select__options button {
