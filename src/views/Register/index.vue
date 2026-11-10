@@ -142,7 +142,7 @@ shuffleAccounts();
               class="register-field__input"
               :type="passwordType"
               maxlength="12"
-              :placeholder="t('请输入新密码占位')"
+              :placeholder="t('注册密码占位')"
               autocomplete="new-password"
             />
             <button
@@ -176,7 +176,7 @@ shuffleAccounts();
             </button>
           </label>
 
-          <button class="register-submit btn btn--primary" type="submit" :disabled="!canSubmit">
+          <button class="register-submit" type="submit" :disabled="!canSubmit">
             {{ submitting ? t('提交中...') : t('注册') }}
           </button>
           <p class="register-login-link">
@@ -202,7 +202,7 @@ shuffleAccounts();
 .register-page {
   min-height: 100vh;
   min-height: 100dvh;
-  background: var(--surface-tint);
+  background: var(--theme-bg);
   display: flex;
   justify-content: center;
   color: var(--theme-text);
@@ -216,19 +216,16 @@ shuffleAccounts();
   min-height: 100dvh;
   padding: 13px 11px 22px;
   box-sizing: border-box;
-  background: var(--surface-tint);
+  background: var(--theme-bg);
 }
 
 .register-title {
   position: relative;
   height: 60px;
   margin: 6px 0 10px;
-  border: 1px solid rgba(255, 255, 255, 0.95);
+  border: 0;
   border-radius: 34px;
-  background: rgba(255, 255, 255, 0.56);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 1px 0 rgba(var(--theme-shadow-rgb), 0.28);
+  background: var(--theme-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -237,7 +234,7 @@ shuffleAccounts();
     margin: 0;
     font-size: 23px;
     line-height: 1;
-    font-weight: 800;
+    font-weight: 500;
     color: var(--theme-text);
     letter-spacing: 0;
   }
@@ -254,10 +251,7 @@ shuffleAccounts();
   box-sizing: border-box;
   border: 1px solid rgba(255, 255, 255, 0.86);
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.38);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
-    0 1px 2px rgba(var(--theme-shadow-rgb), 0.08);
+  background: var(--surface-card);
 }
 
 .register-form {
@@ -335,13 +329,14 @@ shuffleAccounts();
   font-size: 23px;
   font-weight: 700;
   line-height: 1;
-  box-shadow: 0 7px 18px rgba(var(--theme-primary-rgb), 0.2);
+  box-shadow: var(--shadow-primary-btn);
+  transition: background-color 0.18s ease;
   cursor: pointer;
 
   &:disabled {
-    background: var(--theme-primary);
+    background: #F9797B;
     color: #fff;
-    opacity: 0.45;
+    opacity: 1;
     box-shadow: none;
     cursor: not-allowed;
   }
@@ -349,7 +344,7 @@ shuffleAccounts();
 
 .register-login-link {
   margin: 0;
-  color: rgba(var(--theme-text-rgb), 0.46);
+  color: var(--theme-text-muted);
   font-size: 13px;
   text-align: center;
 
@@ -357,7 +352,7 @@ shuffleAccounts();
     padding: 0;
     border: 0;
     background: transparent;
-    color: var(--theme-primary);
+    color: var(--theme-text-muted);
     cursor: pointer;
   }
 }
@@ -372,7 +367,7 @@ shuffleAccounts();
     max-width: none;
     min-height: 100vh;
     min-height: 100dvh;
-    padding: 12px 0 40px;
+    padding: 0 0 20px;
   }
 
   .register-title {
@@ -406,7 +401,7 @@ shuffleAccounts();
     margin: 0 auto;
     padding: 80px 200px 44px;
     border-radius: 48px;
-    background: rgba(255, 255, 255, 0.62);
+    background: var(--surface-card);
     box-shadow:
       inset 0 0 0 1px rgba(255, 255, 255, 0.28),
       0 12px 30px rgba(var(--theme-shadow-rgb), 0.08);
@@ -450,9 +445,9 @@ shuffleAccounts();
 .register-card__title {
   margin: 0 0 28px;
   color: var(--theme-text);
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
   text-align: center;
 }
 
@@ -491,10 +486,10 @@ shuffleAccounts();
   button {
     height: 36px;
     padding: 0 4px;
-    border: 1px solid transparent;
-    border-radius: 10px;
+    border: 1px solid var(--theme-divider);
+    border-radius: 16px;
     background: #fff;
-    color: rgba(var(--theme-text-rgb), 0.42);
+    color: var(--theme-text-muted);
     font-family: $font-family-num, $font-family-base;
     font-size: 13px;
     cursor: pointer;
@@ -540,7 +535,7 @@ shuffleAccounts();
   height: 48px;
   flex: 0 0 48px;
   padding: 0 48px 0 40px;
-  border: 1px solid transparent;
+  border: 1px solid var(--theme-divider);
   border-radius: 12px;
   background: #fff;
   font-size: 14px;
@@ -584,12 +579,12 @@ shuffleAccounts();
 @include mobile-only {
   .register-phone {
     max-width: 430px;
-    padding: 12px 8px 20px;
+    padding: calc(env(safe-area-inset-top, 0px) + 6px) 8px calc(env(safe-area-inset-bottom, 0px) + 8px);
   }
 
   .register-title {
-    height: 52px;
-    margin: 4px 0 8px;
+    height: 48px;
+    margin: 0 0 8px;
     background: var(--theme-primary);
     border-color: var(--theme-primary);
   }
@@ -606,39 +601,67 @@ shuffleAccounts();
   }
 
   .register-card {
-    min-height: calc(100dvh - 88px);
-    padding: 18px 12px 28px;
+    min-height: calc(100dvh - 70px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    padding: 16px 16px 28px;
+    border: 0;
     border-radius: 16px;
   }
 
   .register-card__title {
     display: block;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
+  }
+
+  .register-form {
+    gap: 16px;
   }
 
   .register-account__options {
     gap: 8px;
 
     button {
-      height: 34px;
-      font-size: 12px;
+      height: 32px;
+      font-size: 14px;
     }
   }
 
   .register-field__input {
-    height: 50px;
-    flex-basis: 50px;
+    height: 52px;
+    flex-basis: 52px;
+    padding-left: 40px;
+    border-radius: 16px;
+    // 保留全局 16px 输入字号以避免 iOS 聚焦缩放，占位文案按稿图显示。
+    &::placeholder {
+      font-size: 14px;
+    }
+  }
+
+  .register-lock {
+    left: 12px;
+    bottom: 16px;
+    width: 16px;
+    height: 20px;
+  }
+
+  .register-eye img {
+    width: 20px;
+    height: 20px;
   }
 
   .register-eye {
-    bottom: 7px;
+    bottom: 8px;
   }
 
   .register-submit {
     width: 100%;
-    height: 46px;
-    margin-top: 2px;
+    height: 44px;
+    margin-top: 4px;
     font-size: 18px;
+    box-shadow: none;
+  }
+
+  .register-login-link {
+    margin-top: 4px;
   }
 }
 
@@ -657,9 +680,9 @@ shuffleAccounts();
 
   .register-card {
     width: 800px;
-    min-height: 610px;
+    min-height: 874px;
     padding: 40px;
-    border-radius: 32px;
+    border-radius: 48px;
   }
 
   .register-form {
@@ -709,7 +732,8 @@ shuffleAccounts();
   }
 
   .register-title h1 {
-    font-size: 20px;
+    font-size: 18px;
+    font-weight: 400;
   }
 }
 </style>

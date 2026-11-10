@@ -11,12 +11,13 @@ const { isMobile } = storeToRefs(appStore);
 
 const isProfileHome = computed(() => route.name === 'profile-home');
 const isMessagesPage = computed(() => route.name === 'profile-messages');
+const isVipBenefitsPage = computed(() => route.name === 'vip-benefits');
 const hideSidebarOnHome = computed(() => isProfileHome.value || isMobile.value);
 
 </script>
 
 <template>
-  <RouterView v-if="isMessagesPage" />
+  <RouterView v-if="isMessagesPage || isVipBenefitsPage" />
   <div v-else class="profile-layout" :class="{ 'profile-layout--home': hideSidebarOnHome }">
     <div class="profile-layout__inner">
       <main

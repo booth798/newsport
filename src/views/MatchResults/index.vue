@@ -550,7 +550,8 @@ onBeforeUnmount(() => {
   height: 52px;
   border-radius: 16px;
   overflow: hidden;
-  background: var(--surface-card);
+  border: 1px solid var(--theme-divider);
+  background: #fff;
 }
 
 .result-card__arena-bg {
@@ -558,7 +559,7 @@ onBeforeUnmount(() => {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: fill;
   pointer-events: none;
   opacity: 0.9;
 }

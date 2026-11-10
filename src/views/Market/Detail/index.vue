@@ -1086,7 +1086,7 @@ function formatScoreLabel(score) {
       padding: 10px 20px;
       border-bottom: none;
       border-radius: 16px;
-      background: rgba(240, 247, 255, 0.92);
+      background: var(--surface-card);
       border: 1px solid rgba(var(--theme-divider-rgb), 0.9);
     }
 

@@ -360,7 +360,7 @@ function handlePanelScroll() {
 
 .deposit-order-card {
   box-sizing: border-box;
-  background: var(--surface-tint);
+  background: var(--surface-card);
 
   @include web-only {
     padding: 17px 16px;
@@ -368,8 +368,7 @@ function handlePanelScroll() {
   }
 
   @include mobile-only {
-    background: var(--auxiliary-1);
-    padding: 17px 20px;
+    padding: 14px 16px 16px;
     border-radius: 16px;
   }
 }
@@ -388,14 +387,22 @@ function handlePanelScroll() {
 
   span {
     min-width: 62px;
-    height: 30px;
+    height: 24px;
     padding: 0 10px;
     border-radius: 6px;
-    background: rgba(var(--theme-shadow-rgb), 0.62);
+    // PC / H5 充值原稿：完成状态为浅灰底深色文字。
+    background: #DCE0E5;
     color: var(--theme-text);
     font-size: 14px;
-    line-height: 30px;
+    line-height: 24px;
     text-align: center;
+  }
+
+  @include mobile-only {
+    time,
+    span {
+      font-size: 12px;
+    }
   }
 }
 
@@ -407,7 +414,6 @@ function handlePanelScroll() {
 
   @include mobile-only {
     padding: 0 14px;
-    background: var(--surface-brand);
   }
 
   div {
@@ -417,7 +423,7 @@ function handlePanelScroll() {
     min-height: 44px;
 
     & + div {
-      border-top: 1px solid rgba(255, 255, 255, 0.75);
+      border-top: 1px solid var(--surface-card);
     }
   }
 

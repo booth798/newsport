@@ -10,7 +10,7 @@ import { useAppStore } from '@/store/modules/app';
 import { useUserStore } from '@/store/modules/user';
 import { getImageUrl } from '@/utils/common';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const router = useRouter();
 const appStore = useAppStore();
 const userStore = useUserStore();
@@ -63,6 +63,10 @@ function parseVipLevel(source) {
 // 当前等级来自 GET /vip/me，与安卓 bindCurrentVip 一致。
 const currentLevel = computed(() => parseVipLevel(myVip.value ?? userProfile.value));
 const currentLevelName = computed(() => `VIP${currentLevel.value}`);
+const currentLevelFreeWithdrawCount = computed(() => {
+  const level = levels.value.find((item) => Number(item.level) === currentLevel.value);
+  return Number(myVip.value?.freeWithdrawCount ?? level?.freeWithdrawCount) || 0;
+});
 
 /**
  * 特权规则对齐安卓 applyVipWithdrawalRule：
@@ -294,11 +298,13 @@ onBeforeUnmount(() => {
   <div class="vip-benefits">
     <div class="sticky-container" v-if="isMobile">
       <div class="vip-details-navbar">
-        <img class="back-icon" :src="getImageUrl('common/icon_nav_back_market.svg')" @click="router.back()">
+        <button class="back-icon" type="button" :aria-label="t('返回')" @click="router.back()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="m14.5 4.5-7.5 7.5 7.5 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
         <div class="title-container">
-          <img :src="getImageUrl('vip/title_left_icon.png')">
-          <span>{{ t('VIP详情') }}</span>
-          <img :src="getImageUrl('vip/title_right_icon.png')">
+          <img :src="getImageUrl(`vip/title_${locale === 'zh-CN' ? 'zh' : 'en'}.png`)" :alt="t('VIP详情')" />
         </div>
       </div>
     </div>
@@ -310,16 +316,18 @@ onBeforeUnmount(() => {
           <img class="vip-card__background vip-card__background--mobile" :src="mobileCardBackground" alt="" />
           <img class="vip-card__background vip-card__background--desktop" :src="desktopCardBackground" alt="" />
           <img class="vip-card__level" :src="getLevelImage(currentLevel)" :alt="currentLevelName" />
-          <!-- 对齐安卓：顶部始终展示总额度 = currentHoldings，不随 Tab 切换 -->
-          <p class="vip-card__amount">
+          <p v-if="activeTab === 'detail'" class="vip-card__amount">
             <span>{{ t('总额度') }}：</span>
             <span>{{ formatHoldingsAmount(displayedHoldings) }}</span>
+          </p>
+          <p v-else class="vip-card__privilege">
+            {{ t('提现优惠') }}： {{ currentLevelFreeWithdrawCount }} {{ t('次') }}
           </p>
         </section>
 
         <nav class="vip-tabs" :aria-label="t('VIP权益')">
           <button v-for="tab in [{ key: 'detail', label: t('VIP详情') }, { key: 'privilege', label: t('VIP特权') }]"
-            :key="tab.key" type="button" :class="{ 'btn--primary active': activeTab === tab.key }"
+            :key="tab.key" type="button" :class="{ active: activeTab === tab.key }"
             @click="selectVipTab(tab.key)">
             {{ tab.label }}
           </button>
@@ -330,19 +338,21 @@ onBeforeUnmount(() => {
           <template v-if="levels.length">
             <template v-if="isMobile">
               <div class="vip-level-grid">
-                <article v-for="level in levels" :key="level.level" class="vip-level-card">
+                <article v-for="level in levels" :key="level.level" class="vip-level-card"
+                  :class="{ 'vip-level-card--current': Number(level.level) === Number(currentLevel) }">
                   <img :src="getLevelLogo(level.level)" :alt="getLevelName(level)" />
                   <span>{{ t('总额度') }}</span>
-                  <b>{{ formatHoldingsAmount(level.minTotalDeposit) }}</b>
+                  <b>{{ formatVipLimit(level.minTotalDeposit) }}</b>
                 </article>
               </div>
             </template>
             <template v-else>
               <div class="vip-level-grid">
-                <article v-for="level in levels" :key="level.level" class="vip-level-card">
+                <article v-for="level in levels" :key="level.level" class="vip-level-card"
+                  :class="{ 'vip-level-card--current': Number(level.level) === Number(currentLevel) }">
                   <img :src="getLevelLogo(level.level)" :alt="getLevelName(level)" />
                   <div class="vip-level-card__name">{{ getLevelName(level) }}</div>
-                  <b>{{ formatHoldingsAmount(level.minTotalDeposit) }}<span>（{{ t('总额度') }}）</span></b>
+                  <b>{{ formatVipLimit(level.minTotalDeposit) }}<span>（{{ t('总额度') }}）</span></b>
                 </article>
               </div>
             </template>
@@ -364,7 +374,7 @@ onBeforeUnmount(() => {
           </div>
         </section>
 
-        <template v-else>
+        <div v-else class="vip-privileges">
           <section class="vip-panel vip-panel--privileges">
             <h2>{{ t('各等级权限') }}</h2>
             <div
@@ -407,7 +417,7 @@ onBeforeUnmount(() => {
               <p>{{ t('提现限额说明') }}</p>
             </div>
           </section>
-        </template>
+        </div>
       </main>
     </div>
   </div>
@@ -417,24 +427,22 @@ onBeforeUnmount(() => {
 @use '@/styles/tools.scss' as *;
 
 .vip-benefits {
+  position: relative;
   color: var(--theme-text);
 
   @include web-only {
     min-height: 100vh;
-    margin: -18px -8px 0;
   }
 
   @include mobile-only {
     min-height: 100dvh;
-    margin: -18px -8px 0;
-    padding-top: 20px;
     padding-bottom: 20px;
-    background: var(--surface-brand);
+    background: var(--theme-bg);
   }
 
   .sticky-container {
-    position: fixed;
-    top: 0;
+    position: absolute;
+    top: calc(env(safe-area-inset-top, 0px) + 6px);
     left: 0;
     right: 0;
     height: 48px;
@@ -449,9 +457,15 @@ onBeforeUnmount(() => {
       position: absolute;
       width: 36px;
       height: 36px;
-      left: 20px;
+      left: 14px;
       top: 50%;
       transform: translateY(-50%);
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: var(--theme-text);
       cursor: pointer;
     }
 
@@ -461,7 +475,7 @@ onBeforeUnmount(() => {
       justify-content: center;
       gap: 16px;
       font-size: 16px;
-      font-weight: 500;
+      font-weight: 700;
       color: var(--theme-text);
       position: absolute;
       left: 50%;
@@ -469,8 +483,10 @@ onBeforeUnmount(() => {
       transform: translate(-50%, -50%);
 
       img {
-        width: 17px;
-        height: 5px;
+        display: block;
+        width: 125px;
+        height: 22px;
+        object-fit: contain;
       }
     }
   }
@@ -480,8 +496,44 @@ onBeforeUnmount(() => {
   @include web-only {
     display: flex;
     gap: 20px;
-    width: 1000px;
+    width: min(1000px, calc(100% - 60px));
     margin: 10px auto 60px;
+
+    // VIP 稿图侧栏为 180px，局部覆盖公共侧栏尺寸。
+    :deep(.app-side-nav) {
+      flex-basis: 180px;
+      min-height: 874px;
+      padding: 26px 12px;
+      border-radius: 32px;
+    }
+
+    :deep(.app-side-nav__logo) {
+      width: 120px;
+      height: 44px;
+      margin-bottom: 42px;
+    }
+
+    :deep(.app-side-nav__list) {
+      gap: 24px;
+    }
+
+    :deep(.app-side-nav__item) {
+      height: 56px;
+      padding-inline: 20px;
+      border-radius: 16px;
+      font-size: 20px;
+      font-weight: 400;
+    }
+
+    :deep(.app-side-nav__item.active) {
+      background: #FFE6E6;
+    }
+
+    :deep(.app-side-nav__item.active::before) {
+      top: 0;
+      bottom: 0;
+      width: 6px;
+    }
   }
 
   @include mobile-only {
@@ -500,7 +552,7 @@ onBeforeUnmount(() => {
   min-width: 0;
 
   @include web-only {
-    width: 800px;
+    flex: 1;
   }
 
   @include mobile-only {
@@ -523,8 +575,8 @@ onBeforeUnmount(() => {
   }
 
   @include mobile-only {
-    height: 214px;
-    padding: 73px 30px 0;
+    height: calc(214px + env(safe-area-inset-top, 0px));
+    padding: calc(73px + env(safe-area-inset-top, 0px)) 30px 0;
     border: 0;
     border-radius: 0;
     box-shadow: none;
@@ -539,9 +591,10 @@ onBeforeUnmount(() => {
 
 .vip-card__background--desktop {
   @include web-only {
-    height: 200px;
-    right: 0px;
-    top: 0;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
   }
 
   @include mobile-only {
@@ -557,7 +610,8 @@ onBeforeUnmount(() => {
   @include mobile-only {
     display: block;
     width: 100%;
-    height: 214px;
+    height: 100%;
+    object-fit: fill;
     left: 0;
     top: 0;
   }
@@ -598,14 +652,14 @@ onBeforeUnmount(() => {
 }
 
 .vip-card__amount {
-  color: #fef38e;
-  font-weight: 500;
+  color: #fff;
+  font-weight: 400;
   @include web-only {
     font-size: 18px;
     span {
       &:nth-child(2) {
-        color: #FEF38E;
-        font-weight: 500;
+        color: #fff;
+        font-size: 18px;
       }
     }
   }
@@ -616,7 +670,8 @@ onBeforeUnmount(() => {
     span {
       &:nth-child(2) {
         display: block;
-        color: #FEF38E;
+        color: #fff;
+        font-size: 16px;
         margin-top: 2px;
       }
     }
@@ -625,7 +680,7 @@ onBeforeUnmount(() => {
 
 .vip-card__amount span {
   color: #fdfefe;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 400;
 }
 
@@ -640,17 +695,20 @@ onBeforeUnmount(() => {
     gap: 11px;
     margin: 0 18px;
     padding: 6px 8px;
-    border: 1px solid #fff;
+    border: 0;
     border-radius: 30px;
-    box-shadow: 0 4px 10px rgba(var(--theme-shadow-rgb), 0.18);
-    background: var(--surface-card);
+    box-shadow: none;
+    background: #FFE6E6;
   }
 
   button {
     @include mobile-only {
       flex: 1;
       height: 36px;
+      padding: 0 8px;
+      border: 0;
       border-radius: 32px;
+      background: transparent;
       color: var(--theme-primary);
       font-size: 16px;
       cursor: pointer;
@@ -659,7 +717,8 @@ onBeforeUnmount(() => {
 
   .active {
     @include mobile-only {
-      color: #fff !important;
+      background: var(--theme-primary);
+      color: #fff;
     }
   }
 }
@@ -676,13 +735,16 @@ onBeforeUnmount(() => {
     padding: 14px 8px;
     border-radius: 16px;
     box-shadow: none;
+    background: var(--surface-card);
   }
 
   h2 {
     margin: 0;
+    font-weight: 400;
 
     @include web-only {
       font-size: 16px;
+      font-weight: 500;
     }
 
     @include mobile-only {
@@ -719,12 +781,24 @@ onBeforeUnmount(() => {
 .vip-level-card {
   position: relative;
   border: 1px solid var(--theme-divider);
+  background: var(--auxiliary-1);
+
+  &.vip-level-card--current {
+    border-color: var(--theme-primary);
+
+    @include mobile-only {
+      span,
+      b {
+        color: var(--theme-primary);
+      }
+    }
+  }
 
   @include web-only {
     display: grid;
-    grid-template-columns: 70px 1fr auto;
+    grid-template-columns: 60px minmax(0, 1fr) auto;
     align-items: center;
-    height: 80px;
+    height: 72px;
     padding: 0 12px;
     border-radius: 12px;
   }
@@ -749,6 +823,7 @@ onBeforeUnmount(() => {
     }
 
     @include mobile-only {
+      width: 56px;
       height: 54px;
     }
   }
@@ -777,6 +852,8 @@ onBeforeUnmount(() => {
 
   b {
     color: var(--theme-primary);
+    font-weight: 400;
+    white-space: nowrap;
 
     @include web-only {
       font-size: 16px;
@@ -933,6 +1010,52 @@ onBeforeUnmount(() => {
 
     @include mobile-only {
       font-size: 12px;
+    }
+  }
+}
+
+.vip-privileges {
+  @include web-only {
+    min-height: 654px;
+    margin-top: 20px;
+    padding: 24px;
+    overflow: hidden;
+    border-radius: 32px;
+    background: #fff;
+    box-shadow: var(--shadow-card);
+
+    .vip-panel {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .vip-privilege-description {
+      display: block;
+      min-height: 0;
+    }
+
+    .vip-privilege-summary {
+      padding: 16px;
+      background: #FFE6E6;
+
+      > div {
+        padding-inline: 12px;
+        background: #fff;
+
+        &:first-child {
+          border-radius: 12px 12px 0 0;
+        }
+
+        &:last-child {
+          border-radius: 0 0 12px 12px;
+        }
+      }
+    }
+
+    .vip-privilege-description h2 {
+      margin-top: 24px;
     }
   }
 }

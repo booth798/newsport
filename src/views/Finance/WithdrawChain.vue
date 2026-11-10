@@ -634,7 +634,7 @@ onBeforeUnmount(() => {
     gap: 14px;
     padding: 16px;
     border-radius: 16px;
-    background: var(--auxiliary-1);
+    background: var(--surface-card);
     margin-top: 8px;
   }
 }
@@ -731,16 +731,24 @@ onBeforeUnmount(() => {
   background: linear-gradient(180deg, rgba(var(--theme-primary-rgb), 0.2), rgba(var(--theme-primary-rgb), 0) 100px), #fff;
   font-size: 14px;
 
+  @include web-only {
+    background: var(--auxiliary-1);
+  }
+
   strong {
     box-sizing: border-box;
     height: 38px;
     padding: 7px 10px;
     border-radius: 6px;
-    background: rgba(var(--theme-primary-rgb), 0.1);
+    background: var(--auxiliary-1);
     color: var(--theme-primary);
     font-size: 20px;
     font-weight: 500;
     font-family: $font-family-num, $font-family-base;
+
+    @include web-only {
+      background: #FFE6E6;
+    }
   }
 }
 
@@ -851,10 +859,10 @@ onBeforeUnmount(() => {
   box-sizing: border-box;
   padding: 16px;
   border-radius: 16px;
-  background: rgba(var(--theme-primary-rgb), 0.1);
+  background: #FFE6E6;
 
   @include mobile-only {
-    background: var(--auxiliary-1);
+    background: var(--surface-card);
     box-shadow: 0 2px 12px rgba(var(--theme-shadow-rgb), 0.06);
   }
 }

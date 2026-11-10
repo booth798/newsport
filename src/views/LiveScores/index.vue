@@ -455,6 +455,11 @@ onBeforeUnmount(() => {
 
   @include mobile-only {
     width: 100%;
+    padding: 10px;
+    border: 0.8px solid #fff;
+    border-radius: 16px;
+    background: var(--surface-card);
+    box-sizing: border-box;
   }
 }
 
@@ -572,7 +577,13 @@ onBeforeUnmount(() => {
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: 10px;
+  min-height: 52px;
   margin-top: 12px;
+  padding: 0 6px;
+  border: 1px solid var(--theme-divider);
+  border-radius: 16px;
+  background: #fff url('@/assets/images/common/match_score_arena_bg.png') center / 100% 100% no-repeat;
+  box-sizing: border-box;
 }
 
 .live-card__team {

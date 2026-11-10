@@ -303,7 +303,7 @@ onMounted(() => {
     margin: -18px -8px 0;
     padding: 0 8px 20px;
     box-sizing: border-box;
-    background: var(--surface-card);
+    background: var(--theme-bg);
   }
 }
 
@@ -311,11 +311,21 @@ onMounted(() => {
   box-sizing: border-box;
   min-height: calc(100dvh - 88px);
   border-radius: 16px;
-  // 新增入口在 PC 使用浅蓝背景，H5 按设计保持白色。
+  // 新增入口在 PC 使用浅红背景，H5 与列表项共用灰色卡片底。
   --binding-list-add-bg: var(--theme-divider);
 
   @include mobile-only {
-    --binding-list-add-bg: #fff;
+    --binding-list-tabs-bg: #FFE6E6;
+    --binding-list-add-bg: var(--surface-card);
+
+    :deep(.binding-list-panel__item) {
+      border-color: transparent;
+      background: var(--surface-card);
+    }
+
+    :deep(.binding-list-panel__add) {
+      background: var(--surface-card) !important;
+    }
   }
 }
 

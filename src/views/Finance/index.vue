@@ -165,7 +165,8 @@ onMounted(loadWithdrawMethods);
     padding: 5px;
     border: 1px solid var(--auxiliary-1);
     border-radius: $radius-pill;
-    background: var(--surface-card);
+    // H5 提现原稿轨道：取样 (200, 110) 为 #FFE6E6。
+    background: #FFE6E6;
     box-shadow: var(--shadow-card);
   }
 }

@@ -666,6 +666,7 @@ onMounted(() => {
     height: 100vh;
     height: 100dvh;
     padding: 0 8px 35px;
+    background: var(--surface-muted);
   }
 }
 
@@ -948,7 +949,7 @@ onMounted(() => {
   flex-direction: column;
   box-sizing: border-box;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.58);
+  background: var(--surface-card);
 
   @include web-only {
     width: 800px;

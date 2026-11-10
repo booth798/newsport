@@ -685,6 +685,7 @@ onBeforeUnmount(() => {
 
   @include mobile-only {
     gap: 14px;
+    background: var(--surface-card);
     padding: $spacing-lg;
     border-radius: $radius-lg;
   }
@@ -813,16 +814,24 @@ onBeforeUnmount(() => {
   background: linear-gradient(180deg, rgba(var(--theme-primary-rgb), 0.2), rgba(var(--theme-primary-rgb), 0) 100px), #fff;
   font-size: 14px;
 
+  @include web-only {
+    background: var(--auxiliary-1);
+  }
+
   >strong {
     box-sizing: border-box;
     height: 38px;
     padding: 7px 10px;
     border-radius: 6px;
-    background: rgba(var(--theme-primary-rgb), 0.1);
+    background: var(--auxiliary-1);
     color: var(--theme-primary);
     font-family: $font-family-num, $font-family-base;
     font-size: 20px;
     font-weight: 500;
+
+    @include web-only {
+      background: var(--surface-card);
+    }
   }
 }
 
@@ -933,10 +942,9 @@ onBeforeUnmount(() => {
   box-sizing: border-box;
   padding: 16px;
   border-radius: 16px;
-  background: rgba(var(--theme-primary-rgb), 0.1);
+  background: var(--surface-card);
 
   @include mobile-only {
-    background: var(--auxiliary-1);
     box-shadow: 0 2px 12px rgba(var(--theme-shadow-rgb), 0.06);
   }
 }

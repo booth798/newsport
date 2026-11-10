@@ -258,7 +258,7 @@ async function copyOrderNo() {
   padding: 16px;
   border-radius: 24px;
   border: 1px solid rgba(255, 255, 255, 0.92);
-  background: linear-gradient(180deg, var(--surface-tint) 0%, var(--surface-tint) 100%);
+  background: var(--surface-card);
   box-shadow: 0 6px 20px 0 rgba(var(--theme-shadow-rgb), 0.1);
 
   @include mobile-only {
@@ -614,7 +614,7 @@ async function copyOrderNo() {
     margin-top: 12px;
     padding: 14px;
     border-radius: 14px;
-    background: rgba(240, 247, 255, 0.6);
+    background: var(--auxiliary-1);
     border: 1px solid rgba(var(--theme-divider-rgb), 0.9);
 
     @include mobile-only {

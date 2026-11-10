@@ -624,8 +624,12 @@ onMounted(() => {
 
 .profile-h5-card__bg {
   position: absolute;
-  width: auto;
+  inset: 0;
+  display: block;
+  // 导出图包含完整圆角边框，随卡片铺满，避免宽屏时露出内侧边缘。
+  width: 100%;
   height: 100%;
+  object-fit: fill;
   pointer-events: none;
   user-select: none;
 }
@@ -807,7 +811,7 @@ onMounted(() => {
   margin-top: 8px;
   padding: 16px;
   border-radius: 18px;
-  background: #fff;
+  background: var(--surface-card);
 }
 
 .profile-h5-balance__head {
@@ -936,7 +940,7 @@ onMounted(() => {
   }
 
   &:nth-child(2) {
-    background: var(--surface-card);
+    background: #fff;
   }
 }
 
@@ -944,7 +948,7 @@ onMounted(() => {
   margin-top: 8px;
   padding: 12px 16px;
   border-radius: 16px;
-  background: #fff;
+  background: var(--surface-card);
 }
 
 .profile-h5-menu__row {

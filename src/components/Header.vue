@@ -536,16 +536,17 @@ watch(isLoggedIn, (loggedIn) => {
 
   @include mobile-only {
     padding-inline: 8px;
-    padding-top: calc(env(safe-area-inset-top, 20px) + 4px);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 6px);
     padding-bottom: 8px;
+    background: var(--theme-bg);
 
     .card-primary.norem {
-      height: 52px;
-      min-height: 52px;
+      height: 48px;
+      min-height: 48px;
       padding: 0 12px;
       border-radius: 30px;
       background: var(--theme-primary);
-      border: 0.8px solid var(--theme-primary);
+      border: 0;
       justify-content: space-between;
       gap: 12px;
 
@@ -1245,8 +1246,6 @@ watch(isLoggedIn, (loggedIn) => {
 
     @include mobile-only {
       background: var(--theme-bg);
-      padding-top: 0;
-      padding-bottom: 8px;
     }
 
     .header-beijing-bar {
@@ -1274,7 +1273,7 @@ watch(isLoggedIn, (loggedIn) => {
     }
   }
 
-  /* 与首页主导航条一致：沿用全局 .card-primary（surface-card + 白边），仅保留北京时间占位 */
+  /* 紧凑导航沿用品牌条，移动端不预留未渲染的北京时间栏。 */
   &.header--market-detail .card-primary--market-detail.norem {
     @include web-only {
       position: relative;
@@ -1289,7 +1288,7 @@ watch(isLoggedIn, (loggedIn) => {
     @include mobile-only {
       // 作为绝对定位标题的包含块，避免标题相对含安全区内边距的 .header 定位而偏离返回栏垂直中线
       position: relative;
-      margin-top: 22px;
+      margin-top: 0;
       justify-content: flex-start;
       gap: 0;
     }

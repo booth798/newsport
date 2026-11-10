@@ -187,7 +187,7 @@ function formatScoreLabel(score) {
     min-height: 44px;
     padding: 10px 12px;
     border-radius: 16px;
-    background: rgba(240, 247, 255, 0.95);
+    background: var(--surface-card);
     border: 1px solid rgba(var(--theme-divider-rgb), 0.95);
     cursor: pointer;
     transition:

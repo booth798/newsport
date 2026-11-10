@@ -113,7 +113,7 @@ function add() {
   box-sizing: border-box;
   overflow-y: auto;
   padding: calc(8px + env(safe-area-inset-top, 0px)) 8px calc(24px + env(safe-area-inset-bottom, 0px));
-  background: var(--surface-card);
+  background: var(--auxiliary-1);
   color: var(--theme-text);
 }
 

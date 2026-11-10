@@ -81,7 +81,7 @@ function goBack() {
     margin: -18px -8px 0;
     padding: 0 8px 20px;
     box-sizing: border-box;
-    background: var(--surface-card);
+    background: var(--theme-bg);
   }
 }
 

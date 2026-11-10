@@ -454,7 +454,7 @@ async function loadMore() {
     gap: 16px;
     padding: 16px;
     border-radius: 16px;
-    background: var(--auxiliary-1);
+    background: var(--surface-card);
   }
 }
 
@@ -601,15 +601,23 @@ async function loadMore() {
   background: linear-gradient(180deg, rgba(var(--theme-primary-rgb), 0.2), rgba(var(--theme-primary-rgb), 0) 100px), #fff;
   font-size: 14px;
 
+  @include web-only {
+    background: var(--auxiliary-1);
+  }
+
   strong {
     box-sizing: border-box;
     height: 38px;
     padding: 7px 10px;
     border-radius: 6px;
-    background: rgba(var(--theme-primary-rgb), 0.1);
+    background: var(--auxiliary-1);
     color: var(--theme-primary);
     font-size: 20px;
     font-weight: 500;
+
+    @include web-only {
+      background: var(--surface-card);
+    }
   }
   .vip-transfer-summary__header {
     display: flex;
@@ -678,11 +686,7 @@ async function loadMore() {
   box-sizing: border-box;
   padding: 16px;
   border-radius: 16px;
-  background: rgba(var(--theme-primary-rgb), 0.1);
-
-  @include mobile-only {
-    background: var(--auxiliary-1);
-  }
+  background: var(--surface-card);
 }
 
 .transfer-record__header {

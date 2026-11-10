@@ -862,7 +862,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   border: none;
   border-radius: 20px;
   background: transparent;
-  color: var(--theme-text);
+  color: var(--theme-primary);
   font-size: 13px;
   font-weight: 500;
   line-height: 1;
@@ -912,7 +912,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   gap: 4px;
   padding: 10px 4px;
   border-radius: 10px;
-  background: var(--surface-brand);
+  background: var(--auxiliary-1);
   min-width: 0;
 
   @include web-only {
@@ -1276,7 +1276,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
 .ord__vs {
   font-size: 24px;
   font-weight: 700;
-  color: var(--theme-primary);
+  color: var(--theme-text);
 }
 
 // --- 金额摘要 ---
