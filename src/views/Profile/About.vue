@@ -6,7 +6,6 @@ import { storeToRefs } from 'pinia';
 import logoAboutUrl from '@/assets/images/common/logo_about.png?url';
 import iconNavBackMarketUrl from '@/assets/images/common/icon_back_white.png?url';
 import AppSideNav from '@/components/AppSideNav.vue';
-import { getImageUrl } from '@/utils/common';
 import { useAppStore } from '@/store/modules/app';
 
 const { t } = useI18n();
@@ -15,8 +14,6 @@ const appStore = useAppStore();
 const { isMobile, brandName } = storeToRefs(appStore);
 
 const sideNavItems = [{ key: 'about', label: t('关于我们') }];
-const titleLeftIcon = getImageUrl('vip/title_left_icon.png');
-const titleRightIcon = getImageUrl('vip/title_right_icon.png');
 // H5 版本号展示与设计稿一致。
 const appVersion = 'V1.0.0';
 
@@ -41,11 +38,10 @@ function goBack() {
       <AppSideNav v-if="!isMobile" :items="sideNavItems" active-key="about" />
 
       <main class="about-content">
-        <h1 v-if="!isMobile" class="about-content__title">
-          <img :src="titleLeftIcon" alt="" />
-          <span>{{ t('关于我们') }}</span>
-          <img :src="titleRightIcon" alt="" />
-        </h1>
+        <!-- PC 顶部与 H5 使用同一张品牌 logo，替代原「关于我们」标题 -->
+        <div v-if="!isMobile" class="about-brand about-brand--pc">
+          <img class="about-brand__logo" :src="logoAboutUrl" :alt="brandName" width="90" height="90" />
+        </div>
 
         <!-- H5：品牌 Logo + 名称 + 版本号 -->
         <div v-if="isMobile" class="about-brand">
@@ -174,30 +170,15 @@ function goBack() {
   }
 }
 
-.about-content__title {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  margin: 0;
-  color: var(--theme-text);
-  font-size: 22px;
-  font-weight: 600;
-  line-height: 1.4;
-
-  img {
-    width: 17px;
-    height: 5px;
-    object-fit: contain;
-  }
-
-}
-
 .about-brand {
   display: flex;
   flex-direction: column;
   align-items: center;
   margin-bottom: 24px;
+}
+
+.about-brand--pc {
+  margin-bottom: 4px;
 }
 
 .about-brand__logo {
