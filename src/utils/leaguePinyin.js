@@ -59,15 +59,19 @@ export function getLeagueSortableFirstChar(str) {
  * @returns {string}
  */
 function cjkToPinyinInitial(ch) {
+  let compared = false;
   try {
     for (let i = PINYIN_REFS.length - 1; i >= 0; i -= 1) {
-      if (ch.localeCompare(PINYIN_REFS[i][1], 'zh-Hans-CN-u-co-pinyin') >= 0) {
-        return PINYIN_REFS[i][0];
-      }
+      const order = ch.localeCompare(PINYIN_REFS[i][1], 'zh-Hans-CN-u-co-pinyin');
+      compared = true;
+      if (order >= 0) return PINYIN_REFS[i][0];
     }
   } catch {
-    /* 部分环境不支持 co-pinyin */
+    compared = false;
   }
+  // 「阿」等字排在首个锚点「啊」之前，比较全部小于 0。
+  // 这时仍是 A，不能再按码点兜底（阿 U+963F 会落进 X）。
+  if (compared) return 'A';
   // 无拼音 collation 时按码点粗分到 A–Z，避免进 #
   const code = ch.codePointAt(0) - 0x4e00;
   if (code >= 0) {
