@@ -159,10 +159,8 @@ function normalizeRecord(record) {
     direction: isIn ? 'in' : 'out',
     typeLabel: record.typeLabel || (isIn ? '会员转入' : '会员转出'),
     amount: formatMoney(record.amount),
-    // 会员转出展示对手方名称；转入仍用账号编号
-    account: isIn
-      ? (record.counterpartyNo || '—')
-      : (record.counterpartyName || record.counterpartyNo || '—'),
+    // 转入、转出都展示对手方名称
+    account: record.counterpartyName || '—',
     createdAt: formatDateTime(record.createdAt),
   };
 }
