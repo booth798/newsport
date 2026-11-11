@@ -421,9 +421,11 @@ export default {
 
   // Footer
   关于我们: 'About Us',
-  关于我们介绍一: 'We are a pioneering sports investment company in Asia, among the first to introduce the concept of combining sports and investment to the regional market. Unlike traditional sports funds managed entirely by professional managers, our model gives members direct control and lets them share in the results.',
-  关于我们介绍二: 'Football is our primary operating sector. We focus on globally influential sports with strong commercial value and work with established, legally operated exchanges in Sweden, the United Kingdom, Germany, and other markets. Years of research and practical experience have enabled us to apply probability models and statistical theory to football finance.',
-  关于我们风险提示: 'All investments involve risk. We remain committed to transparency, compliance, stability, and rational participation. Members are reminded to understand the risks and invest with care.',
+  关于我们副标题: 'A Century of Heritage · Proven Strength',
+  关于我们介绍一: 'Ladbrokes is rooted in the international sports market, with football—the world’s most influential sport—at its core, and is committed to a model that brings together sports entertainment, data technology, and digital services.',
+  关于我们介绍二: 'In a constantly changing global market, we are driven by technology and grounded in expertise. Ladbrokes continues to follow the potential of the sports market and explore more independent, transparent, and convenient ways for users to take part, moving traditional sports entertainment toward digital and intelligent services. Expertise comes from experience, innovation from exploration, and trust from responsibility.',
+  关于我们介绍三: 'From historical heritage to modern development, and from brand legacy to service innovation, Ladbrokes seeks not only to carry forward a century-old brand, but also to stay professional and responsible as the industry changes. We focus on the world’s most influential and commercially valuable sports, and work with well-known, legally operated exchanges in Sweden, the United Kingdom, Germany, and beyond.',
+  关于我们结语: 'Ladbrokes — carrying a century of brand heritage, standing on expertise, and going further with responsibility.',
   联系我们: 'Contact Us',
   帮助中心: 'Help Center',
   服务条款: 'Terms of Service',

@@ -55,10 +55,12 @@ function goBack() {
           <p class="about-brand__version">{{ appVersion }}</p>
         </div>
 
+        <p class="about-content__subtitle">{{ t('关于我们副标题') }}</p>
         <div class="about-content__body">
           <p>{{ t('关于我们介绍一') }}</p>
           <p>{{ t('关于我们介绍二') }}</p>
-          <p>{{ t('关于我们风险提示') }}</p>
+          <p>{{ t('关于我们介绍三') }}</p>
+          <p class="about-content__closing">{{ t('关于我们结语') }}</p>
         </div>
       </main>
     </div>
@@ -227,6 +229,21 @@ function goBack() {
   line-height: 1.2;
 }
 
+.about-content__subtitle {
+  margin: 18px 0 0;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--theme-text);
+
+  @include mobile-only {
+    margin-top: 0;
+    margin-bottom: 16px;
+    font-size: 15px;
+  }
+}
+
 .about-content__body {
   margin-top: 26px;
 
@@ -255,5 +272,9 @@ function goBack() {
       }
     }
   }
+}
+
+.about-content__closing {
+  font-weight: 600;
 }
 </style>
