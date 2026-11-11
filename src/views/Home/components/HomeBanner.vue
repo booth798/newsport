@@ -191,7 +191,12 @@ function onTouchEnd() {
 
   @include web-only {
     border-radius: 40px;
-    height: 520px;
+    /*
+     * 设计稿 banner.png 为 2760×1040。固定 520px + cover 会在宽屏裁掉顶部联赛名。
+     * 按原图比例撑开高度，配合 contain 完整显示。
+     */
+    height: auto;
+    aspect-ratio: 2760 / 1040;
     border: 1px solid var(--border-light);
     box-shadow: 0 6px 20px rgba(var(--theme-shadow-rgb), 0.18);
   }
@@ -257,6 +262,12 @@ function onTouchEnd() {
     display: block;
     object-fit: cover;
     object-position: center;
+
+    @include web-only {
+      /* 不裁切，整张轮播图都落在比例框内 */
+      object-fit: contain;
+      background: #061428;
+    }
   }
 
   &__arrow {
