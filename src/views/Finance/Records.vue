@@ -282,6 +282,24 @@ function resolveLeagueLogo(league, overrideUrl) {
   return String(league).includes('欧冠') ? leagueUclUrl : '';
 }
 
+/** 图片加载失败的 logo key，用来切到占位，避免隐藏后对阵区塌掉 */
+const failedLogoKeys = ref(new Set());
+
+function markLogoFailed(key) {
+  if (failedLogoKeys.value.has(key)) return;
+  failedLogoKeys.value = new Set([...failedLogoKeys.value, key]);
+}
+
+function logoVisible(key, url) {
+  return Boolean(url) && !failedLogoKeys.value.has(key);
+}
+
+/** 无队徽时用队名首字占位 */
+function teamInitial(name) {
+  const text = String(name || '').trim();
+  return text ? text.slice(0, 1) : '';
+}
+
 function parseMatchScore(scoreStr) {
   if (scoreStr == null || scoreStr === '') return null;
   // 兼容对象形态 { home, away } / { homeScore, awayScore }
@@ -650,14 +668,17 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
           <!-- 联赛 -->
           <div class="ord__league">
             <img
-              v-if="order.leagueLogo"
+              v-if="logoVisible(`${order.id}-league`, order.leagueLogo)"
               class="ord__league-logo"
               :src="order.leagueLogo"
               alt=""
               width="24"
               height="24"
-              @error="(e) => e.target.style.display = 'none'"
+              @error="markLogoFailed(`${order.id}-league`)"
             />
+            <span v-else class="ord__league-logo ord__league-logo--fallback" aria-hidden="true">
+              {{ teamInitial(order.league) }}
+            </span>
             <span class="ord__league-name">{{ order.league }}</span>
           </div>
 
@@ -666,7 +687,18 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
             <div class="ord__arena" :class="{ 'ord__arena--scored': order.parsedScore }">
               <div class="ord__arena-inner">
                 <div class="ord__team">
-                  <img v-if="order.homeLogo" class="ord__team-logo" :src="order.homeLogo" alt="" width="44" height="44" @error="(e) => e.target.style.display='none'" />
+                  <img
+                    v-if="logoVisible(`${order.id}-home`, order.homeLogo)"
+                    class="ord__team-logo"
+                    :src="order.homeLogo"
+                    alt=""
+                    width="44"
+                    height="44"
+                    @error="markLogoFailed(`${order.id}-home`)"
+                  />
+                  <span v-else class="ord__team-logo ord__team-logo--fallback" aria-hidden="true">
+                    {{ teamInitial(order.homeTeam) }}
+                  </span>
                   <div class="ord__team-name">
                     <span class="ord__team-name-text">{{ order.homeTeam }}</span>
                     <span class="ord__side-tag ord__side-tag--home">{{ t('主') }}</span>
@@ -686,7 +718,18 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
                   <span class="ord__vs">VS</span>
                 </div>
                 <div class="ord__team">
-                  <img v-if="order.awayLogo" class="ord__team-logo" :src="order.awayLogo" alt="" width="44" height="44" @error="(e) => e.target.style.display='none'" />
+                  <img
+                    v-if="logoVisible(`${order.id}-away`, order.awayLogo)"
+                    class="ord__team-logo"
+                    :src="order.awayLogo"
+                    alt=""
+                    width="44"
+                    height="44"
+                    @error="markLogoFailed(`${order.id}-away`)"
+                  />
+                  <span v-else class="ord__team-logo ord__team-logo--fallback" aria-hidden="true">
+                    {{ teamInitial(order.awayTeam) }}
+                  </span>
                   <div class="ord__team-name">
                     <span class="ord__team-name-text">{{ order.awayTeam }}</span>
                     <span class="ord__side-tag ord__side-tag--away">{{ t('客') }}</span>
@@ -1125,6 +1168,18 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   flex-shrink: 0;
 }
 
+.ord__league-logo--fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 1px solid #e4f0fe;
+  color: #1c7bff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+}
+
 .ord__league-name {
   font-size: 16px;
   font-weight: 700;
@@ -1188,6 +1243,20 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   box-sizing: border-box;
   padding: 4px;
   background: #fff;
+  flex-shrink: 0;
+}
+
+/* 无队徽或图片加载失败时保持同尺寸圆形占位，避免比分上移 */
+.ord__team-logo--fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid #e4f0fe;
+  color: #1c7bff;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
 }
 
 .ord__team-name {
