@@ -353,9 +353,10 @@ async function copyOrderNo() {
     line-height: 1.2;
     white-space: nowrap;
 
+    /* 等结算：与账务列表一致，浅蓝底 + 蓝字 */
     &--pending {
-      color: var(--theme-primary);
-      background: rgba(var(--theme-primary-rgb), 0.12);
+      color: #5b93e6;
+      background: #d0def6;
       border-radius: 6px;
     }
 

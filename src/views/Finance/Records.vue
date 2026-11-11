@@ -1122,9 +1122,10 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
   font-weight: 500;
   flex-shrink: 0;
 
+  /* 等结算：设计稿为浅蓝底 + 蓝字，不用品牌红 */
   &--processing {
-    background: rgba(var(--theme-primary-rgb), 0.15);
-    color: var(--theme-primary);
+    background: #d0def6;
+    color: #5b93e6;
   }
 
   &--completed {
