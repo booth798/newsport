@@ -5,6 +5,8 @@
  * 三个接口均为 FormUrlEncoded / Multipart，不走主 API 的加密信封。
  */
 
+import { sha256 } from '@/utils/webCrypto';
+
 const __DEV__ = import.meta.env.DEV;
 
 /* ─── URL 工具（对齐 OnlineServiceEndpointProvider） ─── */
@@ -154,7 +156,7 @@ export function resolveKfUserAvatarUrl(avatar) {
 export async function generateVisitorToken(customerId) {
   const encoder = new TextEncoder();
   const data = encoder.encode(customerId.trim());
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashBuffer = await sha256(data);
   const hex = Array.from(new Uint8Array(hashBuffer))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');

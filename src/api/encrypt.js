@@ -1,4 +1,13 @@
 import { get } from './request';
+import {
+  aesGcmDecrypt,
+  aesGcmEncrypt,
+  exportAesKey,
+  importAesKey,
+  importRsaPublicKey,
+  randomBytes,
+  rsaOaepEncrypt,
+} from '@/utils/webCrypto';
 
 let cachedPubKey = null;
 let sessionAesKey = null;
@@ -25,9 +34,7 @@ async function doRestore() {
     const binary = atob(stored);
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    sessionAesKey = await crypto.subtle.importKey(
-      'raw', bytes, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'],
-    );
+    sessionAesKey = await importAesKey(bytes, false);
     sessionId = sid;
   } catch {
     sessionAesKey = null;
@@ -79,23 +86,8 @@ function b64Decode(str) {
 
 // ─── RSA ───
 
-function pemToArrayBuffer(pem) {
-  const b64 = pem
-    .replace(/-----BEGIN PUBLIC KEY-----/, '')
-    .replace(/-----END PUBLIC KEY-----/, '')
-    .replace(/\n/g, '')
-    .trim();
-  return b64Decode(b64).buffer;
-}
-
 async function importRsaKey(pem) {
-  return crypto.subtle.importKey(
-    'spki',
-    pemToArrayBuffer(pem),
-    { name: 'RSA-OAEP', hash: 'SHA-256' },
-    false,
-    ['encrypt'],
-  );
+  return importRsaPublicKey(pem);
 }
 
 export async function fetchPubKey() {
@@ -110,30 +102,22 @@ export async function fetchPubKey() {
 // ─── AES-GCM helpers ───
 
 function makeNonce() {
-  return Array.from(crypto.getRandomValues(new Uint8Array(16)))
+  return Array.from(randomBytes(16))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
 }
 
 async function aesEncrypt(aesKey, plainObj) {
-  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const iv = randomBytes(12);
   const plaintext = new TextEncoder().encode(JSON.stringify(plainObj));
-  const ciphertext = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv, tagLength: 128 },
-    aesKey,
-    plaintext,
-  );
+  const ciphertext = await aesGcmEncrypt(aesKey, iv, plaintext);
   return { iv, ciphertext };
 }
 
 async function aesDecrypt(aesKey, ivB64, dataB64) {
   const iv = b64Decode(ivB64);
   const data = b64Decode(dataB64);
-  const plain = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv, tagLength: 128 },
-    aesKey,
-    data,
-  );
+  const plain = await aesGcmDecrypt(aesKey, iv, data);
   return JSON.parse(new TextDecoder().decode(plain));
 }
 
@@ -143,13 +127,11 @@ export async function bootstrapEncrypt(bodyObj) {
   const pubKeyInfo = await fetchPubKey();
   const rsaKey = await importRsaKey(pubKeyInfo.pem);
 
-  const aesKeyRaw = crypto.getRandomValues(new Uint8Array(32));
-  const aesKey = await crypto.subtle.importKey(
-    'raw', aesKeyRaw, { name: 'AES-GCM' }, true, ['encrypt', 'decrypt'],
-  );
+  const aesKeyRaw = randomBytes(32);
+  const aesKey = await importAesKey(aesKeyRaw, true);
 
   const { iv, ciphertext } = await aesEncrypt(aesKey, bodyObj);
-  const encSk = await crypto.subtle.encrypt({ name: 'RSA-OAEP' }, rsaKey, aesKeyRaw);
+  const encSk = await rsaOaepEncrypt(rsaKey, aesKeyRaw);
 
   const encryptedBody = {
     encSk: b64Encode(encSk),
@@ -213,6 +195,6 @@ export async function saveSession(sid, aesKey) {
   sessionId = sid;
   sessionAesKey = aesKey;
   localStorage.setItem('mysport:sid', sid);
-  const exported = await crypto.subtle.exportKey('raw', aesKey);
+  const exported = await exportAesKey(aesKey);
   localStorage.setItem('mysport:aesKey', b64Encode(exported));
 }

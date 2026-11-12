@@ -1,4 +1,5 @@
 import { get, post, del } from './request';
+import { randomId } from '@/utils/webCrypto';
 
 /** 查询钱包余额 */
 export async function fetchBalance() {
@@ -33,7 +34,7 @@ export async function submitDeposit(channel, amount, options = {}) {
     paymentProofUrl: options.paymentProofUrl,
     txHash: options.txHash,
   }, {
-    headers: { 'Idempotency-Key': crypto.randomUUID() },
+    headers: { 'Idempotency-Key': randomId() },
   });
 }
 
@@ -70,7 +71,7 @@ export async function fetchWithdrawMethods() {
 /** 提交提现 */
 export async function submitWithdraw(payload) {
   return post('/finance/withdraw/submit', payload, {
-    headers: { 'Idempotency-Key': crypto.randomUUID() },
+    headers: { 'Idempotency-Key': randomId() },
   });
 }
 
@@ -133,7 +134,7 @@ export async function transfer(payload) {
     amount: payload.amount,
     withdrawPassword: payload.withdrawPassword,
   }, {
-    headers: { 'Idempotency-Key': crypto.randomUUID() },
+    headers: { 'Idempotency-Key': randomId() },
   });
 }
 

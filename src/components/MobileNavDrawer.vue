@@ -21,7 +21,7 @@ import iconVipTransfer from '@/assets/images/profile/vip_transfer_icon.svg';
 
 import iconMarketList from '@/assets/images/menu/icon_market_list.svg';
 import iconMatchResults from '@/assets/images/menu/icon_match_results.svg';
-import iconLiveScores from '@/assets/images/menu/icon_live_scores.svg';
+// import iconLiveScores from '@/assets/images/menu/icon_live_scores.svg';
 
 import iconVipBenefits from '@/assets/images/profile/vip_benefits_icon.svg';
 import iconAbout from '@/assets/images/menu/icon_about_unibet.svg';
@@ -75,7 +75,7 @@ const sections = [
     items: [
       { labelKey: '市场列表', to: '/market', icon: iconMarketList },
       { labelKey: '赛事结果', to: '/match-results', icon: iconMatchResults },
-      { labelKey: '即时比分', to: '/live-scores', icon: iconLiveScores },
+      // { labelKey: '即时比分', to: '/live-scores', icon: iconLiveScores },
     ],
   },
   {

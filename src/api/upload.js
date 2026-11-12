@@ -1,6 +1,7 @@
 import { get, post } from './request';
 import { resolveErrorMessage } from './errorCodes';
 import { getSessionId, ensureSessionReady } from './encrypt';
+import { hmacSha256, randomId, sha256 } from '@/utils/webCrypto';
 
 const API_BASE = '/api';
 const __DEV__ = import.meta.env.DEV;
@@ -35,11 +36,11 @@ function toHex(buf) {
  */
 export async function uploadFile(file, purpose = 'avatar') {
   const arrayBuf = await file.arrayBuffer();
-  const hashBuf = await crypto.subtle.digest('SHA-256', arrayBuf);
+  const hashBuf = await sha256(arrayBuf);
   const sha256 = toHex(hashBuf);
 
   const ts = String(Math.floor(Date.now() / 1000));
-  const nonce = crypto.randomUUID();
+  const nonce = randomId();
   const sid = getSessionId();
   const token = localStorage.getItem('mysport:token') || '';
 
@@ -85,10 +86,7 @@ export async function uploadFile(file, purpose = 'avatar') {
     throw new Error('SESSION_INVALID');
   }
 
-  const hmacKey = await crypto.subtle.importKey(
-    'raw', aesKeyBytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
-  );
-  const sigBuf = await crypto.subtle.sign('HMAC', hmacKey, encoder.encode(sigPayload));
+  const sigBuf = await hmacSha256(aesKeyBytes, encoder.encode(sigPayload));
   const sig = toHex(sigBuf);
 
   if (__DEV__) {

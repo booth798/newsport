@@ -1,4 +1,5 @@
 import { get, post, del } from './request';
+import { randomId, sha256 } from '@/utils/webCrypto';
 import { isWithinOrderCancelWindow } from '@/constants/orderCancel';
 import { resolveRefundStatusKey } from '@/constants/orderRefund';
 
@@ -17,7 +18,7 @@ function saveIdempotencyStore(store) {
 async function hashKey(operation, fingerprint) {
   const input = `${operation}|${fingerprint}`;
   const data = new TextEncoder().encode(input);
-  const buf = await crypto.subtle.digest('SHA-256', data);
+  const buf = await sha256(data);
   return 'v2_' + Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
@@ -25,7 +26,7 @@ async function getOrCreateIdempotencyKey(operation, fingerprint) {
   const store = getIdempotencyStore();
   const storageKey = await hashKey(operation, fingerprint);
   if (store[storageKey]) return { key: store[storageKey], storageKey };
-  const key = crypto.randomUUID();
+  const key = randomId();
   store[storageKey] = key;
   saveIdempotencyStore(store);
   return { key, storageKey };
