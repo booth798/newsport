@@ -170,7 +170,7 @@ export default {
   订单号码: '订单号码',
   交易时间: '交易时间',
   结算时间: '结算时间',
-  'UNI BET平台': 'UNI BET平台',
+  'ladbrokes平台': 'ladbrokes平台',
   万: '万',
   展开: '展开',
   收起: '收起',

@@ -654,7 +654,7 @@ watch(() => userStore.isLoggedIn, (loggedIn) => {
         >
           <!-- 顶栏：平台 + 开赛时间 + 状态 -->
           <div class="ord__top">
-            <span class="ord__platform">{{ t('UNI BET平台') }}</span>
+            <span class="ord__platform">{{ t('ladbrokes平台') }}</span>
             <span v-if="order.kickoffFormatted" class="ord__kickoff">{{ order.kickoffFormatted }}</span>
             <span
               v-if="order.statusKey || order.statusText"

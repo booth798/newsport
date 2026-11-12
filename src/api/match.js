@@ -396,14 +396,19 @@ function computeCountdown(kickoffAt) {
   }
 }
 
+/** 开赛时间按北京时间格式化，和列表卡片一致 */
 function formatDate(iso) {
   try {
-    const d = new Date(iso);
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    const hh = String(d.getHours()).padStart(2, '0');
-    const mi = String(d.getMinutes()).padStart(2, '0');
-    return `${mm}-${dd} ${hh}:${mi}`;
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Shanghai',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(new Date(iso));
+    const pick = (type) => parts.find((part) => part.type === type)?.value || '';
+    return `${pick('month')}-${pick('day')} ${pick('hour')}:${pick('minute')}`;
   } catch {
     return '';
   }

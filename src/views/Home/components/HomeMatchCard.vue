@@ -109,39 +109,37 @@ const detailCountdownLabel = computed(() => {
   return '';
 });
 
+/** 开赛时刻固定按北京时间，PC / H5 不跟设备时区走 */
+function formatKickoffInShanghai(raw, withYear) {
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return '';
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date);
+  const pick = (type) => parts.find((part) => part.type === type)?.value || '';
+  const clock = `${pick('month')}-${pick('day')} ${pick('hour')}:${pick('minute')}`;
+  return withYear ? `${pick('year')}-${clock}` : clock;
+}
+
 const detailMatchDate = computed(() => {
-  // Figma 详情英雄：完整「YYYY-MM-DD HH:mm」
-  const raw = props.match.kickoffAt;
-  if (raw) {
-    const d = new Date(raw);
-    if (!Number.isNaN(d.getTime())) {
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const dd = String(d.getDate()).padStart(2, '0');
-      const hh = String(d.getHours()).padStart(2, '0');
-      const mi = String(d.getMinutes()).padStart(2, '0');
-      return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
-    }
-  }
+  // 详情：完整「YYYY-MM-DD HH:mm」，北京时间
+  const formatted = props.match.kickoffAt ? formatKickoffInShanghai(props.match.kickoffAt, true) : '';
+  if (formatted) return formatted;
   const fallback = props.match.date ?? '';
   if (/^\d{4}-/.test(fallback)) return fallback;
   return fallback ? `2026-${fallback}` : '';
 });
 
-/** H5 列表开赛时间：对齐 Figma「03-19 02:30」 */
+/** 列表开赛时间：PC / H5 都用北京时间「MM-DD HH:mm」 */
 const listKickoffLabel = computed(() => {
-  const raw = props.match.kickoffAt;
-  if (raw) {
-    const d = new Date(raw);
-    if (!Number.isNaN(d.getTime())) {
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const dd = String(d.getDate()).padStart(2, '0');
-      const hh = String(d.getHours()).padStart(2, '0');
-      const mi = String(d.getMinutes()).padStart(2, '0');
-      return `${mm}-${dd} ${hh}:${mi}`;
-    }
-  }
-  return props.match.date || '';
+  const formatted = props.match.kickoffAt ? formatKickoffInShanghai(props.match.kickoffAt, false) : '';
+  return formatted || props.match.date || '';
 });
 
 const DEFAULT_POOLS = [
@@ -412,7 +410,7 @@ function formatPoolScore(score) {
         </div>
         <div class="match-card__divider" aria-hidden="true" />
         <div class="match-card__m-time-row">
-          <span class="match-card__date">{{ match.date }}</span>
+          <span class="match-card__date">{{ listKickoffLabel }}</span>
           <div
             class="match-card__pill match-card__pill--w"
             :class="{ 'match-card__pill--detail-w': detailMode }"
